@@ -24,16 +24,30 @@ jobs:
       - name: Import project
         run: timeout 300 ./godot --headless --path . --import 2>&1 | tee import.log
 
+      - name: Check every script compiles
+        run: |
+          status=0
+          for f in $(git ls-files '*.gd'); do
+            out=$(timeout 60 ./godot --headless --path . --check-only --script "res://$f" 2>&1 \
+              | grep -E "Parse Error|Compile Error|SCRIPT ERROR|ERROR: Failed" -A2 || true)
+            if [ -n "$out" ]; then echo "::group::$f"; echo "$out" | head -20; echo "::endgroup::"; echo "::error file=$f::script failed to compile"; status=1; fi
+          done
+          exit $status
+
       - name: Run smoke test
         run: |
           set -o pipefail
-          timeout 300 ./godot --headless --path . res://tests/smoke_test.tscn 2>&1 | tee test.log
+          # The headless dummy renderer spams harmless 'Parameter "m" is null' errors; drop them.
+          timeout 300 ./godot --headless --path . res://tests/smoke_test.tscn 2>&1 \
+            | grep --line-buffered -v -e 'Parameter "m" is null' -e 'mesh_get_surface_count' | tee test.log
 
       - name: Fail on script errors
         if: always()
         run: |
-          if grep -nE "SCRIPT ERROR|Parse Error|Failed to load|Invalid call|Invalid access|FAIL:" import.log test.log; then
-            echo "::error::Godot reported errors (see above)"
+          errors=$(grep -nE "SCRIPT ERROR|Parse Error|Failed to load|Invalid call|Invalid access|FAIL:" import.log test.log | awk -F: '{ key=$0; sub(/^[^:]*:[0-9]+:/, "", key); if (!seen[key]++) print }' | head -40)
+          if [ -n "$errors" ]; then
+            echo "$errors"
+            echo "::error::Godot reported errors (first unique ones above)"
             exit 1
           fi
           grep -q "SMOKE TEST: PASS" test.log
