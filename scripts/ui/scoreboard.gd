@@ -71,9 +71,9 @@ func _draw() -> void:
 	for team: int in teams:
 		var members: Array = teams[team]
 		for i in members.size():
-			var b := members[i] as Brawler
-			if not is_instance_valid(b):
+			if not is_instance_valid(members[i]):
 				continue
+			var b := members[i] as Brawler
 			var x := panel.position.x - 12 - PORTRAIT - i * (PORTRAIT + 8) if team == 0 \
 					else panel.end.x + 12 + i * (PORTRAIT + 8)
 			_portrait(Rect2(x, top + 8, PORTRAIT, PORTRAIT), b, BLUE if team == 0 else RED, font)

@@ -131,6 +131,10 @@ func _check_supers() -> void:
 		b.position = target.position + Vector3(0, 0, 2.5)
 		await get_tree().physics_frame
 		target.respawn(target.position)
+		# A huge HP pool: a KO would trigger the match's delayed respawn, which would
+		# reset the target's health in the middle of the next Pokémon's check.
+		target.max_health = 100000.0
+		target.health = target.max_health
 		b.health = b.max_health * 0.5
 		b.super_charge = 1.0
 		var hp_before := b.health
@@ -143,7 +147,9 @@ func _check_supers() -> void:
 		for ally: Brawler in b.allies_within(8.0):
 			if ally.status_text() != "" or ally.health > ally.max_health * 0.99:
 				allied = true
-		expect(used and (hit or helped or allied), "%s uses %s" % [s.id, s.super_move.id])
+		expect(used and (hit or helped or allied), "%s uses %s (used=%s target hp %d/%d status '%s' dead=%s at %s, user at %s)" % [
+				s.id, s.super_move.id, used, target.health, target.max_health, target.status_text(), target.is_dead,
+				target.global_position, b.global_position])
 		b.queue_free()
 		await get_tree().process_frame
 	main.queue_free()
