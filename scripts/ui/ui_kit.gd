@@ -221,3 +221,105 @@ static func scroll(child: Control) -> ScrollContainer:
 	child.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	s.add_child(child)
 	return s
+
+
+# --- Drawing helpers for HUD widgets ---------------------------------------
+
+## Shaded disc: darker rim, lighter top-left, like a glossy button.
+static func draw_shaded_circle(ci: CanvasItem, center: Vector2, radius: float, color: Color, alpha := 1.0) -> void:
+	var steps := 9
+	for i in steps:
+		var t := float(i) / steps
+		var r := radius * (1.0 - t * 0.85)
+		var c := color.darkened(0.35 * (1.0 - t)).lerp(color.lightened(0.35), t * t)
+		ci.draw_circle(center - Vector2(radius, radius) * 0.18 * t, r, Color(c, alpha))
+
+
+## Soft drop shadow under a round widget.
+static func draw_drop_shadow(ci: CanvasItem, center: Vector2, radius: float) -> void:
+	ci.draw_circle(center + Vector2(0, radius * 0.1), radius * 1.04, Color(0, 0, 0, 0.28))
+	ci.draw_circle(center + Vector2(0, radius * 0.06), radius * 1.0, Color(0, 0, 0, 0.22))
+
+
+## Filled pie from 12 o'clock clockwise covering `ratio` (0..1).
+static func draw_pie(ci: CanvasItem, center: Vector2, radius: float, ratio: float, color: Color) -> void:
+	if ratio <= 0.0:
+		return
+	var points := PackedVector2Array([center])
+	var segments := maxi(3, int(48 * ratio))
+	for i in segments + 1:
+		var a := -PI / 2.0 + TAU * ratio * float(i) / segments
+		points.append(center + Vector2(cos(a), sin(a)) * radius)
+	ci.draw_colored_polygon(points, color)
+
+
+## Rounded label pill with outlined text.
+static func draw_pill(ci: CanvasItem, center: Vector2, text: String, font_size := 18, bg := Color(0, 0, 0, 0.55)) -> void:
+	var font := ThemeDB.fallback_font
+	var w := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x + 22.0
+	var h := font_size + 10.0
+	var pill := StyleBoxFlat.new()
+	pill.bg_color = bg
+	pill.set_corner_radius_all(int(h / 2))
+	ci.draw_style_box(pill, Rect2(center - Vector2(w, h) / 2.0, Vector2(w, h)))
+	var pos := center + Vector2(-w / 2.0, font_size * 0.36)
+	ci.draw_string_outline(font, pos, text, HORIZONTAL_ALIGNMENT_CENTER, w, font_size, 4, Color(0, 0, 0, 0.8))
+	ci.draw_string(font, pos, text, HORIZONTAL_ALIGNMENT_CENTER, w, font_size, Color.WHITE)
+
+
+## Simple emblem for each type (flame, droplet, bolt, leaf...), drawn in `color`.
+static func draw_type_icon(ci: CanvasItem, type_name: String, c: Vector2, s: float, color := Color.WHITE) -> void:
+	match type_name:
+		"fire":
+			_icon_poly(ci, c, s, color, [Vector2(0, -1), Vector2(0.35, -0.35), Vector2(0.6, 0.15), Vector2(0.45, 0.65), Vector2(0, 0.9),
+					Vector2(-0.45, 0.65), Vector2(-0.6, 0.15), Vector2(-0.3, -0.2), Vector2(-0.1, 0.2), Vector2(0.05, -0.3)])
+		"water":
+			_icon_poly(ci, c, s, color, [Vector2(0, -1), Vector2(0.35, -0.35), Vector2(0.6, 0.2), Vector2(0.45, 0.65), Vector2(0, 0.85),
+					Vector2(-0.45, 0.65), Vector2(-0.6, 0.2), Vector2(-0.35, -0.35)])
+		"electric":
+			_icon_poly(ci, c, s, color, [Vector2(0.25, -1), Vector2(-0.45, 0.1), Vector2(-0.02, 0.1), Vector2(-0.25, 1), Vector2(0.5, -0.2), Vector2(0.06, -0.2)])
+		"grass", "bug":
+			_icon_poly(ci, c, s, color, [Vector2(0, -0.95), Vector2(0.55, -0.35), Vector2(0.55, 0.3), Vector2(0, 0.95), Vector2(-0.55, 0.3), Vector2(-0.55, -0.35)])
+			ci.draw_line(c + Vector2(0, -0.7) * s, c + Vector2(0, 0.8) * s, Color(0, 0, 0, 0.35), 2.0)
+		"poison":
+			for p: Vector2 in [Vector2(-0.35, 0.25), Vector2(0.35, 0.3), Vector2(0, -0.35)]:
+				ci.draw_circle(c + p * s, 0.42 * s, color)
+		"psychic":
+			ci.draw_arc(c, 0.75 * s, 0, TAU, 32, color, 0.22 * s, true)
+			ci.draw_circle(c, 0.3 * s, color)
+		"ghost":
+			_icon_poly(ci, c, s, color, [Vector2(-0.6, 0.9), Vector2(-0.6, -0.2), Vector2(-0.4, -0.75), Vector2(0, -0.95), Vector2(0.4, -0.75),
+					Vector2(0.6, -0.2), Vector2(0.6, 0.9), Vector2(0.3, 0.6), Vector2(0, 0.9), Vector2(-0.3, 0.6)])
+		"dragon", "fighting":
+			_icon_poly(ci, c, s, color, [Vector2(0, -1), Vector2(0.28, -0.28), Vector2(1, 0), Vector2(0.28, 0.28), Vector2(0, 1),
+					Vector2(-0.28, 0.28), Vector2(-1, 0), Vector2(-0.28, -0.28)])
+		"ice":
+			for a: float in [0.0, PI / 3.0, 2.0 * PI / 3.0]:
+				var d := Vector2(cos(a), sin(a)) * 0.9 * s
+				ci.draw_line(c - d, c + d, color, 0.2 * s, true)
+		"rock", "ground", "steel":
+			_icon_poly(ci, c, s, color, [Vector2(-0.2, -0.85), Vector2(0.6, -0.5), Vector2(0.85, 0.3), Vector2(0.2, 0.85), Vector2(-0.7, 0.55), Vector2(-0.85, -0.2)])
+		"dark":
+			ci.draw_circle(c, 0.8 * s, color)
+			ci.draw_circle(c + Vector2(0.35, -0.25) * s, 0.65 * s, Color(0, 0, 0, 0.55))
+		"flying":
+			_icon_poly(ci, c, s, color, [Vector2(-0.9, 0.4), Vector2(-0.3, -0.6), Vector2(0.9, -0.8), Vector2(0.3, 0.0), Vector2(0.7, 0.2), Vector2(-0.1, 0.6)])
+		"super":
+			var star: Array[Vector2] = []
+			for i in 10:
+				var r := 1.0 if i % 2 == 0 else 0.45
+				var a := -PI / 2.0 + PI / 5.0 * i
+				star.append(Vector2(cos(a), sin(a)) * r)
+			_icon_poly(ci, c, s, color, star)
+		_:
+			ci.draw_circle(c, 0.6 * s, color)
+
+
+## Filled, outlined polygon from unit-size points around `c`, scaled by `s`.
+static func _icon_poly(ci: CanvasItem, c: Vector2, s: float, color: Color, points: Array) -> void:
+	var pts := PackedVector2Array()
+	for p: Vector2 in points:
+		pts.append(c + p * s)
+	ci.draw_colored_polygon(pts, color)
+	pts.append(pts[0])
+	ci.draw_polyline(pts, Color(0, 0, 0, 0.35), 2.0, true)
