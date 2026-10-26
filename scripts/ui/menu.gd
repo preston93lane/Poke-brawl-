@@ -18,6 +18,7 @@ var _ranged := ""
 var _allies: Array[String] = []
 var _enemies: Array[String] = []
 var _arena := ""
+var _difficulty := "normal"
 var _details: VBoxContainer
 var _details_scroll: ScrollContainer
 
@@ -220,6 +221,15 @@ func _refresh_select_details() -> void:
 	_details.add_child(_section("OPPONENTS  (pick up to %d, the rest are random)" % team_size))
 	_details.add_child(_team_picker(_enemies, team_size))
 
+	_details.add_child(_section("BOT DIFFICULTY"))
+	var difficulty_row := HBoxContainer.new()
+	var difficulty_group := ButtonGroup.new()
+	for level in ["easy", "normal", "hard"]:
+		var b := _toggle(level.to_upper(), difficulty_group, level == _difficulty)
+		b.pressed.connect(func() -> void: _difficulty = level)
+		difficulty_row.add_child(b)
+	_details.add_child(difficulty_row)
+
 	_details.add_child(_section("ARENA"))
 	var arenas := HFlowContainer.new()
 	var arena_group := ButtonGroup.new()
@@ -277,6 +287,7 @@ func _start_match() -> void:
 		"allies": _allies.duplicate(),
 		"enemies": _enemies.duplicate(),
 		"bot_level": _level,
+		"difficulty": _difficulty,
 	}
 	get_tree().change_scene_to_file(MAIN_SCENE)
 
@@ -295,6 +306,7 @@ func _restore_last_choices() -> void:
 	for id in last.get("enemies", []):
 		_enemies.append(str(id))
 	_arena = str(last.get("arena", ""))
+	_difficulty = str(last.get("difficulty", "normal"))
 
 
 # --- Pokédex details -------------------------------------------------------

@@ -3,7 +3,7 @@ extends Camera3D
 ## Brawl Stars style camera: fixed tilt, never rotates, smoothly follows the target.
 
 @export_range(20.0, 85.0) var pitch_degrees := 60.0
-@export var distance := 19.0
+@export var distance := 26.0
 @export var follow_speed := 6.0
 ## Clamp the followed point so the camera doesn't drift past the arena edges.
 @export var follow_limits := Rect2(-4, -10, 8, 20)

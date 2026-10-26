@@ -120,7 +120,9 @@ static func stat_bar(stat: String, value: float) -> HBoxContainer:
 ## One-line description of a move's numbers: what it's good and bad at.
 static func move_summary(move: MoveData) -> String:
 	var parts: Array[String] = []
-	if move.power > 0.0 and move.kind != "self":
+	if move.kind == "stream":
+		parts.append("Power %d/s" % move.power)
+	elif move.power > 0.0 and move.kind != "self":
 		parts.append("Power %d" % move.power)
 	match move.kind:
 		"melee":
@@ -141,6 +143,11 @@ static func move_summary(move: MoveData) -> String:
 				parts.append("pierces")
 			if move.explode_radius > 0.0:
 				parts.append("%.1fm blast" % move.explode_radius)
+		"stream":
+			parts.append("hold to fire")
+			parts.append("Range %.1fm" % move.reach)
+			parts.append("%d° cone" % move.arc)
+			parts.append("%.1fs tank, %.1fs refill" % [move.tank, move.reload])
 		"area":
 			parts.append("%.1fm circle %s" % [move.area_radius, "around you" if move.reach <= 0.0 else "up to %.0fm away" % move.reach])
 			if move.area_delay > 0.0:

@@ -3,7 +3,7 @@
 	"types": ["electric"],
 	"sprite": "res://assets/brawlers/raichu.png",
 	"sprite_scale": 1.2,
-	"stats": {"hp": 3600, "attack": 126, "defense": 92, "speed": 117},
+	"stats": {"hp": 3700, "attack": 127, "defense": 92, "speed": 117},
 	"super": "discharge",
 	"evolves_from": "pikachu"
 }

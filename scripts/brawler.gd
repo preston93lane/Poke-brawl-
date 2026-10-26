@@ -16,6 +16,11 @@ const PIXEL_SIZE := 0.05
 const DOT_TICK := 0.5
 ## Physics layers that stop walking and teleports: world + water.
 const MOVE_BLOCK_MASK := 1 | 8
+## Walls and obstacles (what stops shots and line of sight).
+const WALL_MASK := 1
+## How often a stream deals damage, and how long its tank waits before refilling.
+const STREAM_TICK := 0.15
+const STREAM_REFILL_DELAY := 0.5
 
 var species: SpeciesData
 var level := 1
@@ -70,6 +75,14 @@ var _dash_hit: Array[Brawler] = []
 var _melee_material: StandardMaterial3D
 var _melee_tween: Tween
 
+## > 0 while a controller keeps calling stream() (it must call it every frame).
+var _stream_hold := 0.0
+var _stream_dir := Vector3.FORWARD
+var _stream_tick := 0.0
+var _stream_idle := 0.0
+var _stream_fx: MeshInstance3D
+var _stream_material: StandardMaterial3D
+
 @onready var sprite: Sprite3D = $Sprite
 @onready var shadow: MeshInstance3D = $Shadow
 @onready var team_ring: MeshInstance3D = $TeamRing
@@ -95,7 +108,7 @@ func _ready() -> void:
 	_apply_species()
 	_apply_loadout_visuals()
 	health = max_health
-	ammo = ranged_move.ammo
+	ammo = max_ammo()
 
 
 func _physics_process(delta: float) -> void:
@@ -103,6 +116,7 @@ func _physics_process(delta: float) -> void:
 		return
 	_tick_timers(delta)
 	_tick_status(delta)
+	_tick_stream(delta)
 
 	if _dash_time > 0.0:
 		_process_dash(delta)
@@ -240,7 +254,8 @@ func respawn(spawn_position: Vector3) -> void:
 	_apply_species()
 	is_dead = false
 	health = max_health
-	ammo = ranged_move.ammo
+	ammo = max_ammo()
+	_stream_hold = 0.0
 	position = spawn_position
 	velocity = Vector3.ZERO
 	collision_layer = 2
@@ -256,11 +271,42 @@ func respawn(spawn_position: Vector3) -> void:
 
 # --- Attacks ---------------------------------------------------------------
 
+## Ammo bars for projectiles; for streams, the tank (0..1).
+func max_ammo() -> float:
+	return 1.0 if ranged_move.kind == "stream" else float(ranged_move.ammo)
+
+
 func can_shoot() -> bool:
-	return not is_dead and ammo >= 1.0 and _dash_time <= 0.0 and _attack_lock <= 0.0
+	if is_dead or _dash_time > 0.0:
+		return false
+	if ranged_move.kind == "stream":
+		return is_streaming() or (ammo > 0.1 and _attack_lock <= 0.0)
+	return ammo >= 1.0 and _attack_lock <= 0.0
+
+
+func is_streaming() -> bool:
+	return _stream_hold > 0.0
+
+
+## Keep a stream move firing toward `direction`. Call every physics frame
+## while the trigger is held; it stops by itself when calls stop.
+func stream(direction: Vector3) -> bool:
+	direction.y = 0.0
+	if ranged_move.kind != "stream" or direction.length_squared() < 0.0001 or not can_shoot():
+		return false
+	_stream_dir = direction.normalized()
+	facing = _stream_dir
+	if not is_streaming():
+		_stream_tick = 0.0
+	_stream_hold = 0.12
+	_regen_timer = 0.0
+	_reveal_timer = float(GameData.rule("tall_grass/reveal_time_after_attack", 1.0))
+	return true
 
 
 func use_ranged(direction: Vector3) -> bool:
+	if ranged_move.kind == "stream":
+		return stream(direction)
 	direction.y = 0.0
 	if direction.length_squared() < 0.0001 or not can_shoot():
 		return false
@@ -340,16 +386,28 @@ func _flat_direction(direction: Vector3) -> Vector3:
 
 func _melee_swing(move: MoveData, direction: Vector3) -> void:
 	_show_melee_fx(direction, move)
-	var half_arc := deg_to_rad(move.arc) * 0.5
+	for other in _enemies_in_cone(direction, move.reach, move.arc):
+		other.take_hit(self, move)
+
+
+## Enemies within `reach` and inside a cone of `arc` degrees, not behind walls.
+func _enemies_in_cone(direction: Vector3, reach: float, arc: float) -> Array[Brawler]:
+	var result: Array[Brawler] = []
+	var half_arc := deg_to_rad(arc) * 0.5
 	for other in enemies():
 		var to := other.global_position - global_position
 		to.y = 0.0
 		var dist := to.length()
-		if dist > move.reach + BODY_RADIUS:
+		if dist > reach + BODY_RADIUS:
 			continue
-		if dist > 0.01 and direction.angle_to(to / dist) > half_arc:
+		# Widen the cone by the target's body so grazing hits count.
+		var allowance := asin(minf(1.0, BODY_RADIUS / maxf(dist, BODY_RADIUS)))
+		if dist > 0.01 and direction.angle_to(to / dist) > half_arc + allowance:
 			continue
-		other.take_hit(self, move)
+		if not has_line_of_sight_to(other):
+			continue
+		result.append(other)
+	return result
 
 
 func _start_dash(move: MoveData, direction: Vector3) -> void:
@@ -375,10 +433,16 @@ func _fire_volley(move: MoveData, direction: Vector3) -> void:
 
 
 func _spawn_projectile(move: MoveData, direction: Vector3) -> void:
+	var chest := global_position + Vector3(0, 0.8, 0)
+	var spawn := chest + direction * 0.6
+	# Standing against a wall: the shot hits the wall instead of starting past it.
+	var query := PhysicsRayQueryParameters3D.create(chest, spawn + direction * move.radius, WALL_MASK)
+	if not get_world_3d().direct_space_state.intersect_ray(query).is_empty():
+		return
 	var projectile: Projectile = PROJECTILE_SCENE.instantiate()
 	projectile.setup(self, move, direction)
 	get_parent().add_child(projectile)
-	projectile.global_position = global_position + Vector3(0, 0.8, 0) + direction * 0.6
+	projectile.global_position = spawn
 
 
 ## Hits every enemy inside a circle, optionally after a delay (Future Sight).
@@ -396,7 +460,7 @@ func _area_strike(move: MoveData, center: Vector3) -> void:
 			continue
 		var offset := other.global_position - center
 		offset.y = 0.0
-		if offset.length() <= move.area_radius + BODY_RADIUS:
+		if offset.length() <= move.area_radius + BODY_RADIUS and Brawler.clear_between(self, center, other.global_position):
 			other.take_hit(self, move)
 	var mat := fx.material_override as StandardMaterial3D
 	mat.albedo_color.a = 0.75
@@ -525,10 +589,25 @@ func find_nearest_enemy(max_range: float = INF) -> Brawler:
 
 
 func has_line_of_sight_to(other: Brawler) -> bool:
+	return Brawler.clear_between(self, global_position, other.global_position)
+
+
+## No wall between two ground points (checked at chest height).
+static func clear_between(node: Node3D, a: Vector3, b: Vector3) -> bool:
+	var from := Vector3(a.x, 0.8, a.z)
+	var to := Vector3(b.x, 0.8, b.z)
+	if from.distance_to(to) < 0.01:
+		return true
+	var query := PhysicsRayQueryParameters3D.create(from, to, WALL_MASK)
+	return node.get_world_3d().direct_space_state.intersect_ray(query).is_empty()
+
+
+## How far you can see/shoot from here toward `direction` before a wall.
+func clear_distance(direction: Vector3, max_distance: float) -> float:
 	var from := global_position + Vector3.UP * 0.8
-	var to := other.global_position + Vector3.UP * 0.8
-	var query := PhysicsRayQueryParameters3D.create(from, to, 1)
-	return get_world_3d().direct_space_state.intersect_ray(query).is_empty()
+	var query := PhysicsRayQueryParameters3D.create(from, from + direction * max_distance, WALL_MASK)
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	return max_distance if hit.is_empty() else from.distance_to(hit["position"])
 
 
 # --- Damage & status -------------------------------------------------------
@@ -606,7 +685,10 @@ func _tick_timers(delta: float) -> void:
 	_blind_time = maxf(0.0, _blind_time - delta)
 	for stat: String in _buffs:
 		_buffs[stat]["time"] = float(_buffs[stat]["time"]) - delta
-	if ammo < ranged_move.ammo:
+	if ranged_move.kind == "stream":
+		if not is_streaming() and _stream_idle >= STREAM_REFILL_DELAY:
+			ammo = minf(1.0, ammo + delta / ranged_move.reload)
+	elif ammo < ranged_move.ammo:
 		ammo = minf(ranged_move.ammo, ammo + delta / ranged_move.reload)
 	_regen_timer += delta
 	if _regen_timer >= float(GameData.rule("regen_delay", 3.0)) and health < max_health:
@@ -629,8 +711,35 @@ func _tick_status(delta: float) -> void:
 			source.heal(amount)
 
 
+func _tick_stream(delta: float) -> void:
+	if not is_streaming():
+		_stream_idle += delta
+		if _stream_fx:
+			_stream_fx.visible = false
+		return
+	var move := ranged_move
+	_stream_hold -= delta
+	_stream_idle = 0.0
+	_attack_lock = maxf(_attack_lock, 0.2)
+	ammo = maxf(0.0, ammo - delta / move.tank)
+	_stream_tick -= delta
+	if _stream_tick <= 0.0:
+		_stream_tick += STREAM_TICK
+		for other in _enemies_in_cone(_stream_dir, move.reach, move.arc):
+			other.take_hit(self, move, STREAM_TICK)
+	if ammo <= 0.0:
+		_stream_hold = 0.0
+	# Visual: a flickering cone, cut short by walls.
+	_stream_fx.visible = true
+	_stream_fx.rotation.y = atan2(-_stream_dir.x, -_stream_dir.z)
+	var length := clear_distance(_stream_dir, move.reach) / move.reach
+	_stream_fx.scale = Vector3(length, 1, length)
+	_stream_material.albedo_color.a = randf_range(0.35, 0.6)
+
+
 func _die() -> void:
 	is_dead = true
+	_stream_hold = 0.0
 	velocity = Vector3.ZERO
 	_dash_time = 0.0
 	set_deferred("collision_layer", 0)
@@ -677,8 +786,17 @@ func show_aim(direction: Vector3) -> void:
 	if is_dead or direction.length_squared() < 0.0001:
 		hide_aim()
 		return
+	direction = Vector3(direction.x, 0, direction.z).normalized()
 	aim_pivot.rotation.y = atan2(-direction.x, -direction.z)
 	aim_indicator.visible = true
+	# Shorten the preview where a wall would stop the attack.
+	var reach := ranged_move.reach + (0.6 if ranged_move.kind == "projectile" else 0.0)
+	var clip := clampf(clear_distance(direction, reach) / reach, 0.05, 1.0)
+	if aim_indicator.mesh is PlaneMesh:
+		aim_indicator.scale = Vector3(1, 1, clip)
+		aim_indicator.position.z = -(ranged_move.reach * clip) * 0.5 - 0.6
+	else:
+		aim_indicator.scale = Vector3(clip, 1, clip)
 	var mat := aim_indicator.material_override as StandardMaterial3D
 	mat.albedo_color.a = 0.45 if can_shoot() else 0.15
 
@@ -719,10 +837,22 @@ func _build_static_visuals() -> void:
 	aim_indicator.visible = false
 
 
-## Rebuild the aim preview to match the equipped ranged move.
+## Rebuild the aim preview (and stream cone) to match the equipped ranged move.
 func _apply_loadout_visuals() -> void:
 	var r := ranged_move
-	if r.count > 1 or r.spread > 0.0:
+	if r.kind == "stream":
+		var cone := _build_fan_mesh(r.reach, deg_to_rad(r.arc))
+		aim_indicator.mesh = cone
+		aim_indicator.position = Vector3(0, 0.05, 0)
+		_stream_fx = MeshInstance3D.new()
+		_stream_fx.mesh = cone
+		_stream_material = _flat_material(Color(GameData.type_color(r.type).lightened(0.3), 0.5))
+		_stream_fx.material_override = _stream_material
+		_stream_fx.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_stream_fx.position.y = 0.3
+		_stream_fx.visible = false
+		add_child(_stream_fx)
+	elif r.count > 1 or r.spread > 0.0:
 		aim_indicator.mesh = _build_fan_mesh(r.reach + 0.6, deg_to_rad(maxf(r.spread, 8.0)))
 		aim_indicator.position = Vector3(0, 0.05, 0)
 	else:

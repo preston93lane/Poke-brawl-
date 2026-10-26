@@ -2,7 +2,7 @@
 	"name": "Abra",
 	"types": ["psychic"],
 	"sprite": "res://assets/brawlers/abra.png",
-	"stats": {"hp": 2400, "attack": 120, "defense": 70, "speed": 110},
+	"stats": {"hp": 2550, "attack": 124, "defense": 70, "speed": 110},
 	"super": "teleport",
 	"evolves_to": "kadabra",
 	"moves": [

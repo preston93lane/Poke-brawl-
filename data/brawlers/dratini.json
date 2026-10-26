@@ -2,7 +2,7 @@
 	"name": "Dratini",
 	"types": ["dragon"],
 	"sprite": "res://assets/brawlers/dratini.png",
-	"stats": {"hp": 3000, "attack": 100, "defense": 90, "speed": 100},
+	"stats": {"hp": 3100, "attack": 101, "defense": 90, "speed": 100},
 	"super": "agility",
 	"evolves_to": "dragonair",
 	"moves": [

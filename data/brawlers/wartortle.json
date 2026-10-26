@@ -3,7 +3,7 @@
 	"types": ["water"],
 	"sprite": "res://assets/brawlers/wartortle.png",
 	"sprite_scale": 1.15,
-	"stats": {"hp": 3800, "attack": 105, "defense": 122, "speed": 97},
+	"stats": {"hp": 3750, "attack": 104, "defense": 122, "speed": 97},
 	"super": "aqua_ring",
 	"evolves_from": "squirtle",
 	"evolves_to": "blastoise"

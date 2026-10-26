@@ -2,7 +2,7 @@
 	"name": "Squirtle",
 	"types": ["water"],
 	"sprite": "res://assets/brawlers/squirtle.png",
-	"stats": {"hp": 3200, "attack": 95, "defense": 110, "speed": 95},
+	"stats": {"hp": 3150, "attack": 94, "defense": 110, "speed": 95},
 	"super": "withdraw",
 	"evolves_to": "wartortle",
 	"moves": [

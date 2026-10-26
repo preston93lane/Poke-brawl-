@@ -22,6 +22,7 @@ const MENU_SCENE := "res://scenes/menu.tscn"
 ## The other team; missing slots are filled with random Pokémon.
 @export var enemy_team: PackedStringArray = ["bulbasaur"]
 @export_range(1, 3) var bot_level := 1
+@export_enum("easy", "normal", "hard") var bot_difficulty := "normal"
 
 var player: Brawler
 ## First member of the other team (handy for tests and debugging).
@@ -68,8 +69,8 @@ func _ready() -> void:
 			enemy = bot
 
 	var half := arena.world_size() * 0.5
-	var x_limit := maxf(0.0, half.x - 11.0)
-	var z_limit := maxf(0.0, half.y - 7.0)
+	var x_limit := maxf(0.0, half.x - 14.0)
+	var z_limit := maxf(0.0, half.y - 9.0)
 	camera.follow_limits = Rect2(-x_limit, -z_limit, x_limit * 2.0, z_limit * 2.0)
 	camera.target = player
 	camera.snap_to_target()
@@ -95,6 +96,7 @@ func _apply_match_settings() -> void:
 	ally_team = PackedStringArray(s.get("allies", []))
 	enemy_team = PackedStringArray(s.get("enemies", []))
 	bot_level = int(s.get("bot_level", player_level))
+	bot_difficulty = str(s.get("difficulty", bot_difficulty))
 
 
 ## `chosen` padded to `count` with random base forms not already on the team.
@@ -122,6 +124,7 @@ func _fill_team(chosen: PackedStringArray, count: int, taken: Array) -> Array[St
 func _spawn_bot(species_id: String, team: int) -> Brawler:
 	var brawler := _spawn(species_id, bot_level, team, false)
 	var bot := BotController.new()
+	bot.set_difficulty(bot_difficulty)
 	if mode == "king_of_the_hill":
 		bot.objective = arena.zone_center
 		bot.has_objective = true

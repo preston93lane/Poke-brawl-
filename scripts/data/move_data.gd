@@ -7,7 +7,8 @@ var display_name := ""
 var type := "normal"
 ## "melee" (MELEE button, cooldown), "ranged" (right stick, ammo) or "super" (SUPER button).
 var slot := "melee"
-## "melee" (arc swipe), "dash" (lunge), "projectile", "area" (strike a circle) or "self" (no attack).
+## "melee" (arc swipe), "dash" (lunge), "projectile", "stream" (continuous cone while held),
+## "area" (strike a circle) or "self" (no attack).
 var kind := "melee"
 var power := 0.0
 var crit_chance := 0.0
@@ -35,6 +36,10 @@ var explode_radius := 0.0
 var delay := -1.0
 ## Dash keeps going through enemies, hitting each once.
 var dash_pierce := false
+
+# Stream (kind "stream"): power is damage per second, arc is the cone width.
+## Seconds of continuous fire from a full tank; `reload` is seconds to refill it.
+var tank := 2.0
 
 # Area (kind "area")
 var area_radius := 2.5
@@ -87,6 +92,7 @@ static func from_dict(move_id: String, d: Dictionary) -> MoveData:
 	m.explode_radius = float(d.get("explode_radius", m.explode_radius))
 	m.delay = float(d.get("delay", m.delay))
 	m.dash_pierce = bool(d.get("dash_pierce", m.dash_pierce))
+	m.tank = float(d.get("tank", m.tank))
 	m.area_radius = float(d.get("area_radius", m.area_radius))
 	m.area_delay = float(d.get("area_delay", m.area_delay))
 	m.drain = float(d.get("drain", m.drain))
@@ -118,6 +124,8 @@ func effective_reach() -> float:
 			return dash_distance
 		"projectile":
 			return reach + explode_radius
+		"stream":
+			return reach
 		"area":
 			return reach + area_radius
 		"self":

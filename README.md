@@ -12,7 +12,7 @@ A mini Brawl Stars–style 1v1 brawler with Pokémon, built in **Godot 4.3+**.
 | Touch | Desktop |
 | --- | --- |
 | **Left stick** (touch anywhere in the left half) – move | WASD |
-| **Right stick** – drag to aim, release to fire. **Quick tap = fire at the nearest enemy.** Drag back to the centre to cancel. | F (auto-aim shot) |
+| **Right stick** – drag to aim, release to fire. **Quick tap = fire at the nearest enemy you can hit.** Drag back to the centre to cancel. Stream moves (Flamethrower, Hydro Pump…) fire while you hold the stick and use a tank that refills. | F (auto-aim; hold for streams) |
 | **MELEE button** – short-range swipe, auto-aims at a nearby enemy | Space |
 | **SUPER button** (gold, above MELEE) – fills as you deal damage; tap when it glows. Aims with the right stick if held, otherwise at the nearest enemy | E |
 

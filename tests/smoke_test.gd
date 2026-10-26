@@ -16,6 +16,7 @@ func _ready() -> void:
 	await _check_battle()
 	await _check_supers()
 	await _check_movement()
+	await _check_walls_and_streams()
 	await _check_king_of_the_hill()
 	await _check_menu()
 	await _check_menu_settings()
@@ -79,7 +80,7 @@ func _check_battle() -> void:
 	var before := enemy.health
 	enemy.take_hit(player, GameData.get_move("ember"))
 	var dealt := before - enemy.health
-	var expected := 600.0 * player.attack / enemy.defense * 1.2 * 1.5 * float(GameData.rule("damage_scale", 1.0))
+	var expected := GameData.get_move("ember").power * player.attack / enemy.defense * 1.2 * 1.5 * float(GameData.rule("damage_scale", 1.0))
 	expect(dealt > expected * 0.99, "ember on bulbasaur gets STAB + super effective (%d)" % dealt)
 	expect(player.super_charge > 0.0, "dealing damage charges the super (%.2f)" % player.super_charge)
 
@@ -169,6 +170,57 @@ func _check_movement() -> void:
 	player.move_input = Vector2.ZERO
 	var moved := player.global_position - start
 	expect(moved.x > 0.8, "diagonal into a wall slides along it (moved %.2f sideways)" % moved.x)
+	main.queue_free()
+	await get_tree().process_frame
+
+
+## Shots, swipes and streams must not go through walls; streams drain and refill a tank.
+func _check_walls_and_streams() -> void:
+	print("Walls and streams")
+	var main := await _start_match("boulder_gym", "duel", "charmander", ["bulbasaur"])
+	var arena: Arena = main.arena
+	var target: Brawler = main.enemy
+	for team: int in [0, 1]:
+		for other: Brawler in main.teams[team]:
+			if other != target:
+				other.position = Vector3(-14, 0, 18 if team == 0 else -18)
+			for child in other.get_children():
+				if child is BotController or child is PlayerController:
+					child.queue_free()
+	# The 10-wide rock wall in the north half (cells 13..22, row 8): stand south of it, target north.
+	var shooter: Brawler = main._spawn("squirtle", 3, 0, false)
+	shooter.position = arena.cell_center(Vector2i(17, 9))
+	target.position = arena.cell_center(Vector2i(17, 6))
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	Engine.time_scale = 1.0
+	shooter.use_ranged(Vector3.FORWARD)  # Hydro Pump at level 3 is a stream: hold it.
+	for i in 30:
+		shooter.stream(Vector3.FORWARD)
+		await get_tree().physics_frame
+	shooter.use_melee(Vector3.FORWARD)
+	await get_tree().create_timer(0.6, false, true).timeout
+	expect(is_equal_approx(target.health, target.max_health), "attacks don't pass through walls (target hp %d/%d)" % [target.health, target.max_health])
+
+	var fast := MoveData.from_dict("test_bolt", { "type": "electric", "slot": "ranged", "kind": "projectile", "power": 500, "speed": 80, "range": 8 })
+	shooter._spawn_projectile(fast, Vector3.FORWARD)
+	await get_tree().create_timer(0.4, false, true).timeout
+	expect(is_equal_approx(target.health, target.max_health), "very fast shots don't skip through walls")
+
+	# Clear line: stream for a second, check damage, tank drain and refill.
+	target.position = arena.cell_center(Vector2i(11, 12))
+	shooter.position = arena.cell_center(Vector2i(11, 15))
+	await get_tree().physics_frame
+	shooter._attack_lock = 0.0
+	var fuel_before := shooter.ammo
+	for i in 60:
+		shooter.stream(Vector3.FORWARD)
+		await get_tree().physics_frame
+	expect(target.health < target.max_health, "stream damages in range (%d dealt)" % (target.max_health - target.health))
+	expect(shooter.ammo < fuel_before - 0.2, "stream drains its tank (%.2f -> %.2f)" % [fuel_before, shooter.ammo])
+	var drained := shooter.ammo
+	await get_tree().create_timer(1.5, false, true).timeout
+	expect(shooter.ammo > drained + 0.1, "tank refills after you stop (%.2f -> %.2f)" % [drained, shooter.ammo])
 	main.queue_free()
 	await get_tree().process_frame
 

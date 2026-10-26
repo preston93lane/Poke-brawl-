@@ -7,8 +7,8 @@ extends Control
 signal released(output: Vector2, was_tap: bool)
 
 ## A touch shorter than this that barely moved counts as a tap (auto-aim).
-const TAP_MAX_MS := 300
-const TAP_MAX_DRAG := 0.45
+const TAP_MAX_MS := 350
+const TAP_MAX_DRAG := 0.5
 
 @export var radius := 110.0
 @export var knob_radius := 46.0
@@ -57,7 +57,7 @@ func _input(event: InputEvent) -> void:
 		if touch.pressed and _touch_index == -1:
 			if not Rect2(Vector2.ZERO, size).has_point(local) or TouchButton.any_contains(touch.position):
 				return
-			if not floating and local.distance_to(_rest_center()) > radius * 1.6:
+			if not floating and local.distance_to(_rest_center()) > radius * 2.2:
 				return
 			_touch_index = touch.index
 			_center = local if floating else _rest_center()

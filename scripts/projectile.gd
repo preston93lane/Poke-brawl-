@@ -2,6 +2,10 @@ class_name Projectile
 extends Area3D
 ## A straight-flying shot fired by a Brawler's ranged move. Can pierce
 ## through enemies and/or explode for area damage, depending on the move.
+##
+## Collision is done by hand each physics step: a ray sweeps the path for walls
+## (so fast shots can't skip through a wall between frames) and enemies are
+## checked by distance in small sub-steps.
 
 var shooter: Brawler
 var move: MoveData
@@ -24,7 +28,7 @@ func setup(p_shooter: Brawler, p_move: MoveData, dir: Vector3) -> void:
 
 
 func _ready() -> void:
-	body_entered.connect(_on_body_entered)
+	monitoring = false
 	var mat := StandardMaterial3D.new()
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat.albedo_color = GameData.type_color(move.type).lightened(0.2)
@@ -40,30 +44,45 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if _done:
 		return
-	var step := direction * move.speed * delta
-	global_position += step
-	_travelled += step.length()
-	if _travelled >= move.reach:
+	var remaining := minf(move.speed * delta, move.reach - _travelled)
+	var space := get_world_3d().direct_space_state
+	var sub_step := maxf(0.1, move.radius)
+	while remaining > 0.0001 and not _done:
+		var step := minf(sub_step, remaining)
+		var from := global_position
+		var to := from + direction * step
+		var query := PhysicsRayQueryParameters3D.create(from, to + direction * move.radius, Brawler.WALL_MASK)
+		var hit := space.intersect_ray(query)
+		if not hit.is_empty():
+			global_position = hit["position"] - direction * move.radius
+			_finish()  # Hit a wall or obstacle.
+			return
+		global_position = to
+		_travelled += step
+		remaining -= step
+		_check_brawlers()
+	if not _done and _travelled >= move.reach - 0.0001:
 		_finish()
 
 
-func _on_body_entered(body: Node3D) -> void:
-	if _done:
-		return
-	var target := body as Brawler
-	if target == null:
-		_finish()  # Hit a wall or obstacle.
-		return
-	if target.team == team or target.is_dead or target in _hit:
-		return
-	_hit.append(target)
-	if move.explode_radius > 0.0:
-		_finish()
-		return
-	if is_instance_valid(shooter):
-		target.take_hit(shooter, move)
-	if not move.pierce:
-		_finish()
+func _check_brawlers() -> void:
+	for node in get_tree().get_nodes_in_group("brawlers"):
+		var target := node as Brawler
+		if target == null or target.team == team or target.is_dead or target in _hit:
+			continue
+		var offset := target.global_position - global_position
+		offset.y = 0.0
+		if offset.length() > move.radius + Brawler.BODY_RADIUS:
+			continue
+		_hit.append(target)
+		if move.explode_radius > 0.0:
+			_finish()
+			return
+		if is_instance_valid(shooter):
+			target.take_hit(shooter, move)
+		if not move.pierce:
+			_finish()
+			return
 
 
 func _finish() -> void:
@@ -83,7 +102,8 @@ func _explode() -> void:
 				continue
 			var offset := target.global_position - global_position
 			offset.y = 0.0
-			if offset.length() <= move.explode_radius + Brawler.BODY_RADIUS:
+			if offset.length() <= move.explode_radius + Brawler.BODY_RADIUS \
+					and Brawler.clear_between(self, global_position, target.global_position):
 				target.take_hit(shooter, move)
 	_spawn_explosion_fx()
 

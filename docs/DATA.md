@@ -34,7 +34,7 @@ move ids or types. No code changes are needed to add content.
 | --- | --- | --- |
 | `name`, `type` | all | Display name and type (STAB + matchups) |
 | `slot` | all | `melee` = MELEE button with a cooldown, `ranged` = right stick with ammo, `super` = SUPER button |
-| `kind` | all | `melee` (arc swipe), `dash` (lunge, hits first enemy), `projectile`, `area` (strike a circle), `self` (no attack, just the extras below) |
+| `kind` | all | `melee` (arc swipe), `dash` (lunge, hits first enemy), `projectile`, `stream` (continuous cone while the stick is held), `area` (strike a circle), `self` (no attack, just the extras below) |
 | `power` | all | Base damage before attack/defense, STAB, type and crit |
 | `crit_chance` | all | 0–1; crits deal `rules.crit_multiplier` |
 | `effect` | all | Optional: `{ "type": "burn"/"poison"/"leech", "chance", "duration", "dps" }` (leech heals whoever planted it) or `{ "type": "slow", "chance", "duration", "amount" }` (slow = paralysis) |
@@ -47,6 +47,7 @@ move ids or types. No code changes are needed to add content.
 | `pierce` | projectile | Passes through enemies instead of stopping |
 | `radius` | projectile | Hitbox size (bigger is easier to land) |
 | `explode_radius` | projectile | Area damage where it lands or hits (e.g. Fire Blast) |
+| `power`, `range`, `arc`, `tank`, `reload` | stream | Damage **per second** while firing, reach, cone width in degrees, seconds of fire from a full tank, seconds to refill it. Effect `chance` is rolled every 0.15 s tick, so keep it small |
 | `dash_pierce` | dash | Keep going through enemies, hitting each once (Outrage) |
 | `range`, `area_radius`, `area_delay` | area | How far away the circle can land (0 = around you), its size, and a delay before it hits (Future Sight) |
 | `drain` | super | Heal this fraction of the damage dealt (Giga Drain) |
@@ -57,6 +58,9 @@ move ids or types. No code changes are needed to add content.
 | `cleanse` | super | Cure burn, poison, paralysis and blindness |
 | `charge` | super | Damage needed to fill the meter (default `rules.super_charge_damage`) |
 | `delay` | all | Seconds before *any* attack can be used again (default `rules.attack_delay` 0.45 s for ranged, `rules.melee_attack_delay` 0.35 s for melee). Heavy moves use longer delays |
+
+Run `python3 tools/balance_report.py` after changing numbers. It lists every move's damage per second,
+burst and reach, plus a strength score per Pokémon, so outliers stand out.
 
 **Damage** = `power × attacker.attack ÷ defender.defense × STAB × type multiplier × crit × rules.damage_scale`.
 Burn and poison deal flat `dps`, so defense doesn't reduce them.

@@ -1,7 +1,7 @@
 {
 	"_comment": "Global tuning knobs. Stats around 100 are 'average'; damage = power * attack / defense * STAB * type * crit * damage_scale.",
 	"team_size": 3,
-	"speed_to_meters": 0.04,
+	"speed_to_meters": 0.029,
 	"damage_scale": 0.8,
 	"attack_delay": 0.45,
 	"melee_attack_delay": 0.35,

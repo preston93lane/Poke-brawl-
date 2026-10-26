@@ -5,8 +5,17 @@ extends Node
 ## walls when it can't see it, uses its super, and in King of the Hill
 ## heads for the zone.
 
-@export var reaction_time := 0.45
-@export var aim_error_degrees := 10.0
+## Difficulty presets: [reaction seconds, aim error degrees, how much they lead targets 0..1].
+const DIFFICULTY := {
+	"easy": [0.95, 26.0, 0.0],
+	"normal": [0.7, 17.0, 0.35],
+	"hard": [0.5, 9.0, 0.8],
+}
+
+@export var reaction_time := 0.7
+@export var aim_error_degrees := 17.0
+## 0 = aim where the target is, 1 = fully predict where it's going.
+@export var lead_skill := 0.35
 ## Seconds after the round starts before the bot begins acting.
 @export var start_delay := 1.0
 
@@ -29,8 +38,17 @@ var _stuck_check_timer := 0.0
 var _stuck_from := Vector3.ZERO
 var _unstick_timer := 0.0
 var _unstick_dir := Vector2.ZERO
+var _stream_time := 0.0
+var _stream_aim := Vector3.FORWARD
 
 @onready var brawler: Brawler = get_parent()
+
+
+func set_difficulty(level: String) -> void:
+	var preset: Array = DIFFICULTY.get(level, DIFFICULTY["normal"])
+	reaction_time = preset[0]
+	aim_error_degrees = preset[1]
+	lead_skill = preset[2]
 
 
 func _physics_process(delta: float) -> void:
@@ -41,7 +59,13 @@ func _physics_process(delta: float) -> void:
 		brawler.move_input = Vector2.ZERO
 		_has_last_seen = false
 		_path.clear()
+		_stream_time = 0.0
 		return
+
+	if _stream_time > 0.0:
+		_stream_time -= delta
+		if not brawler.stream(_stream_aim):
+			_stream_time = 0.0
 
 	if _unstick_timer > 0.0:
 		_unstick_timer -= delta
@@ -117,7 +141,7 @@ func _fight(delta: float, dir: Vector3, dist: float) -> void:
 	var strafe := Vector3(-dir.z, 0, dir.x) * _strafe_sign
 	var preferred := brawler.ranged_move.reach * 0.7
 	var desired: Vector3
-	if brawler.health < brawler.max_health * 0.3 and brawler.ammo < 1.0:
+	if brawler.health < brawler.max_health * 0.3 and not brawler.can_shoot():
 		desired = -dir + strafe * 0.6  # Low and empty: back off.
 	elif brawler.melee_ready() and dist < brawler.melee_move.effective_reach() * 1.6:
 		desired = dir  # Close enough to go in for a melee hit.
@@ -190,6 +214,10 @@ func _try_attack(dir: Vector3, dist: float) -> void:
 	var melee_reach := melee.effective_reach() + (0.0 if melee.kind == "dash" else Brawler.BODY_RADIUS * 0.5)
 	if dist <= melee_reach and brawler.melee_ready() and line_of_sight:
 		brawler.use_melee(dir)
+	elif ranged.kind == "stream":
+		if dist <= ranged.reach + 0.3 and brawler.can_shoot() and line_of_sight and brawler.ammo > 0.3:
+			_stream_aim = _lead_aim(99.0, dist)
+			_stream_time = randf_range(0.5, 1.1)
 	elif dist <= ranged.effective_reach() + 0.5 and brawler.can_shoot() and line_of_sight:
 		brawler.use_ranged(_lead_aim(ranged.speed, dist))
 
@@ -208,7 +236,7 @@ func _try_super(dir: Vector3, dist: float, line_of_sight: bool) -> bool:
 
 
 func _lead_aim(projectile_speed: float, dist: float) -> Vector3:
-	var lead := target.velocity * (dist / maxf(1.0, projectile_speed)) * randf_range(0.2, 1.0)
+	var lead := target.velocity * (dist / maxf(1.0, projectile_speed)) * lead_skill * randf_range(0.0, 1.2)
 	var aim := target.global_position + lead - brawler.global_position
 	aim.y = 0.0
 	return aim.normalized().rotated(Vector3.UP, deg_to_rad(randf_range(-aim_error_degrees, aim_error_degrees)))

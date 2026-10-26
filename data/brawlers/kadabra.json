@@ -3,7 +3,7 @@
 	"types": ["psychic"],
 	"sprite": "res://assets/brawlers/kadabra.png",
 	"sprite_scale": 1.15,
-	"stats": {"hp": 3000, "attack": 135, "defense": 78, "speed": 112},
+	"stats": {"hp": 3150, "attack": 139, "defense": 78, "speed": 112},
 	"super": "reflect",
 	"evolves_from": "abra",
 	"evolves_to": "alakazam"

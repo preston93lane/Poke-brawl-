@@ -2,7 +2,7 @@
 	"name": "Charmander",
 	"types": ["fire"],
 	"sprite": "res://assets/brawlers/charmander.png",
-	"stats": {"hp": 2900, "attack": 105, "defense": 85, "speed": 105},
+	"stats": {"hp": 2950, "attack": 105, "defense": 85, "speed": 105},
 	"super": "fire_spin",
 	"evolves_to": "charmeleon",
 	"moves": [
