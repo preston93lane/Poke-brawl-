@@ -1,0 +1,9 @@
+{
+	"name": "Golem",
+	"types": ["rock", "ground"],
+	"sprite": "res://assets/brawlers/golem.png",
+	"sprite_scale": 1.3,
+	"stats": {"hp": 4600, "attack": 127, "defense": 150, "speed": 84},
+	"super": "explosion",
+	"evolves_from": "graveler"
+}

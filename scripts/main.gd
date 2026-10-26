@@ -32,6 +32,7 @@ var round_over := false
 ## Battle: KOs per team. King of the hill: seconds held per team.
 var scores := [0.0, 0.0]
 var mode_rules: Dictionary = {}
+var time_left := 150.0
 var _spawn_index := {}
 
 @onready var arena: Arena = $Arena
@@ -75,8 +76,10 @@ func _ready() -> void:
 	camera.target = player
 	camera.snap_to_target()
 
+	time_left = float(mode_rules.get("time_limit", 150.0))
 	hud.set_matchup(_team_names(0), _team_names(1), arena.arena_name)
-	hud.set_moves(player.melee_move.display_name, player.ranged_move.display_name)
+	hud.set_moves(player.melee_move, player.ranged_move)
+	hud.set_teams(teams)
 	hud.restart_requested.connect(func() -> void: get_tree().reload_current_scene())
 	hud.menu_requested.connect(func() -> void: get_tree().change_scene_to_file(MENU_SCENE))
 	_update_status()
@@ -147,7 +150,15 @@ func _spawn(species_id: String, level: int, team: int, is_player: bool, melee_id
 
 
 func _physics_process(delta: float) -> void:
-	if round_over or mode != "king_of_the_hill" or player == null:
+	if round_over or player == null:
+		return
+	time_left -= delta
+	if time_left <= 0.0:
+		time_left = 0.0
+		_end_on_time()
+		return
+	if mode != "king_of_the_hill":
+		_update_status()
 		return
 	var teams_in_zone := {}
 	for team: int in teams:
@@ -159,7 +170,7 @@ func _physics_process(delta: float) -> void:
 		scores[holder] += delta
 		arena.set_zone_owner(holder)
 		if scores[holder] >= float(mode_rules.get("hold_time", 60.0)):
-			_end_round(holder == player.team)
+			_end_round("victory" if holder == player.team else "defeat")
 	else:
 		arena.set_zone_owner(-2 if teams_in_zone.size() > 1 else -1)
 	_update_status()
@@ -170,14 +181,16 @@ func _on_brawler_died(victim: Brawler, killer: Brawler) -> void:
 		return
 	if killer and killer != victim:
 		killer.register_kill()
+	hud.add_kill(killer, victim)
 	if mode == "duel":
 		var scoring_team := 1 - victim.team
 		scores[scoring_team] += 1
 		_update_status()
 		if scores[scoring_team] >= float(mode_rules.get("kills_to_win", 10)):
-			_end_round(scoring_team == player.team)
+			_end_round("victory" if scoring_team == player.team else "defeat")
 			return
 	var wait := float(mode_rules.get("respawn_time", 3.0))
+	victim.respawn_left = wait
 	if victim == player:
 		hud.announce("Fainted! Back in %d…" % ceili(wait))
 	await get_tree().create_timer(wait, false).timeout
@@ -190,9 +203,17 @@ func _on_brawler_evolved(brawler: Brawler, from_name: String) -> void:
 		hud.announce("%s evolved into %s!" % [from_name, brawler.species.display_name])
 
 
-func _end_round(victory: bool) -> void:
+func _end_round(result_name: String) -> void:
 	round_over = true
-	hud.show_result(victory)
+	_update_status()
+	hud.show_result(result_name)
+
+
+## Time's up: the team ahead wins; level scores are a draw.
+func _end_on_time() -> void:
+	var mine: float = scores[player.team]
+	var theirs: float = scores[1 - player.team]
+	_end_round("victory" if mine > theirs else ("defeat" if theirs > mine else "draw"))
 
 
 func _team_names(team: int) -> String:
@@ -203,6 +224,8 @@ func _team_names(team: int) -> String:
 
 
 func _update_status() -> void:
+	var target := float(mode_rules.get("kills_to_win", 10)) if mode == "duel" else float(mode_rules.get("hold_time", 60.0))
+	hud.set_scores(mode, scores, target, time_left)
 	if mode == "duel":
 		hud.set_status("KOs  %d – %d   (first to %d)" % [scores[0], scores[1], int(mode_rules.get("kills_to_win", 10))])
 	else:

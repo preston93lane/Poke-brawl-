@@ -46,8 +46,11 @@ static func box(color: Color, radius := 14, margin := 12) -> StyleBoxFlat:
 	s.content_margin_right = margin + 4
 	s.content_margin_top = margin * 0.6
 	s.content_margin_bottom = margin * 0.6
-	s.border_width_bottom = 4
-	s.border_color = color.darkened(0.35)
+	s.border_width_bottom = 5
+	s.border_color = color.darkened(0.4)
+	s.shadow_color = Color(0, 0, 0, 0.3)
+	s.shadow_size = 4
+	s.shadow_offset = Vector2(0, 3)
 	return s
 
 

@@ -15,6 +15,8 @@ var direction := Vector3.FORWARD
 var _travelled := 0.0
 var _hit: Array[Brawler] = []
 var _done := false
+var _trail: CPUParticles3D
+var _jitter := 0.0
 
 @onready var mesh: MeshInstance3D = $Mesh
 @onready var shape: CollisionShape3D = $CollisionShape3D
@@ -29,16 +31,21 @@ func setup(p_shooter: Brawler, p_move: MoveData, dir: Vector3) -> void:
 
 func _ready() -> void:
 	monitoring = false
-	var mat := StandardMaterial3D.new()
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.albedo_color = GameData.type_color(move.type).lightened(0.2)
-	mesh.material_override = mat
+	mesh.material_override = Vfx.core_material(move.type)
 	var size := move.radius / 0.3
-	mesh.scale = Vector3.ONE * size
+	mesh.scale = Vector3.ONE * size * 0.8
+	_jitter = float(Vfx.style(move.type).get("jitter", 0.0))
+	_trail = Vfx.trail(move.type, move.radius)
+	add_child(_trail)
 	# The scene's shape resource is shared between projectiles, so give each its own.
 	var sphere := SphereShape3D.new()
 	sphere.radius = move.radius
 	shape.shape = sphere
+
+
+func _process(_delta: float) -> void:
+	if _jitter > 0.0:  # Electric shots crackle.
+		mesh.position = Vector3(randf_range(-1, 1), randf_range(-1, 1), randf_range(-1, 1)) * _jitter
 
 
 func _physics_process(delta: float) -> void:
@@ -91,7 +98,22 @@ func _finish() -> void:
 	_done = true
 	if move.explode_radius > 0.0:
 		_explode()
+	else:
+		Vfx.burst(get_parent(), global_position, move.type, 10, 0.2, 2.5)
+	_detach_trail()
 	queue_free()
+
+
+## Let the trail fade out on its own instead of vanishing with the projectile.
+func _detach_trail() -> void:
+	if _trail == null or get_parent() == null:
+		return
+	var at := _trail.global_position
+	remove_child(_trail)
+	get_parent().add_child(_trail)
+	_trail.global_position = at
+	_trail.emitting = false
+	get_tree().create_timer(_trail.lifetime + 0.2, false).timeout.connect(_trail.queue_free)
 
 
 func _explode() -> void:
@@ -106,6 +128,8 @@ func _explode() -> void:
 					and Brawler.clear_between(self, global_position, target.global_position):
 				target.take_hit(shooter, move)
 	_spawn_explosion_fx()
+	Vfx.burst(get_parent(), global_position, move.type, 36, move.explode_radius * 0.4, 5.0)
+	Vfx.ring(get_parent(), Vector3(global_position.x, 0, global_position.z), move.explode_radius, move.type)
 
 
 func _spawn_explosion_fx() -> void:

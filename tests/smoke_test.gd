@@ -35,7 +35,10 @@ func expect(condition: bool, message: String) -> void:
 
 func _check_data() -> void:
 	print("Data")
-	expect(GameData.species.size() >= 17, "species loaded (%d)" % GameData.species.size())
+	expect(GameData.species.size() >= 29, "species loaded (%d)" % GameData.species.size())
+	expect(ThemeDB.fallback_font.resource_path.ends_with("lilita-one.woff"), "game font installed")
+	for line_base in ["geodude", "bellsprout", "gastly", "mankey"]:
+		expect(GameData.evolution_line(line_base).size() == 3, "%s line has 3 stages" % line_base)
 	expect(GameData.arenas.size() >= 3, "arenas loaded (%d)" % GameData.arenas.size())
 	var grass: Array[String] = ["grass"]
 	var ground: Array[String] = ["ground"]
@@ -102,6 +105,11 @@ func _check_battle() -> void:
 		if b.global_position.distance_to(main.arena.spawn_point(1, 0)) > 4.0:
 			anyone_moved = true
 	expect(anyone_moved, "bots leave their spawn and go fight")
+	main.scores = [3.0, 3.0]
+	main.time_left = 0.01
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	expect(main.round_over and main.hud.result_title.text == "DRAW", "time running out with level scores is a draw")
 	main.queue_free()
 	await get_tree().process_frame
 

@@ -5,14 +5,15 @@ type="CompressedTexture2D"
 
 [deps]
 
-source_file="res://assets/tiles/grass.png"
+source_file="res://assets/brawlers/victreebel.png"
 
 [params]
 
 compress/mode=0
 compress/high_quality=false
 compress/lossy_quality=0.7
-mipmaps/generate=false
+mipmaps/generate=true
+mipmaps/limit=-1
 detect_3d/compress_to=0
 process/fix_alpha_border=true
 process/premult_alpha=false

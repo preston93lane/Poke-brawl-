@@ -1,0 +1,10 @@
+{
+	"name": "Primeape",
+	"types": ["fighting"],
+	"sprite": "res://assets/brawlers/primeape.png",
+	"sprite_scale": 1.15,
+	"stats": {"hp": 3300, "attack": 128, "defense": 88, "speed": 115},
+	"super": "rampage",
+	"evolves_from": "mankey",
+	"evolves_to": "annihilape"
+}

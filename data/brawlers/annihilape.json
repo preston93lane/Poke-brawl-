@@ -1,0 +1,9 @@
+{
+	"name": "Annihilape",
+	"types": ["fighting", "ghost"],
+	"sprite": "res://assets/brawlers/annihilape.png",
+	"sprite_scale": 1.3,
+	"stats": {"hp": 4250, "attack": 141, "defense": 100, "speed": 112},
+	"super": "rage_fist",
+	"evolves_from": "primeape"
+}

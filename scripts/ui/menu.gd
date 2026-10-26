@@ -25,8 +25,17 @@ var _details_scroll: ScrollContainer
 
 func _ready() -> void:
 	theme = UiKit.make_theme()
-	var bg := ColorRect.new()
-	bg.color = UiKit.BG
+	var gradient := Gradient.new()
+	gradient.set_color(0, Color(0.16, 0.3, 0.62))
+	gradient.set_color(1, Color(0.05, 0.07, 0.16))
+	var bg_texture := GradientTexture2D.new()
+	bg_texture.gradient = gradient
+	bg_texture.fill_from = Vector2(0.5, 0)
+	bg_texture.fill_to = Vector2(0.5, 1)
+	var bg := TextureRect.new()
+	bg.texture = bg_texture
+	bg.stretch_mode = TextureRect.STRETCH_SCALE
+	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)

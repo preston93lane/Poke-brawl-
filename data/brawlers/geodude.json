@@ -1,0 +1,16 @@
+{
+	"name": "Geodude",
+	"types": ["rock", "ground"],
+	"sprite": "res://assets/brawlers/geodude.png",
+	"stats": {"hp": 3250, "attack": 104, "defense": 125, "speed": 80},
+	"super": "defense_curl",
+	"evolves_to": "graveler",
+	"moves": [
+		{"move": "rock_smash", "level": 1},
+		{"move": "rock_throw", "level": 1},
+		{"move": "rollout", "level": 2},
+		{"move": "rock_tomb", "level": 2},
+		{"move": "bulldoze", "level": 3},
+		{"move": "rock_slide", "level": 3}
+	]
+}

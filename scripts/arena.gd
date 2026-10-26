@@ -11,8 +11,10 @@ extends Node3D
 const TILE := 1.0
 const WALL_HEIGHT := 1.2
 const TREE_COLLIDER_HEIGHT := 2.0
-const GRASS_HEIGHT := 0.75
-const TREE_SPRITE_SIZE := Vector2(1.4, 1.75)
+const GRASS_HEIGHT := 0.95
+const TREE_SPRITE_SIZE := Vector2(1.75, 2.2)
+const GRASS_SHADER := preload("res://assets/shaders/grass_sway.gdshader")
+const WATER_SHADER := preload("res://assets/shaders/water.gdshader")
 const WORLD_LAYER := 1
 const WATER_LAYER := 8
 const TILE_DIR := "res://assets/tiles/"
@@ -61,6 +63,8 @@ func build(arena_id: String, sprite_tilt_degrees: float, use_zone := true) -> vo
 				c = "."
 			var center := cell_center(cell)
 			var floor_name := floor_tile
+			if floor_tile == "grass":
+				floor_name = "grass_%d" % posmod(x * 7 + y * 13 + (x * y) % 5, 3)  # Mix of variants.
 			if c == ",":
 				floor_name = "path"
 			elif c == "~":
@@ -83,7 +87,9 @@ func build(arena_id: String, sprite_tilt_degrees: float, use_zone := true) -> vo
 				"~":
 					water_cells[cell] = true
 				"\"":
-					grass.append(Transform3D(Basis(), center + Vector3(0, GRASS_HEIGHT * 0.5, 0)))
+					var yaw := float(posmod(x * 31 + y * 17, 12)) * PI / 6.0
+					var bush_scale := 0.95 + float(posmod(x * 13 + y * 7, 5)) * 0.04
+					grass.append(Transform3D(Basis(Vector3.UP, yaw).scaled(Vector3.ONE * bush_scale), center))
 				"1":
 					spawns[0].append(center)
 				"2":
@@ -102,16 +108,19 @@ func build(arena_id: String, sprite_tilt_degrees: float, use_zone := true) -> vo
 	var floor_plane := PlaneMesh.new()
 	floor_plane.size = Vector2(TILE, TILE)
 	for floor_name: String in floors:
-		_add_multimesh(floor_plane, _tile_material(floor_name), floors[floor_name])
+		var mat: Material = _water_material() if floor_name == "water" else _tile_material(floor_name)
+		_add_multimesh(floor_plane, mat, floors[floor_name])
+	_add_multimesh(floor_plane, _edge_shadow_material(), _edge_shadows(solid_cells, water_cells), false)
 
 	var block := BoxMesh.new()
 	block.size = Vector3(TILE, WALL_HEIGHT, TILE)
 	_add_multimesh(block, _tile_material("rock", true), rocks)
 	_add_multimesh(block, _tile_material("boulder", true), boulders)
 
-	var grass_box := BoxMesh.new()
-	grass_box.size = Vector3(TILE, GRASS_HEIGHT, TILE)
-	_add_multimesh(grass_box, _tile_material("tall_grass", true, true), grass)
+	var grass_mat := ShaderMaterial.new()
+	grass_mat.shader = GRASS_SHADER
+	grass_mat.set_shader_parameter("blades", load(TILE_DIR + "tall_grass.png"))
+	_add_multimesh(_bush_mesh(), grass_mat, grass)
 
 	var tree_quad := QuadMesh.new()
 	tree_quad.size = TREE_SPRITE_SIZE
@@ -131,8 +140,9 @@ func build(arena_id: String, sprite_tilt_degrees: float, use_zone := true) -> vo
 		set_zone_owner(-1)
 
 	# Dark ground outside the map so the edge of the world isn't empty.
-	var outside_mat := StandardMaterial3D.new()
-	outside_mat.albedo_color = Color(0.18, 0.3, 0.16)
+	var outside_mat := _tile_material("grass_1")
+	outside_mat.albedo_color = Color(0.55, 0.62, 0.5)
+	outside_mat.uv1_scale = Vector3(160, 160, 1)
 	var outside_plane := PlaneMesh.new()
 	outside_plane.size = Vector2(160, 160)
 	var outside := MeshInstance3D.new()
@@ -210,6 +220,52 @@ func _char_at(cell: Vector2i) -> String:
 	return rows[cell.y][cell.x]
 
 
+## A bush: three crossed upright quads of grass blades, so it looks full from any angle.
+func _bush_mesh() -> ArrayMesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var half := TILE * 0.62
+	for i in 3:
+		var angle := PI / 3.0 * i
+		var side := Vector3(cos(angle), 0, sin(angle)) * half
+		var corners := [-side, side, side + Vector3.UP * GRASS_HEIGHT, -side + Vector3.UP * GRASS_HEIGHT]
+		var uvs := [Vector2(0, 1), Vector2(1, 1), Vector2(1, 0), Vector2(0, 0)]
+		for index in [0, 1, 2, 0, 2, 3]:
+			st.set_normal(Vector3.UP)
+			st.set_uv(uvs[index])
+			st.add_vertex(corners[index])
+	return st.commit()
+
+
+## Floor tiles next to a wall get a soft dark gradient on that side (fake ambient occlusion).
+func _edge_shadows(solid_cells: Dictionary, water_cells: Dictionary) -> Array[Transform3D]:
+	var result: Array[Transform3D] = []
+	var sides := { Vector2i(0, -1): 0.0, Vector2i(1, 0): -PI / 2.0, Vector2i(0, 1): PI, Vector2i(-1, 0): PI / 2.0 }
+	for y in height:
+		for x in width:
+			var cell := Vector2i(x, y)
+			if solid_cells.has(cell) or water_cells.has(cell):
+				continue
+			for offset: Vector2i in sides:
+				if solid_cells.has(cell + offset):
+					result.append(Transform3D(Basis(Vector3.UP, sides[offset]), cell_center(cell) + Vector3(0, 0.012, 0)))
+	return result
+
+
+func _edge_shadow_material() -> StandardMaterial3D:
+	var mat := _tile_material("edge_shadow")
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	return mat
+
+
+func _water_material() -> ShaderMaterial:
+	var mat := ShaderMaterial.new()
+	mat.shader = WATER_SHADER
+	mat.set_shader_parameter("water_tex", load(TILE_DIR + "water.png"))
+	return mat
+
+
 ## One static body whose boxes cover `cells`, merged into rectangles. Long
 ## smooth walls (instead of one box per tile) let brawlers slide along them
 ## without catching on the seams between tiles.
@@ -280,11 +336,11 @@ func _add_multimesh(mesh: Mesh, material: Material, transforms: Array, shadows :
 	add_child(instance)
 
 
-## Pixel-art material: nearest filtering, one 16px tile per world unit.
+## Tile material: one 64px texture per world unit, smooth filtering.
 func _tile_material(tile_name: String, triplanar := false, alpha_cut := false) -> StandardMaterial3D:
 	var mat := StandardMaterial3D.new()
 	mat.albedo_texture = load(TILE_DIR + tile_name + ".png")
-	mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+	mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
 	mat.roughness = 1.0
 	if triplanar:
 		mat.uv1_triplanar = true

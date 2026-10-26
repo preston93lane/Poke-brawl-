@@ -1,0 +1,10 @@
+{
+	"name": "Graveler",
+	"types": ["rock", "ground"],
+	"sprite": "res://assets/brawlers/graveler.png",
+	"sprite_scale": 1.15,
+	"stats": {"hp": 3750, "attack": 116, "defense": 138, "speed": 82},
+	"super": "earthquake",
+	"evolves_from": "geodude",
+	"evolves_to": "golem"
+}

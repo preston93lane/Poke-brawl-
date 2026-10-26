@@ -25,6 +25,9 @@ Living document: what's built, what's next, and how each big idea will be implem
 | 3v3 with bot teammates and opponents | ✅ |
 | Supers (one per stage) charged by damage dealt | ✅ |
 | Bot pathfinding around walls (A* on the tile grid) | ✅ |
+| HD shaded sprites, painted tiles, swaying grass, animated water, sky lighting | ✅ |
+| Type-themed attack effects (trails, impacts, streams, status auras) | ✅ |
+| Brawl Stars-style HUD: scoreboard, timer, kill feed, styled controls | ✅ |
 | Pokédex (stats, types, matchups, evolution line, moves) | ✅ |
 | Draft screen with type previews for 3v3 | ⏭ |
 | Online multiplayer | 🗺 planned (below) |
@@ -109,6 +112,43 @@ Arenas are ASCII maps (see `docs/DATA.md`), so new ones are quick to sketch. Eac
 
 Needed tile features: destructible walls (hits break them), hazards (timed electric tiles), and
 moving/spinner floor tiles.
+
+## Legendaries (proposals)
+
+Brawl Stars has no legendaries, so this is where Poke Brawl can be its own game. Options, in the
+order I'd recommend:
+
+1. **Legendary Raid (mid-match event).** At 1:30 a legendary bird (Zapdos, Moltres or Articuno,
+   picked by arena) lands in the middle as a neutral boss with a big health bar. Both teams fight
+   it as well as each other. The team that lands the final hit gets it as an **AI ally for
+   25 seconds**: it circles over the field casting its signature move (Thunder, Heat Wave,
+   Blizzard) at enemies. It gives the match a comeback moment and a reason to group up.
+2. **Legendary Gauge (team meter).** Every hit your team lands fills a shared gauge, more for
+   super-effective hits. When it's full, any teammate can tap a **SUMMON** button: the legendary
+   swoops in for one devastating move (Mewtwo's Psystrike across the map, Groudon's Precipice
+   Blades in a line, Kyogre's Origin Pulse around the zone), then leaves. It rewards type coverage
+   and teamwork.
+3. **Legendary brawlers (rare picks).** Playable legendaries with high stats but no evolution and
+   a longer respawn. Limited to one per match, or unlocked by account progression.
+4. **Shrine control (King of the Hill variant).** Holding the zone for 20 s straight awakens the
+   arena's guardian legendary for your side (Boulder Gym: Regirock; Dragon's Den: Rayquaza).
+
+Raid and Gauge also fit online play well, because both teams share the same event.
+
+## Other improvements (Brawl Stars baseline)
+
+| Priority | Idea | Why |
+| --- | --- | --- |
+| High | **Sound and music**: hit sounds per type, super cues, a short music loop | Biggest missing piece of game feel |
+| High | **Walk / attack animations** (2–4 frame sprite cycles, squash on hit) | Makes characters feel alive |
+| High | **Gadgets**: one active ability with 3 uses per match (Potion, X Speed, Escape Rope) | Brawl Stars' extra decision layer |
+| High | **Settings**: stick size, left-handed layout, aim sensitivity, auto-aim on/off | Phone comfort |
+| Medium | **Rare Candy Grab** (Gem Grab) and **Showdown** (battle royale with power-up drops) modes | Variety |
+| Medium | **Spawn protection** (2 s invulnerable after respawn) and a respawn camera | Fairness |
+| Medium | **Trophies / XP per Pokémon** to unlock levels 2–3 (replaces picking the level) | Progression |
+| Medium | **Shiny skins** and emotes | Collection and personality |
+| Low | **Tutorial** match with prompts, and a training ground with dummies | Onboarding |
+| Low | **Mini-map** for the bigger arenas | Awareness |
 
 ## Multiplayer plan
 

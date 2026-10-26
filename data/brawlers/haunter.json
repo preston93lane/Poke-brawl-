@@ -1,0 +1,10 @@
+{
+	"name": "Haunter",
+	"types": ["ghost", "poison"],
+	"sprite": "res://assets/brawlers/haunter.png",
+	"sprite_scale": 1.15,
+	"stats": {"hp": 3150, "attack": 137, "defense": 68, "speed": 120},
+	"super": "phantom_force",
+	"evolves_from": "gastly",
+	"evolves_to": "gengar"
+}

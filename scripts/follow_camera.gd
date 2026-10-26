@@ -9,6 +9,8 @@ extends Camera3D
 @export var follow_limits := Rect2(-4, -10, 8, 20)
 
 var target: Node3D
+var _shake := 0.0
+var _base_position := Vector3.ZERO
 
 
 func _ready() -> void:
@@ -17,12 +19,22 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	if target:
-		global_position = global_position.lerp(_desired_position(), 1.0 - exp(-follow_speed * delta))
+		_base_position = _base_position.lerp(_desired_position(), 1.0 - exp(-follow_speed * delta))
+	# Screen shake: a quick random wobble that dies away.
+	_shake = maxf(0.0, _shake - delta * 1.8)
+	var wobble := Vector3(randf_range(-1, 1), randf_range(-1, 1), 0) * _shake * _shake
+	global_position = _base_position + global_basis * wobble
+
+
+## Shake the camera (0.1 = small bump, 0.5 = big hit).
+func shake(strength: float) -> void:
+	_shake = clampf(maxf(_shake, strength), 0.0, 0.8)
 
 
 func snap_to_target() -> void:
 	if target:
-		global_position = _desired_position()
+		_base_position = _desired_position()
+		global_position = _base_position
 
 
 func _desired_position() -> Vector3:

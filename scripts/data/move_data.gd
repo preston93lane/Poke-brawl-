@@ -62,6 +62,12 @@ var blind: Dictionary = {}
 var cleanse := false
 ## Damage needed to fill the super meter; < 0 = rules.super_charge_damage.
 var charge := -1.0
+## Seconds of invisibility (ends early if you attack).
+var invisible := 0.0
+## Fraction of your own max HP spent on use (never knocks you out).
+var self_damage := 0.0
+## Damage multiplier against targets that already have a status condition (Hex).
+var bonus_vs_status := 1.0
 
 
 static func from_dict(move_id: String, d: Dictionary) -> MoveData:
@@ -106,6 +112,9 @@ static func from_dict(move_id: String, d: Dictionary) -> MoveData:
 	m.blind = blind_value if blind_value is Dictionary else {}
 	m.cleanse = bool(d.get("cleanse", m.cleanse))
 	m.charge = float(d.get("charge", m.charge))
+	m.invisible = float(d.get("invisible", m.invisible))
+	m.self_damage = float(d.get("self_damage", m.self_damage))
+	m.bonus_vs_status = float(d.get("bonus_vs_status", m.bonus_vs_status))
 	return m
 
 

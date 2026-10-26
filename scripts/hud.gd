@@ -4,8 +4,11 @@ extends CanvasLayer
 signal restart_requested
 signal menu_requested
 
+const SCOREBOARD := preload("res://scripts/ui/scoreboard.gd")
+
 var _announce_tween: Tween
 var _result_buttons: HBoxContainer
+var _scoreboard: Control
 
 @onready var move_stick: VirtualJoystick = $MoveStick
 @onready var aim_stick: VirtualJoystick = $AimStick
@@ -28,6 +31,11 @@ func _ready() -> void:
 	announcement.modulate.a = 0.0
 	if DisplayServer.is_touchscreen_available():
 		$KeyboardHint.visible = false
+	_scoreboard = SCOREBOARD.new()
+	add_child(_scoreboard)
+	move_child(_scoreboard, 1)
+	matchup_label.visible = false  # The scoreboard shows teams and score now.
+	status_label.visible = false
 	_build_buttons()
 	_build_rotate_overlay()
 	_blind_overlay = ColorRect.new()
@@ -49,9 +57,11 @@ func _process(_delta: float) -> void:
 
 func _build_buttons() -> void:
 	var kit_theme := UiKit.make_theme()
-	var menu := UiKit.button("MENU", func() -> void: menu_requested.emit(), 20)
+	var menu := UiKit.button("MENU", func() -> void: menu_requested.emit(), 16)
 	menu.theme = kit_theme
-	menu.position = Vector2(56, 14)
+	menu.tooltip_text = "Back to menu"
+	menu.add_theme_stylebox_override("normal", UiKit.box(Color(0, 0, 0, 0.45), 12, 8))
+	menu.position = Vector2(56, 16)
 	add_child(menu)
 
 	_result_buttons = HBoxContainer.new()
@@ -96,11 +106,32 @@ func set_status(text: String) -> void:
 	status_label.text = text
 
 
-func set_moves(melee_name: String, ranged_name: String) -> void:
-	melee_button.label = melee_name.to_upper()
+## Labels, icons and colours of the controls follow the equipped moves' types.
+func set_moves(melee: MoveData, ranged: MoveData) -> void:
+	melee_button.label = melee.display_name.to_upper()
+	melee_button.icon_type = melee.type
+	melee_button.color = GameData.type_color(melee.type)
 	melee_button.queue_redraw()
-	aim_stick.label = ranged_name.to_upper()
+	aim_stick.label = ranged.display_name.to_upper()
+	aim_stick.icon_type = ranged.type
+	aim_stick.color = GameData.type_color(ranged.type).lightened(0.15)
 	aim_stick.queue_redraw()
+	super_button.icon_type = "super"
+
+
+func set_teams(teams: Dictionary) -> void:
+	_scoreboard.teams = teams
+
+
+func set_scores(mode: String, scores: Array, target: float, time_left: float) -> void:
+	_scoreboard.mode = mode
+	_scoreboard.scores = scores
+	_scoreboard.target = target
+	_scoreboard.time_left = time_left
+
+
+func add_kill(killer: Brawler, victim: Brawler) -> void:
+	_scoreboard.add_kill(killer, victim)
 
 
 func announce(text: String) -> void:
@@ -113,13 +144,14 @@ func announce(text: String) -> void:
 	_announce_tween.tween_property(announcement, "modulate:a", 0.0, 0.5)
 
 
-func show_result(victory: bool) -> void:
+## result: "victory", "defeat" or "draw".
+func show_result(result_name: String) -> void:
 	move_stick.set_enabled(false)
 	aim_stick.set_enabled(false)
 	melee_button.set_enabled(false)
 	super_button.set_enabled(false)
-	result_title.text = "VICTORY!" if victory else "DEFEAT"
-	result_title.modulate = Color(1.0, 0.85, 0.2) if victory else Color(1.0, 0.35, 0.3)
+	result_title.text = { "victory": "VICTORY!", "defeat": "DEFEAT", "draw": "DRAW" }.get(result_name, "DRAW")
+	result_title.modulate = { "victory": Color(1.0, 0.85, 0.2), "defeat": Color(1.0, 0.35, 0.3) }.get(result_name, Color(0.8, 0.85, 1.0))
 	result_hint.visible = false
 	_result_buttons.visible = false
 	result.visible = true

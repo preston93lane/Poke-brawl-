@@ -43,6 +43,8 @@ var move_input := Vector2.ZERO
 var facing := Vector3.FORWARD
 var is_dead := false
 var kills := 0
+## Seconds until respawn while fainted (set by the match, shown on the scoreboard).
+var respawn_left := 0.0
 ## KOs toward the next evolution. Kept when fainting, reset when evolving.
 var evolve_kills := 0
 
@@ -64,8 +66,15 @@ var _dot_source: Brawler
 var _slow_time := 0.0
 var _slow_amount := 0.0
 var _blind_time := 0.0
+## Asleep / stunned: can't move or attack.
+var _stun_time := 0.0
+var _invisible_time := 0.0
 ## stat name -> { "amount": float, "time": float }
 var _buffs := {}
+## Particle auras showing status conditions, created on first use.
+var _auras := {}
+var _stream_particles: CPUParticles3D
+var _dash_trail: CPUParticles3D
 
 var _dash_time := 0.0
 var _dash_dir := Vector3.ZERO
@@ -113,9 +122,16 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	if is_dead:
+		respawn_left = maxf(0.0, respawn_left - delta)
 		return
 	_tick_timers(delta)
 	_tick_status(delta)
+	if is_stunned():
+		_stream_hold = 0.0
+		_dash_time = 0.0
+		velocity = Vector3.ZERO
+		_tick_stream(delta)
+		return
 	_tick_stream(delta)
 
 	if _dash_time > 0.0:
@@ -184,6 +200,8 @@ func heal(amount: float) -> void:
 	health += healed
 	if healed >= 1.0:
 		_spawn_floating_text("+%d" % roundi(healed), Color(0.5, 1.0, 0.5), 56)
+		if healed > max_health * 0.05:
+			Vfx.burst(get_parent(), global_position + Vector3(0, 0.9, 0), "grass", 12, 0.5, 1.5)
 
 
 # --- Loadout & species -----------------------------------------------------
@@ -225,6 +243,8 @@ func evolve() -> bool:
 	evolve_kills = 0
 	_apply_species()
 	health = max_health if GameData.rule("evolution/heal_on_evolve", true) else max_health * health_ratio
+	Vfx.ring(get_parent(), global_position, 1.2, "fairy", 50)
+	Vfx.burst(get_parent(), global_position + Vector3(0, 1, 0), "fairy", 30, 0.6, 3.0)
 	var tween := create_tween()
 	sprite.scale = Vector3.ONE * 0.3
 	tween.tween_property(sprite, "scale", Vector3.ONE * 1.25, 0.2)
@@ -276,8 +296,12 @@ func max_ammo() -> float:
 	return 1.0 if ranged_move.kind == "stream" else float(ranged_move.ammo)
 
 
+func is_stunned() -> bool:
+	return _stun_time > 0.0
+
+
 func can_shoot() -> bool:
-	if is_dead or _dash_time > 0.0:
+	if is_dead or _dash_time > 0.0 or is_stunned():
 		return false
 	if ranged_move.kind == "stream":
 		return is_streaming() or (ammo > 0.1 and _attack_lock <= 0.0)
@@ -318,7 +342,7 @@ func use_ranged(direction: Vector3) -> bool:
 
 
 func melee_ready() -> bool:
-	return not is_dead and _melee_timer <= 0.0 and _dash_time <= 0.0 and _attack_lock <= 0.0
+	return not is_dead and _melee_timer <= 0.0 and _dash_time <= 0.0 and _attack_lock <= 0.0 and not is_stunned()
 
 
 ## 0 when melee is ready, 1 right after using it.
@@ -340,7 +364,7 @@ func use_melee(direction: Vector3) -> bool:
 
 
 func super_ready() -> bool:
-	return not is_dead and super_charge >= 1.0 and _dash_time <= 0.0 and _attack_lock <= 0.0
+	return not is_dead and super_charge >= 1.0 and _dash_time <= 0.0 and _attack_lock <= 0.0 and not is_stunned()
 
 
 func add_super_charge(damage_dealt: float) -> void:
@@ -357,6 +381,9 @@ func use_super(direction: Vector3, distance := -1.0) -> bool:
 	super_charge = 0.0
 	_on_attack(direction, move)
 	_spawn_floating_text(move.display_name.to_upper() + "!", Color(1, 0.9, 0.3), 72, 2.6)
+	Vfx.ring(get_parent(), global_position, 1.0, move.type, 30)
+	if move.self_damage > 0.0:
+		health = maxf(1.0, health - max_health * move.self_damage)
 	match move.kind:
 		"projectile":
 			_fire_volley(move, direction)
@@ -368,6 +395,8 @@ func use_super(direction: Vector3, distance := -1.0) -> bool:
 			var reach := move.reach if distance < 0.0 else minf(distance, move.reach)
 			_area_strike(move, global_position + direction * reach)
 	_apply_support(move, direction)
+	if move.invisible > 0.0:
+		_invisible_time = move.invisible
 	return true
 
 
@@ -415,6 +444,11 @@ func _start_dash(move: MoveData, direction: Vector3) -> void:
 	_dash_dir = direction
 	_dash_time = move.dash_distance / move.dash_speed
 	_dash_hit.clear()
+	if _dash_trail:
+		_dash_trail.queue_free()
+	_dash_trail = Vfx.trail(move.type, 0.5)
+	_dash_trail.position = Vector3(0, 0.8, 0)
+	add_child(_dash_trail)
 
 
 func _fire_volley(move: MoveData, direction: Vector3) -> void:
@@ -462,6 +496,8 @@ func _area_strike(move: MoveData, center: Vector3) -> void:
 		offset.y = 0.0
 		if offset.length() <= move.area_radius + BODY_RADIUS and Brawler.clear_between(self, center, other.global_position):
 			other.take_hit(self, move)
+	Vfx.ring(parent, center, move.area_radius, move.type, 50)
+	Vfx.burst(parent, center + Vector3(0, 0.3, 0), move.type, 30, move.area_radius * 0.6, 3.5)
 	var mat := fx.material_override as StandardMaterial3D
 	mat.albedo_color.a = 0.75
 	var tween := fx.create_tween()
@@ -539,10 +575,13 @@ func _process_dash(delta: float) -> void:
 				_dash_time = 0.0  # Stop on the first hit.
 	if is_on_wall():
 		_dash_time = 0.0
+	if _dash_time <= 0.0 and _dash_trail:
+		_dash_trail.emitting = false
 
 
 func _on_attack(direction: Vector3, move: MoveData) -> void:
 	_attack_lock = move.attack_delay()
+	_invisible_time = 0.0  # Attacking reveals you.
 	_regen_timer = 0.0
 	_reveal_timer = float(GameData.rule("tall_grass/reveal_time_after_attack", 1.0))
 	facing = direction
@@ -617,7 +656,11 @@ func clear_distance(direction: Vector3, max_distance: float) -> float:
 func take_hit(attacker: Brawler, move: MoveData, multiplier := 1.0) -> void:
 	if is_dead:
 		return
+	if move.bonus_vs_status > 1.0 and has_status():
+		multiplier *= move.bonus_vs_status
 	var result: Dictionary = GameData.calc_damage(move, attacker, self, multiplier)
+	if multiplier >= 0.5:  # Skip the tiny per-tick stream hits.
+		Vfx.burst(get_parent(), global_position + Vector3(0, 0.9, 0), move.type, 10, 0.35, 2.5)
 	var amount: float = minf(result["amount"], health)
 	take_damage(result["amount"], attacker, result["effectiveness"], result["crit"])
 	if is_instance_valid(attacker):
@@ -639,12 +682,24 @@ func take_damage(amount: float, source: Brawler = null, effectiveness := 1.0, cr
 	_reveal_timer = float(GameData.rule("tall_grass/reveal_time_after_attack", 1.0))
 	_flash_timer = 0.12
 	_spawn_damage_number(amount, effectiveness, crit)
+	if is_player:
+		var camera := get_viewport().get_camera_3d()
+		if camera and camera.has_method("shake"):
+			camera.shake(clampf(amount / 2500.0, 0.06, 0.35))
 	if health <= 0.0:
 		_die()
 
 
+func has_status() -> bool:
+	return _dot_time > 0.0 or _slow_time > 0.0 or _stun_time > 0.0 or _blind_time > 0.0
+
+
 func status_text() -> String:
 	var parts: Array[String] = []
+	if _stun_time > 0.0:
+		parts.append("SLP")
+	if _invisible_time > 0.0:
+		parts.append("HIDDEN")
 	if _blind_time > 0.0:
 		parts.append("BLIND")
 	if _dot_time > 0.0:
@@ -670,12 +725,17 @@ func _apply_effect(effect: Dictionary, source: Brawler) -> void:
 		"slow":
 			_slow_time = float(effect.get("duration", 1.0))
 			_slow_amount = clampf(float(effect.get("amount", 0.4)), 0.0, 0.9)
+		"stun":
+			_stun_time = maxf(_stun_time, float(effect.get("duration", 1.5)))
+		"blind":
+			apply_blind(float(effect.get("duration", 2.0)))
 
 
 func _clear_status() -> void:
 	_dot_time = 0.0
 	_slow_time = 0.0
 	_blind_time = 0.0
+	_stun_time = 0.0
 
 
 func _tick_timers(delta: float) -> void:
@@ -683,6 +743,8 @@ func _tick_timers(delta: float) -> void:
 	_attack_lock = maxf(0.0, _attack_lock - delta)
 	_reveal_timer = maxf(0.0, _reveal_timer - delta)
 	_blind_time = maxf(0.0, _blind_time - delta)
+	_stun_time = maxf(0.0, _stun_time - delta)
+	_invisible_time = maxf(0.0, _invisible_time - delta)
 	for stat: String in _buffs:
 		_buffs[stat]["time"] = float(_buffs[stat]["time"]) - delta
 	if ranged_move.kind == "stream":
@@ -716,6 +778,7 @@ func _tick_stream(delta: float) -> void:
 		_stream_idle += delta
 		if _stream_fx:
 			_stream_fx.visible = false
+			_stream_particles.emitting = false
 		return
 	var move := ranged_move
 	_stream_hold -= delta
@@ -734,12 +797,21 @@ func _tick_stream(delta: float) -> void:
 	_stream_fx.rotation.y = atan2(-_stream_dir.x, -_stream_dir.z)
 	var length := clear_distance(_stream_dir, move.reach) / move.reach
 	_stream_fx.scale = Vector3(length, 1, length)
-	_stream_material.albedo_color.a = randf_range(0.35, 0.6)
+	_stream_material.albedo_color.a = randf_range(0.08, 0.16)
+	# Spray particles along the cone; they stop at walls because they only live as long as it takes to reach one.
+	_stream_particles.emitting = true
+	_stream_particles.global_basis = Basis.looking_at(_stream_dir, Vector3.UP)
+	_stream_particles.spread = move.arc * 0.5
+	var speed := move.reach / _stream_particles.lifetime
+	_stream_particles.initial_velocity_min = speed * length * 0.8
+	_stream_particles.initial_velocity_max = speed * length
 
 
 func _die() -> void:
 	is_dead = true
 	_stream_hold = 0.0
+	_invisible_time = 0.0
+	Vfx.burst(get_parent(), global_position + Vector3(0, 0.6, 0), "normal", 30, 0.5, 3.5)
 	velocity = Vector3.ZERO
 	_dash_time = 0.0
 	set_deferred("collision_layer", 0)
@@ -759,9 +831,13 @@ func is_in_grass() -> bool:
 ## True when `viewer_team` can't see this brawler: it's in tall grass, hasn't
 ## attacked or been hit recently, and no viewer-team brawler is close by.
 func is_hidden_from(viewer_team: int) -> bool:
-	if viewer_team == team or is_dead or _reveal_timer > 0.0 or not is_in_grass():
+	if viewer_team == team or is_dead:
 		return false
-	var reveal := float(GameData.rule("tall_grass/reveal_distance", 2.5))
+	var invisible := _invisible_time > 0.0
+	if not invisible and (_reveal_timer > 0.0 or not is_in_grass()):
+		return false
+	# Invisible brawlers are only given away by someone almost touching them.
+	var reveal := 1.2 if invisible else float(GameData.rule("tall_grass/reveal_distance", 2.5))
 	for node in get_tree().get_nodes_in_group("brawlers"):
 		var other := node as Brawler
 		if other and other.team == viewer_team and not other.is_dead \
@@ -844,9 +920,12 @@ func _apply_loadout_visuals() -> void:
 		var cone := _build_fan_mesh(r.reach, deg_to_rad(r.arc))
 		aim_indicator.mesh = cone
 		aim_indicator.position = Vector3(0, 0.05, 0)
+		_stream_particles = Vfx.stream(r.type)
+		_stream_particles.position = Vector3(0, 0.8, 0)
+		add_child(_stream_particles)
 		_stream_fx = MeshInstance3D.new()
 		_stream_fx.mesh = cone
-		_stream_material = _flat_material(Color(GameData.type_color(r.type).lightened(0.3), 0.5))
+		_stream_material = _flat_material(Color(GameData.type_color(r.type).lightened(0.3), 0.15))
 		_stream_fx.material_override = _stream_material
 		_stream_fx.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		_stream_fx.position.y = 0.3
@@ -890,9 +969,33 @@ func _update_sprite(delta: float) -> void:
 		tint = Color(1, 1, 0.6)
 	elif _buff("defense") > 0.0:
 		tint = Color(0.75, 0.9, 1.0)
-	# Your own team stays visible in grass, just faded.
-	tint.a = 0.55 if is_in_grass() and team == GameData.local_team else 1.0
+	# Your own team stays visible in grass (or while invisible), just faded.
+	var faded := (is_in_grass() or _invisible_time > 0.0) and team == GameData.local_team
+	tint.a = 0.55 if faded else 1.0
+	if is_stunned():
+		tint = tint.darkened(0.25)
 	sprite.modulate = tint
+	_update_auras(hidden)
+
+
+## Particles around the body for each active status (only while it's on screen).
+func _update_auras(hidden: bool) -> void:
+	var active := {
+		"fire": _dot_time > 0.0 and _dot_kind == "burn",
+		"poison": _dot_time > 0.0 and _dot_kind == "poison",
+		"grass": _dot_time > 0.0 and _dot_kind == "leech",
+		"electric": _slow_time > 0.0,
+		"psychic": _stun_time > 0.0,
+		"flying": _blind_time > 0.0,
+	}
+	for aura_type: String in active:
+		var on: bool = active[aura_type] and not hidden and not is_dead
+		if on and not _auras.has(aura_type):
+			var p := Vfx.aura(aura_type)
+			add_child(p)
+			_auras[aura_type] = p
+		if _auras.has(aura_type):
+			(_auras[aura_type] as CPUParticles3D).emitting = on
 
 
 func _show_melee_fx(direction: Vector3, move: MoveData) -> void:

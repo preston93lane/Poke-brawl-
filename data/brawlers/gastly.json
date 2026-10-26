@@ -1,0 +1,16 @@
+{
+	"name": "Gastly",
+	"types": ["ghost", "poison"],
+	"sprite": "res://assets/brawlers/gastly.png",
+	"stats": {"hp": 2500, "attack": 123, "defense": 60, "speed": 118},
+	"super": "hypnosis",
+	"evolves_to": "haunter",
+	"moves": [
+		{"move": "lick", "level": 1},
+		{"move": "night_shade", "level": 1},
+		{"move": "shadow_claw", "level": 2},
+		{"move": "hex", "level": 2},
+		{"move": "shadow_sneak", "level": 3},
+		{"move": "shadow_ball", "level": 3}
+	]
+}

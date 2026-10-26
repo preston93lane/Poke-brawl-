@@ -1,0 +1,16 @@
+{
+	"name": "Mankey",
+	"types": ["fighting"],
+	"sprite": "res://assets/brawlers/mankey.png",
+	"stats": {"hp": 2700, "attack": 116, "defense": 78, "speed": 112},
+	"super": "bulk_up",
+	"evolves_to": "primeape",
+	"moves": [
+		{"move": "karate_chop", "level": 1},
+		{"move": "vacuum_wave", "level": 1},
+		{"move": "cross_chop", "level": 2},
+		{"move": "rock_tomb", "level": 2},
+		{"move": "close_combat", "level": 3},
+		{"move": "aura_sphere", "level": 3}
+	]
+}

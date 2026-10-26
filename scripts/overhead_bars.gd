@@ -31,8 +31,10 @@ func _draw() -> void:
 		elif friendly:
 			fill_color = Color(0.3, 0.6, 1.0)
 
-		draw_rect(bar.grow(2), Color(0, 0, 0, 0.75))
-		draw_rect(Rect2(bar.position, Vector2(bar.size.x * ratio, bar.size.y)), fill_color)
+		_round_rect(bar.grow(3), Color(0, 0, 0, 0.7), 7)
+		if ratio > 0.0:
+			_round_rect(Rect2(bar.position, Vector2(maxf(bar.size.x * ratio, 8.0), bar.size.y)), fill_color, 5)
+			_round_rect(Rect2(bar.position, Vector2(maxf(bar.size.x * ratio, 8.0), bar.size.y * 0.45)), Color(1, 1, 1, 0.25), 5)
 
 		_text(font, Vector2(bar.position.x, bar.position.y - 4), bar.size.x, str(ceili(brawler.health)), 18, Color.WHITE)
 		var name_color := Color(0.6, 0.85, 1.0) if friendly else Color(1.0, 0.7, 0.7)
@@ -58,6 +60,13 @@ func _draw() -> void:
 			# Super ready: a gold dot left of the name, so you can see it coming.
 			draw_circle(Vector2(bar.position.x - 10, bar.position.y - 30), 6, Color.BLACK)
 			draw_circle(Vector2(bar.position.x - 10, bar.position.y - 30), 5, Color(1, 0.85, 0.2))
+
+
+func _round_rect(rect: Rect2, color: Color, radius: int) -> void:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = color
+	sb.set_corner_radius_all(radius)
+	draw_style_box(sb, rect)
 
 
 func _text(font: Font, pos: Vector2, width: float, text: String, size: int, color: Color,

@@ -27,11 +27,13 @@
 	"modes": {
 		"duel": {
 			"kills_to_win": 10,
-			"respawn_time": 3.0
+			"respawn_time": 3.0,
+			"time_limit": 150.0
 		},
 		"king_of_the_hill": {
 			"hold_time": 60.0,
-			"respawn_time": 3.0
+			"respawn_time": 3.0,
+			"time_limit": 150.0
 		}
 	}
 }

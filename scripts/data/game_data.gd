@@ -28,8 +28,24 @@ var _type_colors: Dictionary = {}
 var _chart: Dictionary = {}
 
 
+const GAME_FONT := "res://assets/fonts/lilita-one.woff"
+
+
 func _ready() -> void:
+	_install_font()
 	load_all()
+
+
+## Use Lilita One (chunky, Brawl Stars-like) everywhere: menus, HUD, damage numbers.
+## Characters it doesn't have fall back to Godot's built-in font.
+func _install_font() -> void:
+	if not ResourceLoader.exists(GAME_FONT):
+		return
+	var font: FontFile = load(GAME_FONT)
+	if font == null:
+		return
+	font.fallbacks = [ThemeDB.fallback_font]
+	ThemeDB.fallback_font = font
 
 
 func load_all() -> void:

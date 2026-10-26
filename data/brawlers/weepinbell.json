@@ -1,0 +1,10 @@
+{
+	"name": "Weepinbell",
+	"types": ["grass", "poison"],
+	"sprite": "res://assets/brawlers/weepinbell.png",
+	"sprite_scale": 1.15,
+	"stats": {"hp": 3550, "attack": 135, "defense": 80, "speed": 102},
+	"super": "stun_spore",
+	"evolves_from": "bellsprout",
+	"evolves_to": "victreebel"
+}

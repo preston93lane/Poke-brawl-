@@ -20,6 +20,8 @@ const TAP_MAX_DRAG := 0.5
 @export var color := Color(1, 1, 1)
 ## Text drawn under the stick (e.g. the equipped move's name).
 @export var label := ""
+## Type emblem on the knob (the aim stick shows the ranged move's type).
+@export var icon_type := ""
 
 ## Current stick value, length 0..1 (zero inside the deadzone).
 var output := Vector2.ZERO
@@ -108,11 +110,23 @@ func _to_local(screen_pos: Vector2) -> Vector2:
 
 func _draw() -> void:
 	var active := is_active()
-	draw_circle(_center, radius, Color(0, 0, 0, 0.3 if active else 0.18))
-	draw_arc(_center, radius, 0.0, TAU, 64, Color(color, 0.6 if active else 0.35), 4.0, true)
-	draw_circle(_center + _knob, knob_radius, Color(color, 0.85 if active else 0.5))
+	var c := _center
+	# Base: translucent dark well with a bright rim.
+	draw_circle(c, radius + 6.0, Color(0, 0, 0, 0.18))
+	for i in 6:
+		var t := float(i) / 6.0
+		draw_circle(c, radius * (1.0 - t * 0.5), Color(color.darkened(0.7), (0.22 if active else 0.14) * (1.0 - t * 0.5)))
+	draw_arc(c, radius, 0.0, TAU, 64, Color(color, 0.75 if active else 0.4), 5.0, true)
+	if active and _knob.length() > radius * 0.15:
+		# Highlight the rim in the direction you're pushing.
+		var a := _knob.angle()
+		draw_arc(c, radius, a - 0.5, a + 0.5, 16, Color(1, 1, 1, 0.9), 7.0, true)
+	# Knob: shadow, shaded body, rim, optional type icon.
+	var k := c + _knob
+	UiKit.draw_drop_shadow(self, k, knob_radius)
+	UiKit.draw_shaded_circle(self, k, knob_radius, color, 0.95 if active else 0.75)
+	draw_arc(k, knob_radius - 1.5, 0.0, TAU, 40, Color(1, 1, 1, 0.8), 2.5, true)
+	if icon_type != "":
+		UiKit.draw_type_icon(self, icon_type, k, knob_radius * 0.45, Color(1, 1, 1, 0.9))
 	if label != "" and not active:
-		var font := ThemeDB.fallback_font
-		var pos := _center + Vector2(-radius, radius + 26)
-		draw_string_outline(font, pos, label, HORIZONTAL_ALIGNMENT_CENTER, radius * 2.0, 20, 6, Color(0, 0, 0, 0.8))
-		draw_string(font, pos, label, HORIZONTAL_ALIGNMENT_CENTER, radius * 2.0, 20, Color.WHITE)
+		UiKit.draw_pill(self, c + Vector2(0, radius + 26), label, 17)
