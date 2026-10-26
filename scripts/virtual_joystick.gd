@@ -6,6 +6,10 @@ extends Control
 
 signal released(output: Vector2, was_tap: bool)
 
+## A touch shorter than this that barely moved counts as a tap (auto-aim).
+const TAP_MAX_MS := 300
+const TAP_MAX_DRAG := 0.45
+
 @export var radius := 110.0
 @export var knob_radius := 46.0
 @export_range(0.0, 1.0) var deadzone := 0.2
@@ -25,6 +29,7 @@ var _touch_index := -1
 var _center := Vector2.ZERO
 var _knob := Vector2.ZERO
 var _max_drag := 0.0
+var _press_ms := 0
 
 
 func _ready() -> void:
@@ -57,11 +62,15 @@ func _input(event: InputEvent) -> void:
 			_touch_index = touch.index
 			_center = local if floating else _rest_center()
 			_max_drag = 0.0
+			_press_ms = Time.get_ticks_msec()
 			_update_knob(local)
 			get_viewport().set_input_as_handled()
 		elif not touch.pressed and touch.index == _touch_index:
 			var final_output := output
-			var was_tap := _max_drag < deadzone
+			var was_tap := _max_drag < deadzone or \
+					(Time.get_ticks_msec() - _press_ms <= TAP_MAX_MS and _max_drag < TAP_MAX_DRAG)
+			if was_tap:
+				final_output = Vector2.ZERO
 			_reset()
 			released.emit(final_output, was_tap)
 			get_viewport().set_input_as_handled()

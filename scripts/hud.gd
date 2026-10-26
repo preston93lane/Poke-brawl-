@@ -2,9 +2,10 @@ class_name Hud
 extends CanvasLayer
 
 signal restart_requested
+signal menu_requested
 
-var _can_restart := false
 var _announce_tween: Tween
+var _result_buttons: HBoxContainer
 
 @onready var move_stick: VirtualJoystick = $MoveStick
 @onready var aim_stick: VirtualJoystick = $AimStick
@@ -25,12 +26,37 @@ func _ready() -> void:
 	announcement.modulate.a = 0.0
 	if DisplayServer.is_touchscreen_available():
 		$KeyboardHint.visible = false
+	_build_buttons()
 	_build_rotate_overlay()
 
 
 func _process(_delta: float) -> void:
 	var size := get_viewport().get_visible_rect().size
 	_rotate_overlay.visible = size.y > size.x
+
+
+func _build_buttons() -> void:
+	var kit_theme := UiKit.make_theme()
+	var menu := UiKit.button("MENU", func() -> void: menu_requested.emit(), 20)
+	menu.theme = kit_theme
+	menu.position = Vector2(56, 14)
+	add_child(menu)
+
+	_result_buttons = HBoxContainer.new()
+	_result_buttons.theme = kit_theme
+	_result_buttons.alignment = BoxContainer.ALIGNMENT_CENTER
+	_result_buttons.add_theme_constant_override("separation", 24)
+	_result_buttons.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	_result_buttons.offset_top = -200
+	_result_buttons.offset_bottom = -110
+	_result_buttons.offset_left = -300
+	_result_buttons.offset_right = 300
+	for entry in [["REMATCH", restart_requested], ["MENU", menu_requested]]:
+		var sig: Signal = entry[1]
+		var b := UiKit.button(entry[0], func() -> void: sig.emit(), 30)
+		b.custom_minimum_size = Vector2(240, 72)
+		_result_buttons.add_child(b)
+	result.add_child(_result_buttons)
 
 
 ## Shown when the phone is held in portrait; the game is landscape-only.
@@ -82,15 +108,8 @@ func show_result(victory: bool) -> void:
 	result_title.text = "VICTORY!" if victory else "DEFEAT"
 	result_title.modulate = Color(1.0, 0.85, 0.2) if victory else Color(1.0, 0.35, 0.3)
 	result_hint.visible = false
+	_result_buttons.visible = false
 	result.visible = true
-	await get_tree().create_timer(1.2).timeout
-	result_hint.visible = true
-	_can_restart = true
-
-
-func _input(event: InputEvent) -> void:
-	if not _can_restart:
-		return
-	if (event is InputEventScreenTouch or event is InputEventKey) and event.is_pressed():
-		_can_restart = false
-		restart_requested.emit()
+	# Short pause so a finger still on the screen doesn't hit a button by accident.
+	await get_tree().create_timer(0.8).timeout
+	_result_buttons.visible = true

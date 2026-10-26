@@ -46,8 +46,9 @@ move ids or types. No code changes are needed to add content.
 | `pierce` | projectile | Passes through enemies instead of stopping |
 | `radius` | projectile | Hitbox size (bigger is easier to land) |
 | `explode_radius` | projectile | Area damage where it lands or hits (e.g. Fire Blast) |
+| `delay` | all | Seconds before *any* attack can be used again (default `rules.attack_delay` 0.45 s for ranged, `rules.melee_attack_delay` 0.35 s for melee). Heavy moves use longer delays |
 
-**Damage** = `power × attacker.attack ÷ defender.defense × STAB × type multiplier × crit`.
+**Damage** = `power × attacker.attack ÷ defender.defense × STAB × type multiplier × crit × rules.damage_scale`.
 Burn and poison deal flat `dps`, so defense doesn't reduce them.
 
 ## `data/types.json`

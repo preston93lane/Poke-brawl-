@@ -12,7 +12,7 @@ A mini Brawl Stars–style 1v1 brawler with Pokémon, built in **Godot 4.3+**.
 | Touch | Desktop |
 | --- | --- |
 | **Left stick** (touch anywhere in the left half) – move | WASD |
-| **Right stick** – drag to aim, release to fire a projectile. Quick tap = auto-aim at nearest enemy. Drag back to the centre to cancel. | F (auto-aim shot) |
+| **Right stick** – drag to aim, release to fire. **Quick tap = fire at the nearest enemy.** Drag back to the centre to cancel. | F (auto-aim shot) |
 | **MELEE button** – short-range swipe, auto-aims at a nearby enemy | Space |
 
 Mouse clicks act as touches (`emulate_touch_from_mouse`), so you can try the sticks on desktop too.
@@ -27,12 +27,13 @@ The web build uses Godot's Compatibility renderer, so lighting is slightly simpl
 
 ## How it plays
 
-- Pick brawlers, levels, moves, arena and mode on the **Main** node in `scenes/main.tscn` (Inspector).
-  A select screen is coming next.
+- The game opens on a menu: **Battle**, **King of the Hill** or **Pokédex**. Then pick your Pokémon, level,
+  moves, opponent and arena. Running `scenes/main.tscn` directly in the editor uses the **Main** node's Inspector values instead.
+- After every attack there's a short delay before you can attack again. Heavy moves have longer delays.
 - **Duel:** first to 5 KOs. **King of the Hill:** stand alone in the striped zone to fill your meter (Boulder Gym).
 - Every Pokémon has a melee move (MELEE button) and a ranged move (right stick). More moves unlock at levels 2 and 3, and you choose your loadout.
 - **Types matter:** STAB, an 18-type chart and coverage moves. Super-effective hits pop up orange with "!".
-- **Evolve** on a 3-KO streak (yellow pips next to your health bar). Faint and you drop back a stage.
+- **Evolve** every 3 KOs (yellow pips next to your health bar; fainting doesn't reset them). Faint and you drop back a stage.
 - **Tall grass** hides you until you attack, get hit, or an enemy walks close.
 - Health regenerates after 3 s out of combat.
 

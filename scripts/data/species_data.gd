@@ -58,5 +58,13 @@ func default_move(slot: String, level: int) -> MoveData:
 	return options.back() if not options.is_empty() else null
 
 
+## Level at which this species can first use `move` (0 if it can't learn it).
+func unlock_level(move: MoveData) -> int:
+	for entry in learnset:
+		if entry["move"] == move:
+			return int(entry["level"])
+	return 0
+
+
 func has_type(type_name: String) -> bool:
 	return type_name in types

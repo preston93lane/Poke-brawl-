@@ -1,6 +1,9 @@
 {
-	"_comment": "Global tuning knobs. Stats around 100 are 'average'; damage = power * attack / defense * STAB * type * crit.",
-	"speed_to_meters": 0.05,
+	"_comment": "Global tuning knobs. Stats around 100 are 'average'; damage = power * attack / defense * STAB * type * crit * damage_scale.",
+	"speed_to_meters": 0.04,
+	"damage_scale": 0.8,
+	"attack_delay": 0.45,
+	"melee_attack_delay": 0.35,
 	"crit_multiplier": 1.5,
 	"regen_delay": 3.0,
 	"regen_rate": 0.13,
@@ -11,14 +14,21 @@
 	"evolution": {
 		"kills_to_evolve": 3,
 		"devolve_on_death": true,
-		"heal_on_evolve": true
+		"heal_on_evolve": true,
+		"_comment": "Any KOs count toward evolving (they are kept when you faint); evolving resets the count."
 	},
 	"tall_grass": {
 		"reveal_distance": 2.5,
 		"reveal_time_after_attack": 1.0
 	},
 	"modes": {
-		"duel": { "kills_to_win": 5, "respawn_time": 3.0 },
-		"king_of_the_hill": { "hold_time": 45.0, "respawn_time": 3.0 }
+		"duel": {
+			"kills_to_win": 5,
+			"respawn_time": 3.0
+		},
+		"king_of_the_hill": {
+			"hold_time": 45.0,
+			"respawn_time": 3.0
+		}
 	}
 }

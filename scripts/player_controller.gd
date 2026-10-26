@@ -53,8 +53,9 @@ func _on_aim_released(output: Vector2, was_tap: bool) -> void:
 	# Otherwise the player dragged back to the centre: cancel the shot.
 
 
+## Fire at where the nearest visible enemy is standing (any distance).
 func _auto_shoot() -> void:
-	var target := brawler.find_nearest_enemy(brawler.ranged_move.effective_reach() + 1.0)
+	var target := brawler.find_nearest_enemy()
 	var dir := brawler.facing
 	if target:
 		dir = target.global_position - brawler.global_position

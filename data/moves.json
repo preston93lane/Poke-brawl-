@@ -1,5 +1,5 @@
 {
-	"_comment": "slot: melee (MELEE button, uses cooldown) or ranged (right stick, uses ammo). kind: melee | dash | projectile. See docs/DATA.md for every field.",
+	"_comment": "delay = seconds before you can attack again (default rules.attack_delay). slot: melee (MELEE button, uses cooldown) or ranged (right stick, uses ammo). kind: melee | dash | projectile. See docs/DATA.md for every field.",
 
 	"tackle":       { "name": "Tackle",       "type": "normal",   "slot": "melee", "kind": "melee", "power": 850,  "range": 1.9, "arc": 100, "cooldown": 0.7 },
 	"scratch":      { "name": "Scratch",      "type": "normal",   "slot": "melee", "kind": "melee", "power": 780,  "range": 1.9, "arc": 110, "cooldown": 0.55 },
@@ -15,15 +15,15 @@
 	"iron_tail":    { "name": "Iron Tail",    "type": "steel",    "slot": "melee", "kind": "melee", "power": 1400, "range": 2.3, "arc": 100, "cooldown": 1.4 },
 
 	"ember":        { "name": "Ember",        "type": "fire",     "slot": "ranged", "kind": "projectile", "power": 600,  "speed": 15, "range": 8.0,  "ammo": 3, "reload": 1.4, "effect": { "type": "burn", "chance": 0.2, "duration": 3.0, "dps": 100 } },
-	"flamethrower": { "name": "Flamethrower", "type": "fire",     "slot": "ranged", "kind": "projectile", "power": 190,  "speed": 14, "range": 5.5,  "ammo": 3, "reload": 1.8, "burst_count": 6, "burst_interval": 0.06, "spread": 12, "pierce": true, "radius": 0.35, "effect": { "type": "burn", "chance": 0.1, "duration": 3.0, "dps": 100 } },
-	"fire_blast":   { "name": "Fire Blast",   "type": "fire",     "slot": "ranged", "kind": "projectile", "power": 1500, "speed": 10, "range": 9.5,  "ammo": 2, "reload": 2.8, "radius": 0.45, "explode_radius": 2.2, "effect": { "type": "burn", "chance": 0.3, "duration": 3.0, "dps": 150 } },
+	"flamethrower": { "name": "Flamethrower", "type": "fire",     "slot": "ranged", "kind": "projectile", "power": 190,  "speed": 14, "range": 5.5,  "ammo": 3, "reload": 1.8, "delay": 0.6, "burst_count": 6, "burst_interval": 0.06, "spread": 12, "pierce": true, "radius": 0.35, "effect": { "type": "burn", "chance": 0.1, "duration": 3.0, "dps": 100 } },
+	"fire_blast":   { "name": "Fire Blast",   "type": "fire",     "slot": "ranged", "kind": "projectile", "power": 1500, "speed": 10, "range": 9.5,  "ammo": 2, "reload": 2.8, "delay": 0.8, "radius": 0.45, "explode_radius": 2.2, "effect": { "type": "burn", "chance": 0.3, "duration": 3.0, "dps": 150 } },
 	"thunder_shock":{ "name": "Thunder Shock","type": "electric", "slot": "ranged", "kind": "projectile", "power": 560,  "speed": 20, "range": 8.5,  "ammo": 3, "reload": 1.2, "effect": { "type": "slow", "chance": 0.25, "duration": 1.2, "amount": 0.4 } },
 	"thunderbolt":  { "name": "Thunderbolt",  "type": "electric", "slot": "ranged", "kind": "projectile", "power": 820,  "speed": 24, "range": 10.0, "ammo": 3, "reload": 1.7, "effect": { "type": "slow", "chance": 0.2, "duration": 1.2, "amount": 0.4 } },
-	"thunder":      { "name": "Thunder",      "type": "electric", "slot": "ranged", "kind": "projectile", "power": 1400, "speed": 9,  "range": 9.0,  "ammo": 2, "reload": 3.0, "radius": 0.45, "explode_radius": 2.5, "effect": { "type": "slow", "chance": 0.4, "duration": 1.5, "amount": 0.5 } },
+	"thunder":      { "name": "Thunder",      "type": "electric", "slot": "ranged", "kind": "projectile", "power": 1400, "speed": 9,  "range": 9.0,  "ammo": 2, "reload": 3.0, "delay": 0.8, "radius": 0.45, "explode_radius": 2.5, "effect": { "type": "slow", "chance": 0.4, "duration": 1.5, "amount": 0.5 } },
 	"water_gun":    { "name": "Water Gun",    "type": "water",    "slot": "ranged", "kind": "projectile", "power": 580,  "speed": 16, "range": 8.0,  "ammo": 3, "reload": 1.3 },
-	"bubble_beam":  { "name": "Bubble Beam",  "type": "water",    "slot": "ranged", "kind": "projectile", "power": 380,  "speed": 13, "range": 7.5,  "ammo": 3, "reload": 1.6, "count": 3, "spread": 24, "effect": { "type": "slow", "chance": 0.3, "duration": 1.0, "amount": 0.35 } },
-	"hydro_pump":   { "name": "Hydro Pump",   "type": "water",    "slot": "ranged", "kind": "projectile", "power": 1350, "speed": 18, "range": 11.0, "ammo": 2, "reload": 3.0, "radius": 0.5, "pierce": true },
+	"bubble_beam":  { "name": "Bubble Beam",  "type": "water",    "slot": "ranged", "kind": "projectile", "power": 380,  "speed": 13, "range": 7.5,  "ammo": 3, "reload": 1.6, "delay": 0.55, "count": 3, "spread": 24, "effect": { "type": "slow", "chance": 0.3, "duration": 1.0, "amount": 0.35 } },
+	"hydro_pump":   { "name": "Hydro Pump",   "type": "water",    "slot": "ranged", "kind": "projectile", "power": 1350, "speed": 18, "range": 11.0, "ammo": 2, "reload": 3.0, "delay": 0.7, "radius": 0.5, "pierce": true },
 	"razor_leaf":   { "name": "Razor Leaf",   "type": "grass",    "slot": "ranged", "kind": "projectile", "power": 420,  "speed": 18, "range": 8.5,  "ammo": 3, "reload": 1.4, "count": 2, "spread": 12, "crit_chance": 0.25 },
-	"sludge_bomb":  { "name": "Sludge Bomb",  "type": "poison",   "slot": "ranged", "kind": "projectile", "power": 900,  "speed": 12, "range": 8.0,  "ammo": 3, "reload": 2.0, "explode_radius": 1.8, "effect": { "type": "poison", "chance": 0.3, "duration": 4.0, "dps": 100 } },
-	"solar_beam":   { "name": "Solar Beam",   "type": "grass",    "slot": "ranged", "kind": "projectile", "power": 1700, "speed": 26, "range": 12.0, "ammo": 2, "reload": 3.5, "radius": 0.5, "pierce": true }
+	"sludge_bomb":  { "name": "Sludge Bomb",  "type": "poison",   "slot": "ranged", "kind": "projectile", "power": 900,  "speed": 12, "range": 8.0,  "ammo": 3, "reload": 2.0, "delay": 0.6, "explode_radius": 1.8, "effect": { "type": "poison", "chance": 0.3, "duration": 4.0, "dps": 100 } },
+	"solar_beam":   { "name": "Solar Beam",   "type": "grass",    "slot": "ranged", "kind": "projectile", "power": 1700, "speed": 26, "range": 12.0, "ammo": 2, "reload": 3.5, "delay": 0.9, "radius": 0.5, "pierce": true }
 }

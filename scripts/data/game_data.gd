@@ -17,6 +17,9 @@ var arenas: Dictionary = {}
 var stab := 1.2
 ## Team whose point of view decides what's hidden in tall grass.
 var local_team := 0
+## Set by the menu before loading the match scene; read by main.gd. Empty = use the
+## Main node's Inspector values (handy when running main.tscn straight from the editor).
+var match_settings: Dictionary = {}
 
 var _type_colors: Dictionary = {}
 ## attacking type -> { defending type: multiplier }
@@ -81,6 +84,68 @@ func rule(path: String, default_value: Variant) -> Variant:
 	return node
 
 
+## First-stage species, sorted by id: the ones you pick before a match.
+func base_species() -> Array[SpeciesData]:
+	var result: Array[SpeciesData] = []
+	for id: String in _sorted_ids():
+		if species[id].stage == 1:
+			result.append(species[id])
+	return result
+
+
+## Every species ordered by evolution line (base form, then its evolutions).
+func species_by_line() -> Array[SpeciesData]:
+	var result: Array[SpeciesData] = []
+	for base in base_species():
+		var current := base
+		while current:
+			result.append(current)
+			current = species.get(current.evolves_to)
+	return result
+
+
+## [base, ..., final] for the line containing `species_id`.
+func evolution_line(species_id: String) -> Array[SpeciesData]:
+	var s: SpeciesData = species.get(species_id)
+	if s == null:
+		return []
+	while s.evolves_from != "" and species.has(s.evolves_from):
+		s = species[s.evolves_from]
+	var line: Array[SpeciesData] = []
+	while s:
+		line.append(s)
+		s = species.get(s.evolves_to)
+	return line
+
+
+func all_types() -> Array[String]:
+	var result: Array[String] = []
+	for t: String in _chart:
+		result.append(t)
+	return result
+
+
+## Arenas that support a mode ("king_of_the_hill" needs Z tiles).
+func arenas_for_mode(mode: String) -> Array[String]:
+	var result: Array[String] = []
+	var ids: Array = arenas.keys()
+	ids.sort()
+	for id: String in ids:
+		var has_zone := false
+		for row in arenas[id].get("map", []):
+			if "Z" in str(row):
+				has_zone = true
+		if mode != "king_of_the_hill" or has_zone:
+			result.append(id)
+	return result
+
+
+func _sorted_ids() -> Array:
+	var ids: Array = species.keys()
+	ids.sort()
+	return ids
+
+
 func type_color(type_name: String) -> Color:
 	return _type_colors.get(type_name, Color.GRAY)
 
@@ -101,7 +166,7 @@ func calc_damage(move: MoveData, attacker: Brawler, defender: Brawler, multiplie
 	var crit := randf() < move.crit_chance
 	var crit_mult: float = rule("crit_multiplier", 1.5) if crit else 1.0
 	var amount := move.power * multiplier * (attacker.attack / maxf(1.0, defender.defense)) \
-			* stab_mult * type_mult * crit_mult
+			* stab_mult * type_mult * crit_mult * float(rule("damage_scale", 1.0))
 	return { "amount": amount, "effectiveness": type_mult, "crit": crit }
 
 

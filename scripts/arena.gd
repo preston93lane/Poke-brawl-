@@ -26,7 +26,8 @@ var _zone_cells := {}
 var _zone_material: StandardMaterial3D
 
 
-func build(arena_id: String, sprite_tilt_degrees: float) -> void:
+## use_zone = false treats Z tiles as plain floor (modes without a zone).
+func build(arena_id: String, sprite_tilt_degrees: float, use_zone := true) -> void:
 	var def: Dictionary = GameData.arenas.get(arena_id, {})
 	if def.is_empty():
 		push_error("Arena: unknown arena '%s'" % arena_id)
@@ -58,6 +59,8 @@ func build(arena_id: String, sprite_tilt_degrees: float) -> void:
 		for x in width:
 			var cell := Vector2i(x, y)
 			var c := _char_at(cell)
+			if c == "Z" and not use_zone:
+				c = "."
 			var center := cell_center(cell)
 			var floor_name := floor_tile
 			if c == ",":

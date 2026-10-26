@@ -34,10 +34,12 @@ var move_input := Vector2.ZERO
 var facing := Vector3.FORWARD
 var is_dead := false
 var kills := 0
-## KOs since last death or evolution.
-var streak := 0
+## KOs toward the next evolution. Kept when fainting, reset when evolving.
+var evolve_kills := 0
 
 var _melee_timer := 0.0
+## Short lockout after any attack so attacks can't be chained instantly.
+var _attack_lock := 0.0
 var _regen_timer := 0.0
 var _reveal_timer := 0.0
 var _flash_timer := 0.0
@@ -148,7 +150,7 @@ func evolve() -> bool:
 	var from_name := species.display_name
 	var health_ratio := health / max_health
 	species = next
-	streak = 0
+	evolve_kills = 0
 	_apply_species()
 	health = max_health if GameData.rule("evolution/heal_on_evolve", true) else max_health * health_ratio
 	var tween := create_tween()
@@ -161,9 +163,15 @@ func evolve() -> bool:
 
 func register_kill() -> void:
 	kills += 1
-	streak += 1
-	if streak >= int(GameData.rule("evolution/kills_to_evolve", 3)):
+	if species.evolves_to == "":
+		return
+	evolve_kills += 1
+	if evolve_kills >= int(GameData.rule("evolution/kills_to_evolve", 3)):
 		evolve()
+
+
+func can_evolve() -> bool:
+	return species.evolves_to != ""
 
 
 func respawn(spawn_position: Vector3) -> void:
@@ -175,11 +183,11 @@ func respawn(spawn_position: Vector3) -> void:
 	is_dead = false
 	health = max_health
 	ammo = ranged_move.ammo
-	streak = 0
 	position = spawn_position
 	velocity = Vector3.ZERO
 	collision_layer = 2
 	_melee_timer = 0.0
+	_attack_lock = 0.0
 	_dash_time = 0.0
 	_dot_time = 0.0
 	_slow_time = 0.0
@@ -191,7 +199,7 @@ func respawn(spawn_position: Vector3) -> void:
 # --- Attacks ---------------------------------------------------------------
 
 func can_shoot() -> bool:
-	return not is_dead and ammo >= 1.0 and _dash_time <= 0.0
+	return not is_dead and ammo >= 1.0 and _dash_time <= 0.0 and _attack_lock <= 0.0
 
 
 func use_ranged(direction: Vector3) -> bool:
@@ -200,13 +208,13 @@ func use_ranged(direction: Vector3) -> bool:
 		return false
 	direction = direction.normalized()
 	ammo -= 1.0
-	_on_attack(direction)
+	_on_attack(direction, ranged_move)
 	_fire_volley(ranged_move, direction)
 	return true
 
 
 func melee_ready() -> bool:
-	return not is_dead and _melee_timer <= 0.0 and _dash_time <= 0.0
+	return not is_dead and _melee_timer <= 0.0 and _dash_time <= 0.0 and _attack_lock <= 0.0
 
 
 ## 0 when melee is ready, 1 right after using it.
@@ -222,7 +230,7 @@ func use_melee(direction: Vector3) -> bool:
 		direction = facing
 	direction = direction.normalized()
 	_melee_timer = melee_move.cooldown
-	_on_attack(direction)
+	_on_attack(direction, melee_move)
 
 	if melee_move.kind == "dash":
 		_dash_move = melee_move
@@ -284,7 +292,8 @@ func _process_dash(delta: float) -> void:
 		_dash_time = 0.0
 
 
-func _on_attack(direction: Vector3) -> void:
+func _on_attack(direction: Vector3, move: MoveData) -> void:
+	_attack_lock = move.attack_delay()
 	_regen_timer = 0.0
 	_reveal_timer = float(GameData.rule("tall_grass/reveal_time_after_attack", 1.0))
 	facing = direction
@@ -365,6 +374,7 @@ func _apply_effect(effect: Dictionary, source: Brawler) -> void:
 
 func _tick_timers(delta: float) -> void:
 	_melee_timer = maxf(0.0, _melee_timer - delta)
+	_attack_lock = maxf(0.0, _attack_lock - delta)
 	_reveal_timer = maxf(0.0, _reveal_timer - delta)
 	if ammo < ranged_move.ammo:
 		ammo = minf(ranged_move.ammo, ammo + delta / ranged_move.reload)
@@ -387,7 +397,6 @@ func _tick_status(delta: float) -> void:
 
 func _die() -> void:
 	is_dead = true
-	streak = 0
 	velocity = Vector3.ZERO
 	_dash_time = 0.0
 	set_deferred("collision_layer", 0)

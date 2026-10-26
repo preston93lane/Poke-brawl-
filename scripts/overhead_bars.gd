@@ -44,8 +44,8 @@ func _draw() -> void:
 		var status := brawler.status_text()
 		if status != "":
 			_text(font, Vector2(bar.end.x + 4, bar.end.y), 40, status, 14, Color(1, 0.8, 0.3), HORIZONTAL_ALIGNMENT_LEFT)
-		# One pip per KO in the current streak (evolution progress).
-		for i in brawler.streak:
+		# One pip per KO toward the next evolution.
+		for i in brawler.evolve_kills:
 			draw_circle(Vector2(bar.end.x + 8 + i * 10, bar.position.y - 4), 3.5, Color(1, 0.85, 0.2))
 
 		if brawler.is_player:

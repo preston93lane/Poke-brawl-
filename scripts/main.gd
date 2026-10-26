@@ -3,6 +3,7 @@ extends Node3D
 ## or King of the Hill (hold the zone). Pick everything in the Inspector.
 
 const BRAWLER_SCENE := preload("res://scenes/brawler.tscn")
+const MENU_SCENE := "res://scenes/menu.tscn"
 
 @export var arena_id := "route_1"
 @export_enum("duel", "king_of_the_hill") var mode := "duel"
@@ -31,11 +32,12 @@ var mode_rules: Dictionary = {}
 
 
 func _ready() -> void:
+	_apply_match_settings()
 	if not GameData.species.has(player_species) or not GameData.species.has(enemy_species):
 		push_error("Main: unknown species. Available: %s" % ", ".join(GameData.species.keys()))
 		return
 	mode_rules = GameData.rule("modes/" + mode, {})
-	arena.build(arena_id, camera.pitch_degrees)
+	arena.build(arena_id, camera.pitch_degrees, mode == "king_of_the_hill")
 	if mode == "king_of_the_hill" and not arena.has_zone():
 		push_warning("Arena '%s' has no Z tiles; switching to duel" % arena_id)
 		mode = "duel"
@@ -66,7 +68,26 @@ func _ready() -> void:
 			"%s (Lv%d)" % [enemy.species.display_name, enemy.level], arena.arena_name)
 	hud.set_moves(player.melee_move.display_name, player.ranged_move.display_name)
 	hud.restart_requested.connect(func() -> void: get_tree().reload_current_scene())
+	hud.menu_requested.connect(func() -> void: get_tree().change_scene_to_file(MENU_SCENE))
 	_update_status()
+
+
+## Use the choices made in the menu, if we came from there.
+func _apply_match_settings() -> void:
+	var s: Dictionary = GameData.match_settings
+	if s.is_empty():
+		return
+	mode = str(s.get("mode", mode))
+	arena_id = str(s.get("arena", arena_id))
+	player_species = str(s.get("species", player_species))
+	player_level = int(s.get("level", player_level))
+	player_melee = str(s.get("melee", ""))
+	player_ranged = str(s.get("ranged", ""))
+	enemy_species = str(s.get("enemy", enemy_species))
+	enemy_level = int(s.get("enemy_level", player_level))
+	if enemy_species == "random":
+		var options: Array[SpeciesData] = GameData.base_species()
+		enemy_species = options[randi() % options.size()].id
 
 
 func _physics_process(delta: float) -> void:

@@ -31,6 +31,8 @@ var burst_interval := 0.08
 var pierce := false
 var radius := 0.3
 var explode_radius := 0.0
+## Seconds before any attack can be used again; < 0 means use the rules.json default.
+var delay := -1.0
 
 
 static func from_dict(move_id: String, d: Dictionary) -> MoveData:
@@ -59,7 +61,16 @@ static func from_dict(move_id: String, d: Dictionary) -> MoveData:
 	m.pierce = bool(d.get("pierce", m.pierce))
 	m.radius = float(d.get("radius", m.radius))
 	m.explode_radius = float(d.get("explode_radius", m.explode_radius))
+	m.delay = float(d.get("delay", m.delay))
 	return m
+
+
+## Lockout after using this move, in seconds.
+func attack_delay() -> float:
+	if delay >= 0.0:
+		return delay
+	var key := "melee_attack_delay" if slot == "melee" else "attack_delay"
+	return float(GameData.rule(key, 0.4))
 
 
 ## Furthest distance this move can hit from, used for aiming and AI.

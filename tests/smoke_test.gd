@@ -4,6 +4,7 @@ extends Node
 ## Run: godot --headless --path . res://tests/smoke_test.tscn
 
 const MAIN_SCENE := preload("res://scenes/main.tscn")
+const MENU_SCENE := preload("res://scenes/menu.tscn")
 
 var failures := 0
 
@@ -13,6 +14,8 @@ func _ready() -> void:
 	_check_data()
 	await _check_duel()
 	await _check_king_of_the_hill()
+	await _check_menu()
+	await _check_menu_settings()
 	Engine.time_scale = 1.0
 	print("SMOKE TEST: %s" % ("PASS" if failures == 0 else "FAIL (%d)" % failures))
 	get_tree().quit(1 if failures > 0 else 0)
@@ -68,12 +71,16 @@ func _check_duel() -> void:
 	var before := enemy.health
 	enemy.take_hit(player, GameData.get_move("ember"))
 	var dealt := before - enemy.health
-	var expected := 600.0 * player.attack / enemy.defense * 1.2 * 1.5
+	var expected := 600.0 * player.attack / enemy.defense * 1.2 * 1.5 * float(GameData.rule("damage_scale", 1.0))
 	expect(dealt > expected * 0.99, "ember on bulbasaur gets STAB + super effective (%d)" % dealt)
 
-	for i in 3:
-		player.register_kill()
-	expect(player.species.id == "charmeleon", "3 KO streak evolves charmander into charmeleon")
+	player.register_kill()
+	player.register_kill()
+	player.respawn(main.arena.spawns[0])
+	expect(player.evolve_kills == 2, "KOs toward evolving are kept after fainting")
+	player.register_kill()
+	expect(player.species.id == "charmeleon", "3 total KOs evolve charmander into charmeleon")
+	expect(player.evolve_kills == 0, "evolving resets the KO count")
 	player.respawn(main.arena.spawns[0])
 	expect(player.species.id == "charmander", "fainting devolves one stage")
 
@@ -83,12 +90,51 @@ func _check_duel() -> void:
 		b.position = enemy.position + Vector3(0, 0, 3)
 		await get_tree().physics_frame
 		expect(b.use_ranged(Vector3.FORWARD), "%s fires %s" % [species_id, b.ranged_move.id])
-		expect(b.use_melee(Vector3.FORWARD), "%s uses %s" % [species_id, b.melee_move.id])
+		expect(not b.use_ranged(Vector3.FORWARD), "%s can't fire again during the attack delay" % species_id)
+		await get_tree().create_timer(b.ranged_move.attack_delay() + 0.1, false, true).timeout
+		expect(b.use_melee(Vector3.FORWARD), "%s uses %s after the delay" % [species_id, b.melee_move.id])
 
 	Engine.time_scale = 4.0
 	await get_tree().create_timer(6.0).timeout
 	Engine.time_scale = 1.0
 	expect(is_instance_valid(player) and is_instance_valid(enemy), "match ran for 24 game-seconds")
+	main.queue_free()
+	await get_tree().process_frame
+
+
+func _check_menu() -> void:
+	print("Menu")
+	var menu := MENU_SCENE.instantiate()
+	add_child(menu)
+	await get_tree().process_frame
+	menu.show_select("duel")
+	await get_tree().process_frame
+	menu.show_select("king_of_the_hill")
+	await get_tree().process_frame
+	expect(menu._arena in GameData.arenas_for_mode("king_of_the_hill"), "king of the hill only offers arenas with a zone")
+	menu.show_pokedex("charizard")
+	await get_tree().process_frame
+	expect(menu._details.get_child_count() > 8, "pokédex shows an entry")
+	menu.show_home()
+	await get_tree().process_frame
+	menu.queue_free()
+	await get_tree().process_frame
+
+
+func _check_menu_settings() -> void:
+	print("Menu settings")
+	GameData.match_settings = {
+		"mode": "king_of_the_hill", "arena": "route_1", "species": "squirtle", "level": 2,
+		"melee": "tackle", "ranged": "bubble_beam", "enemy": "random", "enemy_level": 2,
+	}
+	var main := MAIN_SCENE.instantiate()
+	add_child(main)
+	await get_tree().physics_frame
+	expect(main.mode == "king_of_the_hill" and main.arena.has_zone(), "route 1 has a zone in king of the hill")
+	expect(main.player.species.id == "squirtle" and main.player.level == 2, "menu choice of pokémon and level applied")
+	expect(main.player.melee_move.id == "tackle" and main.player.ranged_move.id == "bubble_beam", "menu loadout applied")
+	expect(main.enemy_species != "random", "random opponent resolved (%s)" % main.enemy_species)
+	GameData.match_settings = {}
 	main.queue_free()
 	await get_tree().process_frame
 

@@ -21,7 +21,8 @@ Living document: what's built, what's next, and how each big idea will be implem
 | Tall grass hiding, reveal on attack / proximity | ✅ |
 | Tile-map arenas (Route 1, Boulder Gym) with 16-bit tiles | ✅ |
 | Modes: Duel (first to 5 KOs), King of the Hill | ✅ |
-| Character / loadout select screen | ⏭ next |
+| Menu, mode select, Pokémon / level / loadout / opponent / arena select | ✅ |
+| Pokédex (stats, types, matchups, evolution line, moves) | ✅ |
 | 3v3 teams with bots | ⏭ |
 | Online multiplayer | 🗺 planned (below) |
 
@@ -67,7 +68,7 @@ Each level also gives +5% stats (`rules.level.stat_bonus_per_level`).
 
 ## Evolution
 
-* A 3-KO streak (no fainting in between) evolves you: new sprite, higher stats, full heal, announcement.
+* Every 3 KOs evolves you (fainting doesn't reset the count): new sprite, higher stats, full heal, announcement.
 * Fainting drops you one stage, so the leader is a target and comebacks are possible.
 * All tunable in `rules.json → evolution`.
 * **Ideas:** evolved forms could add a signature move (Charizard: Wing Attack), and/or a "Super" meter that charges faster when evolved.
