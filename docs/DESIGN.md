@@ -21,9 +21,12 @@ Living document: what's built, what's next, and how each big idea will be implem
 | Tall grass hiding, reveal on attack / proximity | ✅ |
 | Tile-map arenas (Route 1, Boulder Gym) with 16-bit tiles | ✅ |
 | Modes: Duel (first to 5 KOs), King of the Hill | ✅ |
-| Menu, mode select, Pokémon / level / loadout / opponent / arena select | ✅ |
+| Menu, mode select, Pokémon / level / loadout / team / arena select | ✅ |
+| 3v3 with bot teammates and opponents | ✅ |
+| Supers (one per stage) charged by damage dealt | ✅ |
+| Bot pathfinding around walls (A* on the tile grid) | ✅ |
 | Pokédex (stats, types, matchups, evolution line, moves) | ✅ |
-| 3v3 teams with bots | ⏭ |
+| Draft screen with type previews for 3v3 | ⏭ |
 | Online multiplayer | 🗺 planned (below) |
 
 ## Art direction: Brawl Stars × 16-bit Pokémon
@@ -86,7 +89,7 @@ Each level also gives +5% stats (`rules.level.stat_bonus_per_level`).
 | --- | --- | --- |
 | Duel | First to N KOs, respawn | ✅ |
 | King of the Hill | Stand in the Z zone alone to fill your meter; contested zones pause | ✅ |
-| 3v3 KOTH / 3v3 Duel | Same rules, teams | after team support |
+| 3v3 Battle / 3v3 KOTH | First to 10 KOs / hold the zone 60 s | ✅ |
 | Rare Candy Grab | Collect candies that spawn in the middle and hold 10 to win (Gem Grab analogue) | idea |
 | Wild Showdown | Free-for-all; wild Pokémon in grass drop power-ups | idea |
 | Gym Challenge | PvE vs a gym-leader boss with phases | idea |
@@ -112,8 +115,7 @@ moving/spinner floor tiles.
 The code is already split to make this easier: **controllers** (player / bot) only write `move_input` and
 call `use_melee` / `use_ranged`, and `Brawler` and `main` own all game state.
 
-1. **3v3 with bots (local).** Generalise spawning to N per team and give bots a target-selection
-   step (nearest / weakest / type advantage). No networking yet. Proves team rules and balance.
+1. **3v3 with bots (local)** ✅ Done: N per team, and bots pick targets by distance, HP and type matchup.
 2. **Online with friends (host + join).**
    * Godot's high-level multiplayer: `ENetMultiplayerPeer`, `MultiplayerSpawner` for brawlers and
      projectiles, `MultiplayerSynchronizer` for position, health, ammo and species.
@@ -143,6 +145,6 @@ Nothing in the game logic depends on Pokémon IP, so this is a content swap, not
 1. **Now:** you play-test this build. I fix bugs and tune feel (camera, speeds, stick sizes).
 2. Character + loadout select screen (pick brawler, level, moves, arena, mode).
 3. Walk animations, hit effects, sounds, screen shake.
-4. 3v3 with bots and the draft screen with type previews.
+4. Draft screen with type previews for 3v3.
 5. Account progression and save file.
 6. More arenas and gimmick tiles. Then online host/join.
