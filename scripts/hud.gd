@@ -17,9 +17,37 @@ var _announce_tween: Tween
 @onready var result_hint: Label = $Result/Hint
 
 
+var _rotate_overlay: ColorRect
+
+
 func _ready() -> void:
 	result.visible = false
 	announcement.modulate.a = 0.0
+	if DisplayServer.is_touchscreen_available():
+		$KeyboardHint.visible = false
+	_build_rotate_overlay()
+
+
+func _process(_delta: float) -> void:
+	var size := get_viewport().get_visible_rect().size
+	_rotate_overlay.visible = size.y > size.x
+
+
+## Shown when the phone is held in portrait; the game is landscape-only.
+func _build_rotate_overlay() -> void:
+	_rotate_overlay = ColorRect.new()
+	_rotate_overlay.color = Color(0.08, 0.1, 0.16, 0.92)
+	_rotate_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_rotate_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var label := Label.new()
+	label.text = "Rotate your phone\nto landscape ⟳"
+	label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 48)
+	_rotate_overlay.add_child(label)
+	add_child(_rotate_overlay)
+	_rotate_overlay.visible = false
 
 
 func set_matchup(player_name: String, enemy_name: String, arena_name: String) -> void:

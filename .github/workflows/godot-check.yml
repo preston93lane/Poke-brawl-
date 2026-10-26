@@ -5,6 +5,9 @@ on:
   pull_request:
   workflow_dispatch:
 
+env:
+  GODOT_VERSION: "4.3"
+
 jobs:
   smoke-test:
     runs-on: ubuntu-latest
@@ -12,11 +15,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download Godot 4.3
+      - name: Download Godot
         run: |
-          curl -sSL -o godot.zip https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          curl -sSL -o godot.zip https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip
           unzip -q godot.zip
-          mv Godot_v4.3-stable_linux.x86_64 godot
+          mv Godot_v${GODOT_VERSION}-stable_linux.x86_64 godot
 
       - name: Import project
         run: timeout 300 ./godot --headless --path . --import 2>&1 | tee import.log
@@ -34,3 +37,57 @@ jobs:
             exit 1
           fi
           grep -q "SMOKE TEST: PASS" test.log
+
+  # Builds the web version and publishes it to GitHub Pages
+  # (https://<owner>.github.io/<repo>/). Only runs for pushes to the default branch.
+  web:
+    needs: smoke-test
+    if: github.event_name != 'pull_request' && github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Godot
+        run: |
+          curl -sSL -o godot.zip https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v${GODOT_VERSION}-stable_linux.x86_64 godot
+
+      - name: Cache web export templates
+        id: templates
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/godot/export_templates
+          key: godot-web-templates-${{ env.GODOT_VERSION }}
+
+      - name: Install web export templates
+        if: steps.templates.outputs.cache-hit != 'true'
+        run: |
+          curl -sSL -o templates.tpz https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz
+          dir=~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+          mkdir -p "$dir"
+          unzip -j templates.tpz templates/version.txt templates/web_nothreads_release.zip templates/web_nothreads_debug.zip -d "$dir"
+          rm templates.tpz
+
+      - name: Export web build
+        run: |
+          timeout 300 ./godot --headless --path . --import
+          mkdir -p build/web
+          timeout 300 ./godot --headless --path . --export-release "Web" build/web/index.html 2>&1 | tee export.log
+          test -f build/web/index.html && test -f build/web/index.pck
+          ls -la build/web
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
+
+      - id: deploy
+        uses: actions/deploy-pages@v4

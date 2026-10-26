@@ -16,7 +16,14 @@ A mini Brawl Stars–style 1v1 brawler with Pokémon, built in **Godot 4.3+**.
 | **MELEE button** – short-range swipe, auto-aims at a nearby enemy | Space |
 
 Mouse clicks act as touches (`emulate_touch_from_mouse`), so you can try the sticks on desktop too.
-To test on a phone, use **Remote Debug → Run on device** or an Android/iOS export.
+### Play on your phone
+
+Every push to the default branch builds a web version and publishes it to
+**https://preston93lane.github.io/Poke-brawl-/** (GitHub Pages). Open it in Safari or Chrome
+and hold the phone in landscape. On iPhone, **Share → Add to Home Screen** installs it as a
+full-screen app with its own icon.
+
+The web build uses Godot's Compatibility renderer, so lighting is slightly simpler than in the editor.
 
 ## How it plays
 
