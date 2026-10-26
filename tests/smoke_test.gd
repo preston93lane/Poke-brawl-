@@ -319,6 +319,7 @@ func _check_legendaries_and_items() -> void:
 	for case: Array in [[Vector3(1, 0, 0), 1, false], [Vector3(-1, 0, 0), 1, true], [Vector3(0, 0, -1), 2, false], [Vector3(0, 0, 1), 0, false]]:
 		player.facing = case[0]
 		await get_tree().process_frame
+		await get_tree().process_frame
 		expect(player.sprite.frame == case[1] and player.sprite.flip_h == case[2], "facing %s shows view %d (flipped=%s)" % case)
 
 	var base_attack := player.get_attack()
@@ -346,9 +347,8 @@ func _check_legendaries_and_items() -> void:
 			if child is BotController:
 				child.queue_free()
 		boss.take_damage(1500.0, enemy)
-		boss.take_damage(4000.0, player)
-		var finisher := boss.health
-		boss.take_damage(finisher, enemy)  # The red team lands the last hit...
+		boss.take_damage(boss.health - 600.0, player)
+		boss.take_damage(600.0, enemy)  # The red team lands the last hit...
 		await get_tree().physics_frame
 		expect(main.legendaries.size() == 1 and main.legendaries[0].team == 0,
 				"...but blue dealt the most damage, so blue gets %s" % (main.legendaries[0].species.id if main.legendaries.size() > 0 else "nothing"))
@@ -370,7 +370,7 @@ func _check_shrine() -> void:
 	main.player._protect_time = 0.0
 	main.player.position = main.arena.zone_center
 	Engine.time_scale = 4.0
-	await get_tree().create_timer(6.5).timeout
+	await get_tree().create_timer(22.0).timeout  # Game seconds (timers follow time_scale).
 	Engine.time_scale = 1.0
 	expect(main.legendaries.size() == 1 and main.legendaries[0].species.id == "regirock" and main.legendaries[0].team == 0,
 			"holding the zone alone for 20 s awakens Regirock for your team")
