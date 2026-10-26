@@ -1,0 +1,9 @@
+{
+	"name": "Dragonite",
+	"types": ["dragon", "flying"],
+	"sprite": "res://assets/brawlers/dragonite.png",
+	"sprite_scale": 1.35,
+	"stats": {"hp": 4700, "attack": 135, "defense": 115, "speed": 100},
+	"super": "outrage",
+	"evolves_from": "dragonair"
+}

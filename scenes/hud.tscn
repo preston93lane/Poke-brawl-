@@ -26,7 +26,7 @@ offset_bottom = 52.0
 grow_horizontal = 2
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 8
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 20
 text = "PIKACHU  vs  CHARMANDER"
 horizontal_alignment = 1
 
@@ -63,7 +63,7 @@ theme_override_colors/font_color = Color(1, 1, 1, 0.7)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4
 theme_override_font_sizes/font_size = 14
-text = "Desktop: WASD move · F shoot · Space melee"
+text = "Desktop: WASD move · F shoot · Space melee · E super"
 
 [node name="MoveStick" type="Control" parent="."]
 layout_mode = 3
@@ -106,6 +106,25 @@ grow_horizontal = 0
 grow_vertical = 0
 mouse_filter = 2
 script = ExtResource("4_button")
+
+[node name="SuperButton" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -475.0
+offset_top = -345.0
+offset_right = -365.0
+offset_bottom = -235.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 2
+script = ExtResource("4_button")
+label = "SUPER"
+color = Color(1, 0.8, 0.15, 1)
+display = "charge"
 
 [node name="Result" type="Control" parent="."]
 visible = false

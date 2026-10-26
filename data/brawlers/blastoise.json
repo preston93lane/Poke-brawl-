@@ -3,6 +3,7 @@
 	"types": ["water"],
 	"sprite": "res://assets/brawlers/blastoise.png",
 	"sprite_scale": 1.3,
-	"stats": { "hp": 4600, "attack": 115, "defense": 138, "speed": 98 },
+	"stats": {"hp": 4600, "attack": 115, "defense": 138, "speed": 98},
+	"super": "hydro_cannon",
 	"evolves_from": "wartortle"
 }

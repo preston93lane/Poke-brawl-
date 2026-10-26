@@ -20,6 +20,8 @@ var local_team := 0
 ## Set by the menu before loading the match scene; read by main.gd. Empty = use the
 ## Main node's Inspector values (handy when running main.tscn straight from the editor).
 var match_settings: Dictionary = {}
+## The brawler the person is controlling (for blindness and the camera).
+var local_player: Brawler
 
 var _type_colors: Dictionary = {}
 ## attacking type -> { defending type: multiplier }
@@ -165,7 +167,7 @@ func calc_damage(move: MoveData, attacker: Brawler, defender: Brawler, multiplie
 	var stab_mult := stab if attacker.species.has_type(move.type) else 1.0
 	var crit := randf() < move.crit_chance
 	var crit_mult: float = rule("crit_multiplier", 1.5) if crit else 1.0
-	var amount := move.power * multiplier * (attacker.attack / maxf(1.0, defender.defense)) \
+	var amount := move.power * multiplier * (attacker.get_attack() / maxf(1.0, defender.get_defense())) \
 			* stab_mult * type_mult * crit_mult * float(rule("damage_scale", 1.0))
 	return { "amount": amount, "effectiveness": type_mult, "crit": crit }
 
@@ -219,6 +221,10 @@ func _link_species() -> void:
 			s.learnset.append({ "move": moves[move_id], "level": int(entry.get("level", 1)) })
 		if s.default_move("melee", 99) == null or s.default_move("ranged", 99) == null:
 			push_error("GameData: %s needs at least one melee and one ranged move" % s.id)
+		var super_move: MoveData = moves.get(s.raw_super)
+		if super_move == null or super_move.slot != "super":
+			push_error("GameData: %s needs a \"super\" that is a move with slot \"super\" (got '%s')" % [s.id, s.raw_super])
+		s.super_move = super_move
 
 
 func _check_type(type_name: String, where: String) -> void:

@@ -1,9 +1,12 @@
 {
 	"_comment": "Global tuning knobs. Stats around 100 are 'average'; damage = power * attack / defense * STAB * type * crit * damage_scale.",
+	"team_size": 3,
 	"speed_to_meters": 0.04,
 	"damage_scale": 0.8,
 	"attack_delay": 0.45,
 	"melee_attack_delay": 0.35,
+	"super_charge_damage": 3200,
+	"_super_comment": "Damage you deal with regular moves that fills the SUPER meter once (a move can override with \"charge\").",
 	"crit_multiplier": 1.5,
 	"regen_delay": 3.0,
 	"regen_rate": 0.13,
@@ -23,11 +26,11 @@
 	},
 	"modes": {
 		"duel": {
-			"kills_to_win": 5,
+			"kills_to_win": 10,
 			"respawn_time": 3.0
 		},
 		"king_of_the_hill": {
-			"hold_time": 45.0,
+			"hold_time": 60.0,
 			"respawn_time": 3.0
 		}
 	}

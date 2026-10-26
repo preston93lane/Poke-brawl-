@@ -1,0 +1,16 @@
+{
+	"name": "Abra",
+	"types": ["psychic"],
+	"sprite": "res://assets/brawlers/abra.png",
+	"stats": {"hp": 2400, "attack": 120, "defense": 70, "speed": 110},
+	"super": "teleport",
+	"evolves_to": "kadabra",
+	"moves": [
+		{"move": "pound", "level": 1},
+		{"move": "confusion", "level": 1},
+		{"move": "psycho_cut", "level": 2},
+		{"move": "psybeam", "level": 2},
+		{"move": "zen_headbutt", "level": 3},
+		{"move": "shadow_ball", "level": 3}
+	]
+}

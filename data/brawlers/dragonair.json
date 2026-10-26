@@ -1,0 +1,10 @@
+{
+	"name": "Dragonair",
+	"types": ["dragon"],
+	"sprite": "res://assets/brawlers/dragonair.png",
+	"sprite_scale": 1.2,
+	"stats": {"hp": 3700, "attack": 112, "defense": 100, "speed": 104},
+	"super": "dragon_dance",
+	"evolves_from": "dratini",
+	"evolves_to": "dragonite"
+}

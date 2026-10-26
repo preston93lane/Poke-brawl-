@@ -19,6 +19,9 @@ var stage := 1
 var learnset: Array[Dictionary] = []
 ## Raw "moves" entries from JSON, resolved by GameData once all moves are loaded.
 var raw_moves: Array = []
+## This stage's own super move (each evolution has a different one).
+var super_move: MoveData
+var raw_super := ""
 
 
 static func from_dict(species_id: String, d: Dictionary) -> SpeciesData:
@@ -36,6 +39,7 @@ static func from_dict(species_id: String, d: Dictionary) -> SpeciesData:
 	s.evolves_to = str(d.get("evolves_to", ""))
 	s.evolves_from = str(d.get("evolves_from", ""))
 	s.raw_moves = d.get("moves", [])
+	s.raw_super = str(d.get("super", ""))
 	var sprite_path := str(d.get("sprite", ""))
 	if sprite_path != "" and ResourceLoader.exists(sprite_path):
 		s.sprite = load(sprite_path)

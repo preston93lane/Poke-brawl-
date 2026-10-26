@@ -120,7 +120,8 @@ static func stat_bar(stat: String, value: float) -> HBoxContainer:
 ## One-line description of a move's numbers: what it's good and bad at.
 static func move_summary(move: MoveData) -> String:
 	var parts: Array[String] = []
-	parts.append("Power %d" % move.power)
+	if move.power > 0.0 and move.kind != "self":
+		parts.append("Power %d" % move.power)
 	match move.kind:
 		"melee":
 			parts.append("Reach %.1fm" % move.reach)
@@ -140,11 +141,37 @@ static func move_summary(move: MoveData) -> String:
 				parts.append("pierces")
 			if move.explode_radius > 0.0:
 				parts.append("%.1fm blast" % move.explode_radius)
+		"area":
+			parts.append("%.1fm circle %s" % [move.area_radius, "around you" if move.reach <= 0.0 else "up to %.0fm away" % move.reach])
+			if move.area_delay > 0.0:
+				parts.append("lands after %.1fs" % move.area_delay)
+	if move.dash_pierce:
+		parts.append("hits everyone in its path")
+	if move.drain > 0.0:
+		parts.append("heals %d%% of damage" % roundi(move.drain * 100))
+	if move.heal > 0.0:
+		parts.append("heals you %d%%" % roundi(move.heal * 100))
+	if move.team_heal > 0.0:
+		parts.append("heals allies %d%% (%.0fm)" % [roundi(move.team_heal * 100), move.support_radius])
+	if not move.buff.is_empty():
+		var stats: Array[String] = []
+		for stat in ["attack", "defense", "speed"]:
+			if move.buff.has(stat):
+				stats.append("+%d%% %s" % [roundi(float(move.buff[stat]) * 100), stat])
+		parts.append("%s for %.0fs%s" % [", ".join(stats), float(move.buff.get("duration", 4.0)), " (team)" if move.buff.get("allies", false) else ""])
+	if move.blink > 0.0:
+		parts.append("teleport %.0fm" % move.blink)
+	if not move.blind.is_empty():
+		parts.append("blinds enemies who can see you for %.0fs (%.0fm)" % [float(move.blind.get("duration", 3.0)), float(move.blind.get("radius", 8.0))])
+	if move.cleanse:
+		parts.append("cures status")
 	if move.crit_chance > 0.0:
 		parts.append("%d%% crit" % roundi(move.crit_chance * 100))
 	if not move.effect.is_empty():
-		var names := { "burn": "burn", "poison": "poison", "slow": "paralyze" }
-		parts.append("%d%% %s" % [roundi(float(move.effect.get("chance", 1.0)) * 100), names.get(move.effect.get("type", ""), "effect")])
+		var names := { "burn": "burn", "poison": "poison", "slow": "paralyze", "leech": "seeds: drains HP to you" }
+		var chance := roundi(float(move.effect.get("chance", 1.0)) * 100)
+		var effect_name: String = names.get(move.effect.get("type", ""), "effect")
+		parts.append(effect_name if chance >= 100 else "%d%% %s" % [chance, effect_name])
 	return " · ".join(parts)
 
 
@@ -159,7 +186,9 @@ static func move_card(move: MoveData, unlock_level := 0) -> PanelContainer:
 		top.add_child(label("Lv%d" % unlock_level, 18, Color(1, 0.85, 0.4)))
 	top.add_child(label(move.display_name, 22))
 	top.add_child(type_chip(move.type, 14))
-	top.add_child(label("MELEE" if move.slot == "melee" else "RANGED", 16, Color(0.7, 0.8, 1)))
+	var slot_names := { "melee": "MELEE", "ranged": "RANGED", "super": "SUPER" }
+	var slot_color := Color(1, 0.85, 0.3) if move.slot == "super" else Color(0.7, 0.8, 1)
+	top.add_child(label(slot_names.get(move.slot, ""), 16, slot_color))
 	v.add_child(top)
 	var summary := label(move_summary(move), 16, Color(0.85, 0.88, 0.95))
 	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

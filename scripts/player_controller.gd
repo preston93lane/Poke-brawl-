@@ -1,7 +1,7 @@
 class_name PlayerController
 extends Node
 ## Drives the parent Brawler from the on-screen sticks / melee button.
-## Keyboard fallback for desktop testing: WASD move, F shoot, Space melee.
+## Keyboard fallback for desktop testing: WASD move, F shoot, Space melee, E super.
 
 ## How far a tap on MELEE looks for a target to auto-aim at.
 const MELEE_AUTO_AIM_RANGE := 4.0
@@ -9,6 +9,7 @@ const MELEE_AUTO_AIM_RANGE := 4.0
 var move_stick: VirtualJoystick
 var aim_stick: VirtualJoystick
 var melee_button: TouchButton
+var super_button: TouchButton
 
 @onready var brawler: Brawler = get_parent()
 
@@ -16,6 +17,7 @@ var melee_button: TouchButton
 func _ready() -> void:
 	aim_stick.released.connect(_on_aim_released)
 	melee_button.pressed.connect(_do_melee)
+	super_button.pressed.connect(_do_super)
 
 
 func _physics_process(_delta: float) -> void:
@@ -32,6 +34,8 @@ func _physics_process(_delta: float) -> void:
 	else:
 		brawler.hide_aim()
 	melee_button.set_cooldown(brawler.melee_cooldown_ratio())
+	super_button.set_charge(brawler.super_charge)
+	super_button.label = brawler.species.super_move.display_name.to_upper()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -43,6 +47,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			_auto_shoot()
 		KEY_SPACE:
 			_do_melee()
+		KEY_E:
+			_do_super()
 
 
 func _on_aim_released(output: Vector2, was_tap: bool) -> void:
@@ -72,6 +78,24 @@ func _do_melee() -> void:
 		if target:
 			dir = target.global_position - brawler.global_position
 	brawler.use_melee(dir)
+
+
+## Aimed with the right stick if it's held, otherwise at the nearest visible enemy.
+func _do_super() -> void:
+	var dir := brawler.facing
+	var distance := -1.0
+	var move := brawler.species.super_move
+	if aim_stick.output != Vector2.ZERO:
+		dir = _to_world(aim_stick.output)
+		distance = aim_stick.output.length() * move.reach
+	else:
+		var target := brawler.find_nearest_enemy()
+		if target:
+			dir = target.global_position - brawler.global_position
+			distance = Vector2(dir.x, dir.z).length()
+			if move.blink > 0.0:
+				dir = -dir  # Teleport away from danger by default.
+	brawler.use_super(dir, distance)
 
 
 ## The camera never rotates around Y, so screen right = +X and screen down = +Z.

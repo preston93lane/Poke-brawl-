@@ -4,8 +4,8 @@ extends Control
 
 const MAIN_SCENE := "res://scenes/main.tscn"
 const MODES := {
-	"duel": { "title": "BATTLE", "blurb": "First to 5 KOs wins." },
-	"king_of_the_hill": { "title": "KING OF THE HILL", "blurb": "Stand alone in the zone to fill your meter." },
+	"duel": { "title": "BATTLE 3v3", "blurb": "First team to 10 KOs wins." },
+	"king_of_the_hill": { "title": "KING OF THE HILL 3v3", "blurb": "Hold the zone with only your team in it." },
 }
 
 var _screen: Control
@@ -14,7 +14,9 @@ var _species: SpeciesData
 var _level := 1
 var _melee := ""
 var _ranged := ""
-var _enemy := "random"
+## Chosen bot teammates / opponents; empty slots are filled randomly.
+var _allies: Array[String] = []
+var _enemies: Array[String] = []
 var _arena := ""
 var _details: VBoxContainer
 var _details_scroll: ScrollContainer
@@ -202,21 +204,21 @@ func _refresh_select_details() -> void:
 		_details.add_child(row)
 		_details.add_child(UiKit.move_card(GameData.get_move(chosen)))
 
-	_details.add_child(_section("OPPONENT"))
-	var enemies := HFlowContainer.new()
-	var enemy_group := ButtonGroup.new()
-	var random_button := _toggle("RANDOM", enemy_group, _enemy == "random")
-	random_button.pressed.connect(func() -> void: _enemy = "random")
-	enemies.add_child(random_button)
-	for e in GameData.base_species():
-		var b := _toggle(e.display_name, enemy_group, _enemy == e.id)
-		b.icon = e.sprite
-		b.expand_icon = true
-		b.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-		b.add_theme_constant_override("icon_max_width", 36)
-		b.pressed.connect(func() -> void: _enemy = e.id)
-		enemies.add_child(b)
-	_details.add_child(enemies)
+	_details.add_child(_section("SUPER  (SUPER button — charges as you deal damage; changes when you evolve)"))
+	for stage in GameData.evolution_line(s.id):
+		var card := UiKit.move_card(stage.super_move)
+		card.tooltip_text = stage.display_name
+		var row := HBoxContainer.new()
+		row.add_child(UiKit.sprite(stage.sprite, 48))
+		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(card)
+		_details.add_child(row)
+
+	var team_size := int(GameData.rule("team_size", 3))
+	_details.add_child(_section("TEAMMATES  (pick up to %d, the rest are random)" % (team_size - 1)))
+	_details.add_child(_team_picker(_allies, team_size - 1))
+	_details.add_child(_section("OPPONENTS  (pick up to %d, the rest are random)" % team_size))
+	_details.add_child(_team_picker(_enemies, team_size))
 
 	_details.add_child(_section("ARENA"))
 	var arenas := HFlowContainer.new()
@@ -230,6 +232,31 @@ func _refresh_select_details() -> void:
 	await get_tree().process_frame
 	if is_instance_valid(_details_scroll):
 		_details_scroll.scroll_vertical = keep_scroll
+
+
+## Multi-select row of Pokémon; tapping toggles, capped at `max_count`.
+func _team_picker(chosen: Array[String], max_count: int) -> HFlowContainer:
+	var row := HFlowContainer.new()
+	for s in GameData.base_species():
+		var b := Button.new()
+		b.text = s.display_name
+		b.toggle_mode = true
+		b.button_pressed = s.id in chosen
+		b.icon = s.sprite
+		b.expand_icon = true
+		b.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		b.add_theme_constant_override("icon_max_width", 36)
+		b.add_theme_font_size_override("font_size", 20)
+		b.toggled.connect(func(on: bool) -> void:
+			if on and s.id not in chosen:
+				if chosen.size() >= max_count:
+					b.set_pressed_no_signal(false)
+					return
+				chosen.append(s.id)
+			elif not on:
+				chosen.erase(s.id))
+		row.add_child(b)
+	return row
 
 
 func _valid_move(slot: String, move_id: String) -> String:
@@ -247,8 +274,9 @@ func _start_match() -> void:
 		"level": _level,
 		"melee": _melee,
 		"ranged": _ranged,
-		"enemy": _enemy,
-		"enemy_level": _level,
+		"allies": _allies.duplicate(),
+		"enemies": _enemies.duplicate(),
+		"bot_level": _level,
 	}
 	get_tree().change_scene_to_file(MAIN_SCENE)
 
@@ -262,7 +290,10 @@ func _restore_last_choices() -> void:
 	_level = int(last.get("level", 1))
 	_melee = str(last.get("melee", ""))
 	_ranged = str(last.get("ranged", ""))
-	_enemy = str(last.get("enemy", "random"))
+	for id in last.get("allies", []):
+		_allies.append(str(id))
+	for id in last.get("enemies", []):
+		_enemies.append(str(id))
 	_arena = str(last.get("arena", ""))
 
 
@@ -306,6 +337,8 @@ func _show_dex_entry(s: SpeciesData) -> void:
 	_details.add_child(_section("RESISTS"))
 	_details.add_child(resist if resist.get_child_count() > 0 else UiKit.label("Nothing", 18))
 
+	_details.add_child(_section("SUPER  (this stage's own)"))
+	_details.add_child(UiKit.move_card(s.super_move))
 	_details.add_child(_section("MOVES"))
 	for entry in s.learnset:
 		_details.add_child(UiKit.move_card(entry["move"], int(entry["level"])))

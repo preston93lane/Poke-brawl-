@@ -10,6 +10,7 @@ var _result_buttons: HBoxContainer
 @onready var move_stick: VirtualJoystick = $MoveStick
 @onready var aim_stick: VirtualJoystick = $AimStick
 @onready var melee_button: TouchButton = $MeleeButton
+@onready var super_button: TouchButton = $SuperButton
 @onready var matchup_label: Label = $Matchup
 @onready var status_label: Label = $Status
 @onready var announcement: Label = $Announcement
@@ -19,6 +20,7 @@ var _result_buttons: HBoxContainer
 
 
 var _rotate_overlay: ColorRect
+var _blind_overlay: ColorRect
 
 
 func _ready() -> void:
@@ -28,11 +30,21 @@ func _ready() -> void:
 		$KeyboardHint.visible = false
 	_build_buttons()
 	_build_rotate_overlay()
+	_blind_overlay = ColorRect.new()
+	_blind_overlay.color = Color(1, 1, 0.92, 0.55)
+	_blind_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_blind_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_blind_overlay.visible = false
+	add_child(_blind_overlay)
+	move_child(_blind_overlay, 1)
 
 
 func _process(_delta: float) -> void:
 	var size := get_viewport().get_visible_rect().size
 	_rotate_overlay.visible = size.y > size.x
+	var viewer: Brawler = GameData.local_player
+	var blind := is_instance_valid(viewer) and viewer.is_blind()
+	_blind_overlay.visible = blind
 
 
 func _build_buttons() -> void:
@@ -77,7 +89,7 @@ func _build_rotate_overlay() -> void:
 
 
 func set_matchup(player_name: String, enemy_name: String, arena_name: String) -> void:
-	matchup_label.text = "%s  vs  %s  ·  %s" % [player_name.to_upper(), enemy_name.to_upper(), arena_name]
+	matchup_label.text = "%s   vs   %s   —   %s" % [player_name.to_upper(), enemy_name.to_upper(), arena_name]
 
 
 func set_status(text: String) -> void:
@@ -105,6 +117,7 @@ func show_result(victory: bool) -> void:
 	move_stick.set_enabled(false)
 	aim_stick.set_enabled(false)
 	melee_button.set_enabled(false)
+	super_button.set_enabled(false)
 	result_title.text = "VICTORY!" if victory else "DEFEAT"
 	result_title.modulate = Color(1.0, 0.85, 0.2) if victory else Color(1.0, 0.35, 0.3)
 	result_hint.visible = false

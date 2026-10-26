@@ -13,6 +13,7 @@ move ids or types. No code changes are needed to add content.
 	"sprite": "res://assets/brawlers/charmander.png",
 	"sprite_scale": 1.0,                   // evolutions draw bigger (1.15, 1.3…)
 	"stats": { "hp": 2900, "attack": 105, "defense": 85, "speed": 105 },
+	"super": "fire_spin",                  // this stage's own super (a move with slot "super")
 	"evolves_to": "charmeleon",            // optional
 	"evolves_from": "",                    // set on evolved forms
 	"moves": [                             // evolved forms may omit this to inherit the base form's list
@@ -32,11 +33,11 @@ move ids or types. No code changes are needed to add content.
 | Field | Used by | Meaning |
 | --- | --- | --- |
 | `name`, `type` | all | Display name and type (STAB + matchups) |
-| `slot` | all | `melee` = MELEE button with a cooldown, `ranged` = right stick with ammo |
-| `kind` | all | `melee` (arc swipe), `dash` (lunge, hits first enemy), `projectile` |
+| `slot` | all | `melee` = MELEE button with a cooldown, `ranged` = right stick with ammo, `super` = SUPER button |
+| `kind` | all | `melee` (arc swipe), `dash` (lunge, hits first enemy), `projectile`, `area` (strike a circle), `self` (no attack, just the extras below) |
 | `power` | all | Base damage before attack/defense, STAB, type and crit |
 | `crit_chance` | all | 0–1; crits deal `rules.crit_multiplier` |
-| `effect` | all | Optional: `{ "type": "burn"/"poison", "chance", "duration", "dps" }` or `{ "type": "slow", "chance", "duration", "amount" }` (slow = paralysis) |
+| `effect` | all | Optional: `{ "type": "burn"/"poison"/"leech", "chance", "duration", "dps" }` (leech heals whoever planted it) or `{ "type": "slow", "chance", "duration", "amount" }` (slow = paralysis) |
 | `range`, `arc`, `cooldown` | melee | Reach in metres, swing width in degrees, seconds between uses |
 | `dash_distance`, `dash_speed`, `cooldown` | dash | How far and fast the lunge goes |
 | `range`, `speed` | projectile | Travel distance and metres per second |
@@ -46,6 +47,15 @@ move ids or types. No code changes are needed to add content.
 | `pierce` | projectile | Passes through enemies instead of stopping |
 | `radius` | projectile | Hitbox size (bigger is easier to land) |
 | `explode_radius` | projectile | Area damage where it lands or hits (e.g. Fire Blast) |
+| `dash_pierce` | dash | Keep going through enemies, hitting each once (Outrage) |
+| `range`, `area_radius`, `area_delay` | area | How far away the circle can land (0 = around you), its size, and a delay before it hits (Future Sight) |
+| `drain` | super | Heal this fraction of the damage dealt (Giga Drain) |
+| `heal`, `team_heal`, `support_radius` | super | Heal yourself / allies within `support_radius` by a fraction of max HP |
+| `buff` | super | `{ "attack": 0.3, "defense": 0.5, "speed": 0.4, "duration": 4, "allies": true }` |
+| `blink` | super | Teleport this many metres (stops at walls) |
+| `blind` | super | `{ "radius": 8, "duration": 3 }`: enemies with line of sight can't see anyone |
+| `cleanse` | super | Cure burn, poison, paralysis and blindness |
+| `charge` | super | Damage needed to fill the meter (default `rules.super_charge_damage`) |
 | `delay` | all | Seconds before *any* attack can be used again (default `rules.attack_delay` 0.45 s for ranged, `rules.melee_attack_delay` 0.35 s for melee). Heavy moves use longer delays |
 
 **Damage** = `power × attacker.attack ÷ defender.defense × STAB × type multiplier × crit × rules.damage_scale`.
@@ -72,7 +82,7 @@ matchup is a disadvantage, not an auto-loss. Dual types multiply (×2.25 and ×0
 | `#` | Rock wall (blocks everything) |
 | `B` | Boulder (blocks everything) |
 | `~` | Water (blocks walking, shots fly over) |
-| `1` / `2` | Team spawns |
+| `1` / `2` | Team spawns, one tile per teammate |
 | `Z` | King-of-the-hill zone |
 
 The map's top is the enemy side. Keep it 180°-symmetric for fairness.

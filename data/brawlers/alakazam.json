@@ -1,0 +1,9 @@
+{
+	"name": "Alakazam",
+	"types": ["psychic"],
+	"sprite": "res://assets/brawlers/alakazam.png",
+	"sprite_scale": 1.3,
+	"stats": {"hp": 3600, "attack": 150, "defense": 85, "speed": 115},
+	"super": "future_sight",
+	"evolves_from": "kadabra"
+}

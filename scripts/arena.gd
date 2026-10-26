@@ -4,7 +4,9 @@ extends Node3D
 ##
 ## Legend: . floor   , path   " tall grass (hide)   T tree   # rock wall
 ##         B boulder   ~ water (blocks walking, not shots)   1/2 team spawns
-##         Z king-of-the-hill zone
+##         (one tile per teammate)   Z king-of-the-hill zone
+##
+## Also builds an AStarGrid2D so bots can path around walls (find_path).
 
 const TILE := 1.0
 const WALL_HEIGHT := 1.2
@@ -19,11 +21,13 @@ var arena_name := ""
 var width := 0
 var height := 0
 var rows := PackedStringArray()
-var spawns := { 0: Vector3(0, 0, 10), 1: Vector3(0, 0, -10) }
+## team -> Array[Vector3], one spawn point per teammate.
+var spawns := { 0: [], 1: [] }
 var zone_center := Vector3.ZERO
 
 var _zone_cells := {}
 var _zone_material: StandardMaterial3D
+var _astar := AStarGrid2D.new()
 
 
 ## use_zone = false treats Z tiles as plain floor (modes without a zone).
@@ -45,14 +49,8 @@ func build(arena_id: String, sprite_tilt_degrees: float, use_zone := true) -> vo
 	var grass: Array[Transform3D] = []
 	var trees: Array[Transform3D] = []
 	var zone: Array[Transform3D] = []
-	var walls := StaticBody3D.new()
-	walls.collision_layer = WORLD_LAYER
-	walls.collision_mask = 0
-	add_child(walls)
-	var water := StaticBody3D.new()
-	water.collision_layer = WATER_LAYER
-	water.collision_mask = 0
-	add_child(water)
+	var solid_cells := {}
+	var water_cells := {}
 
 	var tilt := Basis(Vector3.RIGHT, -deg_to_rad(sprite_tilt_degrees))
 	for y in height:
@@ -72,27 +70,34 @@ func build(arena_id: String, sprite_tilt_degrees: float, use_zone := true) -> vo
 			floors[floor_name].append(Transform3D(Basis(), center))
 			match c:
 				"T":
-					_add_collider(walls, center, Vector3(TILE, TREE_COLLIDER_HEIGHT, TILE))
+					solid_cells[cell] = true
 					# Upright sprite tilted to face the fixed camera; base sits at the tile's front edge.
 					var base := center + Vector3(0, 0, TILE * 0.35)
 					trees.append(Transform3D(tilt, base + tilt.y * TREE_SPRITE_SIZE.y * 0.5))
 				"#":
-					_add_collider(walls, center, Vector3(TILE, WALL_HEIGHT, TILE))
+					solid_cells[cell] = true
 					rocks.append(Transform3D(Basis(), center + Vector3(0, WALL_HEIGHT * 0.5, 0)))
 				"B":
-					_add_collider(walls, center, Vector3(TILE, WALL_HEIGHT, TILE))
+					solid_cells[cell] = true
 					boulders.append(Transform3D(Basis(), center + Vector3(0, WALL_HEIGHT * 0.5, 0)))
 				"~":
-					_add_collider(water, center, Vector3(TILE, 1.0, TILE))
+					water_cells[cell] = true
 				"\"":
 					grass.append(Transform3D(Basis(), center + Vector3(0, GRASS_HEIGHT * 0.5, 0)))
 				"1":
-					spawns[0] = center
+					spawns[0].append(center)
 				"2":
-					spawns[1] = center
+					spawns[1].append(center)
 				"Z":
 					_zone_cells[cell] = true
 					zone.append(Transform3D(Basis(), center + Vector3(0, 0.02, 0)))
+
+	_build_colliders(solid_cells, WORLD_LAYER, TREE_COLLIDER_HEIGHT)
+	_build_colliders(water_cells, WATER_LAYER, 1.0)
+	_build_pathfinding(solid_cells, water_cells)
+	for team: int in spawns:
+		if spawns[team].is_empty():
+			spawns[team].append(Vector3(0, 0, (height * 0.5 - 3.0) * (1.0 if team == 0 else -1.0)))
 
 	var floor_plane := PlaneMesh.new()
 	floor_plane.size = Vector2(TILE, TILE)
@@ -135,6 +140,31 @@ func build(arena_id: String, sprite_tilt_degrees: float, use_zone := true) -> vo
 	outside.material_override = outside_mat
 	outside.position.y = -0.03
 	add_child(outside)
+
+
+## Spawn point for the `index`-th member of `team`.
+func spawn_point(team: int, index: int) -> Vector3:
+	var points: Array = spawns[team]
+	return points[index % points.size()]
+
+
+## Walkable route from `from` to `to` as world positions (cell centres),
+## excluding the start cell. Empty if there's no route.
+func find_path(from: Vector3, to: Vector3) -> PackedVector3Array:
+	var result := PackedVector3Array()
+	var start := world_to_cell(from)
+	var goal := world_to_cell(to)
+	if not _astar.is_in_boundsv(start) or not _astar.is_in_boundsv(goal):
+		return result
+	var ids := _astar.get_id_path(start, goal, true)
+	for i in range(1, ids.size()):
+		result.append(cell_center(ids[i]))
+	return result
+
+
+func is_walkable(world_pos: Vector3) -> bool:
+	var cell := world_to_cell(world_pos)
+	return _astar.is_in_boundsv(cell) and not _astar.is_point_solid(cell)
 
 
 func has_zone() -> bool:
@@ -180,13 +210,57 @@ func _char_at(cell: Vector2i) -> String:
 	return rows[cell.y][cell.x]
 
 
-func _add_collider(body: StaticBody3D, center: Vector3, size: Vector3) -> void:
-	var box := BoxShape3D.new()
-	box.size = size
-	var shape := CollisionShape3D.new()
-	shape.shape = box
-	shape.position = center + Vector3(0, size.y * 0.5, 0)
-	body.add_child(shape)
+## One static body whose boxes cover `cells`, merged into rectangles. Long
+## smooth walls (instead of one box per tile) let brawlers slide along them
+## without catching on the seams between tiles.
+func _build_colliders(cells: Dictionary, layer: int, collider_height: float) -> void:
+	if cells.is_empty():
+		return
+	var body := StaticBody3D.new()
+	body.collision_layer = layer
+	body.collision_mask = 0
+	add_child(body)
+	var used := {}
+	for y in height:
+		for x in width:
+			var start := Vector2i(x, y)
+			if not cells.has(start) or used.has(start):
+				continue
+			var w := 1
+			while cells.has(Vector2i(x + w, y)) and not used.has(Vector2i(x + w, y)):
+				w += 1
+			var h := 1
+			while _row_free(cells, used, x, y + h, w):
+				h += 1
+			for yy in range(y, y + h):
+				for xx in range(x, x + w):
+					used[Vector2i(xx, yy)] = true
+			var box := BoxShape3D.new()
+			box.size = Vector3(w * TILE, collider_height, h * TILE)
+			var shape := CollisionShape3D.new()
+			shape.shape = box
+			var corner := cell_center(start) - Vector3(TILE, 0, TILE) * 0.5
+			shape.position = corner + Vector3(w * TILE * 0.5, collider_height * 0.5, h * TILE * 0.5)
+			body.add_child(shape)
+
+
+func _row_free(cells: Dictionary, used: Dictionary, x: int, y: int, w: int) -> bool:
+	for xx in range(x, x + w):
+		var c := Vector2i(xx, y)
+		if not cells.has(c) or used.has(c):
+			return false
+	return true
+
+
+func _build_pathfinding(solid_cells: Dictionary, water_cells: Dictionary) -> void:
+	_astar.region = Rect2i(0, 0, width, height)
+	_astar.cell_size = Vector2(TILE, TILE)
+	_astar.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES
+	_astar.update()
+	for cell: Vector2i in solid_cells:
+		_astar.set_point_solid(cell)
+	for cell: Vector2i in water_cells:
+		_astar.set_point_solid(cell)
 
 
 func _add_multimesh(mesh: Mesh, material: Material, transforms: Array, shadows := true) -> void:

@@ -16,7 +16,7 @@ func _draw() -> void:
 	var font := ThemeDB.fallback_font
 	for node in get_tree().get_nodes_in_group("brawlers"):
 		var brawler := node as Brawler
-		if brawler == null or brawler.is_dead or brawler.is_hidden_from(GameData.local_team):
+		if brawler == null or brawler.is_dead or not brawler.visible_to_local_player():
 			continue
 		var world_pos := brawler.global_position + Vector3.UP * HEAD_HEIGHT * brawler.species.sprite_scale
 		if camera.is_position_behind(world_pos):
@@ -25,7 +25,11 @@ func _draw() -> void:
 		var bar := Rect2(p - Vector2(BAR_SIZE.x * 0.5, 0), BAR_SIZE)
 		var ratio := brawler.health / brawler.max_health
 		var friendly := brawler.team == GameData.local_team
-		var fill_color := Color(0.3, 0.85, 0.35) if friendly else Color(0.95, 0.25, 0.25)
+		var fill_color := Color(0.95, 0.25, 0.25)
+		if brawler.is_player:
+			fill_color = Color(0.3, 0.85, 0.35)
+		elif friendly:
+			fill_color = Color(0.3, 0.6, 1.0)
 
 		draw_rect(bar.grow(2), Color(0, 0, 0, 0.75))
 		draw_rect(Rect2(bar.position, Vector2(bar.size.x * ratio, bar.size.y)), fill_color)
@@ -50,6 +54,10 @@ func _draw() -> void:
 
 		if brawler.is_player:
 			_draw_ammo(brawler, Vector2(bar.position.x, bar.end.y + 4))
+		elif brawler.super_charge >= 1.0:
+			# Super ready: a gold dot left of the name, so you can see it coming.
+			draw_circle(Vector2(bar.position.x - 10, bar.position.y - 30), 6, Color.BLACK)
+			draw_circle(Vector2(bar.position.x - 10, bar.position.y - 30), 5, Color(1, 0.85, 0.2))
 
 
 func _text(font: Font, pos: Vector2, width: float, text: String, size: int, color: Color,
