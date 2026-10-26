@@ -1,0 +1,36 @@
+name: Godot check
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Godot 4.3
+        run: |
+          curl -sSL -o godot.zip https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+
+      - name: Import project
+        run: timeout 300 ./godot --headless --path . --import 2>&1 | tee import.log
+
+      - name: Run smoke test
+        run: |
+          set -o pipefail
+          timeout 300 ./godot --headless --path . res://tests/smoke_test.tscn 2>&1 | tee test.log
+
+      - name: Fail on script errors
+        if: always()
+        run: |
+          if grep -nE "SCRIPT ERROR|Parse Error|Failed to load|Invalid call|Invalid access|FAIL:" import.log test.log; then
+            echo "::error::Godot reported errors (see above)"
+            exit 1
+          fi
+          grep -q "SMOKE TEST: PASS" test.log

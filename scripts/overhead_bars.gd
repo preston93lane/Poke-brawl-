@@ -1,5 +1,5 @@
 extends Control
-## Draws name, health bar and (for the player) ammo bars above each brawler.
+## Draws name, health bar, status and (for the player) ammo bars above each brawler.
 
 const BAR_SIZE := Vector2(96, 14)
 const HEAD_HEIGHT := 2.2
@@ -16,34 +16,50 @@ func _draw() -> void:
 	var font := ThemeDB.fallback_font
 	for node in get_tree().get_nodes_in_group("brawlers"):
 		var brawler := node as Brawler
-		if brawler == null or brawler.is_dead:
+		if brawler == null or brawler.is_dead or brawler.is_hidden_from(GameData.local_team):
 			continue
-		var world_pos := brawler.global_position + Vector3.UP * HEAD_HEIGHT
+		var world_pos := brawler.global_position + Vector3.UP * HEAD_HEIGHT * brawler.species.sprite_scale
 		if camera.is_position_behind(world_pos):
 			continue
 		var p := camera.unproject_position(world_pos)
 		var bar := Rect2(p - Vector2(BAR_SIZE.x * 0.5, 0), BAR_SIZE)
-		var ratio := brawler.health / brawler.data.max_health
-		var fill_color := Color(0.3, 0.85, 0.35) if brawler.is_player else Color(0.95, 0.25, 0.25)
+		var ratio := brawler.health / brawler.max_health
+		var friendly := brawler.team == GameData.local_team
+		var fill_color := Color(0.3, 0.85, 0.35) if friendly else Color(0.95, 0.25, 0.25)
 
 		draw_rect(bar.grow(2), Color(0, 0, 0, 0.75))
 		draw_rect(Rect2(bar.position, Vector2(bar.size.x * ratio, bar.size.y)), fill_color)
 
-		var hp_text := str(ceili(brawler.health))
-		var hp_pos := Vector2(bar.position.x, bar.position.y - 4)
-		draw_string_outline(font, hp_pos, hp_text, HORIZONTAL_ALIGNMENT_CENTER, bar.size.x, 18, 5, Color.BLACK)
-		draw_string(font, hp_pos, hp_text, HORIZONTAL_ALIGNMENT_CENTER, bar.size.x, 18, Color.WHITE)
-		var name_pos := Vector2(bar.position.x - 40, bar.position.y - 24)
-		var name_color := Color(0.6, 0.85, 1.0) if brawler.is_player else Color(1.0, 0.7, 0.7)
-		draw_string_outline(font, name_pos, brawler.data.display_name, HORIZONTAL_ALIGNMENT_CENTER, bar.size.x + 80, 16, 5, Color.BLACK)
-		draw_string(font, name_pos, brawler.data.display_name, HORIZONTAL_ALIGNMENT_CENTER, bar.size.x + 80, 16, name_color)
+		_text(font, Vector2(bar.position.x, bar.position.y - 4), bar.size.x, str(ceili(brawler.health)), 18, Color.WHITE)
+		var name_color := Color(0.6, 0.85, 1.0) if friendly else Color(1.0, 0.7, 0.7)
+		var title := "%s Lv%d" % [brawler.species.display_name, brawler.level]
+		_text(font, Vector2(bar.position.x - 60, bar.position.y - 24), bar.size.x + 120, title, 16, name_color)
+
+		# Type pips to the left of the bar.
+		for i in brawler.species.types.size():
+			var pip := Vector2(bar.position.x - 10 - i * 12, bar.position.y + bar.size.y * 0.5)
+			draw_circle(pip, 5, Color.BLACK)
+			draw_circle(pip, 4, GameData.type_color(brawler.species.types[i]))
+
+		var status := brawler.status_text()
+		if status != "":
+			_text(font, Vector2(bar.end.x + 4, bar.end.y), 40, status, 14, Color(1, 0.8, 0.3), HORIZONTAL_ALIGNMENT_LEFT)
+		# One pip per KO in the current streak (evolution progress).
+		for i in brawler.streak:
+			draw_circle(Vector2(bar.end.x + 8 + i * 10, bar.position.y - 4), 3.5, Color(1, 0.85, 0.2))
 
 		if brawler.is_player:
 			_draw_ammo(brawler, Vector2(bar.position.x, bar.end.y + 4))
 
 
+func _text(font: Font, pos: Vector2, width: float, text: String, size: int, color: Color,
+		align := HORIZONTAL_ALIGNMENT_CENTER) -> void:
+	draw_string_outline(font, pos, text, align, width, size, 5, Color.BLACK)
+	draw_string(font, pos, text, align, width, size, color)
+
+
 func _draw_ammo(brawler: Brawler, origin: Vector2) -> void:
-	var count := brawler.data.max_ammo
+	var count := brawler.ranged_move.ammo
 	var gap := 3.0
 	var seg_w := (BAR_SIZE.x - gap * (count - 1)) / count
 	for i in count:

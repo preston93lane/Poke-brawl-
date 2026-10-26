@@ -4,11 +4,14 @@ extends CanvasLayer
 signal restart_requested
 
 var _can_restart := false
+var _announce_tween: Tween
 
 @onready var move_stick: VirtualJoystick = $MoveStick
 @onready var aim_stick: VirtualJoystick = $AimStick
 @onready var melee_button: TouchButton = $MeleeButton
 @onready var matchup_label: Label = $Matchup
+@onready var status_label: Label = $Status
+@onready var announcement: Label = $Announcement
 @onready var result: Control = $Result
 @onready var result_title: Label = $Result/Title
 @onready var result_hint: Label = $Result/Hint
@@ -16,10 +19,32 @@ var _can_restart := false
 
 func _ready() -> void:
 	result.visible = false
+	announcement.modulate.a = 0.0
 
 
-func set_matchup(player_name: String, enemy_name: String) -> void:
-	matchup_label.text = "%s  vs  %s" % [player_name.to_upper(), enemy_name.to_upper()]
+func set_matchup(player_name: String, enemy_name: String, arena_name: String) -> void:
+	matchup_label.text = "%s  vs  %s  ·  %s" % [player_name.to_upper(), enemy_name.to_upper(), arena_name]
+
+
+func set_status(text: String) -> void:
+	status_label.text = text
+
+
+func set_moves(melee_name: String, ranged_name: String) -> void:
+	melee_button.label = melee_name.to_upper()
+	melee_button.queue_redraw()
+	aim_stick.label = ranged_name.to_upper()
+	aim_stick.queue_redraw()
+
+
+func announce(text: String) -> void:
+	announcement.text = text
+	if _announce_tween:
+		_announce_tween.kill()
+	announcement.modulate.a = 1.0
+	_announce_tween = create_tween()
+	_announce_tween.tween_interval(1.6)
+	_announce_tween.tween_property(announcement, "modulate:a", 0.0, 0.5)
 
 
 func show_result(victory: bool) -> void:

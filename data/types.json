@@ -1,0 +1,36 @@
+{
+	"_comment": "Attacking type -> defending types. Multipliers are softened from the main games so fights stay readable. Dual types multiply.",
+	"multipliers": {
+		"super_effective": 1.5,
+		"not_very_effective": 0.67,
+		"immune": 0.4
+	},
+	"stab": 1.2,
+	"colors": {
+		"normal": "#a8a878", "fire": "#f08030", "water": "#6890f0", "electric": "#f8d030",
+		"grass": "#78c850", "ice": "#98d8d8", "fighting": "#c03028", "poison": "#a040a0",
+		"ground": "#e0c068", "flying": "#a890f0", "psychic": "#f85888", "bug": "#a8b820",
+		"rock": "#b8a038", "ghost": "#705898", "dragon": "#7038f8", "dark": "#705848",
+		"steel": "#b8b8d0", "fairy": "#ee99ac"
+	},
+	"chart": {
+		"normal":   { "super_effective": [], "not_very_effective": ["rock", "steel"], "immune": ["ghost"] },
+		"fire":     { "super_effective": ["grass", "ice", "bug", "steel"], "not_very_effective": ["fire", "water", "rock", "dragon"], "immune": [] },
+		"water":    { "super_effective": ["fire", "ground", "rock"], "not_very_effective": ["water", "grass", "dragon"], "immune": [] },
+		"electric": { "super_effective": ["water", "flying"], "not_very_effective": ["electric", "grass", "dragon"], "immune": ["ground"] },
+		"grass":    { "super_effective": ["water", "ground", "rock"], "not_very_effective": ["fire", "grass", "poison", "flying", "bug", "dragon", "steel"], "immune": [] },
+		"ice":      { "super_effective": ["grass", "ground", "flying", "dragon"], "not_very_effective": ["fire", "water", "ice", "steel"], "immune": [] },
+		"fighting": { "super_effective": ["normal", "ice", "rock", "dark", "steel"], "not_very_effective": ["poison", "flying", "psychic", "bug", "fairy"], "immune": ["ghost"] },
+		"poison":   { "super_effective": ["grass", "fairy"], "not_very_effective": ["poison", "ground", "rock", "ghost"], "immune": ["steel"] },
+		"ground":   { "super_effective": ["fire", "electric", "poison", "rock", "steel"], "not_very_effective": ["grass", "bug"], "immune": ["flying"] },
+		"flying":   { "super_effective": ["grass", "fighting", "bug"], "not_very_effective": ["electric", "rock", "steel"], "immune": [] },
+		"psychic":  { "super_effective": ["fighting", "poison"], "not_very_effective": ["psychic", "steel"], "immune": ["dark"] },
+		"bug":      { "super_effective": ["grass", "psychic", "dark"], "not_very_effective": ["fire", "fighting", "poison", "flying", "ghost", "steel", "fairy"], "immune": [] },
+		"rock":     { "super_effective": ["fire", "ice", "flying", "bug"], "not_very_effective": ["fighting", "ground", "steel"], "immune": [] },
+		"ghost":    { "super_effective": ["psychic", "ghost"], "not_very_effective": ["dark"], "immune": ["normal"] },
+		"dragon":   { "super_effective": ["dragon"], "not_very_effective": ["steel"], "immune": ["fairy"] },
+		"dark":     { "super_effective": ["psychic", "ghost"], "not_very_effective": ["fighting", "dark", "fairy"], "immune": [] },
+		"steel":    { "super_effective": ["ice", "rock", "fairy"], "not_very_effective": ["fire", "water", "electric", "steel"], "immune": [] },
+		"fairy":    { "super_effective": ["fighting", "dragon", "dark"], "not_very_effective": ["fire", "poison", "steel"], "immune": [] }
+	}
+}

@@ -14,6 +14,8 @@ signal released(output: Vector2, was_tap: bool)
 @export var rest_anchor := Vector2(0.0, 1.0)
 @export var rest_offset := Vector2(230, -190)
 @export var color := Color(1, 1, 1)
+## Text drawn under the stick (e.g. the equipped move's name).
+@export var label := ""
 
 ## Current stick value, length 0..1 (zero inside the deadzone).
 var output := Vector2.ZERO
@@ -100,3 +102,8 @@ func _draw() -> void:
 	draw_circle(_center, radius, Color(0, 0, 0, 0.3 if active else 0.18))
 	draw_arc(_center, radius, 0.0, TAU, 64, Color(color, 0.6 if active else 0.35), 4.0, true)
 	draw_circle(_center + _knob, knob_radius, Color(color, 0.85 if active else 0.5))
+	if label != "" and not active:
+		var font := ThemeDB.fallback_font
+		var pos := _center + Vector2(-radius, radius + 26)
+		draw_string_outline(font, pos, label, HORIZONTAL_ALIGNMENT_CENTER, radius * 2.0, 20, 6, Color(0, 0, 0, 0.8))
+		draw_string(font, pos, label, HORIZONTAL_ALIGNMENT_CENTER, radius * 2.0, 20, Color.WHITE)

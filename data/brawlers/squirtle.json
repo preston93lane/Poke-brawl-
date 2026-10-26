@@ -1,0 +1,15 @@
+{
+	"name": "Squirtle",
+	"types": ["water"],
+	"sprite": "res://assets/brawlers/squirtle.png",
+	"stats": { "hp": 3200, "attack": 95, "defense": 110, "speed": 95 },
+	"evolves_to": "wartortle",
+	"moves": [
+		{ "move": "tackle", "level": 1 },
+		{ "move": "water_gun", "level": 1 },
+		{ "move": "bite", "level": 2 },
+		{ "move": "bubble_beam", "level": 2 },
+		{ "move": "aqua_jet", "level": 3 },
+		{ "move": "hydro_pump", "level": 3 }
+	]
+}

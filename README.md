@@ -20,30 +20,38 @@ To test on a phone, use **Remote Debug → Run on device** or an Android/iOS exp
 
 ## How it plays
 
-- **Pikachu** (you, blue ring) vs a **Charmander** bot (red ring) on a symmetric arena with a few obstacles.
-- Projectile attack: 3 ammo bars that reload over time (shown under your health bar).
-- Melee attack: a wide, short arc with a cooldown (sweep shown on the button).
-- Health regenerates after 3 s without attacking or taking damage.
-- First to faint loses; tap to play again.
+- Pick brawlers, levels, moves, arena and mode on the **Main** node in `scenes/main.tscn` (Inspector).
+  A select screen is coming next.
+- **Duel:** first to 5 KOs. **King of the Hill:** stand alone in the striped zone to fill your meter (Boulder Gym).
+- Every Pokémon has a melee move (MELEE button) and a ranged move (right stick). More moves unlock at levels 2 and 3, and you choose your loadout.
+- **Types matter:** STAB, an 18-type chart and coverage moves. Super-effective hits pop up orange with "!".
+- **Evolve** on a 3-KO streak (yellow pips next to your health bar). Faint and you drop back a stage.
+- **Tall grass** hides you until you attack, get hit, or an enemy walks close.
+- Health regenerates after 3 s out of combat.
 
 ## Project layout
 
 ```
-scenes/   main.tscn (round setup), brawler.tscn, projectile.tscn, hud.tscn
-scripts/  brawler.gd          – movement, attacks, damage, visuals
-          brawler_data.gd     – per-Pokémon stats resource
-          player_controller.gd / bot_controller.gd – who drives a brawler
-          virtual_joystick.gd / touch_button.gd   – multi-touch controls
-          follow_camera.gd    – fixed-angle follow camera
-          arena.gd            – builds floor, walls and obstacles
-data/     pikachu.tres, charmander.tres – tweak stats here in the Inspector
-assets/brawlers/ – placeholder sprites (replace with real art, same file names)
+data/       JSON content: brawlers/, arenas/, moves.json, types.json, rules.json  (see docs/DATA.md)
+scenes/     main.tscn (match setup), brawler.tscn, projectile.tscn, hud.tscn
+scripts/    brawler.gd, projectile.gd, arena.gd, main.gd, *_controller.gd, HUD and touch controls
+scripts/data/  GameData autoload + MoveData / SpeciesData
+assets/     16x16 tiles and 32x32 brawler sprites (placeholders; replace with same file names)
+tests/      headless smoke test (runs in GitHub Actions on every push)
+docs/       DATA.md (file formats), DESIGN.md (roadmap: progression, 3v3, multiplayer, renaming)
 ```
 
-### Common tweaks
+## Exporting
 
-- **Camera angle:** `Camera` node in `main.tscn` → `pitch_degrees` (45 by default; higher = more top-down) and `distance`.
-- **Stats:** open a `.tres` in `data/` and edit in the Inspector.
-- **New brawler:** duplicate a `.tres`, change the art and stats, and point `player_data` / `enemy_data` on the `Main` node at it.
-- **Map layout:** edit `OBSTACLES` in `scripts/arena.gd`.
-- **Bot difficulty:** `reaction_time` and `aim_error_degrees` in `scripts/bot_controller.gd`.
+JSON files aren't Godot resources, so in **Project → Export → Resources → Filters to export
+non-resource files** add `*.json`, or the data won't be in the build.
+
+## Automated check
+
+`.github/workflows/godot-check.yml` downloads Godot 4.3, imports the project and runs
+`tests/smoke_test.tscn`, which validates the data, the damage maths and evolution, then plays both
+modes headless. Run it locally with:
+
+```
+godot --headless --path . res://tests/smoke_test.tscn
+```

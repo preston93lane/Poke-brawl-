@@ -1,49 +1,109 @@
 class_name Projectile
 extends Area3D
-## A straight-flying shot. Damages the first enemy brawler it touches and
-## disappears on walls or after travelling its max range.
+## A straight-flying shot fired by a Brawler's ranged move. Can pierce
+## through enemies and/or explode for area damage, depending on the move.
 
+var shooter: Brawler
+var move: MoveData
 var team := 0
 var direction := Vector3.FORWARD
-var speed := 16.0
-var damage := 700.0
-var max_distance := 9.0
-var color := Color.YELLOW
 
 var _travelled := 0.0
+var _hit: Array[Brawler] = []
+var _done := false
 
 @onready var mesh: MeshInstance3D = $Mesh
+@onready var shape: CollisionShape3D = $CollisionShape3D
 
 
-func setup(shooter: Brawler, dir: Vector3) -> void:
-	team = shooter.team
+func setup(p_shooter: Brawler, p_move: MoveData, dir: Vector3) -> void:
+	shooter = p_shooter
+	move = p_move
+	team = p_shooter.team
 	direction = dir
-	speed = shooter.data.projectile_speed
-	damage = shooter.data.projectile_damage
-	max_distance = shooter.data.projectile_range
-	color = shooter.data.projectile_color
 
 
 func _ready() -> void:
 	body_entered.connect(_on_body_entered)
 	var mat := StandardMaterial3D.new()
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.albedo_color = color
+	mat.albedo_color = GameData.type_color(move.type).lightened(0.2)
 	mesh.material_override = mat
+	var size := move.radius / 0.3
+	mesh.scale = Vector3.ONE * size
+	# The scene's shape resource is shared between projectiles, so give each its own.
+	var sphere := SphereShape3D.new()
+	sphere.radius = move.radius
+	shape.shape = sphere
 
 
 func _physics_process(delta: float) -> void:
-	var step := direction * speed * delta
+	if _done:
+		return
+	var step := direction * move.speed * delta
 	global_position += step
 	_travelled += step.length()
-	if _travelled >= max_distance:
-		queue_free()
+	if _travelled >= move.reach:
+		_finish()
 
 
 func _on_body_entered(body: Node3D) -> void:
-	var brawler := body as Brawler
-	if brawler:
-		if brawler.team == team or brawler.is_dead:
-			return
-		brawler.take_damage(damage)
+	if _done:
+		return
+	var target := body as Brawler
+	if target == null:
+		_finish()  # Hit a wall or obstacle.
+		return
+	if target.team == team or target.is_dead or target in _hit:
+		return
+	_hit.append(target)
+	if move.explode_radius > 0.0:
+		_finish()
+		return
+	if is_instance_valid(shooter):
+		target.take_hit(shooter, move)
+	if not move.pierce:
+		_finish()
+
+
+func _finish() -> void:
+	if _done:
+		return
+	_done = true
+	if move.explode_radius > 0.0:
+		_explode()
 	queue_free()
+
+
+func _explode() -> void:
+	if is_instance_valid(shooter):
+		for node in get_tree().get_nodes_in_group("brawlers"):
+			var target := node as Brawler
+			if target == null or target.team == team or target.is_dead:
+				continue
+			var offset := target.global_position - global_position
+			offset.y = 0.0
+			if offset.length() <= move.explode_radius + Brawler.BODY_RADIUS:
+				target.take_hit(shooter, move)
+	_spawn_explosion_fx()
+
+
+func _spawn_explosion_fx() -> void:
+	var fx := MeshInstance3D.new()
+	var sphere := SphereMesh.new()
+	sphere.radius = move.explode_radius
+	sphere.height = move.explode_radius * 2.0
+	fx.mesh = sphere
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.albedo_color = Color(GameData.type_color(move.type), 0.5)
+	fx.material_override = mat
+	fx.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	get_parent().add_child(fx)
+	fx.global_position = global_position
+	fx.scale = Vector3.ONE * 0.3
+	var tween := fx.create_tween().set_parallel()
+	tween.tween_property(fx, "scale", Vector3.ONE, 0.18)
+	tween.tween_property(mat, "albedo_color:a", 0.0, 0.3)
+	tween.chain().tween_callback(fx.queue_free)

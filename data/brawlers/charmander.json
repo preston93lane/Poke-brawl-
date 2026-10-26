@@ -1,0 +1,15 @@
+{
+	"name": "Charmander",
+	"types": ["fire"],
+	"sprite": "res://assets/brawlers/charmander.png",
+	"stats": { "hp": 2900, "attack": 105, "defense": 85, "speed": 105 },
+	"evolves_to": "charmeleon",
+	"moves": [
+		{ "move": "scratch", "level": 1 },
+		{ "move": "ember", "level": 1 },
+		{ "move": "slash", "level": 2 },
+		{ "move": "flamethrower", "level": 2 },
+		{ "move": "quick_attack", "level": 3 },
+		{ "move": "fire_blast", "level": 3 }
+	]
+}

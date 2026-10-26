@@ -1,0 +1,9 @@
+{
+	"name": "Charmeleon",
+	"types": ["fire"],
+	"sprite": "res://assets/brawlers/charmeleon.png",
+	"sprite_scale": 1.15,
+	"stats": { "hp": 3500, "attack": 118, "defense": 95, "speed": 108 },
+	"evolves_from": "charmander",
+	"evolves_to": "charizard"
+}

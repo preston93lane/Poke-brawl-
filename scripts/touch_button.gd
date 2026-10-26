@@ -71,7 +71,7 @@ func _draw() -> void:
 		draw_arc(center, r - 5.0, -PI / 2, -PI / 2 + TAU * _cooldown, 48, Color(1, 1, 1, 0.8), 6.0, true)
 	draw_arc(center, r, 0.0, TAU, 48, Color(1, 1, 1, 0.9), 3.0, true)
 	var font := ThemeDB.fallback_font
-	var font_size := 22
+	var font_size := 22 if label.length() <= 8 else 16
 	var text_pos := Vector2(0, center.y + font_size * 0.35)
 	draw_string_outline(font, text_pos, label, HORIZONTAL_ALIGNMENT_CENTER, size.x, font_size, 6, Color(0, 0, 0, 0.8))
 	draw_string(font, text_pos, label, HORIZONTAL_ALIGNMENT_CENTER, size.x, font_size, Color.WHITE)

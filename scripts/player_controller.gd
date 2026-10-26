@@ -3,8 +3,8 @@ extends Node
 ## Drives the parent Brawler from the on-screen sticks / melee button.
 ## Keyboard fallback for desktop testing: WASD move, F shoot, Space melee.
 
-## How far the player auto-targets with a tap on the aim stick or melee.
-const MELEE_AUTO_AIM_RANGE := 3.5
+## How far a tap on MELEE looks for a target to auto-aim at.
+const MELEE_AUTO_AIM_RANGE := 4.0
 
 var move_stick: VirtualJoystick
 var aim_stick: VirtualJoystick
@@ -47,18 +47,18 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _on_aim_released(output: Vector2, was_tap: bool) -> void:
 	if output != Vector2.ZERO:
-		brawler.shoot(_to_world(output))
+		brawler.use_ranged(_to_world(output))
 	elif was_tap:
 		_auto_shoot()
 	# Otherwise the player dragged back to the centre: cancel the shot.
 
 
 func _auto_shoot() -> void:
-	var target := brawler.find_nearest_enemy(brawler.data.projectile_range + 1.0)
+	var target := brawler.find_nearest_enemy(brawler.ranged_move.effective_reach() + 1.0)
 	var dir := brawler.facing
 	if target:
 		dir = target.global_position - brawler.global_position
-	brawler.shoot(dir)
+	brawler.use_ranged(dir)
 
 
 func _do_melee() -> void:
@@ -66,10 +66,11 @@ func _do_melee() -> void:
 	if aim_stick.output != Vector2.ZERO:
 		dir = _to_world(aim_stick.output)
 	else:
-		var target := brawler.find_nearest_enemy(MELEE_AUTO_AIM_RANGE)
+		var reach := maxf(MELEE_AUTO_AIM_RANGE, brawler.melee_move.effective_reach())
+		var target := brawler.find_nearest_enemy(reach)
 		if target:
 			dir = target.global_position - brawler.global_position
-	brawler.melee(dir)
+	brawler.use_melee(dir)
 
 
 ## The camera never rotates around Y, so screen right = +X and screen down = +Z.
