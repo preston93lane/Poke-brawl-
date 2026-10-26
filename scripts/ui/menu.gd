@@ -394,7 +394,10 @@ func _species_header(s: SpeciesData, sprite_size: float) -> HBoxContainer:
 	var names: Array[String] = []
 	for stage in GameData.evolution_line(s.id):
 		names.append(stage.display_name)
-	info.add_child(UiKit.label("Stage %d  ·  %s" % [s.stage, " › ".join(names)], 18, Color(0.75, 0.8, 0.9)))
+	if s.legendary:
+		info.add_child(UiKit.label("LEGENDARY  ·  raid boss in Battle, shrine guardian in King of the Hill", 18, Color(1, 0.85, 0.35)))
+	else:
+		info.add_child(UiKit.label("Stage %d  ·  %s" % [s.stage, " › ".join(names)], 18, Color(0.75, 0.8, 0.9)))
 	header.add_child(info)
 	return header
 

@@ -4,6 +4,8 @@ extends Node3D
 ## Normally configured by the menu; running main.tscn directly uses these exports.
 
 const BRAWLER_SCENE := preload("res://scenes/brawler.tscn")
+## Team id for neutral raid bosses: an enemy to both sides.
+const NEUTRAL_TEAM := 2
 const MENU_SCENE := "res://scenes/menu.tscn"
 
 @export var arena_id := "route_1"
@@ -34,6 +36,14 @@ var scores := [0.0, 0.0]
 var mode_rules: Dictionary = {}
 var time_left := 150.0
 var _spawn_index := {}
+## Raid boss (Battle) and active legendary allies (both modes).
+var raid_boss: Brawler
+var _raid_done := false
+var legendaries: Array[Brawler] = []
+## King of the hill shrine: seconds each team has held the zone alone, uninterrupted.
+var shrine_hold := [0.0, 0.0]
+var shrine_cooldown := 0.0
+var _item_timer := 0.0
 
 @onready var arena: Arena = $Arena
 @onready var camera: FollowCamera = $Camera
@@ -77,6 +87,7 @@ func _ready() -> void:
 	camera.snap_to_target()
 
 	time_left = float(mode_rules.get("time_limit", 150.0))
+	_item_timer = float(GameData.item_spawn.get("first_after", 8.0))
 	hud.set_matchup(_team_names(0), _team_names(1), arena.arena_name)
 	hud.set_moves(player.melee_move, player.ranged_move)
 	hud.set_teams(teams)
@@ -144,6 +155,7 @@ func _spawn(species_id: String, level: int, team: int, is_player: bool, melee_id
 	teams[team].append(brawler)
 	brawler.position = arena.spawn_point(team, _spawn_index[brawler])
 	arena.add_child(brawler)
+	brawler.protect(float(GameData.rule("spawn_protection", 2.0)))
 	brawler.died.connect(_on_brawler_died)
 	brawler.evolved.connect(_on_brawler_evolved)
 	return brawler
@@ -157,7 +169,9 @@ func _physics_process(delta: float) -> void:
 		time_left = 0.0
 		_end_on_time()
 		return
+	_tick_items(delta)
 	if mode != "king_of_the_hill":
+		_tick_raid()
 		_update_status()
 		return
 	var teams_in_zone := {}
@@ -165,6 +179,7 @@ func _physics_process(delta: float) -> void:
 		for b: Brawler in teams[team]:
 			if not b.is_dead and arena.is_in_zone(b.global_position):
 				teams_in_zone[team] = true
+	_tick_shrine(delta, teams_in_zone)
 	if teams_in_zone.size() == 1:
 		var holder: int = teams_in_zone.keys()[0]
 		scores[holder] += delta
@@ -179,10 +194,14 @@ func _physics_process(delta: float) -> void:
 func _on_brawler_died(victim: Brawler, killer: Brawler) -> void:
 	if round_over:
 		return
+	if victim == raid_boss:
+		_on_raid_boss_defeated(killer)
+		return
 	if killer and killer != victim:
 		killer.register_kill()
 	hud.add_kill(killer, victim)
-	if mode == "duel":
+	var by_boss := killer != null and killer.team == NEUTRAL_TEAM
+	if mode == "duel" and not by_boss:
 		var scoring_team := 1 - victim.team
 		scores[scoring_team] += 1
 		_update_status()
@@ -201,6 +220,133 @@ func _on_brawler_died(victim: Brawler, killer: Brawler) -> void:
 func _on_brawler_evolved(brawler: Brawler, from_name: String) -> void:
 	if brawler.team == player.team:
 		hud.announce("%s evolved into %s!" % [from_name, brawler.species.display_name])
+
+
+# --- Items -----------------------------------------------------------------
+
+func _tick_items(delta: float) -> void:
+	_item_timer -= delta
+	if _item_timer > 0.0:
+		return
+	_item_timer = float(GameData.item_spawn.get("interval", 12.0))
+	if get_tree().get_nodes_in_group("items").size() >= int(GameData.item_spawn.get("max_on_map", 4)):
+		return
+	spawn_item(GameData.random_item_id(), arena.random_open_point())
+
+
+func spawn_item(item_id: String, at: Vector3) -> ItemPickup:
+	if item_id == "":
+		return null
+	var pickup := ItemPickup.new()
+	pickup.setup(item_id)
+	pickup.position = at
+	arena.add_child(pickup)
+	return pickup
+
+
+# --- Legendaries -------------------------------------------------------------
+
+## Battle: the arena's raid boss lands in the middle when the clock reaches raid_time_left.
+func _tick_raid() -> void:
+	if _raid_done or raid_boss != null:
+		return
+	if time_left <= float(GameData.rule("legendary/raid_time_left", 90.0)):
+		spawn_raid_boss()
+
+
+func spawn_raid_boss() -> Brawler:
+	var boss_id := str(GameData.arenas.get(arena_id, {}).get("raid_boss", ""))
+	if not GameData.species.has(boss_id):
+		_raid_done = true
+		return null
+	var boss: Brawler = BRAWLER_SCENE.instantiate()
+	boss.setup(boss_id, 3, NEUTRAL_TEAM, false, arena)
+	boss.is_legendary = true
+	boss.position = arena.center_point()
+	arena.add_child(boss)
+	boss.max_health *= float(GameData.rule("legendary/boss_hp_multiplier", 3.5))
+	boss.health = boss.max_health
+	boss.died.connect(_on_brawler_died)
+	var bot := BotController.new()
+	bot.set_difficulty("normal")
+	bot.leash_center = boss.position
+	bot.leash_radius = 7.0
+	boss.add_child(bot)
+	raid_boss = boss
+	Vfx.ring(arena, boss.position, 3.0, boss.species.types[0], 80)
+	hud.announce("A wild %s appeared! Most damage wins it!" % boss.species.display_name.to_upper())
+	return boss
+
+
+func _on_raid_boss_defeated(killer: Brawler) -> void:
+	var boss := raid_boss
+	_raid_done = true
+	raid_boss = null
+	var dealt_0 := float(boss.damage_by_team.get(0, 0.0))
+	var dealt_1 := float(boss.damage_by_team.get(1, 0.0))
+	var winner := 0 if dealt_0 > dealt_1 else 1
+	if is_equal_approx(dealt_0, dealt_1) and killer:
+		winner = clampi(killer.team, 0, 1)
+	var where := boss.global_position
+	boss.queue_free()
+	summon_legendary(boss.species.id, winner, where)
+
+
+## Brings a legendary in on `team`'s side for legendary/ally_duration seconds.
+## It can't be hurt, flies over walls and fights with its own moves and super.
+func summon_legendary(species_id: String, team: int, at: Vector3) -> Brawler:
+	var ally: Brawler = BRAWLER_SCENE.instantiate()
+	ally.setup(species_id, 3, team, false, arena)
+	ally.is_legendary = true
+	ally.invulnerable = true
+	ally.flying = true
+	ally.collision_mask = 0
+	ally.position = at
+	arena.add_child(ally)
+	ally.died.connect(_on_brawler_died)
+	ally.evolved.connect(_on_brawler_evolved)
+	var bot := BotController.new()
+	bot.set_difficulty("hard")
+	bot.start_delay = 0.5
+	if mode == "king_of_the_hill":
+		bot.objective = arena.zone_center
+		bot.has_objective = true
+	ally.add_child(bot)
+	legendaries.append(ally)
+	Vfx.ring(arena, at, 2.5, ally.species.types[0], 80)
+	var side := "Your team" if team == player.team else "The enemy team"
+	hud.announce("%s summoned %s!" % [side, ally.species.display_name.to_upper()])
+	var duration := float(GameData.rule("legendary/ally_duration", 25.0))
+	ally.legendary_time_left = duration
+	get_tree().create_timer(duration, false).timeout.connect(_dismiss_legendary.bind(ally))
+	return ally
+
+
+func _dismiss_legendary(ally: Brawler) -> void:
+	if not is_instance_valid(ally):
+		return
+	legendaries.erase(ally)
+	Vfx.burst(arena, ally.global_position + Vector3(0, 1, 0), ally.species.types[0], 40, 0.8, 4.0)
+	ally.queue_free()
+
+
+## King of the hill: hold the zone alone for legendary/shrine_hold seconds straight
+## to awaken the arena's guardian for your team.
+func _tick_shrine(delta: float, teams_in_zone: Dictionary) -> void:
+	shrine_cooldown = maxf(0.0, shrine_cooldown - delta)
+	var need := float(GameData.rule("legendary/shrine_hold", 20.0))
+	if teams_in_zone.size() != 1 or shrine_cooldown > 0.0:
+		shrine_hold = [0.0, 0.0]
+		return
+	var holder: int = teams_in_zone.keys()[0]
+	shrine_hold[holder] += delta
+	shrine_hold[1 - holder] = 0.0
+	if shrine_hold[holder] >= need:
+		shrine_hold = [0.0, 0.0]
+		shrine_cooldown = float(GameData.rule("legendary/ally_duration", 25.0)) + float(GameData.rule("legendary/shrine_cooldown", 30.0))
+		var guardian := str(GameData.arenas.get(arena_id, {}).get("guardian", ""))
+		if GameData.species.has(guardian):
+			summon_legendary(guardian, holder, arena.zone_center)
 
 
 func _end_round(result_name: String) -> void:
@@ -226,6 +372,9 @@ func _team_names(team: int) -> String:
 func _update_status() -> void:
 	var target := float(mode_rules.get("kills_to_win", 10)) if mode == "duel" else float(mode_rules.get("hold_time", 60.0))
 	hud.set_scores(mode, scores, target, time_left)
+	if mode == "king_of_the_hill":
+		hud.set_shrine(shrine_hold, float(GameData.rule("legendary/shrine_hold", 20.0)), shrine_cooldown,
+				str(GameData.arenas.get(arena_id, {}).get("guardian", "")))
 	if mode == "duel":
 		hud.set_status("KOs  %d – %d   (first to %d)" % [scores[0], scores[1], int(mode_rules.get("kills_to_win", 10))])
 	else:

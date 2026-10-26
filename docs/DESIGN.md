@@ -113,10 +113,10 @@ Arenas are ASCII maps (see `docs/DATA.md`), so new ones are quick to sketch. Eac
 Needed tile features: destructible walls (hits break them), hazards (timed electric tiles), and
 moving/spinner floor tiles.
 
-## Legendaries (proposals)
+## Legendaries
 
-Brawl Stars has no legendaries, so this is where Poke Brawl can be its own game. Options, in the
-order I'd recommend:
+**Built:** the Raid in Battle (the team that dealt the most damage gets the boss as an ally) and Shrine
+control in King of the Hill. See `docs/DATA.md → Legendaries`. The original options were:
 
 1. **Legendary Raid (mid-match event).** At 1:30 a legendary bird (Zapdos, Moltres or Articuno,
    picked by arena) lands in the middle as a neutral boss with a big health bar. Both teams fight
@@ -140,12 +140,13 @@ Raid and Gauge also fit online play well, because both teams share the same even
 | Priority | Idea | Why |
 | --- | --- | --- |
 | High | **Sound and music**: hit sounds per type, super cues, a short music loop | Biggest missing piece of game feel |
-| High | **Walk / attack animations** (2–4 frame sprite cycles, squash on hit) | Makes characters feel alive |
+| ✅ | **Walk / attack animations**: front/side/back views, waddle, squash and stretch | Makes characters feel alive |
 | High | **Gadgets**: one active ability with 3 uses per match (Potion, X Speed, Escape Rope) | Brawl Stars' extra decision layer |
 | High | **Settings**: stick size, left-handed layout, aim sensitivity, auto-aim on/off | Phone comfort |
 | Medium | **Rare Candy Grab** (Gem Grab) and **Showdown** (battle royale with power-up drops) modes | Variety |
-| Medium | **Spawn protection** (2 s invulnerable after respawn) and a respawn camera | Fairness |
-| Medium | **Trophies / XP per Pokémon** to unlock levels 2–3 (replaces picking the level) | Progression |
+| ✅ | **Spawn protection** (2 s bubble, ends when you attack) | Fairness |
+| ✅ | **Item spawns**: Potion, Protein/Iron/Carbos, PP Up, HP Up | Map control |
+| Later | **Trophies / XP per Pokémon** to unlock levels 2–3 (only if going public) | Progression |
 | Medium | **Shiny skins** and emotes | Collection and personality |
 | Low | **Tutorial** match with prompts, and a training ground with dummies | Onboarding |
 | Low | **Mini-map** for the bigger arenas | Awareness |

@@ -39,7 +39,12 @@ The web build uses Godot's Compatibility renderer, so lighting is slightly simpl
 - **Types matter:** STAB, an 18-type chart and coverage moves. Super-effective hits pop up orange with "!".
 - **Evolve** every 3 KOs (yellow pips next to your health bar; fainting doesn't reset them). Faint and you drop back a stage.
 - **Tall grass** hides you until you attack, get hit, or an enemy walks close.
-- Health regenerates after 3 s out of combat.
+- Health regenerates after 3 s out of combat. You respawn inside a protective bubble for 2 s (attacking pops it).
+- **Items** appear around the map: Potion (heal), Protein / Iron / Carbos (attack / defense / speed until you faint),
+  PP Up (an extra ammo bar) and HP Up (more max HP).
+- **Legendaries:** in Battle a wild raid boss (Zapdos, Moltres or Articuno) lands at 1:30, and the team that deals the
+  most damage to it gets it as an ally for 25 s. In King of the Hill, hold the zone alone for 20 s to awaken the
+  arena's guardian (Celebi, Regirock or Rayquaza).
 
 ## Project layout
 

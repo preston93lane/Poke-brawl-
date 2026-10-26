@@ -5,7 +5,10 @@
 Each Pokemon is described with simple shapes on a 32x32 grid (the functions
 below). They're drawn 4x larger, lit like a rounded 3D surface (soft shading,
 a highlight, darker edges) and scaled down to 64x64 for smooth edges.
-Replace any PNG with real art (same file name) whenever you like.
+
+Each PNG is a 192x64 sheet of three views: front (walking toward the camera),
+side (facing right; the game flips it for left) and back (walking away).
+Replace any PNG with real art in the same layout whenever you like.
 """
 import os
 import numpy as np
@@ -80,10 +83,50 @@ def light(image):
     return Image.fromarray((out * 255).astype(np.uint8))
 
 
-def sprite(draw_fn):
+# Which view is being drawn: eyes() reads these to move or hide the face.
+FACE_DX = 0
+FACE_ON = True
+
+
+def _draw(draw_fn, face_dx=0, face_on=True):
+    global FACE_DX, FACE_ON
+    FACE_DX, FACE_ON = face_dx, face_on
     big = Image.new("RGBA", (GRID * K, GRID * K), (0, 0, 0, 0))
     draw_fn(ScaledDraw(big))
-    return light(big).resize((FINAL, FINAL), Image.LANCZOS)
+    FACE_DX, FACE_ON = 0, True
+    return big
+
+
+def _remove_face(big):
+    """Back view: paint over dark lines and white highlights inside the body with nearby body colour."""
+    alpha = big.split()[3]
+    inside = np.asarray(alpha.filter(ImageFilter.MinFilter(13))) > 0
+    a = np.asarray(big).astype(np.int32)
+    lum = a[..., :3].sum(axis=2)
+    feature = inside & ((lum < 230) | (lum > 720))
+    feature = np.asarray(Image.fromarray((feature * 255).astype(np.uint8)).filter(ImageFilter.MaxFilter(5))) > 0
+    feature &= inside
+    smooth = np.asarray(big.filter(ImageFilter.MedianFilter(17))).astype(np.int32)
+    a[feature] = smooth[feature]
+    a[..., :3] = (a[..., :3] * 0.9).astype(np.int32)  # the back is in its own shadow
+    return Image.fromarray(np.clip(a, 0, 255).astype(np.uint8))
+
+
+def sprite_views(draw_fn):
+    """[front, side (facing right), back] as 64x64 images."""
+    front = light(_draw(draw_fn)).resize((FINAL, FINAL), Image.LANCZOS)
+    side_big = light(_draw(draw_fn, face_dx=3))
+    w = int(GRID * K * 0.86)
+    side_big = side_big.resize((w, GRID * K), Image.LANCZOS)
+    side_canvas = Image.new("RGBA", (GRID * K, GRID * K), (0, 0, 0, 0))
+    side_canvas.alpha_composite(side_big, ((GRID * K - w) // 2 + 4, 0))
+    side = side_canvas.resize((FINAL, FINAL), Image.LANCZOS)
+    back = light(_remove_face(_draw(draw_fn, face_on=False))).resize((FINAL, FINAL), Image.LANCZOS)
+    return [front, side, back]
+
+
+def sprite(draw_fn):
+    return sprite_views(draw_fn)[0]
 
 def body(d, box, color, belly=None):
     d.ellipse(box, fill=rgb(color), outline=OL)
@@ -92,6 +135,9 @@ def body(d, box, color, belly=None):
         d.ellipse([x0 + w * 0.28, y0 + (y1 - y0) * 0.5, x1 - w * 0.28, y1 - 1], fill=rgb(belly))
 
 def eyes(d, cx, y, gap=4):
+    if not FACE_ON:
+        return
+    cx += FACE_DX
     for x in (cx - gap, cx + gap - 1):
         d.rectangle([x, y, x + 1, y + 2], fill=OL); d.point([(x, y)], fill=(255, 255, 255, 255))
 
@@ -306,16 +352,82 @@ def annihilape(d):
     d.arc([10, 17, 21, 23], 200, 340, fill=(255, 255, 255, 255), width=1)
 
 
+# --- Legendaries ----------------------------------------------------------
+
+def zapdos(d):
+    for side in (-1, 1):
+        x0 = 16 + side * 5
+        d.polygon([(x0, 12), (16 + side * 15, 4), (16 + side * 12, 10), (16 + side * 16, 13), (16 + side * 12, 16), (16 + side * 15, 22), (x0, 19)],
+                  fill=rgb("f8d030"), outline=OL)
+    d.polygon([(13, 7), (11, 0), (15, 4), (16, 0), (18, 4), (21, 0), (19, 7)], fill=rgb("30302a"), outline=OL)
+    d.ellipse([9, 6, 22, 28], fill=rgb("f8d030"), outline=OL)
+    d.polygon([(16, 13), (21, 15), (16, 17)], fill=rgb("f0a030"), outline=OL)
+    eyes(d, 15, 10, 3)
+    d.line([(13, 28), (12, 31)], fill=rgb("f0a030"), width=1); d.line([(18, 28), (19, 31)], fill=rgb("f0a030"), width=1)
+
+def moltres(d):
+    for side in (-1, 1):
+        d.polygon([(16 + side * 5, 11), (16 + side * 16, 3), (16 + side * 13, 11), (16 + side * 16, 15), (16 + side * 6, 20)], fill=rgb("f06030"), outline=OL)
+        d.polygon([(16 + side * 7, 12), (16 + side * 13, 7), (16 + side * 11, 13)], fill=rgb("ffd040"))
+    d.polygon([(12, 7), (14, 0), (16, 5), (18, 0), (20, 7)], fill=rgb("ff8030"), outline=OL)
+    d.ellipse([9, 6, 22, 28], fill=rgb("f0b040"), outline=OL)
+    d.polygon([(16, 13), (21, 15), (16, 17)], fill=rgb("f8e070"), outline=OL)
+    eyes(d, 15, 10, 3)
+
+def articuno(d):
+    for side in (-1, 1):
+        d.polygon([(16 + side * 5, 11), (16 + side * 16, 6), (16 + side * 14, 14), (16 + side * 6, 20)], fill=rgb("80c8f0"), outline=OL)
+    d.polygon([(14, 26), (16, 31), (18, 26)], fill=rgb("5898d8"), outline=OL)
+    d.polygon([(12, 6), (16, 1), (20, 6)], fill=rgb("3a70c0"), outline=OL)
+    d.ellipse([9, 5, 22, 27], fill=rgb("90d8f8"), outline=OL)
+    d.polygon([(16, 12), (20, 14), (16, 16)], fill=rgb("a0a8b0"), outline=OL)
+    eyes(d, 15, 9, 3)
+
+def regirock(d):
+    d.ellipse([4, 4, 27, 30], fill=rgb("b0703c"), outline=OL)
+    for x, y in ((2, 12), (26, 12)):
+        d.ellipse([x, y, x + 4, y + 10], fill=rgb("a06434"), outline=OL)
+    for x, y in ((9, 8), (14, 6), (19, 8), (8, 13), (21, 13), (13, 13), (17, 13)):
+        d.rectangle([x, y, x + 1, y + 1], fill=rgb("f8b830")) if FACE_ON else None
+    d.point([(10, 20), (20, 22), (15, 25)], fill=rgb("805028"))
+
+def rayquaza(d):
+    d.ellipse([2, 16, 30, 31], fill=rgb("3a9a58"), outline=OL)
+    d.ellipse([7, 20, 25, 28], fill=rgb("2a7a44"))
+    for x in (6, 16, 24):
+        d.ellipse([x, 18, x + 2, 20], fill=rgb("f0d040"))
+    d.ellipse([9, 3, 23, 18], fill=rgb("3a9a58"), outline=OL)
+    d.polygon([(10, 6), (4, 0), (11, 3)], fill=rgb("3a9a58"), outline=OL); d.polygon([(22, 6), (28, 0), (21, 3)], fill=rgb("3a9a58"), outline=OL)
+    d.line([(12, 15), (20, 15)], fill=rgb("f0d040"), width=1)
+    eyes(d, 16, 8, 3)
+
+def celebi(d):
+    for side in (-1, 1):
+        d.ellipse([16 + side * 8 - 4, 12, 16 + side * 8 + 4, 22], fill=rgb("e8f8f0", 170), outline=OL)
+    d.polygon([(12, 6), (13, 0), (15, 5)], fill=rgb("90d060"), outline=OL); d.polygon([(20, 6), (19, 0), (17, 5)], fill=rgb("90d060"), outline=OL)
+    d.ellipse([9, 3, 23, 17], fill=rgb("a8e070"), outline=OL)
+    d.ellipse([11, 15, 21, 29], fill=rgb("a8e070"), outline=OL)
+    eyes(d, 16, 9, 3)
+
+
 NAMES = ['abra', 'kadabra', 'alakazam', 'dratini', 'dragonair', 'dragonite', 'pikachu', 'raichu', 'charmander', 'charmeleon', 'charizard', 'squirtle', 'wartortle', 'blastoise', 'bulbasaur', 'ivysaur', 'venusaur', 'geodude', 'graveler', 'golem', 'bellsprout', 'weepinbell', 'victreebel', 'gastly', 'haunter', 'gengar', 'mankey', 'primeape', 'annihilape']
+
+NAMES += ["zapdos", "moltres", "articuno", "regirock", "rayquaza", "celebi"]
 
 if __name__ == "__main__":
     import sys
     for name in NAMES:
-        sprite(globals()[name]).save(os.path.join(OUT, name + ".png"))
-    if len(sys.argv) > 1:  # Optional contact sheet for reviewing the art.
-        sheet = Image.new("RGBA", (10 * 136, 3 * 136), (58, 62, 84, 255))
+        views = sprite_views(globals()[name])
+        out = Image.new("RGBA", (FINAL * 3, FINAL), (0, 0, 0, 0))
+        for i, v in enumerate(views):
+            out.alpha_composite(v, (i * FINAL, 0))
+        out.save(os.path.join(OUT, name + ".png"))
+    if len(sys.argv) > 1:  # Optional contact sheet for reviewing the art: front / side / back.
+        cols = 6
+        rows = (len(NAMES) + cols - 1) // cols
+        sheet = Image.new("RGBA", (cols * 3 * 72 + cols * 8, rows * 76), (58, 62, 84, 255))
         for i, name in enumerate(NAMES):
-            im = Image.open(os.path.join(OUT, name + ".png")).resize((128, 128), Image.LANCZOS)
-            sheet.alpha_composite(im, ((i % 10) * 136 + 4, (i // 10) * 136 + 4))
+            im = Image.open(os.path.join(OUT, name + ".png"))
+            sheet.alpha_composite(im.resize((216, 72), Image.LANCZOS), ((i % cols) * (216 + 8) + 2, (i // cols) * 76 + 2))
         sheet.save(sys.argv[1])
     print("wrote", len(NAMES), "sprites")

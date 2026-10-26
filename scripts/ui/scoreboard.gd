@@ -14,6 +14,8 @@ var mode := "duel"
 var scores := [0.0, 0.0]
 var target := 10.0
 var time_left := 0.0
+## King of the hill shrine: { "hold": [blue, red], "need": s, "cooldown": s, "guardian": id }
+var shrine := {}
 ## [{ "killer": Brawler, "victim": Brawler, "time": float }]
 var _feed: Array[Dictionary] = []
 
@@ -78,8 +80,12 @@ func _draw() -> void:
 					else panel.end.x + 12 + i * (PORTRAIT + 8)
 			_portrait(Rect2(x, top + 8, PORTRAIT, PORTRAIT), b, BLUE if team == 0 else RED, font)
 
-	# Kill feed under the panel.
 	var y := top + 80.0
+	if mode == "king_of_the_hill" and not shrine.is_empty():
+		_draw_shrine(Rect2(mid - 150, y, 300, 26), font)
+		y += 36.0
+
+	# Kill feed under the panel.
 	for entry in _feed:
 		if not is_instance_valid(entry["victim"]):
 			continue
@@ -87,6 +93,29 @@ func _draw() -> void:
 		var killer: Brawler = entry["killer"] if is_instance_valid(entry["killer"]) else null
 		_feed_row(Vector2(mid, y), killer, entry["victim"], alpha)
 		y += 34.0
+
+
+## Hold the zone alone to fill your side; when full, the guardian legendary joins you.
+func _draw_shrine(rect: Rect2, font: Font) -> void:
+	_box(rect, Color(0.06, 0.07, 0.12, 0.75), 10)
+	var guardian: SpeciesData = GameData.species.get(str(shrine.get("guardian", "")))
+	var need := maxf(1.0, float(shrine.get("need", 20.0)))
+	var hold: Array = shrine.get("hold", [0.0, 0.0])
+	var cooldown := float(shrine.get("cooldown", 0.0))
+	var half := rect.size.x * 0.5 - 30
+	var blue := clampf(float(hold[0]) / need, 0, 1)
+	var red := clampf(float(hold[1]) / need, 0, 1)
+	_box(Rect2(rect.position + Vector2(6, 9), Vector2(half, 8)), Color(0, 0, 0, 0.5), 4)
+	_box(Rect2(rect.end - Vector2(6 + half, 17), Vector2(half, 8)), Color(0, 0, 0, 0.5), 4)
+	if blue > 0.0:
+		_box(Rect2(rect.position + Vector2(6 + half * (1 - blue), 9), Vector2(half * blue, 8)), BLUE, 4)
+	if red > 0.0:
+		_box(Rect2(rect.end - Vector2(6 + half, 17), Vector2(half * red, 8)), RED, 4)
+	if guardian:
+		draw_texture_rect(guardian.sprite, Rect2(rect.get_center() - Vector2(13, 13), Vector2(26, 26)), false,
+				Color(0.5, 0.5, 0.5) if cooldown > 0.0 else Color.WHITE)
+	if cooldown > 0.0:
+		_text(font, Vector2(rect.position.x, rect.end.y + 14), rect.size.x, "SHRINE RESTS %ds" % ceili(cooldown), 13, Color(1, 1, 1, 0.75))
 
 
 func _portrait(rect: Rect2, b: Brawler, team_color: Color, font: Font) -> void:

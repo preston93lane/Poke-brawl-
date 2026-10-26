@@ -35,5 +35,14 @@
 			"respawn_time": 3.0,
 			"time_limit": 150.0
 		}
+	},
+	"spawn_protection": 2.0,
+	"legendary": {
+		"_comment": "Battle: a raid boss appears when raid_time_left seconds remain; the team that dealt the most damage to it gets it as an ally. King of the Hill: hold the zone alone for shrine_hold seconds straight to awaken the arena's guardian.",
+		"raid_time_left": 90.0,
+		"boss_hp_multiplier": 3.5,
+		"ally_duration": 25.0,
+		"shrine_hold": 20.0,
+		"shrine_cooldown": 30.0
 	}
 }

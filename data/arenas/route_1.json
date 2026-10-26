@@ -1,7 +1,9 @@
 {
-	"_comment": "Legend: . floor, , path, \" tall grass (hide), T tree, # rock wall, B boulder, ~ water (blocks walking, not shots), 1/2 team spawns (one per teammate), Z king-of-the-hill zone.",
+	"_comment": "Legend: . floor, , path, \" tall grass (hide), T tree, # rock wall, B boulder, ~ water (blocks walking, not shots), 1/2 team spawns (one per teammate), Z king-of-the-hill zone. raid_boss = Battle-mode legendary; guardian = King of the Hill shrine legendary.",
 	"name": "Route 1",
 	"floor": "grass",
+	"raid_boss": "zapdos",
+	"guardian": "celebi",
 	"map": [
 		"TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
 		"TTTT...............................T",

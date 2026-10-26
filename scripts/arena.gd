@@ -172,6 +172,28 @@ func find_path(from: Vector3, to: Vector3) -> PackedVector3Array:
 	return result
 
 
+## A random open floor tile (not a wall, water, tall grass or spawn), for item drops.
+func random_open_point() -> Vector3:
+	for attempt in 60:
+		var cell := Vector2i(randi_range(1, width - 2), randi_range(1, height - 2))
+		var c := _char_at(cell)
+		if c in [".", ",", "Z"] and not _astar.is_point_solid(cell):
+			return cell_center(cell)
+	return Vector3.ZERO
+
+
+## The open tile nearest the centre (raid bosses land here).
+func center_point() -> Vector3:
+	var center := Vector2i(width / 2, height / 2)
+	for radius in range(0, 8):
+		for dy in range(-radius, radius + 1):
+			for dx in range(-radius, radius + 1):
+				var cell := center + Vector2i(dx, dy)
+				if _astar.is_in_boundsv(cell) and not _astar.is_point_solid(cell):
+					return cell_center(cell)
+	return Vector3.ZERO
+
+
 func is_walkable(world_pos: Vector3) -> bool:
 	var cell := world_to_cell(world_pos)
 	return _astar.is_in_boundsv(cell) and not _astar.is_point_solid(cell)

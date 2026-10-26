@@ -130,6 +130,10 @@ func set_scores(mode: String, scores: Array, target: float, time_left: float) ->
 	_scoreboard.time_left = time_left
 
 
+func set_shrine(hold: Array, need: float, cooldown: float, guardian_id: String) -> void:
+	_scoreboard.shrine = { "hold": hold, "need": need, "cooldown": cooldown, "guardian": guardian_id }
+
+
 func add_kill(killer: Brawler, victim: Brawler) -> void:
 	_scoreboard.add_kill(killer, victim)
 

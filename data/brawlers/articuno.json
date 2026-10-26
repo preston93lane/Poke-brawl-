@@ -1,0 +1,13 @@
+{
+	"name": "Articuno",
+	"types": ["ice", "flying"],
+	"sprite": "res://assets/brawlers/articuno.png",
+	"sprite_scale": 1.6,
+	"legendary": true,
+	"stats": {"hp": 5200, "attack": 140, "defense": 125, "speed": 100},
+	"super": "blizzard",
+	"moves": [
+		{"move": "wing_attack", "level": 1},
+		{"move": "ice_beam", "level": 1}
+	]
+}

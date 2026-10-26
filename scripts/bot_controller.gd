@@ -22,6 +22,9 @@ const DIFFICULTY := {
 var target: Brawler
 var objective := Vector3.ZERO
 var has_objective := false
+## Stay within leash_radius of leash_center (raid bosses guard the middle). 0 = no leash.
+var leash_center := Vector3.ZERO
+var leash_radius := 0.0
 
 var _think_timer := 0.0
 var _retarget_timer := 0.0
@@ -72,6 +75,16 @@ func _physics_process(delta: float) -> void:
 		brawler.move_input = _unstick_dir
 		return
 
+	if leash_radius > 0.0 and _flat_distance(brawler.global_position, leash_center) > leash_radius:
+		_go_to(leash_center, delta)
+		return
+
+	var item := _wanted_item()
+	if item:
+		_go_to(item.global_position, delta)
+		_check_stuck(delta)
+		return
+
 	_retarget_timer -= delta
 	if _retarget_timer <= 0.0 or target == null or not brawler.can_see(target):
 		_retarget_timer = 0.5
@@ -95,6 +108,29 @@ func _physics_process(delta: float) -> void:
 	else:
 		_search(delta)
 	_check_stuck(delta)
+
+
+## A nearby item worth grabbing: potions when hurt, anything else when no enemy is close.
+func _wanted_item() -> Node3D:
+	if brawler.is_legendary:
+		return null
+	var hurt := brawler.health < brawler.max_health * 0.6
+	var enemy_close := target != null and not target.is_dead \
+			and brawler.global_position.distance_to(target.global_position) < 6.0
+	var best: Node3D = null
+	var best_dist := 9.0 if hurt else 6.0
+	for node in get_tree().get_nodes_in_group("items"):
+		var pickup := node as ItemPickup
+		if pickup == null:
+			continue
+		var is_potion := pickup.item.has("heal")
+		if (is_potion and not hurt) or (not is_potion and enemy_close):
+			continue
+		var dist := brawler.global_position.distance_to(pickup.global_position)
+		if dist < best_dist:
+			best_dist = dist
+			best = pickup
+	return best
 
 
 ## Prefer close enemies, hurt enemies, and ones our ranged move is super effective on.

@@ -1,0 +1,55 @@
+{
+	"_comment": "Pickups that spawn around the arena. heal = fraction of max HP; boost = stat bonus until you faint (stacks up to spawn.boost_cap); extra_ammo = one more ammo bar (or a bigger stream tank) until you faint; max_hp = more max HP until you faint. weight = how often it spawns.",
+	"items": {
+		"potion": {
+			"name": "Potion",
+			"sprite": "res://assets/items/potion.png",
+			"heal": 0.4,
+			"weight": 4.0
+		},
+		"protein": {
+			"name": "Protein",
+			"sprite": "res://assets/items/protein.png",
+			"boost": {
+				"attack": 0.2
+			},
+			"weight": 2.0
+		},
+		"iron": {
+			"name": "Iron",
+			"sprite": "res://assets/items/iron.png",
+			"boost": {
+				"defense": 0.2
+			},
+			"weight": 2.0
+		},
+		"carbos": {
+			"name": "Carbos",
+			"sprite": "res://assets/items/carbos.png",
+			"boost": {
+				"speed": 0.15
+			},
+			"weight": 2.0
+		},
+		"pp_up": {
+			"name": "PP Up",
+			"sprite": "res://assets/items/pp_up.png",
+			"extra_ammo": 1,
+			"weight": 1.5
+		},
+		"hp_up": {
+			"name": "HP Up",
+			"sprite": "res://assets/items/hp_up.png",
+			"max_hp": 0.2,
+			"weight": 1.5
+		}
+	},
+	"spawn": {
+		"first_after": 8.0,
+		"interval": 12.0,
+		"max_on_map": 4,
+		"boost_cap": 0.6,
+		"max_extra_ammo": 2,
+		"max_hp_cap": 0.6
+	}
+}

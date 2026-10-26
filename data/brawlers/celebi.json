@@ -1,0 +1,13 @@
+{
+	"name": "Celebi",
+	"types": ["psychic", "grass"],
+	"sprite": "res://assets/brawlers/celebi.png",
+	"sprite_scale": 1.6,
+	"legendary": true,
+	"stats": {"hp": 4600, "attack": 135, "defense": 115, "speed": 110},
+	"super": "life_bloom",
+	"moves": [
+		{"move": "leaf_blade", "level": 1},
+		{"move": "psybeam", "level": 1}
+	]
+}

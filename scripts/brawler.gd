@@ -45,6 +45,27 @@ var is_dead := false
 var kills := 0
 ## Seconds until respawn while fainted (set by the match, shown on the scoreboard).
 var respawn_left := 0.0
+## Legendary raid boss or summoned ally (no evolving, no KO score, special HUD).
+var is_legendary := false
+## Takes no damage (summoned legendary allies).
+var invulnerable := false
+## Hovers above the ground and flies over walls.
+var flying := false
+## Damage taken per attacking team (raid bosses use this to pick who gets them).
+var damage_by_team := {}
+## Seconds left before a summoned legendary leaves (shown above it).
+var legendary_time_left := 0.0
+## Item boosts that last until fainting.
+var _boosts := { "attack": 0.0, "defense": 0.0, "speed": 0.0 }
+var _extra_ammo := 0
+var _hp_bonus := 0.0
+## Spawn protection: no damage until it runs out or you attack.
+var _protect_time := 0.0
+var _shield: MeshInstance3D
+## Animation state.
+var _anim_phase := 0.0
+var _pop := 1.0
+var _dead_time := 0.0
 ## KOs toward the next evolution. Kept when fainting, reset when evolving.
 var evolve_kills := 0
 
@@ -124,6 +145,7 @@ func _physics_process(delta: float) -> void:
 	if is_dead:
 		respawn_left = maxf(0.0, respawn_left - delta)
 		return
+	legendary_time_left = maxf(0.0, legendary_time_left - delta)
 	_tick_timers(delta)
 	_tick_status(delta)
 	if is_stunned():
@@ -176,16 +198,44 @@ func _move_with_wall_slide(desired: Vector3, delta: float) -> void:
 # --- Stats -----------------------------------------------------------------
 
 func get_attack() -> float:
-	return attack * (1.0 + _buff("attack"))
+	return attack * (1.0 + _buff("attack") + _boosts["attack"])
 
 
 func get_defense() -> float:
-	return defense * (1.0 + _buff("defense"))
+	return defense * (1.0 + _buff("defense") + _boosts["defense"])
 
 
 func get_speed() -> float:
 	var slow := 1.0 - _slow_amount if _slow_time > 0.0 else 1.0
-	return move_speed * (1.0 + _buff("speed")) * slow
+	return move_speed * (1.0 + _buff("speed") + _boosts["speed"]) * slow
+
+
+## Apply an item from data/items.json. Boosts last until you faint.
+func pickup(item: Dictionary) -> void:
+	var spawn: Dictionary = GameData.item_spawn
+	if item.has("heal"):
+		heal(max_health * float(item["heal"]))
+	var boost: Dictionary = item.get("boost", {})
+	for stat: String in boost:
+		_boosts[stat] = minf(float(spawn.get("boost_cap", 0.6)), float(_boosts.get(stat, 0.0)) + float(boost[stat]))
+	if item.has("extra_ammo") and _extra_ammo < int(spawn.get("max_extra_ammo", 2)):
+		_extra_ammo += int(item["extra_ammo"])
+		ammo = minf(max_ammo(), ammo + (0.35 if ranged_move.kind == "stream" else 1.0))
+	if item.has("max_hp"):
+		var before := max_health
+		_hp_bonus = minf(float(spawn.get("max_hp_cap", 0.6)), _hp_bonus + float(item["max_hp"]))
+		_apply_species()
+		health += max_health - before
+	_spawn_floating_text(str(item.get("name", "Item")).to_upper(), Color(0.7, 1.0, 1.0), 56, 2.4)
+	Vfx.burst(get_parent(), global_position + Vector3(0, 0.9, 0), "fairy", 16, 0.4, 2.0)
+
+
+func is_protected() -> bool:
+	return _protect_time > 0.0
+
+
+func protect(seconds: float) -> void:
+	_protect_time = seconds
 
 
 func _buff(stat: String) -> float:
@@ -222,12 +272,15 @@ func _pick_move(slot: String, move_id: String) -> MoveData:
 
 func _apply_species() -> void:
 	var bonus := 1.0 + float(GameData.rule("level/stat_bonus_per_level", 0.05)) * (level - 1)
-	max_health = species.hp * bonus
+	max_health = species.hp * bonus * (1.0 + _hp_bonus)
 	attack = species.attack * bonus
 	defense = species.defense * bonus
 	move_speed = species.speed * float(GameData.rule("speed_to_meters", 0.05))
-	sprite.texture = species.sprite
-	sprite.pixel_size = PIXEL_SIZE * species.sprite_scale
+	# Sheets hold front / side / back views; the frame follows the way you're facing.
+	sprite.texture = species.sheet if species.sheet else species.sprite
+	sprite.hframes = 3 if species.sheet else 1
+	sprite.frame = 0
+	sprite.pixel_size = PIXEL_SIZE * 0.5 * species.sprite_scale if species.sheet else PIXEL_SIZE * species.sprite_scale
 
 
 ## Evolve to the next stage (after enough KOs). Returns false at final stage.
@@ -245,10 +298,7 @@ func evolve() -> bool:
 	health = max_health if GameData.rule("evolution/heal_on_evolve", true) else max_health * health_ratio
 	Vfx.ring(get_parent(), global_position, 1.2, "fairy", 50)
 	Vfx.burst(get_parent(), global_position + Vector3(0, 1, 0), "fairy", 30, 0.6, 3.0)
-	var tween := create_tween()
-	sprite.scale = Vector3.ONE * 0.3
-	tween.tween_property(sprite, "scale", Vector3.ONE * 1.25, 0.2)
-	tween.tween_property(sprite, "scale", Vector3.ONE, 0.15)
+	_pop = 0.3
 	evolved.emit(self, from_name)
 	return true
 
@@ -259,7 +309,7 @@ func can_evolve() -> bool:
 
 func register_kill() -> void:
 	kills += 1
-	if species.evolves_to == "":
+	if species.evolves_to == "" or is_legendary:
 		return
 	evolve_kills += 1
 	if evolve_kills >= int(GameData.rule("evolution/kills_to_evolve", 3)):
@@ -271,7 +321,13 @@ func respawn(spawn_position: Vector3) -> void:
 		var previous: SpeciesData = GameData.get_species(species.evolves_from)
 		if previous:
 			species = previous
+	_boosts = { "attack": 0.0, "defense": 0.0, "speed": 0.0 }
+	_extra_ammo = 0
+	_hp_bonus = 0.0
 	_apply_species()
+	protect(float(GameData.rule("spawn_protection", 2.0)))
+	_dead_time = 0.0
+	_pop = 0.6
 	is_dead = false
 	health = max_health
 	ammo = max_ammo()
@@ -285,7 +341,6 @@ func respawn(spawn_position: Vector3) -> void:
 	_clear_status()
 	_buffs.clear()
 	_last_attacker = null
-	sprite.scale = Vector3.ONE
 	shadow.scale = Vector3.ONE
 
 
@@ -293,7 +348,9 @@ func respawn(spawn_position: Vector3) -> void:
 
 ## Ammo bars for projectiles; for streams, the tank (0..1).
 func max_ammo() -> float:
-	return 1.0 if ranged_move.kind == "stream" else float(ranged_move.ammo)
+	if ranged_move.kind == "stream":
+		return 1.0 + 0.35 * _extra_ammo  # PP Up makes the tank bigger.
+	return float(ranged_move.ammo + _extra_ammo)
 
 
 func is_stunned() -> bool:
@@ -582,6 +639,8 @@ func _process_dash(delta: float) -> void:
 func _on_attack(direction: Vector3, move: MoveData) -> void:
 	_attack_lock = move.attack_delay()
 	_invisible_time = 0.0  # Attacking reveals you.
+	_protect_time = 0.0  # ...and ends spawn protection.
+	_pop = 1.15
 	_regen_timer = 0.0
 	_reveal_timer = float(GameData.rule("tall_grass/reveal_time_after_attack", 1.0))
 	facing = direction
@@ -654,7 +713,7 @@ func clear_distance(direction: Vector3, max_distance: float) -> float:
 ## Hit by a move: applies the damage formula, type matchups and side effects.
 ## Regular moves charge the attacker's super; draining moves heal the attacker.
 func take_hit(attacker: Brawler, move: MoveData, multiplier := 1.0) -> void:
-	if is_dead:
+	if is_dead or invulnerable or is_protected():
 		return
 	if move.bonus_vs_status > 1.0 and has_status():
 		multiplier *= move.bonus_vs_status
@@ -673,10 +732,12 @@ func take_hit(attacker: Brawler, move: MoveData, multiplier := 1.0) -> void:
 
 
 func take_damage(amount: float, source: Brawler = null, effectiveness := 1.0, crit := false) -> void:
-	if is_dead:
+	if is_dead or invulnerable or is_protected():
 		return
 	if source:
 		_last_attacker = source
+		damage_by_team[source.team] = float(damage_by_team.get(source.team, 0.0)) + minf(amount, health)
+	_pop = 0.86
 	health = maxf(0.0, health - amount)
 	_regen_timer = 0.0
 	_reveal_timer = float(GameData.rule("tall_grass/reveal_time_after_attack", 1.0))
@@ -707,8 +768,10 @@ func status_text() -> String:
 	if _slow_time > 0.0:
 		parts.append("PAR")
 	for stat in ["attack", "defense", "speed"]:
-		if _buff(stat) > 0.0:
+		if _buff(stat) > 0.0 or _boosts[stat] > 0.0:
 			parts.append("+" + stat.substr(0, 3).to_upper())
+	if _extra_ammo > 0:
+		parts.append("+PP")
 	return " ".join(parts)
 
 
@@ -745,13 +808,14 @@ func _tick_timers(delta: float) -> void:
 	_blind_time = maxf(0.0, _blind_time - delta)
 	_stun_time = maxf(0.0, _stun_time - delta)
 	_invisible_time = maxf(0.0, _invisible_time - delta)
+	_protect_time = maxf(0.0, _protect_time - delta)
 	for stat: String in _buffs:
 		_buffs[stat]["time"] = float(_buffs[stat]["time"]) - delta
 	if ranged_move.kind == "stream":
 		if not is_streaming() and _stream_idle >= STREAM_REFILL_DELAY:
-			ammo = minf(1.0, ammo + delta / ranged_move.reload)
-	elif ammo < ranged_move.ammo:
-		ammo = minf(ranged_move.ammo, ammo + delta / ranged_move.reload)
+			ammo = minf(max_ammo(), ammo + delta / ranged_move.reload)
+	elif ammo < max_ammo():
+		ammo = minf(max_ammo(), ammo + delta / ranged_move.reload)
 	_regen_timer += delta
 	if _regen_timer >= float(GameData.rule("regen_delay", 3.0)) and health < max_health:
 		health = minf(max_health, health + max_health * float(GameData.rule("regen_rate", 0.13)) * delta)
@@ -816,8 +880,8 @@ func _die() -> void:
 	_dash_time = 0.0
 	set_deferred("collision_layer", 0)
 	hide_aim()
-	var tween := create_tween().set_parallel()
-	tween.tween_property(sprite, "scale", Vector3(1.4, 0.05, 1.0), 0.35)
+	_dead_time = 0.0
+	var tween := create_tween()
 	tween.tween_property(shadow, "scale", Vector3.ZERO, 0.35)
 	died.emit(self, _last_attacker)
 
@@ -946,18 +1010,10 @@ func _update_sprite(delta: float) -> void:
 	sprite.visible = not hidden
 	shadow.visible = not hidden
 	team_ring.visible = not hidden and not is_dead
+	_animate(delta)
+	_update_shield(hidden)
 	if is_dead:
 		return
-
-	var moving := velocity.length_squared() > 0.1
-	if moving:
-		_bob_time += delta * 12.0
-		sprite.position.y = SPRITE_HEIGHT + absf(sin(_bob_time)) * 0.12
-	else:
-		_bob_time = 0.0
-		sprite.position.y = lerpf(sprite.position.y, SPRITE_HEIGHT, 0.3)
-	if absf(facing.x) > 0.2:
-		sprite.flip_h = facing.x < 0.0
 
 	_flash_timer = maxf(0.0, _flash_timer - delta)
 	var tint := Color.WHITE
@@ -976,6 +1032,69 @@ func _update_sprite(delta: float) -> void:
 		tint = tint.darkened(0.25)
 	sprite.modulate = tint
 	_update_auras(hidden)
+
+
+## Walk cycle, facing and squash-and-stretch. The sprite stands up facing the
+## fixed camera (not a billboard) so it can waddle; its pivot is at the feet.
+func _animate(delta: float) -> void:
+	var camera := get_viewport().get_camera_3d()
+	var tilt := camera.global_rotation.x if camera else -1.0
+	var moving := velocity.length_squared() > 0.1 and not is_dead
+	var roll := 0.0
+	var squash := 1.0
+	var lift := 0.0
+	if moving:
+		_anim_phase += delta * (6.0 + velocity.length() * 1.6)
+		roll = sin(_anim_phase) * 0.13  # Waddle side to side...
+		lift = absf(sin(_anim_phase)) * 0.12  # ...hopping a little each step...
+		squash = 1.0 - absf(cos(_anim_phase)) * 0.07  # ...and squashing as each foot lands.
+	else:
+		_anim_phase += delta * 2.6
+		squash = 1.0 + sin(_anim_phase) * 0.025  # Idle breathing.
+	if flying:
+		lift += 0.9 + sin(Time.get_ticks_msec() * 0.003) * 0.15
+	_pop = move_toward(_pop, 1.0, delta * 3.5)
+	var sx := _pop / sqrt(squash)
+	var sy := _pop * squash
+	if is_dead:
+		_dead_time += delta
+		var t := clampf(_dead_time / 0.35, 0.0, 1.0)
+		sx *= 1.0 + t * 0.4
+		sy *= maxf(0.05, 1.0 - t)
+
+	# Pick the view that matches where we're facing.
+	if species.sheet:
+		if absf(facing.x) > absf(facing.z) * 0.9:
+			sprite.frame = 1
+			sprite.flip_h = facing.x < 0.0
+		else:
+			sprite.frame = 0 if facing.z >= 0.0 else 2
+			sprite.flip_h = false
+	elif absf(facing.x) > 0.2:
+		sprite.flip_h = facing.x < 0.0
+
+	sprite.billboard = BaseMaterial3D.BILLBOARD_DISABLED
+	sprite.offset = Vector2(0, sprite.texture.get_height() * 0.5) if sprite.texture else Vector2.ZERO
+	sprite.position = Vector3(0, 0.05 + lift, 0)
+	sprite.basis = Basis(Vector3.RIGHT, tilt) * Basis(Vector3.BACK, roll) * Basis.from_scale(Vector3(sx, sy, 1.0))
+
+
+## Bubble shown during spawn protection; it flickers just before it ends.
+func _update_shield(hidden: bool) -> void:
+	if not is_protected() and _shield == null:
+		return
+	if _shield == null:
+		var sphere := SphereMesh.new()
+		sphere.radius = 0.95
+		sphere.height = 1.9
+		_shield = MeshInstance3D.new()
+		_shield.mesh = sphere
+		_shield.material_override = _flat_material(Color(0.6, 0.85, 1.0, 0.28))
+		_shield.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_shield.position.y = 0.85
+		add_child(_shield)
+	var flicker := _protect_time > 0.6 or int(Time.get_ticks_msec() / 80) % 2 == 0
+	_shield.visible = is_protected() and not hidden and flicker
 
 
 ## Particles around the body for each active status (only while it's on screen).

@@ -29,6 +29,7 @@
 	"karate_chop": {"name": "Karate Chop", "type": "fighting", "slot": "melee", "kind": "melee", "power": 850, "range": 1.9, "arc": 100, "cooldown": 1.27, "crit_chance": 0.25},
 	"cross_chop": {"name": "Cross Chop", "type": "fighting", "slot": "melee", "kind": "melee", "power": 1150, "range": 2.1, "arc": 110, "cooldown": 1.71, "crit_chance": 0.35},
 	"close_combat": {"name": "Close Combat", "type": "fighting", "slot": "melee", "kind": "melee", "power": 1500, "range": 1.9, "arc": 100, "cooldown": 2.01},
+	"wing_attack": {"name": "Wing Attack", "type": "flying", "slot": "melee", "kind": "melee", "power": 1000, "range": 2.4, "arc": 140, "cooldown": 1.5},
 
 	"ember": {"name": "Ember", "type": "fire", "slot": "ranged", "kind": "projectile", "power": 590, "speed": 9.8, "range": 6.0, "ammo": 3, "reload": 1.4, "effect": {"type": "burn", "chance": 0.2, "duration": 3.0, "dps": 100}},
 	"flamethrower": {"name": "Flamethrower", "type": "fire", "slot": "ranged", "kind": "stream", "range": 3.8, "arc": 26, "tank": 2.5, "reload": 3.0, "effect": {"type": "burn", "chance": 0.04, "duration": 3.0, "dps": 100}, "power": 1290},
@@ -86,5 +87,11 @@
 	"night_terror": {"name": "Night Terror", "type": "ghost", "slot": "super", "kind": "area", "power": 1500, "range": 6.0, "area_radius": 3.0, "effect": {"type": "blind", "chance": 1.0, "duration": 2.5}},
 	"bulk_up": {"name": "Bulk Up", "type": "fighting", "slot": "super", "kind": "self", "buff": {"attack": 0.4, "defense": 0.3, "duration": 5.0}},
 	"rampage": {"name": "Rampage", "type": "fighting", "slot": "super", "kind": "dash", "power": 1300, "dash_distance": 7.0, "dash_speed": 18, "dash_pierce": true, "buff": {"attack": 0.3, "duration": 4.0}},
-	"rage_fist": {"name": "Rage Fist", "type": "ghost", "slot": "super", "kind": "melee", "power": 2600, "range": 2.6, "arc": 120, "heal": 0.25}
+	"rage_fist": {"name": "Rage Fist", "type": "ghost", "slot": "super", "kind": "melee", "power": 2600, "range": 2.6, "arc": 120, "heal": 0.25},
+	"thunder_storm": {"name": "Thunder Storm", "type": "electric", "slot": "super", "kind": "area", "power": 1800, "range": 7.0, "area_radius": 3.5, "effect": {"type": "slow", "chance": 1.0, "duration": 1.5, "amount": 0.5}},
+	"heat_wave": {"name": "Heat Wave", "type": "fire", "slot": "super", "kind": "projectile", "power": 600, "speed": 10.0, "range": 7.0, "count": 9, "spread": 90, "radius": 0.45, "effect": {"type": "burn", "chance": 0.5, "duration": 3.0, "dps": 150}},
+	"blizzard": {"name": "Blizzard", "type": "ice", "slot": "super", "kind": "area", "power": 1300, "range": 0.0, "area_radius": 5.0, "effect": {"type": "slow", "chance": 1.0, "duration": 2.5, "amount": 0.6}},
+	"ancient_power": {"name": "Ancient Power", "type": "rock", "slot": "super", "kind": "projectile", "power": 700, "speed": 9.0, "range": 6.0, "count": 10, "spread": 324, "radius": 0.45, "buff": {"attack": 0.2, "defense": 0.2, "speed": 0.2, "duration": 6.0}},
+	"dragon_ascent": {"name": "Dragon Ascent", "type": "flying", "slot": "super", "kind": "dash", "power": 2200, "dash_distance": 9.0, "dash_speed": 22.0, "dash_pierce": true},
+	"life_bloom": {"name": "Life Bloom", "type": "grass", "slot": "super", "kind": "area", "power": 900, "range": 0.0, "area_radius": 4.0, "heal": 0.3, "team_heal": 0.4, "support_radius": 6.0}
 }

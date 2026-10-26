@@ -14,6 +14,9 @@ var species: Dictionary = {}
 var moves: Dictionary = {}
 ## id -> raw arena Dictionary
 var arenas: Dictionary = {}
+## Item pickups (data/items.json): id -> Dictionary, plus "spawn" settings.
+var items: Dictionary = {}
+var item_spawn: Dictionary = {}
 var stab := 1.2
 ## Team whose point of view decides what's hidden in tall grass.
 var local_team := 0
@@ -76,6 +79,13 @@ func load_all() -> void:
 	for file in _json_files(DATA_DIR + "/arenas"):
 		arenas[file.get_basename()] = _load_json(DATA_DIR + "/arenas/" + file)
 
+	var item_data := _load_json(DATA_DIR + "/items.json")
+	items = item_data.get("items", {})
+	item_spawn = item_data.get("spawn", {})
+	for item_id: String in items:
+		var path := str(items[item_id].get("sprite", ""))
+		items[item_id]["texture"] = load(path) if ResourceLoader.exists(path) else null
+
 	print("GameData: %d species, %d moves, %d arenas" % [species.size(), moves.size(), arenas.size()])
 
 
@@ -106,12 +116,12 @@ func rule(path: String, default_value: Variant) -> Variant:
 func base_species() -> Array[SpeciesData]:
 	var result: Array[SpeciesData] = []
 	for id: String in _sorted_ids():
-		if species[id].stage == 1:
+		if species[id].stage == 1 and not species[id].legendary:
 			result.append(species[id])
 	return result
 
 
-## Every species ordered by evolution line (base form, then its evolutions).
+## Every species ordered by evolution line (base form, then its evolutions), legendaries last.
 func species_by_line() -> Array[SpeciesData]:
 	var result: Array[SpeciesData] = []
 	for base in base_species():
@@ -119,7 +129,23 @@ func species_by_line() -> Array[SpeciesData]:
 		while current:
 			result.append(current)
 			current = species.get(current.evolves_to)
+	for id: String in _sorted_ids():
+		if species[id].legendary:
+			result.append(species[id])
 	return result
+
+
+## A random item id, weighted by each item's "weight".
+func random_item_id() -> String:
+	var total := 0.0
+	for item_id: String in items:
+		total += float(items[item_id].get("weight", 1.0))
+	var roll := randf() * total
+	for item_id: String in items:
+		roll -= float(items[item_id].get("weight", 1.0))
+		if roll <= 0.0:
+			return item_id
+	return items.keys()[0] if not items.is_empty() else ""
 
 
 ## [base, ..., final] for the line containing `species_id`.

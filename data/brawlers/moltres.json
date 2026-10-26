@@ -1,0 +1,13 @@
+{
+	"name": "Moltres",
+	"types": ["fire", "flying"],
+	"sprite": "res://assets/brawlers/moltres.png",
+	"sprite_scale": 1.6,
+	"legendary": true,
+	"stats": {"hp": 5200, "attack": 140, "defense": 125, "speed": 100},
+	"super": "heat_wave",
+	"moves": [
+		{"move": "wing_attack", "level": 1},
+		{"move": "flamethrower", "level": 1}
+	]
+}

@@ -20,6 +20,8 @@ func _ready() -> void:
 	await _check_king_of_the_hill()
 	await _check_menu()
 	await _check_menu_settings()
+	await _check_legendaries_and_items()
+	await _check_shrine()
 	Engine.time_scale = 1.0
 	print("SMOKE TEST: %s" % ("PASS" if failures == 0 else "FAIL (%d)" % failures))
 	get_tree().quit(1 if failures > 0 else 0)
@@ -60,7 +62,8 @@ func _check_data() -> void:
 		expect(rows.size() >= 40 and str(rows[0]).length() >= 30, "%s is large (%dx%d)" % [arena_id, str(rows[0]).length(), rows.size()])
 
 
-func _start_match(arena_id: String, mode: String, player_species: String, enemies: PackedStringArray) -> Node:
+## Most checks hit targets right away, so spawn protection is cleared unless asked to keep it.
+func _start_match(arena_id: String, mode: String, player_species: String, enemies: PackedStringArray, keep_protection := false) -> Node:
 	var main := MAIN_SCENE.instantiate()
 	main.arena_id = arena_id
 	main.mode = mode
@@ -68,6 +71,10 @@ func _start_match(arena_id: String, mode: String, player_species: String, enemie
 	main.enemy_team = enemies
 	add_child(main)
 	await get_tree().physics_frame
+	if not keep_protection:
+		for team: int in [0, 1]:
+			for b: Brawler in main.teams[team]:
+				b._protect_time = 0.0
 	return main
 
 
@@ -135,6 +142,7 @@ func _check_supers() -> void:
 		# reset the target's health in the middle of the next Pokémon's check.
 		target.max_health = 100000.0
 		target.health = target.max_health
+		target._protect_time = 0.0
 		b.health = b.max_health * 0.5
 		b.super_charge = 1.0
 		var hp_before := b.health
@@ -276,6 +284,97 @@ func _check_menu() -> void:
 	menu.show_home()
 	await get_tree().process_frame
 	menu.queue_free()
+	await get_tree().process_frame
+
+
+## Stop every bot and park everyone but the player (and `keep`) far away.
+func _freeze_all(main: Node, keep: Brawler = null) -> void:
+	for team: int in [0, 1]:
+		for b: Brawler in main.teams[team]:
+			for child in b.get_children():
+				if child is BotController or child is PlayerController:
+					child.queue_free()
+			if b != main.player and b != keep:
+				b.position = Vector3(-14, 0, 18 if team == 0 else -18)
+			b.move_input = Vector2.ZERO
+	await get_tree().physics_frame
+
+
+func _check_legendaries_and_items() -> void:
+	print("Legendaries, items, spawn protection, animation")
+	var main := await _start_match("route_1", "duel", "charmander", ["squirtle"], true)
+	await _freeze_all(main, main.enemy)
+	var player: Brawler = main.player
+	var enemy: Brawler = main.enemy
+
+	expect(player.is_protected(), "players spawn with protection")
+	var hp := player.health
+	player.take_hit(enemy, GameData.get_move("ember"))
+	expect(is_equal_approx(player.health, hp), "spawn protection blocks damage")
+	player._protect_time = 0.0
+	player.take_hit(enemy, GameData.get_move("ember"))
+	expect(player.health < hp, "damage lands once protection ends")
+
+	expect(player.species.sprite is AtlasTexture and player.species.sheet != null, "sprites load as front/side/back sheets")
+	for case: Array in [[Vector3(1, 0, 0), 1, false], [Vector3(-1, 0, 0), 1, true], [Vector3(0, 0, -1), 2, false], [Vector3(0, 0, 1), 0, false]]:
+		player.facing = case[0]
+		await get_tree().process_frame
+		expect(player.sprite.frame == case[1] and player.sprite.flip_h == case[2], "facing %s shows view %d (flipped=%s)" % case)
+
+	var base_attack := player.get_attack()
+	var base_ammo := player.max_ammo()
+	var base_hp := player.max_health
+	player.health = player.max_health * 0.4
+	for item_id in ["potion", "pp_up", "protein", "hp_up"]:
+		main.spawn_item(item_id, player.global_position)
+		await get_tree().physics_frame
+		await get_tree().physics_frame
+	expect(get_tree().get_nodes_in_group("items").is_empty(), "walking over items picks them up")
+	expect(player.health > player.max_health * 0.5, "potion heals")
+	expect(is_equal_approx(player.max_ammo(), base_ammo + 1), "PP Up adds an ammo bar")
+	expect(player.get_attack() > base_attack * 1.15, "Protein boosts attack")
+	expect(player.max_health > base_hp * 1.15, "HP Up raises max HP")
+	player.respawn(main.arena.spawn_point(0, 0))
+	expect(is_equal_approx(player.max_ammo(), base_ammo) and is_equal_approx(player.get_attack(), base_attack), "item boosts end when you faint")
+
+	main.time_left = 89.0
+	await get_tree().physics_frame
+	var boss: Brawler = main.raid_boss
+	expect(boss != null and boss.team == 2 and boss.is_legendary, "raid boss appears at 1:30 (%s)" % (boss.species.id if boss else "none"))
+	if boss:
+		for child in boss.get_children():
+			if child is BotController:
+				child.queue_free()
+		boss.take_damage(1500.0, enemy)
+		boss.take_damage(4000.0, player)
+		var finisher := boss.health
+		boss.take_damage(finisher, enemy)  # The red team lands the last hit...
+		await get_tree().physics_frame
+		expect(main.legendaries.size() == 1 and main.legendaries[0].team == 0,
+				"...but blue dealt the most damage, so blue gets %s" % (main.legendaries[0].species.id if main.legendaries.size() > 0 else "nothing"))
+		if main.legendaries.size() > 0:
+			var ally: Brawler = main.legendaries[0]
+			var ally_hp := ally.health
+			ally.take_damage(800.0, enemy)
+			expect(is_equal_approx(ally.health, ally_hp) and ally.flying, "the legendary ally can't be hurt and flies")
+			main._dismiss_legendary(ally)
+			expect(main.legendaries.is_empty(), "the legendary leaves after its time")
+	main.queue_free()
+	await get_tree().process_frame
+
+
+func _check_shrine() -> void:
+	print("Shrine control")
+	var main := await _start_match("boulder_gym", "king_of_the_hill", "geodude", [])
+	await _freeze_all(main)
+	main.player._protect_time = 0.0
+	main.player.position = main.arena.zone_center
+	Engine.time_scale = 4.0
+	await get_tree().create_timer(6.5).timeout
+	Engine.time_scale = 1.0
+	expect(main.legendaries.size() == 1 and main.legendaries[0].species.id == "regirock" and main.legendaries[0].team == 0,
+			"holding the zone alone for 20 s awakens Regirock for your team")
+	main.queue_free()
 	await get_tree().process_frame
 
 

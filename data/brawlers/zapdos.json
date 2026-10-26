@@ -1,0 +1,13 @@
+{
+	"name": "Zapdos",
+	"types": ["electric", "flying"],
+	"sprite": "res://assets/brawlers/zapdos.png",
+	"sprite_scale": 1.6,
+	"legendary": true,
+	"stats": {"hp": 5200, "attack": 140, "defense": 125, "speed": 100},
+	"super": "thunder_storm",
+	"moves": [
+		{"move": "spark", "level": 1},
+		{"move": "thunderbolt", "level": 1}
+	]
+}

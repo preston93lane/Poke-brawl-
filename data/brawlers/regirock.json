@@ -1,0 +1,13 @@
+{
+	"name": "Regirock",
+	"types": ["rock"],
+	"sprite": "res://assets/brawlers/regirock.png",
+	"sprite_scale": 1.6,
+	"legendary": true,
+	"stats": {"hp": 6000, "attack": 130, "defense": 160, "speed": 85},
+	"super": "ancient_power",
+	"moves": [
+		{"move": "rock_smash", "level": 1},
+		{"move": "rock_slide", "level": 1}
+	]
+}

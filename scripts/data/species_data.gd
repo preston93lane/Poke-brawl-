@@ -5,8 +5,14 @@ extends RefCounted
 var id := ""
 var display_name := ""
 var types: Array[String] = []
+## Front view, for menus and the HUD.
 var sprite: Texture2D
+## Three views side by side (front, side facing right, back) for in-game; null if
+## the PNG is a single image.
+var sheet: Texture2D
 var sprite_scale := 1.0
+## Legendaries can't be picked; they show up as raid bosses and shrine guardians.
+var legendary := false
 var hp := 3000.0
 var attack := 100.0
 var defense := 100.0
@@ -31,6 +37,7 @@ static func from_dict(species_id: String, d: Dictionary) -> SpeciesData:
 	for t in d.get("types", ["normal"]):
 		s.types.append(str(t))
 	s.sprite_scale = float(d.get("sprite_scale", 1.0))
+	s.legendary = bool(d.get("legendary", false))
 	var stats: Dictionary = d.get("stats", {})
 	s.hp = float(stats.get("hp", s.hp))
 	s.attack = float(stats.get("attack", s.attack))
@@ -42,7 +49,15 @@ static func from_dict(species_id: String, d: Dictionary) -> SpeciesData:
 	s.raw_super = str(d.get("super", ""))
 	var sprite_path := str(d.get("sprite", ""))
 	if sprite_path != "" and ResourceLoader.exists(sprite_path):
-		s.sprite = load(sprite_path)
+		var texture: Texture2D = load(sprite_path)
+		if texture and texture.get_width() >= texture.get_height() * 3:
+			s.sheet = texture
+			var front := AtlasTexture.new()
+			front.atlas = texture
+			front.region = Rect2(0, 0, texture.get_height(), texture.get_height())
+			s.sprite = front
+		else:
+			s.sprite = texture
 	return s
 
 

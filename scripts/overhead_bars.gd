@@ -18,10 +18,13 @@ func _draw() -> void:
 		var brawler := node as Brawler
 		if brawler == null or brawler.is_dead or not brawler.visible_to_local_player():
 			continue
-		var world_pos := brawler.global_position + Vector3.UP * HEAD_HEIGHT * brawler.species.sprite_scale
+		var world_pos := brawler.global_position + Vector3.UP * (HEAD_HEIGHT * brawler.species.sprite_scale + (0.9 if brawler.flying else 0.0))
 		if camera.is_position_behind(world_pos):
 			continue
 		var p := camera.unproject_position(world_pos)
+		if brawler.is_legendary:
+			_draw_legendary(brawler, p, font)
+			continue
 		var bar := Rect2(p - Vector2(BAR_SIZE.x * 0.5, 0), BAR_SIZE)
 		var ratio := brawler.health / brawler.max_health
 		var friendly := brawler.team == GameData.local_team
@@ -62,6 +65,31 @@ func _draw() -> void:
 			draw_circle(Vector2(bar.position.x - 10, bar.position.y - 30), 5, Color(1, 0.85, 0.2))
 
 
+## Raid boss: wide gold bar plus a blue-vs-red bar of who has hurt it most.
+## Summoned ally: its team colour and the seconds it has left.
+func _draw_legendary(b: Brawler, p: Vector2, font: Font) -> void:
+	var bar_size := Vector2(190, 16)
+	var bar := Rect2(p - Vector2(bar_size.x * 0.5, 0), bar_size)
+	var neutral := b.team > 1
+	var fill := Color(1.0, 0.78, 0.2)
+	if not neutral:
+		fill = Color(0.3, 0.6, 1.0) if b.team == GameData.local_team else Color(0.95, 0.25, 0.25)
+	_round_rect(bar.grow(4), Color(0.35, 0.25, 0.05, 0.9), 9)
+	_round_rect(Rect2(bar.position, Vector2(maxf(bar_size.x * b.health / b.max_health, 8.0), bar_size.y)), fill, 6)
+	var title := ("WILD %s" % b.species.display_name.to_upper()) if neutral \
+			else "%s  %ds" % [b.species.display_name.to_upper(), ceili(b.legendary_time_left)]
+	_text(font, Vector2(bar.position.x - 40, bar.position.y - 8), bar_size.x + 80, title, 20, Color(1, 0.92, 0.55))
+	if neutral:
+		var blue := float(b.damage_by_team.get(GameData.local_team, 0.0))
+		var red := float(b.damage_by_team.get(1 - GameData.local_team, 0.0))
+		var share := Rect2(bar.position + Vector2(0, bar_size.y + 6), Vector2(bar_size.x, 6))
+		_round_rect(share.grow(1), Color(0, 0, 0, 0.6), 3)
+		if blue + red > 0.0:
+			var split := bar_size.x * blue / (blue + red)
+			_round_rect(Rect2(share.position, Vector2(split, 6)), Color(0.3, 0.6, 1.0), 3)
+			_round_rect(Rect2(share.position + Vector2(split, 0), Vector2(bar_size.x - split, 6)), Color(0.95, 0.3, 0.3), 3)
+
+
 func _round_rect(rect: Rect2, color: Color, radius: int) -> void:
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = color
@@ -81,9 +109,9 @@ func _draw_ammo(brawler: Brawler, origin: Vector2) -> void:
 		var tank := Rect2(origin, Vector2(BAR_SIZE.x, 7))
 		draw_rect(tank.grow(1), Color(0, 0, 0, 0.75))
 		var c := Color(1.0, 0.6, 0.1) if brawler.ammo > 0.1 else Color(0.7, 0.45, 0.2)
-		draw_rect(Rect2(tank.position, Vector2(tank.size.x * brawler.ammo, tank.size.y)), c)
+		draw_rect(Rect2(tank.position, Vector2(tank.size.x * brawler.ammo / brawler.max_ammo(), tank.size.y)), c)
 		return
-	var count := brawler.ranged_move.ammo
+	var count := int(brawler.max_ammo())
 	var gap := 3.0
 	var seg_w := (BAR_SIZE.x - gap * (count - 1)) / count
 	for i in count:
