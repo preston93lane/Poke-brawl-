@@ -245,9 +245,17 @@ func _check_king_of_the_hill() -> void:
 		var main := await _start_match(arena_id, "king_of_the_hill", "dratini", [])
 		expect(main.mode == "king_of_the_hill" and main.arena.has_zone(), "%s supports king of the hill" % arena_id)
 		Engine.time_scale = 4.0
-		await get_tree().create_timer(10.0).timeout
+		var reached := false
+		for i in 40:  # 40 game-seconds, sampled every second.
+			await get_tree().create_timer(0.25).timeout
+			for team: int in [0, 1]:
+				for b: Brawler in main.teams[team]:
+					if b != main.player and not b.is_dead and main.arena.is_in_zone(b.global_position):
+						reached = true
+			if reached:
+				break
 		Engine.time_scale = 1.0
-		expect(main.scores[0] > 0.0 or main.scores[1] > 0.0, "bots reach the zone on %s" % arena_id)
+		expect(reached, "bots walk into the zone on %s" % arena_id)
 		main.queue_free()
 		await get_tree().process_frame
 

@@ -81,8 +81,11 @@ func _draw() -> void:
 	# Kill feed under the panel.
 	var y := top + 80.0
 	for entry in _feed:
+		if not is_instance_valid(entry["victim"]):
+			continue
 		var alpha := clampf(float(entry["time"]), 0.0, 1.0)
-		_feed_row(Vector2(mid, y), entry["killer"], entry["victim"], alpha)
+		var killer: Brawler = entry["killer"] if is_instance_valid(entry["killer"]) else null
+		_feed_row(Vector2(mid, y), killer, entry["victim"], alpha)
 		y += 34.0
 
 
@@ -100,13 +103,11 @@ func _portrait(rect: Rect2, b: Brawler, team_color: Color, font: Font) -> void:
 
 
 func _feed_row(center: Vector2, killer: Brawler, victim: Brawler, alpha: float) -> void:
-	if not is_instance_valid(victim):
-		return
 	var w := 120.0
 	var row := Rect2(center.x - w / 2, center.y, w, 30)
 	_box(row, Color(0, 0, 0, 0.5 * alpha), 10)
 	var icon := 26.0
-	if is_instance_valid(killer):
+	if killer:
 		var kc := BLUE if killer.team == GameData.local_team else RED
 		_box(Rect2(row.position + Vector2(6, 2), Vector2(icon, icon)), Color(kc, 0.8 * alpha), 6)
 		draw_texture_rect(killer.species.sprite, Rect2(row.position + Vector2(6, 2), Vector2(icon, icon)), false, Color(1, 1, 1, alpha))
