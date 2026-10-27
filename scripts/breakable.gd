@@ -40,6 +40,11 @@ func setup(p_cell: Vector2i, p_kind: String, mesh: Mesh, material: Material, p_m
 	add_child(shape)
 
 
+## Twist / resize the visible mesh (the collider stays one tile).
+func set_mesh_basis(basis_value: Basis) -> void:
+	_mesh.basis = basis_value
+
+
 func _ready() -> void:
 	add_to_group("breakables")
 

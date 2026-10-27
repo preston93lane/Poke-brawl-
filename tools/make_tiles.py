@@ -85,7 +85,7 @@ def path():
     save(np.asarray(im).astype(float), "path")
 
 
-def stone_blocks(name, base, rows, seed, bevel=True):
+def stone_blocks(name, base, rows, seed, bevel=True, grout=0.55):
     """Bricks/slabs with grout lines and a light top-left bevel."""
     n = noise(5, seed)
     img = colorize(n, [(0, tuple(v * 0.78 for v in base)), (0.6, base), (1, tuple(min(255, v * 1.12) for v in base))])
@@ -100,7 +100,7 @@ def stone_blocks(name, base, rows, seed, bevel=True):
                 for x in range(max(0, x0), min(S, x0 + h * 2)):
                     lx, ly = x - x0, y - y0
                     if lx < 2 or ly < 2:
-                        shade[y, x] = 0.55  # grout
+                        shade[y, x] = grout
                     elif bevel and (lx < 5 or ly < 5):
                         shade[y, x] = 1.18
                     elif bevel and (lx > h * 2 - 5 or ly > h - 5):
@@ -324,10 +324,40 @@ def gravestone():
     im.save(os.path.join(OUT, "gravestone.png"))
 
 
+def natural_rock():
+    """Weathered stone with soft cracks: no brick grid, so rounded walls look natural."""
+    n = noise(4, 121) * 0.6 + noise(12, 122, 3) * 0.4
+    img = colorize(n, [(0, (104, 98, 96)), (0.45, (146, 140, 134)), (0.8, (176, 170, 160)), (1, (204, 198, 186))])
+    cracks = Image.new("L", (S, S), 0)
+    r = np.random.default_rng(123)
+    def draw(d, dx, dy):
+        for _ in range(6):
+            x, y = r.integers(0, S), r.integers(0, S)
+            pts = [(x + dx, y + dy)]
+            for _ in range(3):
+                x, y = x + r.integers(-10, 10), y + r.integers(-10, 10)
+                pts.append((x + dx, y + dy))
+            d.line(pts, fill=255, width=1)
+    wrap_draw(cracks, draw)
+    c = np.asarray(cracks.filter(ImageFilter.GaussianBlur(0.6))).astype(float) / 255
+    save(img * (1 - 0.35 * c[..., None]), "rock")
+
+
+def path_blob():
+    """Round, soft-edged patch of path drawn over the floor so paths look worn in, not tiled."""
+    n = noise(4, 124) * 0.7 + noise(12, 125, 2) * 0.3
+    img = colorize(n, [(0, (170, 138, 92)), (0.5, (196, 164, 116)), (1, (222, 194, 146))])
+    yy, xx = np.mgrid[0:S, 0:S].astype(float)
+    d = np.hypot(xx - S / 2 + 0.5, yy - S / 2 + 0.5) / (S / 2)
+    edge = 0.78 + 0.14 * (noise(3, 126) - 0.5)
+    a = np.clip((edge - d) / 0.18, 0, 1) * 255
+    save(img, "path_blob", alpha=a)
+
+
 def edge_shadow():
     """Soft dark gradient laid on floor tiles beside walls (fake ambient occlusion)."""
     yy = np.mgrid[0:S, 0:S][0].astype(float)
-    a = np.clip(1 - yy / (S * 0.55), 0, 1) ** 1.6 * 150
+    a = np.clip(1 - yy / (S * 0.45), 0, 1) ** 2.0 * 95
     save(np.zeros((S, S, 3)), "edge_shadow", alpha=a)
 
 
@@ -340,10 +370,11 @@ if __name__ == "__main__":
     stone_blocks("ice_block", (176, 222, 244), 1, 109)
     stone_blocks("wood_wall", (128, 86, 52), 4, 110, bevel=False)
     stone_blocks("metal_wall", (130, 138, 152), 2, 111)
-    stone_blocks("rock", (150, 144, 140), 2, 31)
-    stone_blocks("gym_floor", (210, 196, 160), 2, 33, bevel=False)
+    natural_rock()
+    path_blob()
+    stone_blocks("gym_floor", (210, 196, 160), 2, 33, bevel=False, grout=0.88)
     names = ["grass_0", "grass_1", "grass_2", "path", "gym_floor", "rock", "boulder", "water", "tall_grass", "zone", "edge_shadow", "tree", "cracked", "crate", "goal",
-             "sand", "wood", "metal", "pool", "ice", "dark", "psychic", "volcanic", "lava", "hedge", "brick", "ice_block", "wood_wall", "metal_wall", "gravestone"]
+             "sand", "wood", "metal", "pool", "ice", "dark", "psychic", "volcanic", "lava", "hedge", "brick", "ice_block", "wood_wall", "metal_wall", "gravestone", "path_blob"]
     if len(sys.argv) > 1:
         sheet = Image.new("RGBA", (len(names) * 132, 260), (58, 62, 84, 255))
         for i, n in enumerate(names):

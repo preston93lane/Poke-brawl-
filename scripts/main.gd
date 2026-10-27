@@ -15,6 +15,13 @@ const MODE_SCRIPTS := {
 const MENU_SCENE := "res://scenes/menu.tscn"
 
 @export var arena_id := "route_1"
+## Team banners before the match starts (tests turn it off).
+@export var show_intro := true
+const MATCH_INTRO := preload("res://scripts/ui/match_intro.gd")
+const MODE_TITLES := {
+	"duel": "BATTLE", "king_of_the_hill": "KING OF THE HILL", "brawl_ball": "BRAWL BALL",
+	"candy_rush": "RARE CANDY RUSH", "showdown": "SHOWDOWN",
+}
 @export_enum("duel", "king_of_the_hill", "brawl_ball", "candy_rush", "showdown") var mode := "duel"
 
 @export_group("Player")
@@ -126,6 +133,22 @@ func _ready() -> void:
 	hud.restart_requested.connect(func() -> void: get_tree().reload_current_scene())
 	hud.menu_requested.connect(func() -> void: get_tree().change_scene_to_file(MENU_SCENE))
 	_update_status()
+	if show_intro:
+		await _play_intro()
+
+
+## Pause everything while the team banners play.
+func _play_intro() -> void:
+	var allies: Array = teams[player.team]
+	var others: Array = []
+	for team: int in teams:
+		if team != player.team:
+			others.append_array(teams[team])
+	var intro = MATCH_INTRO.new()
+	hud.add_child(intro)
+	get_tree().paused = true
+	await intro.play(allies, others, MODE_TITLES.get(mode, mode.to_upper()), arena.arena_name)
+	get_tree().paused = false
 
 
 ## Use the choices made in the menu, if we came from there.

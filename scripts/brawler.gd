@@ -1251,8 +1251,9 @@ func _apply_loadout_visuals() -> void:
 func _update_sprite(delta: float) -> void:
 	var hidden := not visible_to_local_player()
 	sprite.visible = not hidden
-	shadow.visible = not hidden
-	team_ring.visible = not hidden and not is_dead
+	# No ground shadow or team ring: they made it harder to see the Pokémon themselves.
+	shadow.visible = false
+	team_ring.visible = false
 	_animate(delta)
 	_update_shield(hidden)
 	if is_dead:

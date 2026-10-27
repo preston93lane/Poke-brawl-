@@ -39,7 +39,10 @@ var goal_cells := { 0: {}, 1: {} }
 var showdown_spawns: Array[Vector3] = []
 var _crate_mesh: BoxMesh
 var _crate_material: StandardMaterial3D
-var _breakable_mesh: BoxMesh
+var _breakable_mesh: Mesh
+var _crate_mesh_box: BoxMesh
+## Wall styles drawn as rounded, lumpy shapes (natural things); the rest stay as blocks.
+const ORGANIC_WALLS := ["rock", "hedge", "ice_block", "cracked"]
 
 var _zone_cells := {}
 var _zone_material: StandardMaterial3D
@@ -65,6 +68,7 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 	var wall_tile := str(def.get("wall", "rock"))
 	liquid = str(def.get("liquid", "water"))
 	var graves: Array[Transform3D] = []
+	var path_blobs: Array[Transform3D] = []
 
 	var floors := {}  # texture name -> Array[Transform3D]
 	var rocks: Array[Transform3D] = []
@@ -92,7 +96,10 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 			if floor_tile == "grass":
 				floor_name = "grass_%d" % posmod(x * 7 + y * 13 + (x * y) % 5, 3)  # Mix of variants.
 			if c == ",":
-				floor_name = "path"
+				# Paths are soft round patches over the floor rather than square tiles.
+				var turn := float(posmod(x * 37 + y * 11, 12)) * PI / 6.0
+				var spread := 1.35 + float(posmod(x * 5 + y * 3, 4)) * 0.06
+				path_blobs.append(Transform3D(Basis(Vector3.UP, turn).scaled(Vector3(spread, 1, spread)), center + Vector3(0, 0.008, 0)))
 			elif c == "~":
 				floor_name = "water"
 			if not floors.has(floor_name):
@@ -106,7 +113,7 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 					trees.append(Transform3D(tilt, base + tilt.y * TREE_SPRITE_SIZE.y * 0.5))
 				"#":
 					solid_cells[cell] = true
-					rocks.append(Transform3D(Basis(), center + Vector3(0, WALL_HEIGHT * 0.5, 0)))
+					rocks.append(Transform3D(_jitter(cell) if wall_tile in ORGANIC_WALLS else Basis(), center + Vector3(0, WALL_HEIGHT * 0.5, 0)))
 				"B":
 					breakable_cells[cell] = "boulder"
 				"X":
@@ -160,11 +167,17 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 		_add_multimesh(floor_plane, mat, floors[floor_name])
 	_add_multimesh(floor_plane, _edge_shadow_material(), _edge_shadows(solid_cells, water_cells), false)
 
+	if not path_blobs.is_empty():
+		var blob_mat := _tile_material("path_blob", false, false)
+		blob_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		_add_multimesh(floor_plane, blob_mat, path_blobs, false)
 	var block := BoxMesh.new()
 	block.size = Vector3(TILE, WALL_HEIGHT, TILE)
-	_add_multimesh(block, _tile_material(wall_tile, true), rocks)
+	_crate_mesh_box = block
+	var lump := lump_mesh(0.62, 0.1, 7)
+	_add_multimesh(lump if wall_tile in ORGANIC_WALLS else block, _tile_material(wall_tile, true), rocks)
 	_add_multimesh(block, _tile_material("boulder", true), boulders)
-	_breakable_mesh = block
+	_breakable_mesh = lump
 	var materials := {
 		"cracked": _tile_material("cracked", true),
 		"boulder": _tile_material("boulder", true),
@@ -220,10 +233,53 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 
 func _add_breakable(cell: Vector2i, kind: String, material: Material) -> Breakable:
 	var b := Breakable.new()
-	b.setup(cell, kind, _breakable_mesh, material, float(GameData.rule("modes/showdown/crate_hp", 3000.0)))
+	var crate := kind == "crate"
+	b.setup(cell, kind, _crate_mesh_box if crate else _breakable_mesh, material, float(GameData.rule("modes/showdown/crate_hp", 3000.0)))
 	b.position = cell_center(cell)
+	if not crate:
+		b.set_mesh_basis(_jitter(cell))
 	add_child(b)
 	return b
+
+
+## A small random twist and size change per tile, so neighbouring rounded walls
+## overlap into uneven, natural-looking ridges. Deterministic per cell.
+func _jitter(cell: Vector2i) -> Basis:
+	var h := posmod(cell.x * 73856093 ^ cell.y * 19349663, 1000) / 1000.0
+	var h2 := posmod(cell.x * 83492791 ^ cell.y * 2654435, 1000) / 1000.0
+	var spread := 1.0 + h * 0.14
+	return Basis(Vector3.UP, h2 * TAU).scaled(Vector3(spread, 0.9 + h2 * 0.25, spread))
+
+
+## Rounded, slightly lumpy block filling about one tile (a cube puffed toward a
+## sphere, with gentle bumps), centred like the wall box so it can replace it.
+## `cubeness` 0 = ball, 1 = box; `bumps` = how uneven the surface is.
+static func lump_mesh(cubeness: float, bumps: float, variant: int) -> ArrayMesh:
+	var sphere := SphereMesh.new()
+	sphere.radius = 0.5
+	sphere.height = 1.0
+	sphere.radial_segments = 20
+	sphere.rings = 10
+	var arrays := sphere.get_mesh_arrays()
+	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	var normals := PackedVector3Array()
+	normals.resize(verts.size())
+	for i in verts.size():
+		var d := verts[i].normalized() if verts[i].length() > 0.0001 else Vector3.UP
+		# Push toward a cube so it fills its tile, then add smooth bumps.
+		var cube := d / maxf(absf(d.x), maxf(absf(d.y), absf(d.z)))
+		var p := d.lerp(cube * 0.92, cubeness)
+		var bump := sin(d.x * 5.1 + variant) * sin(d.z * 4.3 + variant * 1.7) + sin(d.y * 6.7 + variant * 0.3) * 0.5
+		p *= 1.0 + bump * bumps
+		var v := Vector3(p.x * 0.62, p.y * WALL_HEIGHT * 0.5, p.z * 0.62)
+		v.y = maxf(v.y, -WALL_HEIGHT * 0.5)  # Flat bottom on the ground.
+		verts[i] = v
+		normals[i] = Vector3(p.x, p.y * 0.9, p.z).normalized()
+	arrays[Mesh.ARRAY_VERTEX] = verts
+	arrays[Mesh.ARRAY_NORMAL] = normals
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	return mesh
 
 
 ## Puts a power-cube crate on an open floor tile (Showdown on maps without P tiles).

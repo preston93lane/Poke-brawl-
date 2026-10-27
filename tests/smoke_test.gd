@@ -32,6 +32,7 @@ func _ready() -> void:
 	await _check_settings_and_map_maker()
 	await _check_all_arenas()
 	await _check_fullscreen_button()
+	await _check_intro()
 	Engine.time_scale = 1.0
 	print("SMOKE TEST: %s" % ("PASS" if failures == 0 else "FAIL (%d)" % failures))
 	get_tree().quit(1 if failures > 0 else 0)
@@ -64,9 +65,11 @@ func _check_data() -> void:
 	var grass: Array[String] = ["grass"]
 	var ground: Array[String] = ["ground"]
 	var grass_poison: Array[String] = ["grass", "poison"]
-	expect(is_equal_approx(GameData.effectiveness("fire", grass), 1.5), "fire is super effective on grass")
-	expect(is_equal_approx(GameData.effectiveness("electric", ground), 0.4), "electric is resisted hard by ground")
-	expect(is_equal_approx(GameData.effectiveness("grass", grass_poison), 0.67 * 0.67), "dual types multiply")
+	expect(is_equal_approx(GameData.effectiveness("fire", grass), 1.2), "fire is (mildly) super effective on grass")
+	expect(is_equal_approx(GameData.effectiveness("electric", ground), 0.75), "even 'immune' matchups still do most of the damage")
+	expect(is_equal_approx(GameData.effectiveness("grass", grass_poison), 0.75), "dual types multiply, within limits")
+	var bug: Array[String] = ["bug"]
+	expect(GameData.effectiveness("fighting", bug) >= 0.85, "Hitmonlee still hurts Pinsir")
 	var supers := {}
 	for s: SpeciesData in GameData.species.values():
 		expect(s.sprite != null and s.super_move != null, "%s has a sprite and super (%s)" % [s.id, s.super_move.id if s.super_move else "none"])
@@ -85,6 +88,7 @@ func _check_data() -> void:
 ## Most checks hit targets right away, so spawn protection is cleared unless asked to keep it.
 func _start_match(arena_id: String, mode: String, player_species: String, enemies: PackedStringArray, keep_protection := false) -> Node:
 	var main := MAIN_SCENE.instantiate()
+	main.show_intro = false
 	main.arena_id = arena_id
 	main.mode = mode
 	main.player_species = player_species
@@ -111,7 +115,7 @@ func _check_battle() -> void:
 	var ember := player.main_move
 	enemy.take_hit(player, ember)
 	var dealt := before - enemy.health
-	var expected := ember.power * player.attack / enemy.defense * 1.2 * 1.5 * float(GameData.rule("damage_scale", 1.0))
+	var expected := ember.power * player.attack / enemy.defense * GameData.stab * GameData.effectiveness("fire", enemy.species.types) * float(GameData.rule("damage_scale", 1.0))
 	expect(dealt > expected * 0.99, "ember on bulbasaur gets STAB + super effective (%d)" % dealt)
 	expect(player.super_charge > 0.0, "dealing damage charges the super (%.2f)" % player.super_charge)
 
@@ -493,6 +497,7 @@ func _check_menu_settings() -> void:
 		"main": "squirtle_main1", "allies": ["abra"], "enemies": ["dratini", "pikachu"], "bot_level": 2,
 	}
 	var main := MAIN_SCENE.instantiate()
+	main.show_intro = false
 	add_child(main)
 	await get_tree().physics_frame
 	expect(main.mode == "king_of_the_hill" and main.arena.has_zone(), "route 1 has a zone in king of the hill")
@@ -971,5 +976,23 @@ func _check_fullscreen_button() -> void:
 	var scoreboard_panel := Rect2(view.x * 0.5 - 150 - 3 * 54 - 12, 10, 300 + 2 * (3 * 54 + 12), 62)
 	expect(not rect.intersects(scoreboard_panel), "it doesn't cover the scoreboard")
 	expect(not rect.intersects(Rect2(main.hud.super_button.get_global_rect())) and not rect.intersects(Rect2(main.hud.gadget_button.get_global_rect())), "or the buttons")
+	main.queue_free()
+	await get_tree().process_frame
+
+
+func _check_intro() -> void:
+	print("Match intro")
+	var main := MAIN_SCENE.instantiate()
+	main.arena_id = "pewter_gym"
+	add_child(main)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var banners := 0
+	for child in main.hud.get_children():
+		if child.get_script() == main.MATCH_INTRO:
+			banners += 1
+	expect(get_tree().paused and banners == 1, "the team banners play before the match, with the game paused")
+	await get_tree().create_timer(3.5, true).timeout
+	expect(not get_tree().paused, "the match starts after the intro")
 	main.queue_free()
 	await get_tree().process_frame

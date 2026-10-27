@@ -20,7 +20,9 @@ var items: Dictionary = {}
 var item_spawn: Dictionary = {}
 ## Play styles (data/styles.json): id -> { "label", "like", "desc" }.
 var styles: Dictionary = {}
-var stab := 1.2
+var stab := 1.1
+## Overall type multiplier limits (after dual types multiply).
+var type_range := Vector2(0.75, 1.3)
 ## Team whose point of view decides what's hidden in tall grass.
 var local_team := 0
 ## Set by the menu before loading the match scene; read by main.gd. Empty = use the
@@ -321,7 +323,7 @@ func effectiveness(attack_type: String, defender_types: Array[String]) -> float:
 	var result := 1.0
 	for t in defender_types:
 		result *= float(row.get(t, 1.0))
-	return result
+	return clampf(result, type_range.x, type_range.y)
 
 
 ## damage = power * attack / defense * STAB * type effectiveness * crit
@@ -338,7 +340,9 @@ func calc_damage(move: MoveData, attacker: Brawler, defender: Brawler, multiplie
 # --- Loading helpers -------------------------------------------------------
 
 func _load_types(data: Dictionary) -> void:
-	stab = float(data.get("stab", 1.2))
+	stab = float(data.get("stab", 1.1))
+	var limits: Array = data.get("total_range", [0.0, 100.0])
+	type_range = Vector2(float(limits[0]), float(limits[1]))
 	var mults: Dictionary = data.get("multipliers", {})
 	var categories := {
 		"super_effective": float(mults.get("super_effective", 2.0)),
