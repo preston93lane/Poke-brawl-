@@ -2,15 +2,15 @@
 	"name": "Pikachu",
 	"types": ["electric"],
 	"sprite": "res://assets/brawlers/pikachu.png",
-	"stats": {"hp": 2600, "attack": 108, "defense": 80, "speed": 115},
+	"sprite_scale": 1.0,
+	"style": "chain",
+	"stats": {"hp": 2700, "attack": 98, "defense": 87, "speed": 111},
 	"super": "flash",
+	"gadget": "gadget_sitrus",
 	"evolves_to": "raichu",
 	"moves": [
-		{"move": "nuzzle", "level": 1},
-		{"move": "thunder_shock", "level": 1},
-		{"move": "spark", "level": 2},
-		{"move": "thunderbolt", "level": 2},
-		{"move": "iron_tail", "level": 3},
-		{"move": "thunder", "level": 3}
+		{"move": "pikachu_main1", "level": 1},
+		{"move": "pikachu_main2", "level": 2},
+		{"move": "pikachu_main3", "level": 3}
 	]
 }

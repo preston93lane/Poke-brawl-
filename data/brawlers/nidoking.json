@@ -1,0 +1,11 @@
+{
+	"name": "Nidoking",
+	"types": ["poison", "ground"],
+	"sprite": "res://assets/brawlers/nidoking.png",
+	"sprite_scale": 1.3,
+	"style": "brawler",
+	"stats": {"hp": 5500, "attack": 130, "defense": 106, "speed": 109},
+	"super": "nidoking_super",
+	"gadget": "gadget_protect",
+	"evolves_from": "nidorino"
+}

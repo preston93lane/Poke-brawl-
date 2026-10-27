@@ -2,15 +2,15 @@
 	"name": "Dratini",
 	"types": ["dragon"],
 	"sprite": "res://assets/brawlers/dratini.png",
-	"stats": {"hp": 3100, "attack": 101, "defense": 90, "speed": 100},
+	"sprite_scale": 1.0,
+	"style": "lasher",
+	"stats": {"hp": 3400, "attack": 107, "defense": 88, "speed": 95},
 	"super": "agility",
+	"gadget": "gadget_agility",
 	"evolves_to": "dragonair",
 	"moves": [
-		{"move": "wrap", "level": 1},
-		{"move": "twister", "level": 1},
-		{"move": "dragon_tail", "level": 2},
-		{"move": "dragon_breath", "level": 2},
-		{"move": "extreme_speed", "level": 3},
-		{"move": "ice_beam", "level": 3}
+		{"move": "dratini_main1", "level": 1},
+		{"move": "dratini_main2", "level": 2},
+		{"move": "dratini_main3", "level": 3}
 	]
 }

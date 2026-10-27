@@ -3,7 +3,9 @@
 	"types": ["grass", "poison"],
 	"sprite": "res://assets/brawlers/venusaur.png",
 	"sprite_scale": 1.3,
-	"stats": {"hp": 4500, "attack": 122, "defense": 124, "speed": 100},
+	"style": "thrower",
+	"stats": {"hp": 3700, "attack": 128, "defense": 115, "speed": 107},
 	"super": "giga_drain",
+	"gadget": "gadget_smokescreen",
 	"evolves_from": "ivysaur"
 }

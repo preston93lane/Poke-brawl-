@@ -1,0 +1,12 @@
+{
+	"name": "Gloom",
+	"types": ["grass", "poison"],
+	"sprite": "res://assets/brawlers/gloom.png",
+	"sprite_scale": 1.15,
+	"style": "zone",
+	"stats": {"hp": 3750, "attack": 121, "defense": 104, "speed": 91},
+	"super": "gloom_super",
+	"gadget": "gadget_smokescreen",
+	"evolves_from": "oddish",
+	"evolves_to": "vileplume"
+}

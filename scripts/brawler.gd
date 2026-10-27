@@ -1,21 +1,25 @@
 class_name Brawler
 extends CharacterBody3D
 ## A Pokémon brawler. Controllers (player or bot) drive it by setting
-## move_input and calling use_ranged() / use_melee() / use_super().
+## move_input and calling use_main() / use_gadget() / use_super().
 ## Call setup() before adding it to the tree.
 
 signal died(victim: Brawler, killer: Brawler)
 signal evolved(brawler: Brawler, from_name: String)
 
 const PROJECTILE_SCENE := preload("res://scenes/projectile.tscn")
-## Horizontal hit radius used by melee checks (matches the collision capsule).
+## Horizontal hit radius used by melee checks and shots.
 const BODY_RADIUS := 0.5
+## Radius of the walking collision capsule (smaller than BODY_RADIUS so brawlers
+## fit through one-tile gaps between walls and water).
+const COLLIDER_RADIUS := 0.36
 const SPRITE_HEIGHT := 0.85
 ## World units per sprite pixel: a 32px sprite is 1.6 units tall.
 const PIXEL_SIZE := 0.05
 const DOT_TICK := 0.5
 ## Physics layers that stop walking and teleports: world + water.
 const MOVE_BLOCK_MASK := 1 | 8
+const WATER_LAYER := 8
 ## Walls and obstacles (what stops shots and line of sight).
 const WALL_MASK := 1
 ## How often a stream deals damage, and how long its tank waits before refilling.
@@ -27,8 +31,11 @@ var level := 1
 var team := 0
 var is_player := false
 var arena: Arena
-var melee_move: MoveData
-var ranged_move: MoveData
+## Main attack (right stick, ammo), picked from the level's variants.
+var main_move: MoveData
+## Index of the chosen variant, kept when evolving (each stage's own version).
+var main_index := 0
+var gadget_uses := 3
 
 var max_health := 3000.0
 var attack := 100.0
@@ -51,6 +58,8 @@ var is_legendary := false
 var invulnerable := false
 ## Hovers above the ground and flies over walls.
 var flying := false
+## Water and Flying types walk over water tiles.
+var can_swim := false
 ## Damage taken per attacking team (raid bosses use this to pick who gets them).
 var damage_by_team := {}
 ## Seconds left before a summoned legendary leaves (shown above it).
@@ -68,8 +77,13 @@ var _pop := 1.0
 var _dead_time := 0.0
 ## KOs toward the next evolution. Kept when fainting, reset when evolving.
 var evolve_kills := 0
+## Branch to take when a line splits (Eevee); "" = random.
+var preferred_evolution := ""
 
-var _melee_timer := 0.0
+var _gadget_timer := 0.0
+## Short shove from knockback (or a pull), applied over a few frames.
+var _knock_velocity := Vector3.ZERO
+var _knock_time := 0.0
 ## Short lockout after any attack so attacks can't be chained instantly.
 var _attack_lock := 0.0
 var _regen_timer := 0.0
@@ -122,18 +136,25 @@ var _stream_material: StandardMaterial3D
 
 
 func setup(species_id: String, p_level: int, p_team: int, p_is_player: bool, p_arena: Arena,
-		melee_id := "", ranged_id := "") -> void:
+		main_id := "") -> void:
 	species = GameData.get_species(species_id)
 	level = clampi(p_level, 1, int(GameData.rule("level/max", 3)))
 	team = p_team
 	is_player = p_is_player
 	arena = p_arena
-	melee_move = _pick_move("melee", melee_id)
-	ranged_move = _pick_move("ranged", ranged_id)
+	main_move = _pick_move("main", main_id)
+	var options := available_moves("main")
+	main_index = maxi(0, options.find(main_move))
+	gadget_uses = int(GameData.rule("gadget/uses", 3))
 
 
 func _ready() -> void:
 	add_to_group("brawlers")
+	var capsule := ($CollisionShape3D as CollisionShape3D).shape as CapsuleShape3D
+	if capsule:
+		capsule = capsule.duplicate()
+		capsule.radius = COLLIDER_RADIUS
+		$CollisionShape3D.shape = capsule
 	_build_static_visuals()
 	_apply_species()
 	_apply_loadout_visuals()
@@ -158,6 +179,11 @@ func _physics_process(delta: float) -> void:
 
 	if _dash_time > 0.0:
 		_process_dash(delta)
+		return
+	if _knock_time > 0.0:
+		_knock_time -= delta
+		velocity = _knock_velocity
+		move_and_slide()
 		return
 
 	var dir := Vector3(move_input.x, 0.0, move_input.y)
@@ -220,7 +246,7 @@ func pickup(item: Dictionary) -> void:
 		_boosts[stat] = minf(float(spawn.get("boost_cap", 0.6)), float(_boosts.get(stat, 0.0)) + float(boost[stat]))
 	if item.has("extra_ammo") and _extra_ammo < int(spawn.get("max_extra_ammo", 2)):
 		_extra_ammo += int(item["extra_ammo"])
-		ammo = minf(max_ammo(), ammo + (0.35 if ranged_move.kind == "stream" else 1.0))
+		ammo = minf(max_ammo(), ammo + (0.35 if main_move.kind == "stream" else 1.0))
 	if item.has("max_hp"):
 		var before := max_health
 		_hp_bonus = minf(float(spawn.get("max_hp_cap", 0.6)), _hp_bonus + float(item["max_hp"]))
@@ -270,7 +296,37 @@ func _pick_move(slot: String, move_id: String) -> MoveData:
 	return species.default_move(slot, level)
 
 
+## Damage multiplier from level (attacks get a little stronger as you level up).
+func power_bonus() -> float:
+	return 1.0 + float(GameData.rule("level_power_bonus", 0.04)) * (level - 1)
+
+
+## Physics layers that stop this brawler walking (swimmers cross water).
+func walk_mask() -> int:
+	return WALL_MASK if can_swim else MOVE_BLOCK_MASK
+
+
+## Re-pick the main attack after changing species (each stage has its own version
+## of the chosen variant), and refresh the aim preview.
+func _refresh_main_move() -> void:
+	var options := available_moves("main")
+	if options.is_empty():
+		return
+	var next := options[mini(main_index, options.size() - 1)]
+	if next == main_move:
+		return
+	var was_stream := main_move != null and main_move.kind == "stream"
+	main_move = next
+	if was_stream != (main_move.kind == "stream"):
+		ammo = max_ammo()
+	ammo = minf(ammo, max_ammo())
+	if is_inside_tree():
+		_apply_loadout_visuals()
+
+
 func _apply_species() -> void:
+	can_swim = flying or species.has_type("water") or species.has_type("flying")
+	collision_mask = (1 | 2) if can_swim else (1 | 2 | WATER_LAYER)
 	var bonus := 1.0 + float(GameData.rule("level/stat_bonus_per_level", 0.05)) * (level - 1)
 	max_health = species.hp * bonus * (1.0 + _hp_bonus)
 	attack = species.attack * bonus
@@ -284,10 +340,14 @@ func _apply_species() -> void:
 
 
 ## Evolve to the next stage (after enough KOs). Returns false at final stage.
+## Branching lines (Eevee) use `preferred_evolution` if it's an option, else a random branch.
 func evolve() -> bool:
 	if species.evolves_to == "":
 		return false
-	var next: SpeciesData = GameData.get_species(species.evolves_to)
+	var next_id := species.evolves_to
+	if species.evolutions.size() > 1:
+		next_id = preferred_evolution if preferred_evolution in species.evolutions else species.evolutions.pick_random()
+	var next: SpeciesData = GameData.get_species(next_id)
 	if next == null:
 		return false
 	var from_name := species.display_name
@@ -295,6 +355,7 @@ func evolve() -> bool:
 	species = next
 	evolve_kills = 0
 	_apply_species()
+	_refresh_main_move()
 	health = max_health if GameData.rule("evolution/heal_on_evolve", true) else max_health * health_ratio
 	Vfx.ring(get_parent(), global_position, 1.2, "fairy", 50)
 	Vfx.burst(get_parent(), global_position + Vector3(0, 1, 0), "fairy", 30, 0.6, 3.0)
@@ -325,6 +386,7 @@ func respawn(spawn_position: Vector3) -> void:
 	_extra_ammo = 0
 	_hp_bonus = 0.0
 	_apply_species()
+	_refresh_main_move()
 	protect(float(GameData.rule("spawn_protection", 2.0)))
 	_dead_time = 0.0
 	_pop = 0.6
@@ -335,9 +397,9 @@ func respawn(spawn_position: Vector3) -> void:
 	position = spawn_position
 	velocity = Vector3.ZERO
 	collision_layer = 2
-	_melee_timer = 0.0
 	_attack_lock = 0.0
 	_dash_time = 0.0
+	_knock_time = 0.0
 	_clear_status()
 	_buffs.clear()
 	_last_attacker = null
@@ -346,21 +408,25 @@ func respawn(spawn_position: Vector3) -> void:
 
 # --- Attacks ---------------------------------------------------------------
 
-## Ammo bars for projectiles; for streams, the tank (0..1).
+## Ammo bars for the main attack; for streams, the tank (0..1).
 func max_ammo() -> float:
-	if ranged_move.kind == "stream":
+	if main_move.kind == "stream":
 		return 1.0 + 0.35 * _extra_ammo  # PP Up makes the tank bigger.
-	return float(ranged_move.ammo + _extra_ammo)
+	return float(main_move.ammo + _extra_ammo)
 
 
 func is_stunned() -> bool:
 	return _stun_time > 0.0
 
 
+func _busy() -> bool:
+	return is_dead or _dash_time > 0.0 or is_stunned()
+
+
 func can_shoot() -> bool:
-	if is_dead or _dash_time > 0.0 or is_stunned():
+	if _busy():
 		return false
-	if ranged_move.kind == "stream":
+	if main_move.kind == "stream":
 		return is_streaming() or (ammo > 0.1 and _attack_lock <= 0.0)
 	return ammo >= 1.0 and _attack_lock <= 0.0
 
@@ -369,11 +435,11 @@ func is_streaming() -> bool:
 	return _stream_hold > 0.0
 
 
-## Keep a stream move firing toward `direction`. Call every physics frame
+## Keep a stream attack firing toward `direction`. Call every physics frame
 ## while the trigger is held; it stops by itself when calls stop.
 func stream(direction: Vector3) -> bool:
 	direction.y = 0.0
-	if ranged_move.kind != "stream" or direction.length_squared() < 0.0001 or not can_shoot():
+	if main_move.kind != "stream" or direction.length_squared() < 0.0001 or not can_shoot():
 		return false
 	_stream_dir = direction.normalized()
 	facing = _stream_dir
@@ -381,42 +447,63 @@ func stream(direction: Vector3) -> bool:
 		_stream_tick = 0.0
 	_stream_hold = 0.12
 	_regen_timer = 0.0
+	_invisible_time = 0.0
+	_protect_time = 0.0
 	_reveal_timer = float(GameData.rule("tall_grass/reveal_time_after_attack", 1.0))
 	return true
 
 
-func use_ranged(direction: Vector3) -> bool:
-	if ranged_move.kind == "stream":
+## Fire the main attack. `distance` is where lobbed shots land (< 0 = full range).
+func use_main(direction: Vector3, distance := -1.0) -> bool:
+	if main_move.kind == "stream":
 		return stream(direction)
 	direction.y = 0.0
 	if direction.length_squared() < 0.0001 or not can_shoot():
 		return false
 	direction = direction.normalized()
 	ammo -= 1.0
-	_on_attack(direction, ranged_move)
-	_fire_volley(ranged_move, direction)
+	_on_attack(direction, main_move)
+	_perform(main_move, direction, distance)
 	return true
 
 
-func melee_ready() -> bool:
-	return not is_dead and _melee_timer <= 0.0 and _dash_time <= 0.0 and _attack_lock <= 0.0 and not is_stunned()
+## Does the attack itself for any kind of move.
+func _perform(move: MoveData, direction: Vector3, distance: float) -> void:
+	match move.kind:
+		"projectile":
+			_fire_volley(move, direction, distance)
+		"melee":
+			_melee_swing(move, direction)
+		"dash":
+			_start_dash(move, direction)
+		"area":
+			var reach := move.reach if distance < 0.0 else minf(distance, move.reach)
+			_area_strike(move, global_position + direction * reach)
 
 
-## 0 when melee is ready, 1 right after using it.
-func melee_cooldown_ratio() -> float:
-	return _melee_timer / melee_move.cooldown
+func gadget_ready() -> bool:
+	return not _busy() and species.gadget_move != null and gadget_uses > 0 and _gadget_timer <= 0.0
 
 
-func use_melee(direction: Vector3) -> bool:
-	if not melee_ready():
+## 0 when the gadget is ready, 1 right after using it (stays 1 when out of uses).
+func gadget_cooldown_ratio() -> float:
+	if gadget_uses <= 0:
+		return 1.0
+	return _gadget_timer / maxf(0.01, float(GameData.rule("gadget/cooldown", 4.0)))
+
+
+func use_gadget(direction: Vector3) -> bool:
+	if not gadget_ready():
 		return false
+	var move := species.gadget_move
 	direction = _flat_direction(direction)
-	_melee_timer = melee_move.cooldown
-	_on_attack(direction, melee_move)
-	if melee_move.kind == "dash":
-		_start_dash(melee_move, direction)
-	else:
-		_melee_swing(melee_move, direction)
+	gadget_uses -= 1
+	_gadget_timer = float(GameData.rule("gadget/cooldown", 4.0))
+	_spawn_floating_text(move.display_name.to_upper(), Color(0.6, 1.0, 0.8), 60, 2.4)
+	if move.kind != "self":
+		_on_attack(direction, move)
+		_perform(move, direction, 0.0)
+	_apply_support(move, direction)
 	return true
 
 
@@ -429,7 +516,7 @@ func add_super_charge(damage_dealt: float) -> void:
 		super_charge = minf(1.0, super_charge + damage_dealt / species.super_move.charge_damage())
 
 
-## `distance` is where area supers land (clamped to their range); < 0 = max range.
+## `distance` is where area and lobbed supers land (clamped to their range); < 0 = max range.
 func use_super(direction: Vector3, distance := -1.0) -> bool:
 	if not super_ready():
 		return false
@@ -441,16 +528,7 @@ func use_super(direction: Vector3, distance := -1.0) -> bool:
 	Vfx.ring(get_parent(), global_position, 1.0, move.type, 30)
 	if move.self_damage > 0.0:
 		health = maxf(1.0, health - max_health * move.self_damage)
-	match move.kind:
-		"projectile":
-			_fire_volley(move, direction)
-		"melee":
-			_melee_swing(move, direction)
-		"dash":
-			_start_dash(move, direction)
-		"area":
-			var reach := move.reach if distance < 0.0 else minf(distance, move.reach)
-			_area_strike(move, global_position + direction * reach)
+	_perform(move, direction, distance)
 	_apply_support(move, direction)
 	if move.invisible > 0.0:
 		_invisible_time = move.invisible
@@ -474,6 +552,24 @@ func _melee_swing(move: MoveData, direction: Vector3) -> void:
 	_show_melee_fx(direction, move)
 	for other in _enemies_in_cone(direction, move.reach, move.arc):
 		other.take_hit(self, move)
+		other.knock_from(global_position, move.knockback)
+
+
+## Push away from `origin` by `distance` metres (negative pulls toward it, stopping short).
+func knock_from(origin: Vector3, distance: float) -> void:
+	if is_dead or absf(distance) < 0.01 or is_legendary or invulnerable:
+		return
+	var away := global_position - origin
+	away.y = 0.0
+	if away.length() < 0.01:
+		away = -facing
+	var gap := away.length()
+	if distance < 0.0:
+		distance = -minf(-distance, maxf(0.0, gap - BODY_RADIUS * 2.2))
+	_knock_time = 0.18
+	_knock_velocity = away.normalized() * distance / _knock_time
+	_dash_time = 0.0
+	_stream_hold = 0.0
 
 
 ## Enemies within `reach` and inside a cone of `arc` degrees, not behind walls.
@@ -508,7 +604,7 @@ func _start_dash(move: MoveData, direction: Vector3) -> void:
 	add_child(_dash_trail)
 
 
-func _fire_volley(move: MoveData, direction: Vector3) -> void:
+func _fire_volley(move: MoveData, direction: Vector3, distance := -1.0) -> void:
 	for burst in move.burst_count:
 		if burst > 0:
 			await get_tree().create_timer(move.burst_interval, false, true).timeout
@@ -520,18 +616,18 @@ func _fire_volley(move: MoveData, direction: Vector3) -> void:
 				angle = lerpf(-move.spread * 0.5, move.spread * 0.5, float(i) / (move.count - 1))
 			elif move.spread > 0.0:
 				angle = randf_range(-move.spread * 0.5, move.spread * 0.5)
-			_spawn_projectile(move, direction.rotated(Vector3.UP, deg_to_rad(angle)))
+			_spawn_projectile(move, direction.rotated(Vector3.UP, deg_to_rad(angle)), distance)
 
 
-func _spawn_projectile(move: MoveData, direction: Vector3) -> void:
+func _spawn_projectile(move: MoveData, direction: Vector3, distance := -1.0) -> void:
 	var chest := global_position + Vector3(0, 0.8, 0)
 	var spawn := chest + direction * 0.6
-	# Standing against a wall: the shot hits the wall instead of starting past it.
+	# Standing against a wall: the shot hits the wall instead of starting past it (lobs go over).
 	var query := PhysicsRayQueryParameters3D.create(chest, spawn + direction * move.radius, WALL_MASK)
-	if not get_world_3d().direct_space_state.intersect_ray(query).is_empty():
+	if not move.lob and not get_world_3d().direct_space_state.intersect_ray(query).is_empty():
 		return
 	var projectile: Projectile = PROJECTILE_SCENE.instantiate()
-	projectile.setup(self, move, direction)
+	projectile.setup(self, move, direction, distance)
 	get_parent().add_child(projectile)
 	projectile.global_position = spawn
 
@@ -553,6 +649,7 @@ func _area_strike(move: MoveData, center: Vector3) -> void:
 		offset.y = 0.0
 		if offset.length() <= move.area_radius + BODY_RADIUS and Brawler.clear_between(self, center, other.global_position):
 			other.take_hit(self, move)
+			other.knock_from(center, move.knockback)
 	Vfx.ring(parent, center, move.area_radius, move.type, 50)
 	Vfx.burst(parent, center + Vector3(0, 0.3, 0), move.type, 30, move.area_radius * 0.6, 3.5)
 	var mat := fx.material_override as StandardMaterial3D
@@ -562,10 +659,12 @@ func _area_strike(move: MoveData, center: Vector3) -> void:
 	tween.tween_callback(fx.queue_free)
 
 
-## Heals, buffs, teleports, blinding and cleansing attached to a super.
+## Heals, buffs, teleports, shields, blinding and cleansing attached to a super or gadget.
 func _apply_support(move: MoveData, direction: Vector3) -> void:
 	if move.cleanse:
 		_clear_status()
+	if move.protect > 0.0:
+		protect(move.protect)
 	if move.blink > 0.0:
 		_blink(direction, move.blink)
 	if move.heal > 0.0:
@@ -591,7 +690,7 @@ func _apply_support(move: MoveData, direction: Vector3) -> void:
 
 func _blink(direction: Vector3, distance: float) -> void:
 	var from := global_position + Vector3.UP * 0.8
-	var query := PhysicsRayQueryParameters3D.create(from, from + direction * distance, MOVE_BLOCK_MASK)
+	var query := PhysicsRayQueryParameters3D.create(from, from + direction * distance, walk_mask())
 	query.exclude = [get_rid()]
 	var hit := get_world_3d().direct_space_state.intersect_ray(query)
 	var travel := distance
@@ -627,13 +726,32 @@ func _process_dash(delta: float) -> void:
 		to.y = 0.0
 		if to.length() <= BODY_RADIUS * 2.0 + 0.3:
 			_dash_hit.append(other)
-			other.take_hit(self, _dash_move)
+			if _dash_move.explode_radius <= 0.0:
+				other.take_hit(self, _dash_move)
+				other.knock_from(global_position, _dash_move.knockback)
 			if not _dash_move.dash_pierce:
 				_dash_time = 0.0  # Stop on the first hit.
 	if is_on_wall():
 		_dash_time = 0.0
-	if _dash_time <= 0.0 and _dash_trail:
-		_dash_trail.emitting = false
+	if _dash_time <= 0.0:
+		if _dash_trail:
+			_dash_trail.emitting = false
+		if _dash_move.explode_radius > 0.0:
+			_slam(_dash_move)
+
+
+## Landing of a slam dash: hits everyone around where it ends.
+func _slam(move: MoveData) -> void:
+	var parent := get_parent()
+	for other in enemies():
+		var offset := other.global_position - global_position
+		offset.y = 0.0
+		if offset.length() <= move.explode_radius + BODY_RADIUS and has_line_of_sight_to(other):
+			other.take_hit(self, move)
+			other.knock_from(global_position, move.knockback)
+	Vfx.ring(parent, global_position, move.explode_radius, move.type, 50)
+	Vfx.burst(parent, global_position + Vector3(0, 0.3, 0), move.type, 30, move.explode_radius * 0.5, 4.0)
+	_pop = 0.75
 
 
 func _on_attack(direction: Vector3, move: MoveData) -> void:
@@ -715,15 +833,20 @@ func clear_distance(direction: Vector3, max_distance: float) -> float:
 func take_hit(attacker: Brawler, move: MoveData, multiplier := 1.0) -> void:
 	if is_dead or invulnerable or is_protected():
 		return
+	if move.power <= 0.0:
+		_apply_effect(move.effect, attacker)  # Pure status moves (Smokescreen).
+		return
 	if move.bonus_vs_status > 1.0 and has_status():
 		multiplier *= move.bonus_vs_status
+	if is_instance_valid(attacker):
+		multiplier *= attacker.power_bonus()
 	var result: Dictionary = GameData.calc_damage(move, attacker, self, multiplier)
 	if multiplier >= 0.5:  # Skip the tiny per-tick stream hits.
 		Vfx.burst(get_parent(), global_position + Vector3(0, 0.9, 0), move.type, 10, 0.35, 2.5)
 	var amount: float = minf(result["amount"], health)
 	take_damage(result["amount"], attacker, result["effectiveness"], result["crit"])
 	if is_instance_valid(attacker):
-		if move.slot != "super":
+		if move.slot == "main":
 			attacker.add_super_charge(amount)
 		if move.drain > 0.0:
 			attacker.heal(amount * move.drain)
@@ -802,7 +925,7 @@ func _clear_status() -> void:
 
 
 func _tick_timers(delta: float) -> void:
-	_melee_timer = maxf(0.0, _melee_timer - delta)
+	_gadget_timer = maxf(0.0, _gadget_timer - delta)
 	_attack_lock = maxf(0.0, _attack_lock - delta)
 	_reveal_timer = maxf(0.0, _reveal_timer - delta)
 	_blind_time = maxf(0.0, _blind_time - delta)
@@ -811,11 +934,11 @@ func _tick_timers(delta: float) -> void:
 	_protect_time = maxf(0.0, _protect_time - delta)
 	for stat: String in _buffs:
 		_buffs[stat]["time"] = float(_buffs[stat]["time"]) - delta
-	if ranged_move.kind == "stream":
+	if main_move.kind == "stream":
 		if not is_streaming() and _stream_idle >= STREAM_REFILL_DELAY:
-			ammo = minf(max_ammo(), ammo + delta / ranged_move.reload)
+			ammo = minf(max_ammo(), ammo + delta / main_move.reload)
 	elif ammo < max_ammo():
-		ammo = minf(max_ammo(), ammo + delta / ranged_move.reload)
+		ammo = minf(max_ammo(), ammo + delta / main_move.reload)
 	_regen_timer += delta
 	if _regen_timer >= float(GameData.rule("regen_delay", 3.0)) and health < max_health:
 		health = minf(max_health, health + max_health * float(GameData.rule("regen_rate", 0.13)) * delta)
@@ -844,7 +967,7 @@ func _tick_stream(delta: float) -> void:
 			_stream_fx.visible = false
 			_stream_particles.emitting = false
 		return
-	var move := ranged_move
+	var move := main_move
 	_stream_hold -= delta
 	_stream_idle = 0.0
 	_attack_lock = maxf(_attack_lock, 0.2)
@@ -878,6 +1001,7 @@ func _die() -> void:
 	Vfx.burst(get_parent(), global_position + Vector3(0, 0.6, 0), "normal", 30, 0.5, 3.5)
 	velocity = Vector3.ZERO
 	_dash_time = 0.0
+	_knock_time = 0.0
 	set_deferred("collision_layer", 0)
 	hide_aim()
 	_dead_time = 0.0
@@ -922,23 +1046,41 @@ func visible_to_local_player() -> bool:
 
 # --- Aim indicator ---------------------------------------------------------
 
-func show_aim(direction: Vector3) -> void:
+## Preview of the main attack. `distance` (0..range) places lobbed shots; < 0 = full range.
+func show_aim(direction: Vector3, distance := -1.0) -> void:
 	if is_dead or direction.length_squared() < 0.0001:
 		hide_aim()
 		return
 	direction = Vector3(direction.x, 0, direction.z).normalized()
 	aim_pivot.rotation.y = atan2(-direction.x, -direction.z)
 	aim_indicator.visible = true
-	# Shorten the preview where a wall would stop the attack.
-	var reach := ranged_move.reach + (0.6 if ranged_move.kind == "projectile" else 0.0)
-	var clip := clampf(clear_distance(direction, reach) / reach, 0.05, 1.0)
-	if aim_indicator.mesh is PlaneMesh:
+	var m := main_move
+	if m.kind == "projectile" and m.lob:
+		var d := m.reach if distance < 0.0 else clampf(distance, 1.0, m.reach)
+		aim_indicator.scale = Vector3.ONE
+		aim_indicator.position = Vector3(0, 0.05, -d)
+	elif aim_indicator.mesh is PlaneMesh:
+		# Shorten the preview where a wall would stop the attack.
+		var reach := _aim_length()
+		var clip := clampf(clear_distance(direction, reach + 0.6) / (reach + 0.6), 0.05, 1.0)
 		aim_indicator.scale = Vector3(1, 1, clip)
-		aim_indicator.position.z = -(ranged_move.reach * clip) * 0.5 - 0.6
+		aim_indicator.position = Vector3(0, 0.05, -(reach * clip) * 0.5 - 0.6)
 	else:
+		var reach := _aim_length()
+		var clip := clampf(clear_distance(direction, reach) / reach, 0.05, 1.0)
 		aim_indicator.scale = Vector3(clip, 1, clip)
+		aim_indicator.position = Vector3(0, 0.05, 0)
 	var mat := aim_indicator.material_override as StandardMaterial3D
 	mat.albedo_color.a = 0.45 if can_shoot() else 0.15
+
+
+func _aim_length() -> float:
+	match main_move.kind:
+		"dash":
+			return main_move.dash_distance
+		"melee":
+			return main_move.reach + BODY_RADIUS
+	return main_move.reach
 
 
 func hide_aim() -> void:
@@ -977,9 +1119,16 @@ func _build_static_visuals() -> void:
 	aim_indicator.visible = false
 
 
-## Rebuild the aim preview (and stream cone) to match the equipped ranged move.
+## Rebuild the aim preview (and stream cone) to match the equipped main attack.
 func _apply_loadout_visuals() -> void:
-	var r := ranged_move
+	var r := main_move
+	if _stream_particles:
+		_stream_particles.queue_free()
+		_stream_particles = null
+	if _stream_fx:
+		_stream_fx.queue_free()
+		_stream_fx = null
+	aim_indicator.scale = Vector3.ONE
 	if r.kind == "stream":
 		var cone := _build_fan_mesh(r.reach, deg_to_rad(r.arc))
 		aim_indicator.mesh = cone
@@ -995,6 +1144,20 @@ func _apply_loadout_visuals() -> void:
 		_stream_fx.position.y = 0.3
 		_stream_fx.visible = false
 		add_child(_stream_fx)
+	elif r.kind == "melee":
+		aim_indicator.mesh = _build_fan_mesh(r.reach + BODY_RADIUS, deg_to_rad(minf(r.arc, 359.0)))
+		aim_indicator.position = Vector3(0, 0.05, 0)
+	elif r.kind == "dash":
+		var lane := PlaneMesh.new()
+		lane.size = Vector2(BODY_RADIUS * 2.0, r.dash_distance)
+		aim_indicator.mesh = lane
+	elif r.lob:
+		var disc := CylinderMesh.new()
+		var radius := maxf(r.explode_radius, r.linger_radius)
+		disc.top_radius = maxf(0.8, radius)
+		disc.bottom_radius = disc.top_radius
+		disc.height = 0.03
+		aim_indicator.mesh = disc
 	elif r.count > 1 or r.spread > 0.0:
 		aim_indicator.mesh = _build_fan_mesh(r.reach + 0.6, deg_to_rad(maxf(r.spread, 8.0)))
 		aim_indicator.position = Vector3(0, 0.05, 0)
@@ -1053,6 +1216,8 @@ func _animate(delta: float) -> void:
 		squash = 1.0 + sin(_anim_phase) * 0.025  # Idle breathing.
 	if flying:
 		lift += 0.9 + sin(Time.get_ticks_msec() * 0.003) * 0.15
+	elif can_swim and arena != null and arena.is_water(global_position):
+		lift -= 0.22  # Swimming: sit low in the water.
 	_pop = move_toward(_pop, 1.0, delta * 3.5)
 	var sx := _pop / sqrt(squash)
 	var sy := _pop * squash

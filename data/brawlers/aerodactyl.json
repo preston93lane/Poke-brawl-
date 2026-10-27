@@ -1,0 +1,15 @@
+{
+	"name": "Aerodactyl",
+	"types": ["rock", "flying"],
+	"sprite": "res://assets/brawlers/aerodactyl.png",
+	"sprite_scale": 1.15,
+	"style": "sniper",
+	"stats": {"hp": 2900, "attack": 119, "defense": 102, "speed": 127},
+	"super": "aerodactyl_super",
+	"gadget": "gadget_teleport",
+	"moves": [
+		{"move": "aerodactyl_main1", "level": 1},
+		{"move": "aerodactyl_main2", "level": 2},
+		{"move": "aerodactyl_main3", "level": 3}
+	]
+}

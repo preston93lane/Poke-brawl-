@@ -1,0 +1,15 @@
+{
+	"name": "Farfetch'd",
+	"types": ["normal", "flying"],
+	"sprite": "res://assets/brawlers/farfetchd.png",
+	"sprite_scale": 1.15,
+	"style": "spinner",
+	"stats": {"hp": 4550, "attack": 127, "defense": 95, "speed": 99},
+	"super": "farfetchd_super",
+	"gadget": "gadget_agility",
+	"moves": [
+		{"move": "farfetchd_main1", "level": 1},
+		{"move": "farfetchd_main2", "level": 2},
+		{"move": "farfetchd_main3", "level": 3}
+	]
+}

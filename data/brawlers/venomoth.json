@@ -1,0 +1,11 @@
+{
+	"name": "Venomoth",
+	"types": ["bug", "poison"],
+	"sprite": "res://assets/brawlers/venomoth.png",
+	"sprite_scale": 1.15,
+	"style": "homing",
+	"stats": {"hp": 3650, "attack": 121, "defense": 100, "speed": 111},
+	"super": "venomoth_super",
+	"gadget": "gadget_smokescreen",
+	"evolves_from": "venonat"
+}

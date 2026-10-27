@@ -1,0 +1,11 @@
+{
+	"name": "Seaking",
+	"types": ["water"],
+	"sprite": "res://assets/brawlers/seaking.png",
+	"sprite_scale": 1.15,
+	"style": "assassin",
+	"stats": {"hp": 3900, "attack": 123, "defense": 104, "speed": 102},
+	"super": "seaking_super",
+	"gadget": "gadget_agility",
+	"evolves_from": "goldeen"
+}

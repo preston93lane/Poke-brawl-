@@ -63,7 +63,7 @@ theme_override_colors/font_color = Color(1, 1, 1, 0.7)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4
 theme_override_font_sizes/font_size = 14
-text = "Desktop: WASD move · F shoot · Space melee · E super"
+text = "Desktop: WASD move · F attack · Space gadget · E super"
 
 [node name="MoveStick" type="Control" parent="."]
 layout_mode = 3
@@ -91,7 +91,7 @@ rest_anchor = Vector2(1, 1)
 rest_offset = Vector2(-230, -190)
 color = Color(1, 0.85, 0.3, 1)
 
-[node name="MeleeButton" type="Control" parent="."]
+[node name="GadgetButton" type="Control" parent="."]
 layout_mode = 3
 anchors_preset = 3
 anchor_left = 1.0

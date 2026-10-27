@@ -1,0 +1,11 @@
+{
+	"name": "Seadra",
+	"types": ["water"],
+	"sprite": "res://assets/brawlers/seadra.png",
+	"sprite_scale": 1.15,
+	"style": "sniper",
+	"stats": {"hp": 3050, "attack": 126, "defense": 102, "speed": 109},
+	"super": "seadra_super",
+	"gadget": "gadget_teleport",
+	"evolves_from": "horsea"
+}

@@ -1,0 +1,16 @@
+{
+	"name": "Kabuto",
+	"types": ["rock", "water"],
+	"sprite": "res://assets/brawlers/kabuto.png",
+	"sprite_scale": 1.0,
+	"style": "assassin",
+	"stats": {"hp": 2650, "attack": 113, "defense": 100, "speed": 97},
+	"super": "kabuto_super",
+	"gadget": "gadget_agility",
+	"evolves_to": "kabutops",
+	"moves": [
+		{"move": "kabuto_main1", "level": 1},
+		{"move": "kabuto_main2", "level": 2},
+		{"move": "kabuto_main3", "level": 3}
+	]
+}

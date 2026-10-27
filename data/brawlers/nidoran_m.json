@@ -1,0 +1,16 @@
+{
+	"name": "Nidoran M",
+	"types": ["poison"],
+	"sprite": "res://assets/brawlers/nidoran_m.png",
+	"sprite_scale": 1.0,
+	"style": "brawler",
+	"stats": {"hp": 4450, "attack": 104, "defense": 84, "speed": 95},
+	"super": "nidoran_m_super",
+	"gadget": "gadget_protect",
+	"evolves_to": "nidorino",
+	"moves": [
+		{"move": "nidoran_m_main1", "level": 1},
+		{"move": "nidoran_m_main2", "level": 2},
+		{"move": "nidoran_m_main3", "level": 3}
+	]
+}

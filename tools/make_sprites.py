@@ -11,6 +11,8 @@ side (facing right; the game flips it for left) and back (walking away).
 Replace any PNG with real art in the same layout whenever you like.
 """
 import os
+import math
+import sys as _sys
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 
@@ -352,6 +354,197 @@ def annihilape(d):
     d.arc([10, 17, 21, 23], 200, 340, fill=(255, 255, 255, 255), width=1)
 
 
+# --- Generated creatures (Pokemon with a sprite spec in tools/roster.py) -----
+
+def _shift(box, dx, dy, k=1.0, cx=16, cy=31):
+    """Scale a box toward the feet (cx, cy) by k, then move it."""
+    x0, y0, x1, y1 = box
+    return [cx + (x0 - cx) * k + dx, cy + (y0 - cy) * k + dy, cx + (x1 - cx) * k + dx, cy + (y1 - cy) * k + dy]
+
+
+def creature(spec, stage):
+    plan, color, accent, features = spec
+    k = {1: 0.82, 2: 0.95, 3: 1.05}.get(stage, 0.95)
+    c, a = rgb(color), rgb(accent)
+    dark = tuple(max(0, int(v * 0.72)) for v in c[:3]) + (255,)
+
+    def draw(d):
+        B = lambda box: [round(v) for v in _shift(box, 0, 0, k)]
+        P = lambda pts: [(round(16 + (x - 16) * k), round(31 + (y - 31) * k)) for x, y in pts]
+        f = set(features)
+        # Body plan: returns the head box (where the face goes).
+        if plan == "quad":
+            head, body = [9, 4, 22, 17], [3, 13, 28, 29]
+        elif plan == "bird":
+            head, body = [10, 3, 21, 14], [8, 10, 23, 28]
+        elif plan == "fish":
+            head, body = [6, 9, 25, 27], [6, 9, 25, 27]
+        elif plan == "serpent":
+            head, body = [10, 2, 22, 14], [3, 18, 28, 31]
+        elif plan == "humanoid":
+            head, body = [10, 1, 21, 11], [9, 9, 22, 26]
+        elif plan == "plant":
+            head, body = [8, 13, 23, 30], [8, 13, 23, 30]
+        elif plan == "bug":
+            head, body = [9, 3, 22, 14], [8, 12, 23, 30]
+        elif plan == "shell":
+            head, body = [10, 11, 21, 22], [3, 6, 28, 29]
+        elif plan == "ball":
+            head, body = [6, 6, 25, 27], [6, 6, 25, 27]
+        elif plan == "blob":
+            head, body = [5, 10, 26, 30], [5, 10, 26, 30]
+        else:  # biped
+            head, body = [8, 6, 23, 30], [8, 6, 23, 30]
+        hx0, hy0, hx1, hy1 = head
+        hc = (hx0 + hx1) / 2
+
+        # Things behind the body.
+        if "wings" in f:
+            for sd in (-1, 1):
+                d.polygon(P([(16 + sd * 5, 14), (16 + sd * 15, 5), (16 + sd * 14, 16), (16 + sd * 6, 22)]), fill=a if plan == "bug" else dark, outline=OL)
+        if "tail" in f:
+            d.line(P([(22, 26), (28, 22), (30, 16)]), fill=c, width=3)
+        if "tail_flame" in f:
+            d.line(P([(22, 26), (28, 21)]), fill=c, width=3)
+            d.polygon(P([(28, 22), (25, 16), (28, 9), (31, 16)]), fill=rgb("f05020"), outline=OL)
+            d.polygon(P([(28, 20), (27, 16), (28, 13), (29, 16)]), fill=rgb("ffd040"))
+        if "fins" in f:
+            d.polygon(P([(14, 9), (17, 2), (20, 9)]), fill=a, outline=OL)
+            for sd in (-1, 1):
+                d.polygon(P([(16 + sd * 9, 18), (16 + sd * 15, 15), (16 + sd * 12, 23)]), fill=a, outline=OL)
+        if "mane" in f:
+            d.ellipse(B([hx0 - 3, hy0 - 2, hx1 + 3, hy1 + 4]), fill=a, outline=OL)
+        if "tentacles" in f:
+            for x in (9, 13, 18, 22):
+                d.line(P([(x, 24), (x - 1, 29), (x + 1, 31)]), fill=dark, width=2)
+        if "spikes" in f:
+            for i in range(7):
+                ang = math.pi * (0.1 + 0.8 * i / 6)
+                cx, cy, r = 16, 18, 13
+                x, y = cx - math.cos(ang) * r, cy - math.sin(ang) * r
+                d.polygon(P([(x - 2, y + 2), (x + (x - cx) * 0.25, y + (y - cy) * 0.25), (x + 2, y + 2)]), fill=dark, outline=OL)
+
+        # Body.
+        if plan == "quad":
+            for x in (6, 11, 19, 24):
+                d.rectangle(B([x, 25, x + 3, 30]), fill=dark, outline=OL)
+            d.ellipse(B(body), fill=c, outline=OL)
+            d.ellipse(B([9, 18, 22, 27]), fill=a)
+            d.ellipse(B(head), fill=c, outline=OL)
+        elif plan == "bird":
+            d.ellipse(B(body), fill=c, outline=OL)
+            d.ellipse(B([11, 15, 20, 26]), fill=a)
+            d.ellipse(B(head), fill=c, outline=OL)
+            for x in (12, 18):
+                d.line(P([(x, 27), (x, 31)]), fill=rgb("e0a040"), width=1)
+        elif plan == "serpent":
+            d.ellipse(B(body), fill=c, outline=OL)
+            d.ellipse(B([7, 21, 24, 29]), fill=a)
+            d.polygon(P([(11, 20), (13, 10), (19, 10), (21, 20)]), fill=c, outline=OL)
+            d.ellipse(B(head), fill=c, outline=OL)
+        elif plan == "humanoid":
+            for x in (10, 18):
+                d.rectangle(B([x, 23, x + 3, 30]), fill=dark, outline=OL)
+            for x0 in (5, 23):
+                d.ellipse(B([x0, 12, x0 + 4, 22]), fill=c, outline=OL)
+            d.ellipse(B(body), fill=c, outline=OL)
+            d.ellipse(B([12, 13, 19, 23]), fill=a)
+            d.ellipse(B(head), fill=c, outline=OL)
+        elif plan == "plant":
+            d.ellipse(B(body), fill=c, outline=OL)
+            for x in (10, 18):
+                d.rectangle(B([x, 28, x + 3, 31]), fill=dark, outline=OL)
+        elif plan == "bug":
+            d.ellipse(B([10, 20, 21, 31]), fill=c, outline=OL)
+            d.ellipse(B([9, 12, 22, 24]), fill=a if "stripes" in f else c, outline=OL)
+            for y in (16, 21, 25):
+                d.line(P([(9, y), (5, y + 3)]), fill=OL, width=1)
+                d.line(P([(22, y), (26, y + 3)]), fill=OL, width=1)
+            d.ellipse(B(head), fill=c, outline=OL)
+        elif plan == "shell":
+            d.ellipse(B(body), fill=a, outline=OL)
+            for i in range(3):
+                d.arc(B([5 + i * 3, 8 + i * 3, 26 - i * 3, 27 - i * 3]), 200, 340, fill=dark, width=1)
+            d.ellipse(B(head), fill=c, outline=OL)
+        elif plan == "blob":
+            d.ellipse(B(body), fill=c, outline=OL)
+            for x in (8, 15, 22):
+                d.ellipse(B([x - 2, 26, x + 2, 31]), fill=c, outline=OL)
+        elif plan == "fish":
+            d.polygon(P([(4, 18), (0, 11), (0, 25)]), fill=a, outline=OL)
+            d.ellipse(B(body), fill=c, outline=OL)
+            d.ellipse(B([9, 18, 22, 25]), fill=a)
+        else:  # ball / biped
+            if plan == "biped":
+                for x in (9, 18):
+                    d.ellipse(B([x, 26, x + 5, 31]), fill=dark, outline=OL)
+                for x0 in (5, 23):
+                    d.ellipse(B([x0, 15, x0 + 4, 22]), fill=c, outline=OL)
+            d.ellipse(B(body), fill=c, outline=OL)
+            if plan == "biped":
+                d.ellipse(B([11, 16, 20, 28]), fill=a)
+
+        # Head decorations.
+        if "ears_pointy" in f:
+            for sd in (-1, 1):
+                ex = hc + sd * (hx1 - hx0) * 0.3
+                d.polygon(P([(ex - 2, hy0 + 3), (ex + sd * 2, hy0 - 5), (ex + 2, hy0 + 3)]), fill=c, outline=OL)
+        if "ears_round" in f:
+            for sd in (-1, 1):
+                ex = hc + sd * (hx1 - hx0) * 0.38
+                d.ellipse(B([ex - 3, hy0 - 3, ex + 3, hy0 + 3]), fill=c, outline=OL)
+        if "ears_long" in f:
+            for sd in (-1, 1):
+                ex = hc + sd * (hx1 - hx0) * 0.25
+                d.ellipse(B([ex - 2, hy0 - 8, ex + 2, hy0 + 3]), fill=c, outline=OL)
+        if "horn" in f:
+            d.polygon(P([(hc - 2, hy0 + 1), (hc, hy0 - 7), (hc + 2, hy0 + 1)]), fill=rgb("f0e8d0"), outline=OL)
+        if "horns" in f:
+            for sd in (-1, 1):
+                d.polygon(P([(hc + sd * 3, hy0 + 2), (hc + sd * 8, hy0 - 5), (hc + sd * 5, hy0 + 3)]), fill=rgb("e8e0d0"), outline=OL)
+        if "crest" in f:
+            d.polygon(P([(hc - 3, hy0 + 1), (hc - 1, hy0 - 5), (hc + 1, hy0 - 1), (hc + 3, hy0 - 6), (hc + 4, hy0 + 2)]), fill=a, outline=OL)
+        if "antenna" in f:
+            for sd in (-1, 1):
+                d.line(P([(hc + sd * 2, hy0 + 1), (hc + sd * 5, hy0 - 6)]), fill=OL, width=1)
+                d.ellipse(B([hc + sd * 5 - 1, hy0 - 8, hc + sd * 5 + 1, hy0 - 6]), fill=a)
+        if "leaf" in f:
+            for sd in (-1, 0, 1):
+                d.polygon(P([(16, hy0 + 2), (16 + sd * 7 - 2, hy0 - 8), (16 + sd * 7 + 2, hy0 - 7)]), fill=rgb("58b048"), outline=OL)
+        if "flower" in f:
+            d.ellipse(B([hc - 9, hy0 - 6, hc + 9, hy0 + 4]), fill=a, outline=OL)
+            d.ellipse(B([hc - 3, hy0 - 3, hc + 3, hy0 + 2]), fill=rgb("f0d050"))
+        if "shell" in f and plan != "shell":
+            d.ellipse(B([body[0] + 2, body[1] + 4, body[2] - 2, body[3]]), fill=a, outline=OL)
+        if "fluff" in f:
+            d.ellipse(B([hc - 6, hy1 - 2, hc + 6, hy1 + 4]), fill=a, outline=OL)
+        if "spots" in f:
+            for x, y in ((body[0] + 4, body[1] + 6), (body[2] - 5, body[1] + 9), (body[0] + 6, body[3] - 6)):
+                d.ellipse(B([x, y, x + 2, y + 2]), fill=dark)
+        if "stripes" in f:
+            for y in (body[1] + 6, body[1] + 10):
+                d.line(P([(body[0] + 3, y), (body[2] - 3, y)]), fill=dark, width=1)
+        if "claws" in f:
+            for x in (5, 26):
+                d.polygon(P([(x - 2, 20), (x, 25), (x + 2, 20)]), fill=rgb("f0f0e8"), outline=OL)
+        if "gem" in f:
+            d.polygon(P([(hc, hy0 + 1), (hc + 2, hy0 + 3), (hc, hy0 + 5), (hc - 2, hy0 + 3)]), fill=rgb("f04060"), outline=OL)
+        if "mask" in f:
+            d.rectangle(B([hx0 + 1, hy0 + 2, hx1 - 1, hy0 + 6]), fill=rgb("f0f0e8"), outline=OL)
+
+        # Face.
+        ey = hy0 + (hy1 - hy0) * 0.42
+        gap = max(3, int((hx1 - hx0) * 0.18))
+        eyes(d, int(hc), int(31 + (ey - 31) * k), gap)
+        if FACE_ON:
+            if "beak" in f:
+                d.polygon(P([(hc - 2, ey + 3), (hc + 3 + FACE_DX, ey + 5), (hc - 2, ey + 6)]), fill=rgb("f0b040"), outline=OL)
+            if "whiskers" in f:
+                for sd in (-1, 1):
+                    d.line(P([(hc + sd * 3, ey + 4), (hc + sd * 8, ey + 3)]), fill=OL, width=1)
+    return draw
+
+
 # --- Legendaries ----------------------------------------------------------
 
 def zapdos(d):
@@ -414,15 +607,29 @@ NAMES = ['abra', 'kadabra', 'alakazam', 'dratini', 'dragonair', 'dragonite', 'pi
 
 NAMES += ["zapdos", "moltres", "articuno", "regirock", "rayquaza", "celebi"]
 
+# Everyone else comes from the roster's sprite specs.
+_sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from roster import FAMILIES  # noqa: E402
+GENERATED = {}
+for _fam in FAMILIES:
+    for _i, _m in enumerate(_fam["members"]):
+        if _m[5] is not None:
+            _stage = 1 if (_i == 0 or len(_fam["members"]) == 1) else min(3, _i + 1)
+            if len(_m) > 6:
+                _stage = 2  # Eevee's evolutions
+            GENERATED[_m[0]] = creature(_m[5], _stage if len(_fam["members"]) > 1 else 2)
+NAMES += list(GENERATED)
+
 if __name__ == "__main__":
     import sys
     for name in NAMES:
-        views = sprite_views(globals()[name])
+        views = sprite_views(GENERATED.get(name) or globals()[name])
         out = Image.new("RGBA", (FINAL * 3, FINAL), (0, 0, 0, 0))
         for i, v in enumerate(views):
             out.alpha_composite(v, (i * FINAL, 0))
         out.save(os.path.join(OUT, name + ".png"))
-    if len(sys.argv) > 1:  # Optional contact sheet for reviewing the art: front / side / back.
+    only = [a for a in sys.argv[1:] if not a.endswith(".png")]
+    if len(sys.argv) > 1 and sys.argv[1].endswith(".png"):  # Optional contact sheet: front / side / back.
         cols = 6
         rows = (len(NAMES) + cols - 1) // cols
         sheet = Image.new("RGBA", (cols * 3 * 72 + cols * 8, rows * 76), (58, 62, 84, 255))

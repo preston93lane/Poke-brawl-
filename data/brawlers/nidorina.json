@@ -1,0 +1,12 @@
+{
+	"name": "Nidorina",
+	"types": ["poison"],
+	"sprite": "res://assets/brawlers/nidorina.png",
+	"sprite_scale": 1.15,
+	"style": "brawler",
+	"stats": {"hp": 5250, "attack": 108, "defense": 97, "speed": 97},
+	"super": "nidorina_super",
+	"gadget": "gadget_protect",
+	"evolves_from": "nidoran_f",
+	"evolves_to": "nidoqueen"
+}

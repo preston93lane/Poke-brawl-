@@ -1,0 +1,15 @@
+{
+	"name": "Kangaskhan",
+	"types": ["normal"],
+	"sprite": "res://assets/brawlers/kangaskhan.png",
+	"sprite_scale": 1.15,
+	"style": "brawler",
+	"stats": {"hp": 5250, "attack": 116, "defense": 108, "speed": 111},
+	"super": "kangaskhan_super",
+	"gadget": "gadget_protect",
+	"moves": [
+		{"move": "kangaskhan_main1", "level": 1},
+		{"move": "kangaskhan_main2", "level": 2},
+		{"move": "kangaskhan_main3", "level": 3}
+	]
+}

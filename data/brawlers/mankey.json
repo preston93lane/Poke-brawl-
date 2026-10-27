@@ -2,15 +2,15 @@
 	"name": "Mankey",
 	"types": ["fighting"],
 	"sprite": "res://assets/brawlers/mankey.png",
-	"stats": {"hp": 2700, "attack": 116, "defense": 78, "speed": 112},
+	"sprite_scale": 1.0,
+	"style": "brawler",
+	"stats": {"hp": 3900, "attack": 113, "defense": 84, "speed": 103},
 	"super": "bulk_up",
+	"gadget": "gadget_protect",
 	"evolves_to": "primeape",
 	"moves": [
-		{"move": "karate_chop", "level": 1},
-		{"move": "vacuum_wave", "level": 1},
-		{"move": "cross_chop", "level": 2},
-		{"move": "rock_tomb", "level": 2},
-		{"move": "close_combat", "level": 3},
-		{"move": "aura_sphere", "level": 3}
+		{"move": "mankey_main1", "level": 1},
+		{"move": "mankey_main2", "level": 2},
+		{"move": "mankey_main3", "level": 3}
 	]
 }

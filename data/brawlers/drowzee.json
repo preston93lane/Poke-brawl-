@@ -1,0 +1,16 @@
+{
+	"name": "Drowzee",
+	"types": ["psychic"],
+	"sprite": "res://assets/brawlers/drowzee.png",
+	"sprite_scale": 1.0,
+	"style": "boomerang",
+	"stats": {"hp": 3500, "attack": 96, "defense": 100, "speed": 92},
+	"super": "drowzee_super",
+	"gadget": "gadget_teleport",
+	"evolves_to": "hypno",
+	"moves": [
+		{"move": "drowzee_main1", "level": 1},
+		{"move": "drowzee_main2", "level": 2},
+		{"move": "drowzee_main3", "level": 3}
+	]
+}

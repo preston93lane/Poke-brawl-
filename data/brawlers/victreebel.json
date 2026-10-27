@@ -3,7 +3,9 @@
 	"types": ["grass", "poison"],
 	"sprite": "res://assets/brawlers/victreebel.png",
 	"sprite_scale": 1.3,
-	"stats": {"hp": 4350, "attack": 150, "defense": 90, "speed": 104},
+	"style": "lasher",
+	"stats": {"hp": 4600, "attack": 134, "defense": 100, "speed": 103},
 	"super": "leaf_storm",
+	"gadget": "gadget_agility",
 	"evolves_from": "weepinbell"
 }

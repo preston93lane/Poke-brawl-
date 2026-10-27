@@ -1,0 +1,12 @@
+{
+	"name": "Kakuna",
+	"types": ["bug", "poison"],
+	"sprite": "res://assets/brawlers/kakuna.png",
+	"sprite_scale": 1.15,
+	"style": "assassin",
+	"stats": {"hp": 4250, "attack": 99, "defense": 82, "speed": 89},
+	"super": "kakuna_super",
+	"gadget": "gadget_agility",
+	"evolves_from": "weedle",
+	"evolves_to": "beedrill"
+}

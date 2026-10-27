@@ -1,0 +1,11 @@
+{
+	"name": "Parasect",
+	"types": ["bug", "grass"],
+	"sprite": "res://assets/brawlers/parasect.png",
+	"sprite_scale": 1.15,
+	"style": "brawler",
+	"stats": {"hp": 5250, "attack": 131, "defense": 108, "speed": 87},
+	"super": "parasect_super",
+	"gadget": "gadget_protect",
+	"evolves_from": "paras"
+}

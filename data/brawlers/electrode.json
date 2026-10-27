@@ -1,0 +1,11 @@
+{
+	"name": "Electrode",
+	"types": ["electric"],
+	"sprite": "res://assets/brawlers/electrode.png",
+	"sprite_scale": 1.15,
+	"style": "spinner",
+	"stats": {"hp": 4000, "attack": 111, "defense": 105, "speed": 130},
+	"super": "electrode_super",
+	"gadget": "gadget_agility",
+	"evolves_from": "voltorb"
+}

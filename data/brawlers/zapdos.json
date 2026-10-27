@@ -4,10 +4,13 @@
 	"sprite": "res://assets/brawlers/zapdos.png",
 	"sprite_scale": 1.6,
 	"legendary": true,
+	"style": "chain",
 	"stats": {"hp": 5200, "attack": 140, "defense": 125, "speed": 100},
 	"super": "thunder_storm",
+	"gadget": "gadget_sitrus",
 	"moves": [
-		{"move": "spark", "level": 1},
-		{"move": "thunderbolt", "level": 1}
+		{"move": "zapdos_main1", "level": 1},
+		{"move": "zapdos_main2", "level": 2},
+		{"move": "zapdos_main3", "level": 3}
 	]
 }

@@ -14,9 +14,10 @@ const MENU_SCENE := "res://scenes/menu.tscn"
 @export_group("Player")
 @export var player_species := "charmander"
 @export_range(1, 3) var player_level := 1
-## Optional move ids for the loadout; blank = newest unlocked move.
-@export var player_melee := ""
-@export var player_ranged := ""
+## Optional main attack id; blank = newest unlocked variant.
+@export var player_main := ""
+## Branch for lines that split (Eevee); blank = random.
+@export var player_evolution := ""
 
 @export_group("Bots")
 ## Your bot teammates; missing slots are filled with random Pokémon.
@@ -44,6 +45,7 @@ var legendaries: Array[Brawler] = []
 var shrine_hold := [0.0, 0.0]
 var shrine_cooldown := 0.0
 var _item_timer := 0.0
+var _hud_main: MoveData
 
 @onready var arena: Arena = $Arena
 @onready var camera: FollowCamera = $Camera
@@ -63,12 +65,13 @@ func _ready() -> void:
 		mode_rules = GameData.rule("modes/duel", {})
 
 	var team_size := int(GameData.rule("team_size", 3))
-	player = _spawn(player_species, player_level, 0, true, player_melee, player_ranged)
+	player = _spawn(player_species, player_level, 0, true, player_main)
+	player.preferred_evolution = player_evolution
 	GameData.local_player = player
 	var player_controller := PlayerController.new()
 	player_controller.move_stick = hud.move_stick
 	player_controller.aim_stick = hud.aim_stick
-	player_controller.melee_button = hud.melee_button
+	player_controller.gadget_button = hud.gadget_button
 	player_controller.super_button = hud.super_button
 	player.add_child(player_controller)
 
@@ -89,7 +92,7 @@ func _ready() -> void:
 	time_left = float(mode_rules.get("time_limit", 150.0))
 	_item_timer = float(GameData.item_spawn.get("first_after", 8.0))
 	hud.set_matchup(_team_names(0), _team_names(1), arena.arena_name)
-	hud.set_moves(player.melee_move, player.ranged_move)
+	_refresh_hud_moves()
 	hud.set_teams(teams)
 	hud.restart_requested.connect(func() -> void: get_tree().reload_current_scene())
 	hud.menu_requested.connect(func() -> void: get_tree().change_scene_to_file(MENU_SCENE))
@@ -105,8 +108,8 @@ func _apply_match_settings() -> void:
 	arena_id = str(s.get("arena", arena_id))
 	player_species = str(s.get("species", player_species))
 	player_level = int(s.get("level", player_level))
-	player_melee = str(s.get("melee", ""))
-	player_ranged = str(s.get("ranged", ""))
+	player_main = str(s.get("main", ""))
+	player_evolution = str(s.get("evolution", ""))
 	ally_team = PackedStringArray(s.get("allies", []))
 	enemy_team = PackedStringArray(s.get("enemies", []))
 	bot_level = int(s.get("bot_level", player_level))
@@ -136,7 +139,10 @@ func _fill_team(chosen: PackedStringArray, count: int, taken: Array) -> Array[St
 
 
 func _spawn_bot(species_id: String, team: int) -> Brawler:
-	var brawler := _spawn(species_id, bot_level, team, false)
+	# Bots pick a random unlocked variant of their main attack.
+	var options := GameData.get_species(species_id).moves_for("main", bot_level)
+	var main_id: String = options.pick_random().id if not options.is_empty() else ""
+	var brawler := _spawn(species_id, bot_level, team, false, main_id)
 	var bot := BotController.new()
 	bot.set_difficulty(bot_difficulty)
 	if mode == "king_of_the_hill":
@@ -148,9 +154,9 @@ func _spawn_bot(species_id: String, team: int) -> Brawler:
 	return brawler
 
 
-func _spawn(species_id: String, level: int, team: int, is_player: bool, melee_id := "", ranged_id := "") -> Brawler:
+func _spawn(species_id: String, level: int, team: int, is_player: bool, main_id := "") -> Brawler:
 	var brawler: Brawler = BRAWLER_SCENE.instantiate()
-	brawler.setup(species_id, level, team, is_player, arena, melee_id, ranged_id)
+	brawler.setup(species_id, level, team, is_player, arena, main_id)
 	_spawn_index[brawler] = teams[team].size()
 	teams[team].append(brawler)
 	brawler.position = arena.spawn_point(team, _spawn_index[brawler])
@@ -170,6 +176,8 @@ func _physics_process(delta: float) -> void:
 		_end_on_time()
 		return
 	_tick_items(delta)
+	if player.main_move != _hud_main:
+		_refresh_hud_moves()  # Evolving or devolving swaps in that stage's version.
 	if mode != "king_of_the_hill":
 		_tick_raid()
 		_update_status()
@@ -215,6 +223,11 @@ func _on_brawler_died(victim: Brawler, killer: Brawler) -> void:
 	await get_tree().create_timer(wait, false).timeout
 	if not round_over and is_instance_valid(victim):
 		victim.respawn(arena.spawn_point(victim.team, _spawn_index[victim]))
+
+
+func _refresh_hud_moves() -> void:
+	_hud_main = player.main_move
+	hud.set_moves(player.main_move, player.species.gadget_move)
 
 
 func _on_brawler_evolved(brawler: Brawler, from_name: String) -> void:

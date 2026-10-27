@@ -3,7 +3,9 @@
 	"types": ["rock", "ground"],
 	"sprite": "res://assets/brawlers/golem.png",
 	"sprite_scale": 1.3,
-	"stats": {"hp": 4600, "attack": 127, "defense": 150, "speed": 84},
+	"style": "thrower",
+	"stats": {"hp": 3800, "attack": 140, "defense": 118, "speed": 93},
 	"super": "explosion",
+	"gadget": "gadget_smokescreen",
 	"evolves_from": "graveler"
 }

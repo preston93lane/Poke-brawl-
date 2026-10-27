@@ -1,0 +1,16 @@
+{
+	"name": "Jolteon",
+	"types": ["electric"],
+	"sprite": "res://assets/brawlers/jolteon.png",
+	"sprite_scale": 1.15,
+	"style": "shotgun",
+	"stats": {"hp": 3750, "attack": 124, "defense": 106, "speed": 127},
+	"super": "jolteon_super",
+	"gadget": "gadget_protect",
+	"evolves_from": "eevee",
+	"moves": [
+		{"move": "jolteon_main1", "level": 1},
+		{"move": "jolteon_main2", "level": 2},
+		{"move": "jolteon_main3", "level": 3}
+	]
+}

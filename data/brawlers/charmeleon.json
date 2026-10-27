@@ -3,8 +3,10 @@
 	"types": ["fire"],
 	"sprite": "res://assets/brawlers/charmeleon.png",
 	"sprite_scale": 1.15,
-	"stats": {"hp": 3500, "attack": 118, "defense": 95, "speed": 108},
+	"style": "stream",
+	"stats": {"hp": 3500, "attack": 115, "defense": 97, "speed": 107},
 	"super": "flame_charge",
+	"gadget": "gadget_sitrus",
 	"evolves_from": "charmander",
 	"evolves_to": "charizard"
 }

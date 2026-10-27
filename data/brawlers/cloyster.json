@@ -1,0 +1,11 @@
+{
+	"name": "Cloyster",
+	"types": ["water", "ice"],
+	"sprite": "res://assets/brawlers/cloyster.png",
+	"sprite_scale": 1.15,
+	"style": "shotgun",
+	"stats": {"hp": 3850, "attack": 123, "defense": 128, "speed": 103},
+	"super": "cloyster_super",
+	"gadget": "gadget_protect",
+	"evolves_from": "shellder"
+}

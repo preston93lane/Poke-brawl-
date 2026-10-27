@@ -1,0 +1,16 @@
+{
+	"name": "Krabby",
+	"types": ["water"],
+	"sprite": "res://assets/brawlers/krabby.png",
+	"sprite_scale": 1.0,
+	"style": "brawler",
+	"stats": {"hp": 3600, "attack": 126, "defense": 94, "speed": 95},
+	"super": "krabby_super",
+	"gadget": "gadget_protect",
+	"evolves_to": "kingler",
+	"moves": [
+		{"move": "krabby_main1", "level": 1},
+		{"move": "krabby_main2", "level": 2},
+		{"move": "krabby_main3", "level": 3}
+	]
+}

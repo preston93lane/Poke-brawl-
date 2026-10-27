@@ -17,8 +17,14 @@ var hp := 3000.0
 var attack := 100.0
 var defense := 100.0
 var speed := 100.0
+## Next stage when evolving ("" at the final stage). Branching lines (Eevee) list
+## every option in `evolutions`; evolves_to is the first of them.
 var evolves_to := ""
+var evolutions: Array[String] = []
 var evolves_from := ""
+## Play style id from data/styles.json ("brawler", "sniper"...): which Brawl Stars
+## archetype the attacks are modelled on.
+var style := ""
 ## 1 for base forms, 2 for first evolutions, and so on.
 var stage := 1
 ## [{ "move": MoveData, "level": int }]. Evolutions inherit the base form's list.
@@ -28,6 +34,9 @@ var raw_moves: Array = []
 ## This stage's own super move (each evolution has a different one).
 var super_move: MoveData
 var raw_super := ""
+## Limited-use extra (Protect, Teleport, Sitrus Berry...), shared by the whole line.
+var gadget_move: MoveData
+var raw_gadget := ""
 
 
 static func from_dict(species_id: String, d: Dictionary) -> SpeciesData:
@@ -43,7 +52,15 @@ static func from_dict(species_id: String, d: Dictionary) -> SpeciesData:
 	s.attack = float(stats.get("attack", s.attack))
 	s.defense = float(stats.get("defense", s.defense))
 	s.speed = float(stats.get("speed", s.speed))
-	s.evolves_to = str(d.get("evolves_to", ""))
+	var next: Variant = d.get("evolves_to", "")
+	if next is Array:
+		for option in next:
+			s.evolutions.append(str(option))
+	elif str(next) != "":
+		s.evolutions.append(str(next))
+	s.evolves_to = s.evolutions[0] if not s.evolutions.is_empty() else ""
+	s.style = str(d.get("style", ""))
+	s.raw_gadget = str(d.get("gadget", ""))
 	s.evolves_from = str(d.get("evolves_from", ""))
 	s.raw_moves = d.get("moves", [])
 	s.raw_super = str(d.get("super", ""))
@@ -61,7 +78,7 @@ static func from_dict(species_id: String, d: Dictionary) -> SpeciesData:
 	return s
 
 
-## Moves usable in `slot` ("melee"/"ranged") at `level`, in unlock order.
+## Moves usable in `slot` ("main") at `level`, in unlock order.
 func moves_for(slot: String, level: int) -> Array[MoveData]:
 	var result: Array[MoveData] = []
 	for entry in learnset:

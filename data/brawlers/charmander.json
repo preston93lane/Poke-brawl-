@@ -2,15 +2,15 @@
 	"name": "Charmander",
 	"types": ["fire"],
 	"sprite": "res://assets/brawlers/charmander.png",
-	"stats": {"hp": 2950, "attack": 105, "defense": 85, "speed": 105},
+	"sprite_scale": 1.0,
+	"style": "stream",
+	"stats": {"hp": 3100, "attack": 104, "defense": 88, "speed": 101},
 	"super": "fire_spin",
+	"gadget": "gadget_sitrus",
 	"evolves_to": "charmeleon",
 	"moves": [
-		{"move": "scratch", "level": 1},
-		{"move": "ember", "level": 1},
-		{"move": "slash", "level": 2},
-		{"move": "flamethrower", "level": 2},
-		{"move": "quick_attack", "level": 3},
-		{"move": "fire_blast", "level": 3}
+		{"move": "charmander_main1", "level": 1},
+		{"move": "charmander_main2", "level": 2},
+		{"move": "charmander_main3", "level": 3}
 	]
 }

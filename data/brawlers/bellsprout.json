@@ -2,15 +2,15 @@
 	"name": "Bellsprout",
 	"types": ["grass", "poison"],
 	"sprite": "res://assets/brawlers/bellsprout.png",
-	"stats": {"hp": 2950, "attack": 123, "defense": 70, "speed": 100},
+	"sprite_scale": 1.0,
+	"style": "lasher",
+	"stats": {"hp": 3700, "attack": 115, "defense": 80, "speed": 91},
 	"super": "sleep_powder",
+	"gadget": "gadget_agility",
 	"evolves_to": "weepinbell",
 	"moves": [
-		{"move": "vine_whip", "level": 1},
-		{"move": "acid", "level": 1},
-		{"move": "wrap", "level": 2},
-		{"move": "razor_leaf", "level": 2},
-		{"move": "leaf_blade", "level": 3},
-		{"move": "seed_bomb", "level": 3}
+		{"move": "bellsprout_main1", "level": 1},
+		{"move": "bellsprout_main2", "level": 2},
+		{"move": "bellsprout_main3", "level": 3}
 	]
 }

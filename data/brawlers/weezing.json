@@ -1,0 +1,11 @@
+{
+	"name": "Weezing",
+	"types": ["poison"],
+	"sprite": "res://assets/brawlers/weezing.png",
+	"sprite_scale": 1.15,
+	"style": "zone",
+	"stats": {"hp": 3800, "attack": 122, "defense": 117, "speed": 99},
+	"super": "weezing_super",
+	"gadget": "gadget_smokescreen",
+	"evolves_from": "koffing"
+}

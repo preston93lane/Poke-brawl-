@@ -1,0 +1,16 @@
+{
+	"name": "Ekans",
+	"types": ["poison"],
+	"sprite": "res://assets/brawlers/ekans.png",
+	"sprite_scale": 1.0,
+	"style": "lasher",
+	"stats": {"hp": 3250, "attack": 105, "defense": 89, "speed": 97},
+	"super": "ekans_super",
+	"gadget": "gadget_agility",
+	"evolves_to": "arbok",
+	"moves": [
+		{"move": "ekans_main1", "level": 1},
+		{"move": "ekans_main2", "level": 2},
+		{"move": "ekans_main3", "level": 3}
+	]
+}

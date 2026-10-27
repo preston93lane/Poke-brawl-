@@ -1,0 +1,16 @@
+{
+	"name": "Rattata",
+	"types": ["normal"],
+	"sprite": "res://assets/brawlers/rattata.png",
+	"sprite_scale": 1.0,
+	"style": "assassin",
+	"stats": {"hp": 2900, "attack": 104, "defense": 81, "speed": 104},
+	"super": "rattata_super",
+	"gadget": "gadget_agility",
+	"evolves_to": "raticate",
+	"moves": [
+		{"move": "rattata_main1", "level": 1},
+		{"move": "rattata_main2", "level": 2},
+		{"move": "rattata_main3", "level": 3}
+	]
+}

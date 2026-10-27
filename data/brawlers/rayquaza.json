@@ -4,10 +4,13 @@
 	"sprite": "res://assets/brawlers/rayquaza.png",
 	"sprite_scale": 1.6,
 	"legendary": true,
+	"style": "piercer",
 	"stats": {"hp": 5200, "attack": 140, "defense": 125, "speed": 100},
 	"super": "dragon_ascent",
+	"gadget": "gadget_teleport",
 	"moves": [
-		{"move": "dragon_tail", "level": 1},
-		{"move": "dragon_breath", "level": 1}
+		{"move": "rayquaza_main1", "level": 1},
+		{"move": "rayquaza_main2", "level": 2},
+		{"move": "rayquaza_main3", "level": 3}
 	]
 }

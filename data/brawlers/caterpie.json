@@ -1,0 +1,16 @@
+{
+	"name": "Caterpie",
+	"types": ["bug"],
+	"sprite": "res://assets/brawlers/caterpie.png",
+	"sprite_scale": 1.0,
+	"style": "zone",
+	"stats": {"hp": 3800, "attack": 94, "defense": 76, "speed": 93},
+	"super": "caterpie_super",
+	"gadget": "gadget_smokescreen",
+	"evolves_to": "metapod",
+	"moves": [
+		{"move": "caterpie_main1", "level": 1},
+		{"move": "caterpie_main2", "level": 2},
+		{"move": "caterpie_main3", "level": 3}
+	]
+}

@@ -1,0 +1,16 @@
+{
+	"name": "Tentacool",
+	"types": ["water", "poison"],
+	"sprite": "res://assets/brawlers/tentacool.png",
+	"sprite_scale": 1.0,
+	"style": "lasher",
+	"stats": {"hp": 3150, "attack": 96, "defense": 100, "speed": 103},
+	"super": "tentacool_super",
+	"gadget": "gadget_agility",
+	"evolves_to": "tentacruel",
+	"moves": [
+		{"move": "tentacool_main1", "level": 1},
+		{"move": "tentacool_main2", "level": 2},
+		{"move": "tentacool_main3", "level": 3}
+	]
+}

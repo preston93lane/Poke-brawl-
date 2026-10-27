@@ -1,0 +1,15 @@
+{
+	"name": "Mewtwo",
+	"types": ["psychic"],
+	"sprite": "res://assets/brawlers/mewtwo.png",
+	"sprite_scale": 1.15,
+	"style": "sniper",
+	"stats": {"hp": 3200, "attack": 140, "defense": 114, "speed": 127},
+	"super": "mewtwo_super",
+	"gadget": "gadget_teleport",
+	"moves": [
+		{"move": "mewtwo_main1", "level": 1},
+		{"move": "mewtwo_main2", "level": 2},
+		{"move": "mewtwo_main3", "level": 3}
+	]
+}

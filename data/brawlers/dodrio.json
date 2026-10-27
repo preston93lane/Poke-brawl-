@@ -1,0 +1,11 @@
+{
+	"name": "Dodrio",
+	"types": ["normal", "flying"],
+	"sprite": "res://assets/brawlers/dodrio.png",
+	"sprite_scale": 1.15,
+	"style": "gunner",
+	"stats": {"hp": 3450, "attack": 129, "defense": 99, "speed": 119},
+	"super": "dodrio_super",
+	"gadget": "gadget_teleport",
+	"evolves_from": "doduo"
+}

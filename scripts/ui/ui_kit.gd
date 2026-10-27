@@ -123,29 +123,26 @@ static func stat_bar(stat: String, value: float) -> HBoxContainer:
 ## One-line description of a move's numbers: what it's good and bad at.
 static func move_summary(move: MoveData) -> String:
 	var parts: Array[String] = []
-	if move.kind == "stream":
+	if move.kind == "stream" or move.linger > 0.0:
 		parts.append("Power %d/s" % move.power)
 	elif move.power > 0.0 and move.kind != "self":
 		parts.append("Power %d" % move.power)
+	var how := move.behaviour_text()
+	if how != "" and move.kind != "self":
+		parts.append(how)
 	match move.kind:
 		"melee":
 			parts.append("Reach %.1fm" % move.reach)
-			parts.append("%d° swing" % move.arc)
-			parts.append("%.1fs cooldown" % move.cooldown)
+			if move.arc < 300.0:
+				parts.append("%d° swing" % move.arc)
 		"dash":
 			parts.append("Dash %.1fm" % move.dash_distance)
-			parts.append("%.1fs cooldown" % move.cooldown)
 		"projectile":
 			parts.append("Range %.1fm" % move.reach)
-			parts.append("%d ammo, %.1fs reload" % [move.ammo, move.reload])
-			if move.count > 1:
-				parts.append("%d shots" % move.count)
-			if move.burst_count > 1:
-				parts.append("%d-hit stream" % move.burst_count)
-			if move.pierce:
-				parts.append("pierces")
 			if move.explode_radius > 0.0:
 				parts.append("%.1fm blast" % move.explode_radius)
+			if move.linger > 0.0:
+				parts.append("%.1fm zone for %.0fs" % [move.linger_radius, move.linger])
 		"stream":
 			parts.append("hold to fire")
 			parts.append("Range %.1fm" % move.reach)
@@ -155,8 +152,12 @@ static func move_summary(move: MoveData) -> String:
 			parts.append("%.1fm circle %s" % [move.area_radius, "around you" if move.reach <= 0.0 else "up to %.0fm away" % move.reach])
 			if move.area_delay > 0.0:
 				parts.append("lands after %.1fs" % move.area_delay)
-	if move.dash_pierce:
-		parts.append("hits everyone in its path")
+	if move.slot == "main" and move.kind != "stream":
+		parts.append("%d ammo, %.1fs reload" % [move.ammo, move.reload])
+	if move.heal_allies > 0.0:
+		parts.append("heals allies it passes %d" % roundi(move.heal_allies))
+	if move.protect > 0.0:
+		parts.append("shield %.1fs" % move.protect)
 	if move.drain > 0.0:
 		parts.append("heals %d%% of damage" % roundi(move.drain * 100))
 	if move.heal > 0.0:
@@ -178,7 +179,8 @@ static func move_summary(move: MoveData) -> String:
 	if move.crit_chance > 0.0:
 		parts.append("%d%% crit" % roundi(move.crit_chance * 100))
 	if not move.effect.is_empty():
-		var names := { "burn": "burn", "poison": "poison", "slow": "paralyze", "leech": "seeds: drains HP to you" }
+		var names := { "burn": "burn", "poison": "poison", "slow": "slow", "leech": "seeds: drains HP to you",
+				"stun": "stun", "blind": "blind" }
 		var chance := roundi(float(move.effect.get("chance", 1.0)) * 100)
 		var effect_name: String = names.get(move.effect.get("type", ""), "effect")
 		parts.append(effect_name if chance >= 100 else "%d%% %s" % [chance, effect_name])
@@ -196,8 +198,8 @@ static func move_card(move: MoveData, unlock_level := 0) -> PanelContainer:
 		top.add_child(label("Lv%d" % unlock_level, 18, Color(1, 0.85, 0.4)))
 	top.add_child(label(move.display_name, 22))
 	top.add_child(type_chip(move.type, 14))
-	var slot_names := { "melee": "MELEE", "ranged": "RANGED", "super": "SUPER" }
-	var slot_color := Color(1, 0.85, 0.3) if move.slot == "super" else Color(0.7, 0.8, 1)
+	var slot_names := { "main": "ATTACK", "gadget": "GADGET", "super": "SUPER" }
+	var slot_color := { "super": Color(1, 0.85, 0.3), "gadget": Color(0.55, 1.0, 0.75) }.get(move.slot, Color(0.7, 0.8, 1))
 	top.add_child(label(slot_names.get(move.slot, ""), 16, slot_color))
 	v.add_child(top)
 	var summary := label(move_summary(move), 16, Color(0.85, 0.88, 0.95))
@@ -213,8 +215,9 @@ static func panel(child: Control) -> PanelContainer:
 	return p
 
 
+## Touch-friendly vertical scroll list (see DragScroll).
 static func scroll(child: Control) -> ScrollContainer:
-	var s := ScrollContainer.new()
+	var s := DragScroll.new()
 	s.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	s.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	s.size_flags_horizontal = Control.SIZE_EXPAND_FILL

@@ -104,7 +104,7 @@ func _text(font: Font, pos: Vector2, width: float, text: String, size: int, colo
 
 
 func _draw_ammo(brawler: Brawler, origin: Vector2) -> void:
-	if brawler.ranged_move.kind == "stream":
+	if brawler.main_move.kind == "stream":
 		# One long tank that drains while firing and refills when you stop.
 		var tank := Rect2(origin, Vector2(BAR_SIZE.x, 7))
 		draw_rect(tank.grow(1), Color(0, 0, 0, 0.75))

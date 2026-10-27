@@ -1,0 +1,16 @@
+{
+	"name": "Voltorb",
+	"types": ["electric"],
+	"sprite": "res://assets/brawlers/voltorb.png",
+	"sprite_scale": 1.0,
+	"style": "spinner",
+	"stats": {"hp": 3350, "attack": 95, "defense": 92, "speed": 115},
+	"super": "voltorb_super",
+	"gadget": "gadget_agility",
+	"evolves_to": "electrode",
+	"moves": [
+		{"move": "voltorb_main1", "level": 1},
+		{"move": "voltorb_main2", "level": 2},
+		{"move": "voltorb_main3", "level": 3}
+	]
+}

@@ -1,0 +1,11 @@
+{
+	"name": "Butterfree",
+	"types": ["bug", "flying"],
+	"sprite": "res://assets/brawlers/butterfree.png",
+	"sprite_scale": 1.3,
+	"style": "zone",
+	"stats": {"hp": 4200, "attack": 131, "defense": 99, "speed": 103},
+	"super": "butterfree_super",
+	"gadget": "gadget_smokescreen",
+	"evolves_from": "metapod"
+}

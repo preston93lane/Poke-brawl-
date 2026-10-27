@@ -1,0 +1,16 @@
+{
+	"name": "Growlithe",
+	"types": ["fire"],
+	"sprite": "res://assets/brawlers/growlithe.png",
+	"sprite_scale": 1.0,
+	"style": "assassin",
+	"stats": {"hp": 3100, "attack": 107, "defense": 88, "speed": 99},
+	"super": "growlithe_super",
+	"gadget": "gadget_agility",
+	"evolves_to": "arcanine",
+	"moves": [
+		{"move": "growlithe_main1", "level": 1},
+		{"move": "growlithe_main2", "level": 2},
+		{"move": "growlithe_main3", "level": 3}
+	]
+}

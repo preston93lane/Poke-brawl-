@@ -1,0 +1,87 @@
+{
+	"shotgun": {
+		"label": "Shotgun",
+		"like": "Shelly / Bull",
+		"desc": "Close-range spread: brutal up close, weak at range."
+	},
+	"sniper": {
+		"label": "Sniper",
+		"like": "Piper",
+		"desc": "Long-range shots that hit harder the further they travel."
+	},
+	"gunner": {
+		"label": "Gunner",
+		"like": "Colt",
+		"desc": "Rapid bursts of shots in a line. Reward good aim."
+	},
+	"bouncer": {
+		"label": "Bouncer",
+		"like": "Rico",
+		"desc": "Shots ricochet off walls; great around corners."
+	},
+	"thrower": {
+		"label": "Thrower",
+		"like": "Barley / Dynamike",
+		"desc": "Lobs over walls and lands where you aim."
+	},
+	"brawler": {
+		"label": "Brawler",
+		"like": "El Primo",
+		"desc": "Heavy close-range punches and lots of health."
+	},
+	"assassin": {
+		"label": "Assassin",
+		"like": "Mortis / Edgar",
+		"desc": "Dashes in to strike, then gets out."
+	},
+	"spinner": {
+		"label": "Spinner",
+		"like": "Bibi (all-around swing)",
+		"desc": "Hits everything around it at once."
+	},
+	"lasher": {
+		"label": "Lasher",
+		"like": "Frank's reach, Gene's pull",
+		"desc": "Long, narrow whips; some pull enemies in."
+	},
+	"stream": {
+		"label": "Stream",
+		"like": "Amber",
+		"desc": "Hold to spray a continuous cone from a refilling tank."
+	},
+	"healer": {
+		"label": "Healer",
+		"like": "Poco / Byron",
+		"desc": "Waves that hurt enemies and heal teammates."
+	},
+	"boomerang": {
+		"label": "Boomerang",
+		"like": "out-and-back throws",
+		"desc": "Hits on the way out and again on the way back."
+	},
+	"chain": {
+		"label": "Chain",
+		"like": "lightning that jumps",
+		"desc": "Zaps jump from the first enemy hit to others nearby."
+	},
+	"zone": {
+		"label": "Area denial",
+		"like": "Emz / Sprout",
+		"desc": "Lobs clouds that keep hurting anyone standing in them."
+	},
+	"homing": {
+		"label": "Homing",
+		"like": "Gene / Willow",
+		"desc": "Orbs curve toward the nearest enemy."
+	},
+	"tank_wave": {
+		"label": "Tank",
+		"like": "Frank",
+		"desc": "Slow, wide shockwaves; huge health."
+	},
+	"piercer": {
+		"label": "Piercer",
+		"like": "Colt / Belle beams",
+		"desc": "Beams that go straight through every enemy in line."
+	}
+}

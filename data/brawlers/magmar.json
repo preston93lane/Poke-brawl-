@@ -1,0 +1,15 @@
+{
+	"name": "Magmar",
+	"types": ["fire"],
+	"sprite": "res://assets/brawlers/magmar.png",
+	"sprite_scale": 1.15,
+	"style": "stream",
+	"stats": {"hp": 3550, "attack": 123, "defense": 103, "speed": 112},
+	"super": "magmar_super",
+	"gadget": "gadget_sitrus",
+	"moves": [
+		{"move": "magmar_main1", "level": 1},
+		{"move": "magmar_main2", "level": 2},
+		{"move": "magmar_main3", "level": 3}
+	]
+}

@@ -1,0 +1,11 @@
+{
+	"name": "Rhydon",
+	"types": ["ground", "rock"],
+	"sprite": "res://assets/brawlers/rhydon.png",
+	"sprite_scale": 1.15,
+	"style": "shotgun",
+	"stats": {"hp": 5000, "attack": 139, "defense": 110, "speed": 91},
+	"super": "rhydon_super",
+	"gadget": "gadget_protect",
+	"evolves_from": "rhyhorn"
+}

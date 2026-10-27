@@ -3,7 +3,9 @@
 	"types": ["fighting", "ghost"],
 	"sprite": "res://assets/brawlers/annihilape.png",
 	"sprite_scale": 1.3,
-	"stats": {"hp": 4250, "attack": 141, "defense": 100, "speed": 112},
+	"style": "brawler",
+	"stats": {"hp": 5700, "attack": 130, "defense": 111, "speed": 111},
 	"super": "rage_fist",
+	"gadget": "gadget_protect",
 	"evolves_from": "primeape"
 }

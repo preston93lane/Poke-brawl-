@@ -1,0 +1,11 @@
+{
+	"name": "Dugtrio",
+	"types": ["ground"],
+	"sprite": "res://assets/brawlers/dugtrio.png",
+	"sprite_scale": 1.15,
+	"style": "assassin",
+	"stats": {"hp": 2950, "attack": 128, "defense": 96, "speed": 123},
+	"super": "dugtrio_super",
+	"gadget": "gadget_agility",
+	"evolves_from": "diglett"
+}

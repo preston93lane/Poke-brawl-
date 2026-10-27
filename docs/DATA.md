@@ -6,64 +6,92 @@ move ids or types. No code changes are needed to add content.
 
 ## `data/brawlers/<id>.json` — one file per evolution stage
 
+These files, `data/moves/generated.json` and `data/styles.json` are **generated** by
+`python3 tools/build_roster.py` from the roster table in `tools/roster.py` (families, play styles,
+base stats, attack names). Edit the roster and re-run it rather than editing the output by hand;
+hand-made supers live in `data/moves/supers.json` and are kept.
+
 ```json
 {
 	"name": "Charmander",
 	"types": ["fire"],                     // one or two types from types.json
 	"sprite": "res://assets/brawlers/charmander.png",
 	"sprite_scale": 1.0,                   // evolutions draw bigger (1.15, 1.3…)
-	"stats": { "hp": 2900, "attack": 105, "defense": 85, "speed": 105 },
+	"style": "stream",                     // play style from styles.json (which brawler it plays like)
+	"stats": { "hp": 3100, "attack": 104, "defense": 88, "speed": 101 },
 	"super": "fire_spin",                  // this stage's own super (a move with slot "super")
-	"evolves_to": "charmeleon",            // optional
+	"gadget": "gadget_sitrus",             // limited-use gadget (evolutions inherit it)
+	"evolves_to": "charmeleon",            // optional; a list for branching lines (Eevee)
 	"evolves_from": "",                    // set on evolved forms
-	"moves": [                             // evolved forms may omit this to inherit the base form's list
-		{ "move": "scratch", "level": 1 },
-		{ "move": "ember",   "level": 1 }
+	"moves": [                             // main attack variants; evolved forms may omit this to inherit
+		{ "move": "charmander_main1", "level": 1 },
+		{ "move": "charmander_main2", "level": 2 },
+		{ "move": "charmander_main3", "level": 3 }
 	]
 }
 ```
 
-* **Stats:** around 100 is average. `speed` × `rules.speed_to_meters` = metres per second (100 → 5 m/s).
-* **Sprite:** 32×32 pixel art (drawn at 1.6 m tall). If the file is missing, a coloured blob is generated from the first type.
-* **Moves:** at each level the player picks one unlocked **melee** move and one unlocked **ranged** move.
-  The default loadout is the newest move in each slot.
+* **Stats:** around 100 is average. `speed` × `rules.speed_to_meters` = metres per second. `hp` is multiplied by
+  `rules.hp_multiplier` (1.5) when loaded.
+* **Main attack:** one new variant unlocks at each level and the player picks one. Variants share the
+  play style but work differently (e.g. a single slug, a fan, or a lob). Higher levels also add
+  `rules.level_power_bonus` damage per level.
+* **Branching lines:** Eevee lists three evolutions; the player picks one in the menu (or random). Each branch can
+  have its own `moves`, which replace the base form's while evolved.
 
-## `data/moves.json`
+## `data/styles.json`
+
+Play styles, each modelled on a Brawl Stars archetype: `{ "label", "like", "desc" }`. Shown in the menu and Pokédex.
+
+## `data/moves/*.json`
+
+Every `.json` file in `data/moves/` is loaded; ids must be unique across them.
 
 | Field | Used by | Meaning |
 | --- | --- | --- |
 | `name`, `type` | all | Display name and type (STAB + matchups) |
-| `slot` | all | `melee` = MELEE button with a cooldown, `ranged` = right stick with ammo, `super` = SUPER button |
+| `slot` | all | `main` = right stick, uses ammo; `gadget` = GADGET button, `rules.gadget.uses` per match with a cooldown; `super` = SUPER button, charged by main-attack damage |
 | `kind` | all | `melee` (arc swipe), `dash` (lunge, hits first enemy), `projectile`, `stream` (continuous cone while the stick is held), `area` (strike a circle), `self` (no attack, just the extras below) |
-| `power` | all | Base damage before attack/defense, STAB, type and crit |
+| `power` | all | Base damage before attack/defense, STAB, type and crit (per second for streams and lingering zones) |
 | `crit_chance` | all | 0–1; crits deal `rules.crit_multiplier` |
-| `effect` | all | Optional: `{ "type": "burn"/"poison"/"leech", "chance", "duration", "dps" }` (leech heals whoever planted it), `{ "type": "slow", "chance", "duration", "amount" }` (slow = paralysis), `{ "type": "stun", ... "duration" }` (sleep: can't move or attack) or `{ "type": "blind", ... "duration" }` |
-| `range`, `arc`, `cooldown` | melee | Reach in metres, swing width in degrees, seconds between uses |
-| `dash_distance`, `dash_speed`, `cooldown` | dash | How far and fast the lunge goes |
+| `effect` | all | Optional: `{ "type": "burn"/"poison"/"leech", "chance", "duration", "dps" }` (leech heals whoever planted it), `{ "type": "slow", "chance", "duration", "amount" }`, `{ "type": "stun", ... "duration" }` (can't move or attack) or `{ "type": "blind", ... "duration" }` |
+| `ammo`, `reload` | main | Ammo bars and seconds to reload one (every main attack kind uses ammo) |
+| `range`, `arc` | melee | Reach in metres, swing width in degrees (360 = spin) |
+| `dash_distance`, `dash_speed` | dash | How far and fast the lunge goes |
+| `dash_pierce` | dash | Keep going through enemies, hitting each once |
+| `explode_radius` | dash | Slam: hit everyone this close to where the dash ends |
 | `range`, `speed` | projectile | Travel distance and metres per second |
-| `ammo`, `reload` | projectile | Ammo bars and seconds to reload one |
-| `count`, `spread` | projectile | Shots per volley fanned across `spread` degrees (e.g. Bubble Beam) |
-| `burst_count`, `burst_interval` | projectile | Repeat the volley N times (e.g. Flamethrower's stream) |
+| `count`, `spread` | projectile | Shots per volley fanned across `spread` degrees |
+| `burst_count`, `burst_interval` | projectile | Repeat the volley N times |
 | `pierce` | projectile | Passes through enemies instead of stopping |
 | `radius` | projectile | Hitbox size (bigger is easier to land) |
-| `explode_radius` | projectile | Area damage where it lands or hits (e.g. Fire Blast) |
+| `explode_radius` | projectile | Area damage where it lands or hits |
+| `lob` | projectile | Arcs over walls and lands where you aim (stick distance), hitting the area there |
+| `bounces` | projectile | Ricochets off walls this many times |
+| `returns` | projectile | Flies to full range and back to you, hitting on both legs (boomerang) |
+| `homing` | projectile | Turn rate (radians/s) toward the nearest visible enemy ahead |
+| `chain` | projectile | Jumps to this many more enemies within 3.5 m (80% damage each jump) |
+| `distance_bonus` | projectile | Damage multiplier reached at full range (snipers) |
+| `heal_allies` | projectile | HP healed on teammates the shot passes through |
+| `linger`, `linger_radius` | projectile | Leaves a zone for `linger` seconds that deals `power` per second |
+| `knockback` | melee, dash, projectile, area | Metres targets are pushed away (negative pulls them toward you) |
 | `power`, `range`, `arc`, `tank`, `reload` | stream | Damage **per second** while firing, reach, cone width in degrees, seconds of fire from a full tank, seconds to refill it. Effect `chance` is rolled every 0.15 s tick, so keep it small |
-| `dash_pierce` | dash | Keep going through enemies, hitting each once (Outrage) |
-| `range`, `area_radius`, `area_delay` | area | How far away the circle can land (0 = around you), its size, and a delay before it hits (Future Sight) |
-| `drain` | super | Heal this fraction of the damage dealt (Giga Drain) |
-| `heal`, `team_heal`, `support_radius` | super | Heal yourself / allies within `support_radius` by a fraction of max HP |
-| `buff` | super | `{ "attack": 0.3, "defense": 0.5, "speed": 0.4, "duration": 4, "allies": true }` |
-| `blink` | super | Teleport this many metres (stops at walls) |
+| `range`, `area_radius`, `area_delay` | area | How far away the circle can land (0 = around you), its size, and a delay before it hits |
+| `drain` | all | Heal this fraction of the damage dealt |
+| `heal`, `team_heal`, `support_radius` | super, gadget | Heal yourself / allies within `support_radius` by a fraction of max HP |
+| `protect` | super, gadget | Seconds of damage immunity |
+| `buff` | super, gadget | `{ "attack": 0.3, "defense": 0.5, "speed": 0.4, "duration": 4, "allies": true }` |
+| `blink` | super, gadget | Teleport this many metres (stops at walls) |
 | `blind` | super | `{ "radius": 8, "duration": 3 }`: enemies with line of sight can't see anyone |
-| `cleanse` | super | Cure burn, poison, paralysis, sleep and blindness |
-| `invisible` | super | Seconds of invisibility; enemies only spot you from 1.2 m, and attacking ends it (Phantom Force) |
+| `cleanse` | super, gadget | Cure burn, poison, slow, stun and blindness |
+| `invisible` | super | Seconds of invisibility; enemies only spot you from 1.2 m, and attacking ends it |
 | `self_damage` | super | Fraction of your own max HP spent on use; never knocks you out (Explosion) |
 | `bonus_vs_status` | all | Damage multiplier against targets that already have a status (Hex) |
 | `charge` | super | Damage needed to fill the meter (default `rules.super_charge_damage`) |
-| `delay` | all | Seconds before *any* attack can be used again (default `rules.attack_delay` 0.45 s for ranged, `rules.melee_attack_delay` 0.35 s for melee). Heavy moves use longer delays |
+| `delay` | all | Seconds before *any* attack can be used again (default `rules.attack_delay`, or `rules.melee_attack_delay` for melee and dash) |
 
-Run `python3 tools/balance_report.py` after changing numbers. It lists every move's damage per second,
-burst and reach, plus a strength score per Pokémon, so outliers stand out.
+Run `python3 tools/balance_report.py` after changing numbers. It summarises health and damage per second for each
+play style and lists main attacks that are far from the average.
 
 **Damage** = `power × attacker.attack ÷ defender.defense × STAB × type multiplier × crit × rules.damage_scale`.
 Burn and poison deal flat `dps`, so defense doesn't reduce them.

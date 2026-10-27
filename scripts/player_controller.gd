@@ -1,19 +1,17 @@
 class_name PlayerController
 extends Node
-## Drives the parent Brawler from the on-screen sticks / melee / super buttons.
-## Keyboard fallback for desktop testing: WASD move, F shoot (hold for streams),
-## Space melee, E super.
+## Drives the parent Brawler from the on-screen sticks and the gadget / super buttons.
+## Keyboard fallback for desktop testing: WASD move, F attack (hold for streams),
+## Space gadget, E super.
 
-## How far a tap on MELEE looks for a target to auto-aim at.
-const MELEE_AUTO_AIM_RANGE := 4.0
 ## A tap that can't fire yet (attack delay, reloading) is retried for this long.
 const INPUT_BUFFER := 0.35
-## A tap on the aim stick with a stream move fires it for this long.
+## A tap on the aim stick with a stream attack fires it for this long.
 const AUTO_STREAM_TIME := 0.7
 
 var move_stick: VirtualJoystick
 var aim_stick: VirtualJoystick
-var melee_button: TouchButton
+var gadget_button: TouchButton
 var super_button: TouchButton
 
 var _buffered := ""
@@ -27,7 +25,7 @@ var _aim_flash_dir := Vector3.ZERO
 
 func _ready() -> void:
 	aim_stick.released.connect(_on_aim_released)
-	melee_button.pressed.connect(func() -> void: _try("melee"))
+	gadget_button.pressed.connect(func() -> void: _try("gadget"))
 	super_button.pressed.connect(func() -> void: _try("super"))
 
 
@@ -40,10 +38,10 @@ func _physics_process(delta: float) -> void:
 		move = keys.normalized()
 	brawler.move_input = move
 
-	var streaming_move := brawler.ranged_move.kind == "stream"
+	var streaming_move := brawler.main_move.kind == "stream"
 	if aim_stick.output != Vector2.ZERO:
 		var dir := _to_world(aim_stick.output)
-		brawler.show_aim(dir)
+		brawler.show_aim(dir, aim_stick.output.length() * brawler.main_move.reach)
 		if streaming_move:
 			brawler.stream(dir)  # Streams fire while the stick is held.
 		_auto_stream_time = 0.0
@@ -55,14 +53,15 @@ func _physics_process(delta: float) -> void:
 
 	if streaming_move and (_auto_stream_time > 0.0 or Input.is_physical_key_pressed(KEY_F)):
 		_auto_stream_time -= delta
-		brawler.stream(_auto_aim(brawler.ranged_move))
+		brawler.stream(_auto_aim(brawler.main_move))
 
 	if _buffer_time > 0.0:
 		_buffer_time -= delta
 		if _perform(_buffered):
 			_buffer_time = 0.0
 
-	melee_button.set_cooldown(brawler.melee_cooldown_ratio())
+	gadget_button.set_cooldown(brawler.gadget_cooldown_ratio())
+	gadget_button.uses = brawler.gadget_uses
 	super_button.set_charge(brawler.super_charge)
 	super_button.label = brawler.species.super_move.display_name.to_upper()
 
@@ -73,23 +72,23 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	match key.physical_keycode:
 		KEY_F:
-			if brawler.ranged_move.kind != "stream":
-				_try("ranged")
+			if brawler.main_move.kind != "stream":
+				_try("main")
 		KEY_SPACE:
-			_try("melee")
+			_try("gadget")
 		KEY_E:
 			_try("super")
 
 
 func _on_aim_released(output: Vector2, was_tap: bool) -> void:
-	if brawler.ranged_move.kind == "stream":
+	if brawler.main_move.kind == "stream":
 		if was_tap:
 			_auto_stream_time = AUTO_STREAM_TIME
 		return
 	if output != Vector2.ZERO:
-		brawler.use_ranged(_to_world(output))
+		brawler.use_main(_to_world(output), output.length() * brawler.main_move.reach)
 	elif was_tap:
-		_try("ranged")
+		_try("main")
 	# Otherwise the player dragged back to the centre: cancel the shot.
 
 
@@ -103,14 +102,15 @@ func _try(action: String) -> void:
 
 func _perform(action: String) -> bool:
 	match action:
-		"ranged":
-			var dir := _auto_aim(brawler.ranged_move)
-			if brawler.use_ranged(dir):
+		"main":
+			var aim := _auto_aim_with_distance(brawler.main_move)
+			var dir: Vector3 = aim[0]
+			if brawler.use_main(dir, aim[1]):
 				_aim_flash_dir = dir
 				_aim_flash_time = 0.25
 				return true
-		"melee":
-			return _do_melee()
+		"gadget":
+			return _do_gadget()
 		"super":
 			return _do_super()
 	return false
@@ -119,14 +119,21 @@ func _perform(action: String) -> bool:
 ## Direction toward the best visible target for `move`: the nearest enemy in
 ## range with a clear shot, else the nearest visible enemy. Leads moving targets.
 func _auto_aim(move: MoveData) -> Vector3:
+	return _auto_aim_with_distance(move)[0]
+
+
+## [direction, distance to the (predicted) target or -1 when there's none].
+func _auto_aim_with_distance(move: MoveData) -> Array:
 	var target := _auto_target(move.effective_reach())
 	if target == null:
-		return brawler.facing
+		return [brawler.facing, -1.0]
 	var to := target.global_position - brawler.global_position
+	to.y = 0.0
 	if move.kind == "projectile":
-		var travel := Vector2(to.x, to.z).length() / maxf(1.0, move.speed)
+		var travel := to.length() / maxf(1.0, move.speed)
 		to += target.velocity * travel * 0.8
-	return to
+		to.y = 0.0
+	return [to, to.length()]
 
 
 func _auto_target(reach: float) -> Brawler:
@@ -145,16 +152,19 @@ func _auto_target(reach: float) -> Brawler:
 	return best
 
 
-func _do_melee() -> bool:
+## Gadgets aim with the right stick if it's held; teleports go away from the nearest enemy.
+func _do_gadget() -> bool:
+	var move := brawler.species.gadget_move
+	if move == null:
+		return false
 	var dir := brawler.facing
 	if aim_stick.output != Vector2.ZERO:
 		dir = _to_world(aim_stick.output)
-	else:
-		var reach := maxf(MELEE_AUTO_AIM_RANGE, brawler.melee_move.effective_reach())
-		var target := brawler.find_nearest_enemy(reach)
-		if target:
-			dir = target.global_position - brawler.global_position
-	return brawler.use_melee(dir)
+	elif move.blink > 0.0:
+		var threat := brawler.find_nearest_enemy(10.0)
+		if threat:
+			dir = brawler.global_position - threat.global_position
+	return brawler.use_gadget(dir)
 
 
 ## Aimed with the right stick if it's held, otherwise at the best visible enemy.

@@ -1,0 +1,11 @@
+{
+	"name": "Poliwrath",
+	"types": ["water", "fighting"],
+	"sprite": "res://assets/brawlers/poliwrath.png",
+	"sprite_scale": 1.3,
+	"style": "shotgun",
+	"stats": {"hp": 5050, "attack": 125, "defense": 116, "speed": 103},
+	"super": "poliwrath_super",
+	"gadget": "gadget_protect",
+	"evolves_from": "poliwhirl"
+}

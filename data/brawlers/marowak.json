@@ -1,0 +1,11 @@
+{
+	"name": "Marowak",
+	"types": ["ground"],
+	"sprite": "res://assets/brawlers/marowak.png",
+	"sprite_scale": 1.15,
+	"style": "boomerang",
+	"stats": {"hp": 3900, "attack": 120, "defense": 117, "speed": 93},
+	"super": "marowak_super",
+	"gadget": "gadget_teleport",
+	"evolves_from": "cubone"
+}

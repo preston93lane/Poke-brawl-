@@ -1,0 +1,15 @@
+{
+	"name": "Hitmonchan",
+	"types": ["fighting"],
+	"sprite": "res://assets/brawlers/hitmonchan.png",
+	"sprite_scale": 1.15,
+	"style": "brawler",
+	"stats": {"hp": 4250, "attack": 127, "defense": 117, "speed": 105},
+	"super": "hitmonchan_super",
+	"gadget": "gadget_protect",
+	"moves": [
+		{"move": "hitmonchan_main1", "level": 1},
+		{"move": "hitmonchan_main2", "level": 2},
+		{"move": "hitmonchan_main3", "level": 3}
+	]
+}

@@ -1,0 +1,15 @@
+{
+	"name": "Mew",
+	"types": ["psychic"],
+	"sprite": "res://assets/brawlers/mew.png",
+	"sprite_scale": 1.15,
+	"style": "homing",
+	"stats": {"hp": 3850, "attack": 120, "defense": 120, "speed": 115},
+	"super": "mew_super",
+	"gadget": "gadget_smokescreen",
+	"moves": [
+		{"move": "mew_main1", "level": 1},
+		{"move": "mew_main2", "level": 2},
+		{"move": "mew_main3", "level": 3}
+	]
+}

@@ -1,12 +1,13 @@
 class_name MoveData
 extends RefCounted
-## One attack, loaded from data/moves.json. See docs/DATA.md for field meanings.
+## One attack, loaded from data/moves/*.json. See docs/DATA.md for field meanings.
 
 var id := ""
 var display_name := ""
 var type := "normal"
-## "melee" (MELEE button, cooldown), "ranged" (right stick, ammo) or "super" (SUPER button).
-var slot := "melee"
+## "main" (right stick, uses ammo), "gadget" (GADGET button, a few uses per match)
+## or "super" (SUPER button, charged by damage).
+var slot := "main"
 ## "melee" (arc swipe), "dash" (lunge), "projectile", "stream" (continuous cone while held),
 ## "area" (strike a circle) or "self" (no attack).
 var kind := "melee"
@@ -69,13 +70,37 @@ var self_damage := 0.0
 ## Damage multiplier against targets that already have a status condition (Hex).
 var bonus_vs_status := 1.0
 
+# Attack mechanics (mostly projectiles; see docs/DATA.md)
+## Arcs over walls and lands where you aim (up to range), hitting everyone around it.
+var lob := false
+## Times a shot ricochets off walls before it's spent.
+var bounces := 0
+## Flies out to full range and back to the user, hitting on both legs.
+var returns := false
+## Damage multiplier reached at full range (snipers hit harder far away).
+var distance_bonus := 1.0
+## HP healed on teammates the shot passes through (healers).
+var heal_allies := 0.0
+## Extra enemies the hit jumps to, each within chain_range of the last.
+var chain := 0
+var chain_range := 3.5
+## How fast (radians / s) the shot turns toward the nearest enemy.
+var homing := 0.0
+## Seconds a damaging zone stays where the shot lands (power = damage per second then).
+var linger := 0.0
+var linger_radius := 0.0
+## Metres targets are pushed away from you (negative pulls them in).
+var knockback := 0.0
+## Seconds of damage immunity for the user (Protect).
+var protect := 0.0
+
 
 static func from_dict(move_id: String, d: Dictionary) -> MoveData:
 	var m := MoveData.new()
 	m.id = move_id
 	m.display_name = str(d.get("name", move_id))
 	m.type = str(d.get("type", "normal"))
-	m.slot = str(d.get("slot", "melee"))
+	m.slot = str(d.get("slot", "main"))
 	m.kind = str(d.get("kind", "melee"))
 	m.power = float(d.get("power", 500))
 	m.crit_chance = float(d.get("crit_chance", 0.0))
@@ -115,14 +140,83 @@ static func from_dict(move_id: String, d: Dictionary) -> MoveData:
 	m.invisible = float(d.get("invisible", m.invisible))
 	m.self_damage = float(d.get("self_damage", m.self_damage))
 	m.bonus_vs_status = float(d.get("bonus_vs_status", m.bonus_vs_status))
+	m.lob = bool(d.get("lob", m.lob))
+	m.bounces = int(d.get("bounces", m.bounces))
+	m.returns = bool(d.get("returns", m.returns))
+	m.distance_bonus = float(d.get("distance_bonus", m.distance_bonus))
+	m.heal_allies = float(d.get("heal_allies", m.heal_allies))
+	m.chain = int(d.get("chain", m.chain))
+	m.chain_range = float(d.get("chain_range", m.chain_range))
+	m.homing = float(d.get("homing", m.homing))
+	m.linger = float(d.get("linger", m.linger))
+	m.linger_radius = float(d.get("linger_radius", m.linger_radius))
+	m.knockback = float(d.get("knockback", m.knockback))
+	m.protect = float(d.get("protect", m.protect))
 	return m
+
+
+## Close-range kinds (swipes and lunges) that use the shorter attack delay.
+func is_close_range() -> bool:
+	return kind == "melee" or kind == "dash"
+
+
+## One-line description of how the attack works, for menus.
+func behaviour_text() -> String:
+	var parts: Array[String] = []
+	match kind:
+		"melee":
+			parts.append("360° spin" if arc >= 300.0 else ("long lash" if reach >= 3.0 else "close swipe"))
+		"dash":
+			parts.append("lunge %.0fm" % dash_distance)
+		"stream":
+			parts.append("hold to spray")
+		"area":
+			parts.append("area strike")
+		"self":
+			parts.append("self")
+		"projectile":
+			if lob:
+				parts.append("lobbed over walls")
+			elif count > 1:
+				parts.append("%d-shot spread" % count)
+			elif burst_count > 1:
+				parts.append("%d-shot burst" % burst_count)
+			else:
+				parts.append("shot")
+	if pierce:
+		parts.append("pierces")
+	if explode_radius > 0.0:
+		parts.append("explodes")
+	if bounces > 0:
+		parts.append("bounces")
+	if returns:
+		parts.append("returns")
+	if homing > 0.0:
+		parts.append("homing")
+	if chain > 0:
+		parts.append("chains ×%d" % chain)
+	if linger > 0.0:
+		parts.append("leaves a zone")
+	if distance_bonus > 1.0:
+		parts.append("stronger far away")
+	if heal_allies > 0.0:
+		parts.append("heals allies")
+	if knockback > 0.0:
+		parts.append("knockback")
+	elif knockback < 0.0:
+		parts.append("pulls in")
+	if drain > 0.0:
+		parts.append("drains")
+	if dash_pierce:
+		parts.append("goes through")
+	return ", ".join(parts)
 
 
 ## Lockout after using this move, in seconds.
 func attack_delay() -> float:
 	if delay >= 0.0:
 		return delay
-	var key := "attack_delay" if slot == "ranged" else "melee_attack_delay"
+	var key := "melee_attack_delay" if is_close_range() else "attack_delay"
 	return float(GameData.rule(key, 0.4))
 
 
@@ -132,13 +226,13 @@ func effective_reach() -> float:
 		"dash":
 			return dash_distance
 		"projectile":
-			return reach + explode_radius
+			return reach + (explode_radius if not lob else maxf(explode_radius, linger_radius) * 0.5)
 		"stream":
 			return reach
 		"area":
 			return reach + area_radius
 		"self":
-			return maxf(blink, float(blind.get("radius", 0.0)))
+			return maxf(blink, maxf(float(blind.get("radius", 0.0)), support_radius))
 	return reach
 
 

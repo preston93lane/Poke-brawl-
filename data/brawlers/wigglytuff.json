@@ -1,0 +1,11 @@
+{
+	"name": "Wigglytuff",
+	"types": ["normal", "fairy"],
+	"sprite": "res://assets/brawlers/wigglytuff.png",
+	"sprite_scale": 1.15,
+	"style": "tank_wave",
+	"stats": {"hp": 7450, "attack": 119, "defense": 88, "speed": 93},
+	"super": "wigglytuff_super",
+	"gadget": "gadget_protect",
+	"evolves_from": "jigglypuff"
+}

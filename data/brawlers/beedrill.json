@@ -1,0 +1,11 @@
+{
+	"name": "Beedrill",
+	"types": ["bug", "poison"],
+	"sprite": "res://assets/brawlers/beedrill.png",
+	"sprite_scale": 1.3,
+	"style": "assassin",
+	"stats": {"hp": 4100, "attack": 130, "defense": 96, "speed": 105},
+	"super": "beedrill_super",
+	"gadget": "gadget_agility",
+	"evolves_from": "kakuna"
+}

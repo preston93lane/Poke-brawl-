@@ -1,17 +1,23 @@
 class_name TouchButton
 extends Control
-## Round multi-touch button (MELEE, SUPER) with a shaded body, type icon,
+## Round multi-touch button (GADGET, SUPER) with a shaded body, type icon,
 ## cooldown sweep or charge fill, and the move name in a pill underneath.
 
 signal pressed
 
-@export var label := "MELEE"
+@export var label := "GADGET"
 @export var color := Color(1.0, 0.55, 0.15)
 ## Type emblem drawn in the middle ("fire", "water"...; "super" draws a star).
 @export var icon_type := ""
 ## "cooldown" shows a dark sweep counting down; "charge" fills up and glows when full.
 @export_enum("cooldown", "charge") var display := "cooldown"
 
+## Uses left, drawn as pips around the top (-1 = unlimited, no pips).
+var uses := -1:
+	set(value):
+		if value != uses:
+			uses = value
+			queue_redraw()
 var enabled := true
 var _touch_index := -1
 var _cooldown := 0.0
@@ -101,3 +107,10 @@ func _draw() -> void:
 	var icon := icon_type if icon_type != "" else ("super" if display == "charge" else "normal")
 	UiKit.draw_type_icon(self, icon, center, r * 0.42, Color(1, 1, 1, 0.95 if is_ready else 0.55))
 	UiKit.draw_pill(self, Vector2(size.x * 0.5, size.y + 14.0), label, 15 if label.length() > 10 else 17)
+	if uses >= 0:
+		var total := maxi(uses, int(GameData.rule("gadget/uses", 3)))
+		for i in total:
+			var angle := -PI * 0.5 + (float(i) - (total - 1) * 0.5) * 0.42
+			var pip := center + Vector2(cos(angle), sin(angle)) * (r + 9.0)
+			draw_circle(pip, 7.0, Color(0.1, 0.1, 0.15, 0.8))
+			draw_circle(pip, 5.0, Color(0.55, 1.0, 0.75) if i < uses else Color(0.35, 0.35, 0.4))

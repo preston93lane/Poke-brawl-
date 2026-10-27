@@ -3,6 +3,14 @@
 	"team_size": 3,
 	"speed_to_meters": 0.029,
 	"damage_scale": 0.8,
+	"hp_multiplier": 1.5,
+	"_hp_comment": "Every species' JSON hp is multiplied by this (fights last longer).",
+	"gadget": {
+		"uses": 3,
+		"cooldown": 4.0
+	},
+	"level_power_bonus": 0.04,
+	"_level_comment": "Attack power gained per level above 1, on top of stat_bonus_per_level.",
 	"attack_delay": 0.45,
 	"melee_attack_delay": 0.35,
 	"super_charge_damage": 3200,

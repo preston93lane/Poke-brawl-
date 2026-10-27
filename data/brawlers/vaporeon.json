@@ -1,0 +1,16 @@
+{
+	"name": "Vaporeon",
+	"types": ["water"],
+	"sprite": "res://assets/brawlers/vaporeon.png",
+	"sprite_scale": 1.15,
+	"style": "shotgun",
+	"stats": {"hp": 5350, "attack": 125, "defense": 106, "speed": 101},
+	"super": "vaporeon_super",
+	"gadget": "gadget_protect",
+	"evolves_from": "eevee",
+	"moves": [
+		{"move": "vaporeon_main1", "level": 1},
+		{"move": "vaporeon_main2", "level": 2},
+		{"move": "vaporeon_main3", "level": 3}
+	]
+}

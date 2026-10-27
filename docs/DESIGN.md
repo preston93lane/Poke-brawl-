@@ -154,7 +154,7 @@ Raid and Gauge also fit online play well, because both teams share the same even
 ## Multiplayer plan
 
 The code is already split to make this easier: **controllers** (player / bot) only write `move_input` and
-call `use_melee` / `use_ranged`, and `Brawler` and `main` own all game state.
+call `use_main` / `use_gadget` / `use_super`, and `Brawler` and `main` own all game state.
 
 1. **3v3 with bots (local)** ✅ Done: N per team, and bots pick targets by distance, HP and type matchup.
 2. **Online with friends (host + join).**

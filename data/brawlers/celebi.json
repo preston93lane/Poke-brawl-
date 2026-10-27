@@ -4,10 +4,13 @@
 	"sprite": "res://assets/brawlers/celebi.png",
 	"sprite_scale": 1.6,
 	"legendary": true,
+	"style": "healer",
 	"stats": {"hp": 4600, "attack": 135, "defense": 115, "speed": 110},
 	"super": "life_bloom",
+	"gadget": "gadget_heal_pulse",
 	"moves": [
-		{"move": "leaf_blade", "level": 1},
-		{"move": "psybeam", "level": 1}
+		{"move": "celebi_main1", "level": 1},
+		{"move": "celebi_main2", "level": 2},
+		{"move": "celebi_main3", "level": 3}
 	]
 }

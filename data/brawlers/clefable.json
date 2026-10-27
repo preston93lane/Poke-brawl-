@@ -1,0 +1,11 @@
+{
+	"name": "Clefable",
+	"types": ["fairy"],
+	"sprite": "res://assets/brawlers/clefable.png",
+	"sprite_scale": 1.15,
+	"style": "healer",
+	"stats": {"hp": 4050, "attack": 122, "defense": 109, "speed": 99},
+	"super": "clefable_super",
+	"gadget": "gadget_heal_pulse",
+	"evolves_from": "clefairy"
+}

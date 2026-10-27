@@ -4,10 +4,13 @@
 	"sprite": "res://assets/brawlers/regirock.png",
 	"sprite_scale": 1.6,
 	"legendary": true,
+	"style": "tank_wave",
 	"stats": {"hp": 6000, "attack": 130, "defense": 160, "speed": 85},
 	"super": "ancient_power",
+	"gadget": "gadget_protect",
 	"moves": [
-		{"move": "rock_smash", "level": 1},
-		{"move": "rock_slide", "level": 1}
+		{"move": "regirock_main1", "level": 1},
+		{"move": "regirock_main2", "level": 2},
+		{"move": "regirock_main3", "level": 3}
 	]
 }

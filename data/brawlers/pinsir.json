@@ -1,0 +1,15 @@
+{
+	"name": "Pinsir",
+	"types": ["bug"],
+	"sprite": "res://assets/brawlers/pinsir.png",
+	"sprite_scale": 1.15,
+	"style": "brawler",
+	"stats": {"hp": 4350, "attack": 134, "defense": 111, "speed": 109},
+	"super": "pinsir_super",
+	"gadget": "gadget_protect",
+	"moves": [
+		{"move": "pinsir_main1", "level": 1},
+		{"move": "pinsir_main2", "level": 2},
+		{"move": "pinsir_main3", "level": 3}
+	]
+}

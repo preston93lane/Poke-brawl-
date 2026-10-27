@@ -1,0 +1,12 @@
+{
+	"name": "Nidorino",
+	"types": ["poison"],
+	"sprite": "res://assets/brawlers/nidorino.png",
+	"sprite_scale": 1.15,
+	"style": "brawler",
+	"stats": {"hp": 4950, "attack": 113, "defense": 94, "speed": 101},
+	"super": "nidorino_super",
+	"gadget": "gadget_protect",
+	"evolves_from": "nidoran_m",
+	"evolves_to": "nidoking"
+}

@@ -3,7 +3,9 @@
 	"types": ["ghost", "poison"],
 	"sprite": "res://assets/brawlers/gengar.png",
 	"sprite_scale": 1.3,
-	"stats": {"hp": 3850, "attack": 155, "defense": 78, "speed": 122},
+	"style": "homing",
+	"stats": {"hp": 3450, "attack": 144, "defense": 100, "speed": 119},
 	"super": "night_terror",
+	"gadget": "gadget_smokescreen",
 	"evolves_from": "haunter"
 }

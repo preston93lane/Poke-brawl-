@@ -1,0 +1,16 @@
+{
+	"name": "Oddish",
+	"types": ["grass", "poison"],
+	"sprite": "res://assets/brawlers/oddish.png",
+	"sprite_scale": 1.0,
+	"style": "zone",
+	"stats": {"hp": 3300, "attack": 113, "defense": 96, "speed": 87},
+	"super": "oddish_super",
+	"gadget": "gadget_smokescreen",
+	"evolves_to": "gloom",
+	"moves": [
+		{"move": "oddish_main1", "level": 1},
+		{"move": "oddish_main2", "level": 2},
+		{"move": "oddish_main3", "level": 3}
+	]
+}

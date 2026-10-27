@@ -1,0 +1,15 @@
+{
+	"name": "Snorlax",
+	"types": ["normal"],
+	"sprite": "res://assets/brawlers/snorlax.png",
+	"sprite_scale": 1.15,
+	"style": "tank_wave",
+	"stats": {"hp": 6900, "attack": 123, "defense": 112, "speed": 87},
+	"super": "snorlax_super",
+	"gadget": "gadget_protect",
+	"moves": [
+		{"move": "snorlax_main1", "level": 1},
+		{"move": "snorlax_main2", "level": 2},
+		{"move": "snorlax_main3", "level": 3}
+	]
+}

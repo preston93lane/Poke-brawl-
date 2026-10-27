@@ -2,15 +2,15 @@
 	"name": "Bulbasaur",
 	"types": ["grass", "poison"],
 	"sprite": "res://assets/brawlers/bulbasaur.png",
-	"stats": {"hp": 3050, "attack": 100, "defense": 100, "speed": 98},
+	"sprite_scale": 1.0,
+	"style": "thrower",
+	"stats": {"hp": 2900, "attack": 107, "defense": 94, "speed": 93},
 	"super": "leech_seed",
+	"gadget": "gadget_smokescreen",
 	"evolves_to": "ivysaur",
 	"moves": [
-		{"move": "vine_whip", "level": 1},
-		{"move": "razor_leaf", "level": 1},
-		{"move": "body_slam", "level": 2},
-		{"move": "sludge_bomb", "level": 2},
-		{"move": "power_whip", "level": 3},
-		{"move": "solar_beam", "level": 3}
+		{"move": "bulbasaur_main1", "level": 1},
+		{"move": "bulbasaur_main2", "level": 2},
+		{"move": "bulbasaur_main3", "level": 3}
 	]
 }

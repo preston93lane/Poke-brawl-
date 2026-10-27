@@ -3,8 +3,10 @@
 	"types": ["grass", "poison"],
 	"sprite": "res://assets/brawlers/ivysaur.png",
 	"sprite_scale": 1.15,
-	"stats": {"hp": 3700, "attack": 110, "defense": 110, "speed": 100},
+	"style": "thrower",
+	"stats": {"hp": 3250, "attack": 116, "defense": 103, "speed": 99},
 	"super": "poison_powder",
+	"gadget": "gadget_smokescreen",
 	"evolves_from": "bulbasaur",
 	"evolves_to": "venusaur"
 }

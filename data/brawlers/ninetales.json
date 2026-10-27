@@ -1,0 +1,11 @@
+{
+	"name": "Ninetales",
+	"types": ["fire"],
+	"sprite": "res://assets/brawlers/ninetales.png",
+	"sprite_scale": 1.15,
+	"style": "homing",
+	"stats": {"hp": 3500, "attack": 113, "defense": 112, "speed": 115},
+	"super": "ninetales_super",
+	"gadget": "gadget_smokescreen",
+	"evolves_from": "vulpix"
+}

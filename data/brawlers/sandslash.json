@@ -1,0 +1,11 @@
+{
+	"name": "Sandslash",
+	"types": ["ground"],
+	"sprite": "res://assets/brawlers/sandslash.png",
+	"sprite_scale": 1.15,
+	"style": "spinner",
+	"stats": {"hp": 4700, "attack": 126, "defense": 110, "speed": 101},
+	"super": "sandslash_super",
+	"gadget": "gadget_agility",
+	"evolves_from": "sandshrew"
+}

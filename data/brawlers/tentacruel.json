@@ -1,0 +1,11 @@
+{
+	"name": "Tentacruel",
+	"types": ["water", "poison"],
+	"sprite": "res://assets/brawlers/tentacruel.png",
+	"sprite_scale": 1.15,
+	"style": "lasher",
+	"stats": {"hp": 3950, "attack": 111, "defense": 116, "speed": 115},
+	"super": "tentacruel_super",
+	"gadget": "gadget_agility",
+	"evolves_from": "tentacool"
+}

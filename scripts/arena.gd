@@ -3,7 +3,7 @@ extends Node3D
 ## Builds an arena from an ASCII tile map in data/arenas/<id>.json.
 ##
 ## Legend: . floor   , path   " tall grass (hide)   T tree   # rock wall
-##         B boulder   ~ water (blocks walking, not shots)   1/2 team spawns
+##         B boulder   ~ water (blocks walking except for Water/Flying types, not shots)   1/2 team spawns
 ##         (one tile per teammate)   Z king-of-the-hill zone
 ##
 ## Also builds an AStarGrid2D so bots can path around walls (find_path).
@@ -30,6 +30,8 @@ var zone_center := Vector3.ZERO
 var _zone_cells := {}
 var _zone_material: StandardMaterial3D
 var _astar := AStarGrid2D.new()
+## Same grid, but water is open (for Pokémon that swim or fly).
+var _swim_astar := AStarGrid2D.new()
 
 
 ## use_zone = false treats Z tiles as plain floor (modes without a zone).
@@ -160,13 +162,15 @@ func spawn_point(team: int, index: int) -> Vector3:
 
 ## Walkable route from `from` to `to` as world positions (cell centres),
 ## excluding the start cell. Empty if there's no route.
-func find_path(from: Vector3, to: Vector3) -> PackedVector3Array:
+## `swim` routes over water too.
+func find_path(from: Vector3, to: Vector3, swim := false) -> PackedVector3Array:
 	var result := PackedVector3Array()
+	var grid := _swim_astar if swim else _astar
 	var start := world_to_cell(from)
 	var goal := world_to_cell(to)
-	if not _astar.is_in_boundsv(start) or not _astar.is_in_boundsv(goal):
+	if not grid.is_in_boundsv(start) or not grid.is_in_boundsv(goal):
 		return result
-	var ids := _astar.get_id_path(start, goal, true)
+	var ids := grid.get_id_path(start, goal, true)
 	for i in range(1, ids.size()):
 		result.append(cell_center(ids[i]))
 	return result
@@ -194,9 +198,14 @@ func center_point() -> Vector3:
 	return Vector3.ZERO
 
 
-func is_walkable(world_pos: Vector3) -> bool:
+func is_walkable(world_pos: Vector3, swim := false) -> bool:
+	var grid := _swim_astar if swim else _astar
 	var cell := world_to_cell(world_pos)
-	return _astar.is_in_boundsv(cell) and not _astar.is_point_solid(cell)
+	return grid.is_in_boundsv(cell) and not grid.is_point_solid(cell)
+
+
+func is_water(world_pos: Vector3) -> bool:
+	return _char_at(world_to_cell(world_pos)) == "~"
 
 
 func has_zone() -> bool:
@@ -331,14 +340,31 @@ func _row_free(cells: Dictionary, used: Dictionary, x: int, y: int, w: int) -> b
 
 
 func _build_pathfinding(solid_cells: Dictionary, water_cells: Dictionary) -> void:
-	_astar.region = Rect2i(0, 0, width, height)
-	_astar.cell_size = Vector2(TILE, TILE)
-	_astar.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES
-	_astar.update()
-	for cell: Vector2i in solid_cells:
-		_astar.set_point_solid(cell)
-	for cell: Vector2i in water_cells:
-		_astar.set_point_solid(cell)
+	var walk_blocked := solid_cells.duplicate()
+	walk_blocked.merge(water_cells)
+	_setup_grid(_astar, walk_blocked)
+	_setup_grid(_swim_astar, solid_cells)
+
+
+## Blocked cells are solid; open cells touching one cost more, so routes keep a
+## little away from walls instead of scraping corners.
+func _setup_grid(grid: AStarGrid2D, blocked: Dictionary) -> void:
+	grid.region = Rect2i(0, 0, width, height)
+	grid.cell_size = Vector2(TILE, TILE)
+	grid.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES
+	grid.update()
+	for cell: Vector2i in blocked:
+		grid.set_point_solid(cell)
+	for y in height:
+		for x in width:
+			var cell := Vector2i(x, y)
+			if blocked.has(cell):
+				continue
+			for offset in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1),
+					Vector2i(1, 1), Vector2i(-1, 1), Vector2i(1, -1), Vector2i(-1, -1)]:
+				if blocked.has(cell + offset):
+					grid.set_point_weight_scale(cell, 1.8)
+					break
 
 
 func _add_multimesh(mesh: Mesh, material: Material, transforms: Array, shadows := true) -> void:

@@ -12,7 +12,7 @@ var _scoreboard: Control
 
 @onready var move_stick: VirtualJoystick = $MoveStick
 @onready var aim_stick: VirtualJoystick = $AimStick
-@onready var melee_button: TouchButton = $MeleeButton
+@onready var gadget_button: TouchButton = $GadgetButton
 @onready var super_button: TouchButton = $SuperButton
 @onready var matchup_label: Label = $Matchup
 @onready var status_label: Label = $Status
@@ -107,14 +107,15 @@ func set_status(text: String) -> void:
 
 
 ## Labels, icons and colours of the controls follow the equipped moves' types.
-func set_moves(melee: MoveData, ranged: MoveData) -> void:
-	melee_button.label = melee.display_name.to_upper()
-	melee_button.icon_type = melee.type
-	melee_button.color = GameData.type_color(melee.type)
-	melee_button.queue_redraw()
-	aim_stick.label = ranged.display_name.to_upper()
-	aim_stick.icon_type = ranged.type
-	aim_stick.color = GameData.type_color(ranged.type).lightened(0.15)
+func set_moves(main: MoveData, gadget: MoveData) -> void:
+	if gadget:
+		gadget_button.label = gadget.display_name.to_upper()
+		gadget_button.icon_type = gadget.type
+		gadget_button.color = GameData.type_color(gadget.type).lerp(Color(0.3, 0.85, 0.55), 0.45)
+		gadget_button.queue_redraw()
+	aim_stick.label = main.display_name.to_upper()
+	aim_stick.icon_type = main.type
+	aim_stick.color = GameData.type_color(main.type).lightened(0.15)
 	aim_stick.queue_redraw()
 	super_button.icon_type = "super"
 
@@ -152,7 +153,7 @@ func announce(text: String) -> void:
 func show_result(result_name: String) -> void:
 	move_stick.set_enabled(false)
 	aim_stick.set_enabled(false)
-	melee_button.set_enabled(false)
+	gadget_button.set_enabled(false)
 	super_button.set_enabled(false)
 	result_title.text = { "victory": "VICTORY!", "defeat": "DEFEAT", "draw": "DRAW" }.get(result_name, "DRAW")
 	result_title.modulate = { "victory": Color(1.0, 0.85, 0.2), "defeat": Color(1.0, 0.35, 0.3) }.get(result_name, Color(0.8, 0.85, 1.0))

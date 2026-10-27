@@ -1,0 +1,16 @@
+{
+	"name": "Shellder",
+	"types": ["water"],
+	"sprite": "res://assets/brawlers/shellder.png",
+	"sprite_scale": 1.0,
+	"style": "shotgun",
+	"stats": {"hp": 3500, "attack": 109, "defense": 98, "speed": 91},
+	"super": "shellder_super",
+	"gadget": "gadget_protect",
+	"evolves_to": "cloyster",
+	"moves": [
+		{"move": "shellder_main1", "level": 1},
+		{"move": "shellder_main2", "level": 2},
+		{"move": "shellder_main3", "level": 3}
+	]
+}

@@ -3,7 +3,9 @@
 	"types": ["fire", "flying"],
 	"sprite": "res://assets/brawlers/charizard.png",
 	"sprite_scale": 1.3,
-	"stats": {"hp": 4350, "attack": 133, "defense": 105, "speed": 110},
+	"style": "stream",
+	"stats": {"hp": 3950, "attack": 131, "defense": 109, "speed": 115},
 	"super": "blast_burn",
+	"gadget": "gadget_sitrus",
 	"evolves_from": "charmeleon"
 }

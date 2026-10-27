@@ -1,0 +1,11 @@
+{
+	"name": "Arcanine",
+	"types": ["fire"],
+	"sprite": "res://assets/brawlers/arcanine.png",
+	"sprite_scale": 1.15,
+	"style": "assassin",
+	"stats": {"hp": 3650, "attack": 125, "defense": 108, "speed": 113},
+	"super": "arcanine_super",
+	"gadget": "gadget_agility",
+	"evolves_from": "growlithe"
+}

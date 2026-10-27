@@ -1,0 +1,11 @@
+{
+	"name": "Machamp",
+	"types": ["fighting"],
+	"sprite": "res://assets/brawlers/machamp.png",
+	"sprite_scale": 1.3,
+	"style": "tank_wave",
+	"stats": {"hp": 5850, "attack": 144, "defense": 110, "speed": 97},
+	"super": "machamp_super",
+	"gadget": "gadget_protect",
+	"evolves_from": "machoke"
+}

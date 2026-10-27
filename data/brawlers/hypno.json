@@ -1,0 +1,11 @@
+{
+	"name": "Hypno",
+	"types": ["psychic"],
+	"sprite": "res://assets/brawlers/hypno.png",
+	"sprite_scale": 1.15,
+	"style": "boomerang",
+	"stats": {"hp": 4150, "attack": 111, "defense": 116, "speed": 102},
+	"super": "hypno_super",
+	"gadget": "gadget_teleport",
+	"evolves_from": "drowzee"
+}

@@ -1,0 +1,16 @@
+{
+	"name": "Meowth",
+	"types": ["normal"],
+	"sprite": "res://assets/brawlers/meowth.png",
+	"sprite_scale": 1.0,
+	"style": "bouncer",
+	"stats": {"hp": 2900, "attack": 94, "defense": 82, "speed": 111},
+	"super": "meowth_super",
+	"gadget": "gadget_teleport",
+	"evolves_to": "persian",
+	"moves": [
+		{"move": "meowth_main1", "level": 1},
+		{"move": "meowth_main2", "level": 2},
+		{"move": "meowth_main3", "level": 3}
+	]
+}

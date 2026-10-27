@@ -1,0 +1,12 @@
+{
+	"name": "Pidgeotto",
+	"types": ["normal", "flying"],
+	"sprite": "res://assets/brawlers/pidgeotto.png",
+	"sprite_scale": 1.15,
+	"style": "piercer",
+	"stats": {"hp": 3700, "attack": 107, "defense": 92, "speed": 103},
+	"super": "pidgeotto_super",
+	"gadget": "gadget_teleport",
+	"evolves_from": "pidgey",
+	"evolves_to": "pidgeot"
+}

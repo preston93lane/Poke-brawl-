@@ -3,7 +3,8 @@ extends Node
 ## answers questions about species, moves, types and rules.
 ##
 ## Add a Pokémon by dropping a new file into data/brawlers/, a move by adding
-## an entry to data/moves.json, and an arena by adding data/arenas/<id>.json.
+## an entry to any file in data/moves/, and an arena by adding data/arenas/<id>.json.
+## data/moves/generated.json and the brawler files are written by tools/build_roster.py.
 
 const DATA_DIR := "res://data"
 
@@ -17,6 +18,8 @@ var arenas: Dictionary = {}
 ## Item pickups (data/items.json): id -> Dictionary, plus "spawn" settings.
 var items: Dictionary = {}
 var item_spawn: Dictionary = {}
+## Play styles (data/styles.json): id -> { "label", "like", "desc" }.
+var styles: Dictionary = {}
 var stab := 1.2
 ## Team whose point of view decides what's hidden in tall grass.
 var local_team := 0
@@ -55,14 +58,18 @@ func load_all() -> void:
 	rules = _load_json(DATA_DIR + "/rules.json")
 	_load_types(_load_json(DATA_DIR + "/types.json"))
 
+	styles = _load_json(DATA_DIR + "/styles.json")
 	moves.clear()
-	var move_defs := _load_json(DATA_DIR + "/moves.json")
-	for move_id: String in move_defs:
-		if move_id.begins_with("_"):
-			continue
-		var move := MoveData.from_dict(move_id, move_defs[move_id])
-		_check_type(move.type, "moves.json → %s" % move_id)
-		moves[move_id] = move
+	for move_file in _json_files(DATA_DIR + "/moves"):
+		var move_defs := _load_json(DATA_DIR + "/moves/" + move_file)
+		for move_id: String in move_defs:
+			if move_id.begins_with("_"):
+				continue
+			if moves.has(move_id):
+				push_error("GameData: move '%s' is defined twice (%s)" % [move_id, move_file])
+			var move := MoveData.from_dict(move_id, move_defs[move_id])
+			_check_type(move.type, "moves/%s → %s" % [move_file, move_id])
+			moves[move_id] = move
 
 	species.clear()
 	for file in _json_files(DATA_DIR + "/brawlers"):
@@ -72,6 +79,7 @@ func load_all() -> void:
 			_check_type(t, "brawlers/%s" % file)
 		if s.sprite == null:
 			s.sprite = make_placeholder_sprite(type_color(s.types[0]))
+		s.hp *= float(rule("hp_multiplier", 1.0))
 		species[species_id] = s
 	_link_species()
 
@@ -125,14 +133,23 @@ func base_species() -> Array[SpeciesData]:
 func species_by_line() -> Array[SpeciesData]:
 	var result: Array[SpeciesData] = []
 	for base in base_species():
-		var current := base
-		while current:
-			result.append(current)
-			current = species.get(current.evolves_to)
+		_append_line(base, result)
 	for id: String in _sorted_ids():
 		if species[id].legendary:
 			result.append(species[id])
 	return result
+
+
+func _append_line(s: SpeciesData, result: Array[SpeciesData]) -> void:
+	result.append(s)
+	for next_id in s.evolutions:
+		if species.has(next_id) and species[next_id] not in result:
+			_append_line(species[next_id], result)
+
+
+## Display info for a play style id.
+func style_info(style_id: String) -> Dictionary:
+	return styles.get(style_id, { "label": style_id.capitalize(), "like": "", "desc": "" })
 
 
 ## A random item id, weighted by each item's "weight".
@@ -148,7 +165,7 @@ func random_item_id() -> String:
 	return items.keys()[0] if not items.is_empty() else ""
 
 
-## [base, ..., final] for the line containing `species_id`.
+## [base, ..., final] for the line containing `species_id` (every branch for Eevee).
 func evolution_line(species_id: String) -> Array[SpeciesData]:
 	var s: SpeciesData = species.get(species_id)
 	if s == null:
@@ -156,9 +173,7 @@ func evolution_line(species_id: String) -> Array[SpeciesData]:
 	while s.evolves_from != "" and species.has(s.evolves_from):
 		s = species[s.evolves_from]
 	var line: Array[SpeciesData] = []
-	while s:
-		line.append(s)
-		s = species.get(s.evolves_to)
+	_append_line(s, line)
 	return line
 
 
@@ -241,9 +256,11 @@ func _load_types(data: Dictionary) -> void:
 
 func _link_species() -> void:
 	for s: SpeciesData in species.values():
-		if s.evolves_to != "" and not species.has(s.evolves_to):
-			push_error("GameData: %s evolves_to unknown species '%s'" % [s.id, s.evolves_to])
-			s.evolves_to = ""
+		for next_id in s.evolutions.duplicate():
+			if not species.has(next_id):
+				push_error("GameData: %s evolves_to unknown species '%s'" % [s.id, next_id])
+				s.evolutions.erase(next_id)
+		s.evolves_to = s.evolutions[0] if not s.evolutions.is_empty() else ""
 		# Walk back to the base form for stage number and (if needed) the learnset.
 		var source := s
 		var guard := 0
@@ -261,8 +278,16 @@ func _link_species() -> void:
 				push_error("GameData: %s learns unknown move '%s'" % [source.id, move_id])
 				continue
 			s.learnset.append({ "move": moves[move_id], "level": int(entry.get("level", 1)) })
-		if s.default_move("melee", 99) == null or s.default_move("ranged", 99) == null:
-			push_error("GameData: %s needs at least one melee and one ranged move" % s.id)
+		if s.default_move("main", 99) == null:
+			push_error("GameData: %s needs at least one main attack (slot \"main\")" % s.id)
+		var source_gadget := s
+		guard = 0
+		while source_gadget.raw_gadget == "" and source_gadget.evolves_from != "" and species.has(source_gadget.evolves_from) and guard < 8:
+			source_gadget = species[source_gadget.evolves_from]
+			guard += 1
+		s.gadget_move = moves.get(source_gadget.raw_gadget)
+		if s.gadget_move == null or s.gadget_move.slot != "gadget":
+			push_error("GameData: %s needs a \"gadget\" that is a move with slot \"gadget\" (got '%s')" % [s.id, source_gadget.raw_gadget])
 		var super_move: MoveData = moves.get(s.raw_super)
 		if super_move == null or super_move.slot != "super":
 			push_error("GameData: %s needs a \"super\" that is a move with slot \"super\" (got '%s')" % [s.id, s.raw_super])

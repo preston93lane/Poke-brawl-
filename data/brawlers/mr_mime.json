@@ -1,0 +1,15 @@
+{
+	"name": "Mr. Mime",
+	"types": ["psychic", "fairy"],
+	"sprite": "res://assets/brawlers/mr_mime.png",
+	"sprite_scale": 1.15,
+	"style": "healer",
+	"stats": {"hp": 2900, "attack": 125, "defense": 116, "speed": 111},
+	"super": "mr_mime_super",
+	"gadget": "gadget_heal_pulse",
+	"moves": [
+		{"move": "mr_mime_main1", "level": 1},
+		{"move": "mr_mime_main2", "level": 2},
+		{"move": "mr_mime_main3", "level": 3}
+	]
+}

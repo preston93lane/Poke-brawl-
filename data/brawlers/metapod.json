@@ -1,0 +1,12 @@
+{
+	"name": "Metapod",
+	"types": ["bug"],
+	"sprite": "res://assets/brawlers/metapod.png",
+	"sprite_scale": 1.15,
+	"style": "zone",
+	"stats": {"hp": 4550, "attack": 99, "defense": 84, "speed": 87},
+	"super": "metapod_super",
+	"gadget": "gadget_smokescreen",
+	"evolves_from": "caterpie",
+	"evolves_to": "butterfree"
+}

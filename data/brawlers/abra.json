@@ -2,15 +2,15 @@
 	"name": "Abra",
 	"types": ["psychic"],
 	"sprite": "res://assets/brawlers/abra.png",
-	"stats": {"hp": 2550, "attack": 124, "defense": 70, "speed": 110},
+	"sprite_scale": 1.0,
+	"style": "sniper",
+	"stats": {"hp": 2200, "attack": 123, "defense": 81, "speed": 111},
 	"super": "teleport",
+	"gadget": "gadget_teleport",
 	"evolves_to": "kadabra",
 	"moves": [
-		{"move": "pound", "level": 1},
-		{"move": "confusion", "level": 1},
-		{"move": "psycho_cut", "level": 2},
-		{"move": "psybeam", "level": 2},
-		{"move": "zen_headbutt", "level": 3},
-		{"move": "shadow_ball", "level": 3}
+		{"move": "abra_main1", "level": 1},
+		{"move": "abra_main2", "level": 2},
+		{"move": "abra_main3", "level": 3}
 	]
 }

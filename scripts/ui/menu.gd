@@ -1,5 +1,5 @@
 extends Control
-## Title screen → pick a mode → pick your Pokémon, level, moves, opponent and
+## Title screen → pick a mode → pick your Pokémon, level, main attack, team and
 ## arena → start. Also hosts the Pokédex.
 
 const MAIN_SCENE := "res://scenes/main.tscn"
@@ -12,8 +12,14 @@ var _screen: Control
 var _mode := "duel"
 var _species: SpeciesData
 var _level := 1
-var _melee := ""
-var _ranged := ""
+var _main := ""
+## Branch for Eevee-style split lines ("" = random).
+var _evolution := ""
+## Species list filters: "" = all.
+var _type_filter := ""
+var _style_filter := ""
+var _grid: GridContainer
+var _group: ButtonGroup
 ## Chosen bot teammates / opponents; empty slots are filled randomly.
 var _allies: Array[String] = []
 var _enemies: Array[String] = []
@@ -56,9 +62,13 @@ func show_home() -> void:
 
 	var starters := HBoxContainer.new()
 	starters.alignment = BoxContainer.ALIGNMENT_CENTER
-	for s in GameData.base_species():
-		starters.add_child(UiKit.sprite(s.sprite, 96))
+	for id in ["bulbasaur", "charmander", "squirtle", "pikachu", "eevee", "gastly", "dratini"]:
+		if GameData.species.has(id):
+			starters.add_child(UiKit.sprite(GameData.species[id].sprite, 96))
 	v.add_child(starters)
+	var count := UiKit.label("%d Pokémon · %d play styles" % [GameData.species_by_line().size(), GameData.styles.size()], 20, Color(0.8, 0.85, 1))
+	count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(count)
 
 	for entry in [["BATTLE", show_select.bind("duel")],
 			["KING OF THE HILL", show_select.bind("king_of_the_hill")],
@@ -95,22 +105,21 @@ func show_select(mode: String) -> void:
 	var body := HBoxContainer.new()
 	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	body.add_theme_constant_override("separation", 12)
-	var grid := GridContainer.new()
-	grid.columns = 2
-	grid.add_theme_constant_override("h_separation", 10)
-	grid.add_theme_constant_override("v_separation", 10)
-	var group := ButtonGroup.new()
-	for s in GameData.base_species():
-		var card := _species_button(s, group, s == _species)
-		card.pressed.connect(func() -> void:
-			_species = s
-			_melee = ""
-			_ranged = ""
-			_refresh_select_details())
-		grid.add_child(card)
-	var left := UiKit.panel(UiKit.scroll(grid))
-	left.custom_minimum_size.x = 380
+	var left_box := VBoxContainer.new()
+	left_box.add_child(_filter_row("TYPE", _type_options(), func() -> String: return _type_filter,
+			func(value: String) -> void: _type_filter = value))
+	left_box.add_child(_filter_row("STYLE", _style_options(), func() -> String: return _style_filter,
+			func(value: String) -> void: _style_filter = value))
+	_grid = GridContainer.new()
+	_grid.columns = 3
+	_grid.add_theme_constant_override("h_separation", 6)
+	_grid.add_theme_constant_override("v_separation", 6)
+	_group = ButtonGroup.new()
+	left_box.add_child(UiKit.scroll(_grid))
+	var left := UiKit.panel(left_box)
+	left.custom_minimum_size.x = 400
 	body.add_child(left)
+	_fill_species_grid()
 
 	_details = VBoxContainer.new()
 	_details.add_theme_constant_override("separation", 10)
@@ -170,6 +179,83 @@ func show_pokedex(selected_id: String) -> void:
 	_show_dex_entry(selected)
 
 
+# --- Species list & filters ------------------------------------------------
+
+func _fill_species_grid() -> void:
+	_clear(_grid)
+	for s in GameData.base_species():
+		if not _matches_filters(s):
+			continue
+		var card := _species_button(s, _group, s == _species)
+		card.pressed.connect(func() -> void:
+			_species = s
+			_main = ""
+			_evolution = ""
+			_refresh_select_details())
+		_grid.add_child(card)
+	if _grid.get_child_count() == 0:
+		_grid.add_child(UiKit.label("No match", 18))
+
+
+## A line matches a type filter if any stage has that type.
+func _matches_filters(s: SpeciesData) -> bool:
+	if _style_filter != "" and s.style != _style_filter:
+		return false
+	if _type_filter == "":
+		return true
+	for stage in GameData.evolution_line(s.id):
+		if stage.has_type(_type_filter):
+			return true
+	return false
+
+
+func _type_options() -> Array:
+	var result := [["", "ALL"]]
+	for t in GameData.all_types():
+		result.append([t, t.to_upper()])
+	return result
+
+
+func _style_options() -> Array:
+	var ids: Array = GameData.styles.keys()
+	ids.sort()
+	var result := [["", "ALL"]]
+	for id: String in ids:
+		if not id.begins_with("_"):
+			result.append([id, str(GameData.style_info(id).get("label", id)).to_upper()])
+	return result
+
+
+## "TYPE ‹ FIRE ›" cycler: arrows step through `options` ([[value, text]...]).
+func _filter_row(title: String, options: Array, getter: Callable, setter: Callable) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_child(UiKit.label(title, 16, Color(1, 0.85, 0.4)))
+	var value_label := UiKit.label("", 18)
+	value_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var refresh := func() -> void:
+		for option: Array in options:
+			if option[0] == getter.call():
+				value_label.text = option[1]
+	var step := func(by: int) -> void:
+		var index := 0
+		for i in options.size():
+			if options[i][0] == getter.call():
+				index = i
+		setter.call(options[posmod(index + by, options.size())][0])
+		refresh.call()
+		_fill_species_grid()
+	var prev := UiKit.button("‹", step.bind(-1), 20)
+	var next := UiKit.button("›", step.bind(1), 20)
+	prev.custom_minimum_size = Vector2(52, 40)
+	next.custom_minimum_size = Vector2(52, 40)
+	row.add_child(prev)
+	row.add_child(value_label)
+	row.add_child(next)
+	refresh.call()
+	return row
+
+
 # --- Select screen details -------------------------------------------------
 
 func _refresh_select_details() -> void:
@@ -180,6 +266,8 @@ func _refresh_select_details() -> void:
 	for stat in ["hp", "attack", "defense", "speed"]:
 		_details.add_child(UiKit.stat_bar(stat, _stat(s, stat)))
 
+	_details.add_child(_style_box(s))
+
 	_details.add_child(_section("LEVEL"))
 	var levels := HBoxContainer.new()
 	var level_group := ButtonGroup.new()
@@ -189,40 +277,55 @@ func _refresh_select_details() -> void:
 			_level = level
 			_refresh_select_details())
 		levels.add_child(b)
-	levels.add_child(UiKit.label("  Higher levels unlock moves (+5% stats each)", 16, Color(0.75, 0.8, 0.9)))
+	levels.add_child(UiKit.label("  Each level unlocks another attack (+5% stats, +4% attack power)", 16, Color(0.75, 0.8, 0.9)))
 	_details.add_child(levels)
 
-	_melee = _valid_move("melee", _melee)
-	_ranged = _valid_move("ranged", _ranged)
-	for slot in ["melee", "ranged"]:
-		_details.add_child(_section("MELEE MOVE  (MELEE button)" if slot == "melee" else "RANGED MOVE  (right stick)"))
-		var row := HFlowContainer.new()
-		var move_group := ButtonGroup.new()
-		var chosen := _melee if slot == "melee" else _ranged
-		for move in s.moves_for(slot, 99):
-			var unlock := s.unlock_level(move)
-			var text := move.display_name if unlock <= _level else "%s (Lv%d)" % [move.display_name, unlock]
-			var b := _toggle(text, move_group, move.id == chosen)
-			b.disabled = unlock > _level
-			b.pressed.connect(func() -> void:
-				if slot == "melee":
-					_melee = move.id
-				else:
-					_ranged = move.id
-				_refresh_select_details())
-			row.add_child(b)
-		_details.add_child(row)
-		_details.add_child(UiKit.move_card(GameData.get_move(chosen)))
+	_main = _valid_move("main", _main)
+	_details.add_child(_section("MAIN ATTACK  (right stick: drag to aim, tap to auto-aim)"))
+	var row := HFlowContainer.new()
+	var move_group := ButtonGroup.new()
+	for move in s.moves_for("main", 99):
+		var unlock := s.unlock_level(move)
+		var text := move.display_name if unlock <= _level else "%s (Lv%d)" % [move.display_name, unlock]
+		var b := _toggle(text, move_group, move.id == _main)
+		b.disabled = unlock > _level
+		b.pressed.connect(func() -> void:
+			_main = move.id
+			_refresh_select_details())
+		row.add_child(b)
+	_details.add_child(row)
+	_details.add_child(UiKit.move_card(GameData.get_move(_main)))
 
-	_details.add_child(_section("SUPER  (SUPER button — charges as you deal damage; changes when you evolve)"))
+	if s.gadget_move:
+		_details.add_child(_section("GADGET  (%d uses per match)" % int(GameData.rule("gadget/uses", 3))))
+		_details.add_child(UiKit.move_card(s.gadget_move))
+
+	_details.add_child(_section("SUPER  (charges as you deal damage; each stage has its own)"))
 	for stage in GameData.evolution_line(s.id):
 		var card := UiKit.move_card(stage.super_move)
 		card.tooltip_text = stage.display_name
-		var row := HBoxContainer.new()
-		row.add_child(UiKit.sprite(stage.sprite, 48))
+		var super_row := HBoxContainer.new()
+		super_row.add_child(UiKit.sprite(stage.sprite, 48))
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		row.add_child(card)
-		_details.add_child(row)
+		super_row.add_child(card)
+		_details.add_child(super_row)
+
+	if s.evolutions.size() > 1:
+		_details.add_child(_section("EVOLVES INTO"))
+		var branches := HFlowContainer.new()
+		var branch_group := ButtonGroup.new()
+		var random_button := _toggle("RANDOM", branch_group, _evolution == "")
+		random_button.pressed.connect(func() -> void: _evolution = "")
+		branches.add_child(random_button)
+		for branch_id in s.evolutions:
+			var branch: SpeciesData = GameData.species[branch_id]
+			var b := _toggle(branch.display_name, branch_group, _evolution == branch_id)
+			b.icon = branch.sprite
+			b.expand_icon = true
+			b.add_theme_constant_override("icon_max_width", 36)
+			b.pressed.connect(func() -> void: _evolution = branch_id)
+			branches.add_child(b)
+		_details.add_child(branches)
 
 	var team_size := int(GameData.rule("team_size", 3))
 	_details.add_child(_section("TEAMMATES  (pick up to %d, the rest are random)" % (team_size - 1)))
@@ -291,8 +394,8 @@ func _start_match() -> void:
 		"arena": _arena,
 		"species": _species.id,
 		"level": _level,
-		"melee": _melee,
-		"ranged": _ranged,
+		"main": _main,
+		"evolution": _evolution,
 		"allies": _allies.duplicate(),
 		"enemies": _enemies.duplicate(),
 		"bot_level": _level,
@@ -308,8 +411,8 @@ func _restore_last_choices() -> void:
 	_mode = str(last.get("mode", _mode))
 	_species = GameData.species.get(str(last.get("species", "")))
 	_level = int(last.get("level", 1))
-	_melee = str(last.get("melee", ""))
-	_ranged = str(last.get("ranged", ""))
+	_main = str(last.get("main", ""))
+	_evolution = str(last.get("evolution", ""))
 	for id in last.get("allies", []):
 		_allies.append(str(id))
 	for id in last.get("enemies", []):
@@ -325,10 +428,10 @@ func _show_dex_entry(s: SpeciesData) -> void:
 	_details.add_child(_species_header(s, 144))
 	for stat in ["hp", "attack", "defense", "speed"]:
 		_details.add_child(UiKit.stat_bar(stat, _stat(s, stat)))
+	_details.add_child(_style_box(s))
 
 	_details.add_child(_section("EVOLUTION  (every 3 KOs in a match; fainting drops one stage)"))
-	var line := HBoxContainer.new()
-	line.add_theme_constant_override("separation", 6)
+	var line := HFlowContainer.new()
 	var chain: Array[SpeciesData] = GameData.evolution_line(s.id)
 	for i in chain.size():
 		if i > 0:
@@ -360,7 +463,10 @@ func _show_dex_entry(s: SpeciesData) -> void:
 
 	_details.add_child(_section("SUPER  (this stage's own)"))
 	_details.add_child(UiKit.move_card(s.super_move))
-	_details.add_child(_section("MOVES"))
+	if s.gadget_move:
+		_details.add_child(_section("GADGET"))
+		_details.add_child(UiKit.move_card(s.gadget_move))
+	_details.add_child(_section("MAIN ATTACKS  (one more unlocks at each level)"))
 	for entry in s.learnset:
 		_details.add_child(UiKit.move_card(entry["move"], int(entry["level"])))
 	_details_scroll.scroll_vertical = 0
@@ -409,9 +515,27 @@ func _species_button(s: SpeciesData, group: ButtonGroup, selected: bool) -> Butt
 	b.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	b.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
 	b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	b.custom_minimum_size = Vector2(160, 150)
+	b.custom_minimum_size = Vector2(112, 112)
 	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	b.add_theme_font_size_override("font_size", 15)
+	b.clip_text = true
 	return b
+
+
+## "Plays like Poco / Byron: waves that hurt enemies and heal teammates."
+func _style_box(s: SpeciesData) -> Control:
+	var info := GameData.style_info(s.style)
+	var card := PanelContainer.new()
+	card.add_theme_stylebox_override("panel", UiKit.box(Color(0.22, 0.2, 0.36), 10, 8))
+	var v := VBoxContainer.new()
+	var like := str(info.get("like", ""))
+	v.add_child(UiKit.label("PLAY STYLE: %s%s" % [str(info.get("label", s.style)).to_upper(),
+			"  ·  plays like %s" % like if like != "" else ""], 20, Color(0.75, 0.9, 1)))
+	var desc := UiKit.label(str(info.get("desc", "")), 16, Color(0.85, 0.88, 0.95))
+	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	v.add_child(desc)
+	card.add_child(v)
+	return card
 
 
 func _toggle(text: String, group: ButtonGroup, pressed: bool) -> Button:

@@ -1,0 +1,16 @@
+{
+	"name": "Machop",
+	"types": ["fighting"],
+	"sprite": "res://assets/brawlers/machop.png",
+	"sprite_scale": 1.0,
+	"style": "tank_wave",
+	"stats": {"hp": 5000, "attack": 113, "defense": 86, "speed": 89},
+	"super": "machop_super",
+	"gadget": "gadget_protect",
+	"evolves_to": "machoke",
+	"moves": [
+		{"move": "machop_main1", "level": 1},
+		{"move": "machop_main2", "level": 2},
+		{"move": "machop_main3", "level": 3}
+	]
+}

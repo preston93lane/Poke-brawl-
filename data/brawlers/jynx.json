@@ -1,0 +1,15 @@
+{
+	"name": "Jynx",
+	"types": ["ice", "psychic"],
+	"sprite": "res://assets/brawlers/jynx.png",
+	"sprite_scale": 1.15,
+	"style": "homing",
+	"stats": {"hp": 3300, "attack": 131, "defense": 99, "speed": 113},
+	"super": "jynx_super",
+	"gadget": "gadget_smokescreen",
+	"moves": [
+		{"move": "jynx_main1", "level": 1},
+		{"move": "jynx_main2", "level": 2},
+		{"move": "jynx_main3", "level": 3}
+	]
+}
