@@ -28,7 +28,7 @@ The web build uses Godot's Compatibility renderer, so lighting is slightly simpl
 
 ## How it plays
 
-- The game opens on a menu: **Battle**, **King of the Hill** or **Pokédex**. Then pick your Pokémon, level,
+- The game opens on a menu: **Battle**, **King of the Hill**, **Brawl Ball**, **Rare Candy Rush**, **Showdown** or **Pokédex**. Then pick your Pokémon, level,
   moves, opponent and arena. Running `scenes/main.tscn` directly in the editor uses the **Main** node's Inspector values instead.
 - After every attack there's a short delay before you can attack again. Heavy moves have longer delays.
 - **3v3:** you plus two bot teammates against three bots. Pick teammates and opponents in the menu, or leave them random.
@@ -43,6 +43,11 @@ The web build uses Godot's Compatibility renderer, so lighting is slightly simpl
 - Every Pokémon *stage* has its own **super**: big attacks, area poison, team heals, shields, teleports, blinding Flash…
 - **Types matter:** STAB, an 18-type chart and coverage moves. Super-effective hits pop up orange with "!".
 - **Evolve** every 3 KOs (yellow pips next to your health bar; fainting doesn't reset them). Faint and you drop back a stage.
+- **Brawl Ball:** touch the Poké Ball to pick it up; your attack kicks it. First to 2 goals.
+  **Rare Candy Rush:** candies pop out of the mine; hold 10 as a team with the lead for 15 s. Fainting drops yours.
+  **Showdown:** 6 Pokémon, everyone for themselves, no respawns. Smash crates for power cubes (+HP, +damage);
+  the poison cloud closes in. After every match a summary shows KOs, damage, healing and the MVP.
+- **Walls:** rock walls and trees are permanent; cracked walls and boulders break when a super hits them.
 - **Tall grass** hides you until you attack, get hit, or an enemy walks close.
 - Health regenerates after 3 s out of combat. You respawn inside a protective bubble for 2 s (attacking pops it).
 - **Items** appear around the map: Potion (heal), Protein / Iron / Carbos (attack / defense / speed until you faint),
