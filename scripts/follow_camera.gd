@@ -5,6 +5,10 @@ extends Camera3D
 @export_range(20.0, 85.0) var pitch_degrees := 60.0
 @export var distance := 26.0
 @export var follow_speed := 6.0
+## Look this far ahead of the target (toward the enemy side, up the screen), so you
+## stand in the bottom quarter of the screen and see more of what's in front.
+## 4.9 m puts the target 25% from the bottom with the default pitch, fov and distance.
+@export var lead := 4.9
 ## Clamp the followed point so the camera doesn't drift past the arena edges.
 @export var follow_limits := Rect2(-4, -10, 8, 20)
 
@@ -38,7 +42,7 @@ func snap_to_target() -> void:
 
 
 func _desired_position() -> Vector3:
-	var focus := target.global_position
+	var focus := target.global_position + Vector3(0, 0, -lead)
 	focus.x = clampf(focus.x, follow_limits.position.x, follow_limits.end.x)
 	focus.z = clampf(focus.z, follow_limits.position.y, follow_limits.end.y)
 	var pitch := deg_to_rad(pitch_degrees)

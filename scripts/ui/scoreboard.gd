@@ -8,7 +8,7 @@ const BLUE := Color(0.2, 0.5, 1.0)
 const RED := Color(0.95, 0.25, 0.25)
 const FEED_TIME := 4.0
 ## The whole scoreboard is drawn this much bigger than its layout numbers.
-const SCALE := 1.35
+const SCALE := 1.15
 ## Height of the scaled scoreboard panel on screen (for placing things under it).
 const PANEL_BOTTOM := (10.0 + 62.0) * SCALE
 

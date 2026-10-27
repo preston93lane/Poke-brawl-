@@ -5,23 +5,15 @@ extends Control
 
 signal finished
 
-var _tween: Tween
+var _hold_left := 0.0
 
 
-## Tap anywhere to skip to the match.
+## Tap anywhere to skip, once the banners have been up for a second (so the
+## tap that started the match can't skip it).
 func _input(event: InputEvent) -> void:
 	if (event is InputEventScreenTouch or event is InputEventKey) and event.is_pressed():
-		if _tween and _tween.is_valid() and not _skip:
-			_skip = true
-			_tween.set_speed_scale(8.0)
-
-const BLUE := Color(0.16, 0.42, 0.95)
-const RED := Color(0.9, 0.2, 0.22)
-const SLIDE := 0.9
-const HOLD := 5.6
-
-var _skip := false
-
+		if _hold_left > 0.0 and _hold_left < HOLD - 1.0:
+			_hold_left = 0.0
 
 func play(allies: Array, enemies: Array, mode_title: String, arena_name: String) -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -66,9 +58,14 @@ func play(allies: Array, enemies: Array, mode_title: String, arena_name: String)
 	tween.tween_property(bottom, "position:x", 0.0, SLIDE).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tween.tween_property(middle, "modulate:a", 1.0, 0.3).set_delay(SLIDE * 0.6)
 	tween.tween_property(middle, "scale", Vector2.ONE, 0.35).set_delay(SLIDE * 0.6).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.chain().tween_interval(HOLD)
-	_tween = tween
-	tween.chain().set_parallel()
+	await tween.finished
+	# Hold on a real-time timer (runs while paused); a tap after the first second skips it.
+	_hold_left = HOLD
+	while _hold_left > 0.0:
+		await get_tree().process_frame
+		_hold_left -= get_process_delta_time()
+	tween = create_tween()
+	tween.set_parallel()
 	tween.tween_property(top, "position:x", -view.x, 0.35).set_ease(Tween.EASE_IN)
 	tween.tween_property(bottom, "position:x", view.x, 0.35).set_ease(Tween.EASE_IN)
 	tween.tween_property(middle, "modulate:a", 0.0, 0.3)

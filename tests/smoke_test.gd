@@ -994,7 +994,7 @@ func _check_intro() -> void:
 		if child.get_script() == main.MATCH_INTRO:
 			banners += 1
 	expect(get_tree().paused and banners == 1, "the team banners play before the match, with the game paused")
-	await get_tree().create_timer(2.0, true).timeout
+	await get_tree().create_timer(2.5, true).timeout
 	expect(get_tree().paused, "the intro takes its time")
 	var tap := InputEventScreenTouch.new()
 	tap.pressed = true
