@@ -435,7 +435,7 @@ func _check_legendaries_and_items() -> void:
 	main.time_left = 89.0
 	await get_tree().physics_frame
 	var boss: Brawler = main.raid_boss
-	expect(boss != null and boss.team == 2 and boss.is_legendary, "raid boss appears at 1:30 (%s)" % (boss.species.id if boss else "none"))
+	expect(boss != null and boss.team == 9 and boss.is_legendary, "raid boss appears at 1:30 (%s)" % (boss.species.id if boss else "none"))
 	if boss:
 		for child in boss.get_children():
 			if child is BotController:

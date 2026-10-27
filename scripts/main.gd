@@ -422,9 +422,10 @@ func end_round(result_name: String, subtitle := "") -> void:
 func summary_rows() -> Array[Dictionary]:
 	var rows: Array[Dictionary] = []
 	for team: int in teams:
-		for b: Brawler in teams[team]:
-			if not is_instance_valid(b):
+		for node in teams[team]:
+			if not is_instance_valid(node):
 				continue
+			var b: Brawler = node
 			var stat := mode_logic.stat_value(b) if mode_logic else 0
 			var score := b.damage_dealt + b.healing_done * 0.8 + b.kills * 1200.0 + stat * 900.0 - b.deaths * 300.0
 			rows.append({
