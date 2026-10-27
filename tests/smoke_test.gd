@@ -755,7 +755,7 @@ func _check_breakable_walls() -> void:
 	main.end_round("victory")
 	await get_tree().process_frame
 	expect(main.hud._summary != null and main.summary_rows().size() == 6, "the match ends on a summary of all 6 Pokémon")
-	var mvps := main.summary_rows().filter(func(r: Dictionary) -> bool: return r["mvp"])
+	var mvps: Array = main.summary_rows().filter(func(r: Dictionary) -> bool: return r["mvp"])
 	expect(mvps.size() == 1, "one MVP")
 	main.queue_free()
 	await get_tree().process_frame
