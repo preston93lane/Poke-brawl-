@@ -53,6 +53,22 @@ func _draw() -> void:
 		var status := brawler.status_text()
 		if status != "":
 			_text(font, Vector2(bar.end.x + 4, bar.end.y), 40, status, 14, Color(1, 0.8, 0.3), HORIZONTAL_ALIGNMENT_LEFT)
+		# Rare Candies carried / power cubes, left of the name.
+		var counter := ""
+		var counter_color := Color.WHITE
+		if brawler.candies > 0:
+			counter = "%d" % brawler.candies
+			counter_color = Color(0.5, 0.75, 1.0)
+		elif brawler.power_cubes > 0:
+			counter = "%d" % brawler.power_cubes
+			counter_color = Color(0.5, 1.0, 0.55)
+		if counter != "":
+			var icon_path := "res://assets/items/rare_candy.png" if brawler.candies > 0 else "res://assets/items/power_cube.png"
+			var at := Vector2(bar.position.x - 52, bar.position.y - 46)
+			draw_texture_rect(load(icon_path), Rect2(at, Vector2(26, 26)), false)
+			_text(font, at + Vector2(-4, 44), 34, counter, 18, counter_color)
+		if brawler.ball != null:
+			_text(font, Vector2(bar.position.x - 30, bar.position.y - 44), bar.size.x + 60, "HAS THE BALL", 16, Color(1, 1, 1))
 		# One pip per KO toward the next evolution.
 		for i in brawler.evolve_kills:
 			draw_circle(Vector2(bar.end.x + 8 + i * 10, bar.position.y - 4), 3.5, Color(1, 0.85, 0.2))
@@ -70,7 +86,7 @@ func _draw() -> void:
 func _draw_legendary(b: Brawler, p: Vector2, font: Font) -> void:
 	var bar_size := Vector2(190, 16)
 	var bar := Rect2(p - Vector2(bar_size.x * 0.5, 0), bar_size)
-	var neutral := b.team > 1
+	var neutral := b.team >= 9
 	var fill := Color(1.0, 0.78, 0.2)
 	if not neutral:
 		fill = Color(0.3, 0.6, 1.0) if b.team == GameData.local_team else Color(0.95, 0.25, 0.25)

@@ -25,6 +25,10 @@ func _ready() -> void:
 	await _check_menu_settings()
 	await _check_legendaries_and_items()
 	await _check_shrine()
+	await _check_breakable_walls()
+	await _check_brawl_ball()
+	await _check_candy_rush()
+	await _check_showdown()
 	Engine.time_scale = 1.0
 	print("SMOKE TEST: %s" % ("PASS" if failures == 0 else "FAIL (%d)" % failures))
 	get_tree().quit(1 if failures > 0 else 0)
@@ -293,6 +297,11 @@ func _check_menu() -> void:
 	await get_tree().process_frame
 	menu.show_select("king_of_the_hill")
 	await get_tree().process_frame
+	expect(GameData.arenas_for_mode("brawl_ball") == ["pallet_pitch"], "only goal arenas offer Brawl Ball")
+	expect("viridian_forest" in GameData.arenas_for_mode("showdown") and "viridian_forest" not in GameData.arenas_for_mode("duel"), "Viridian Forest is Showdown-only")
+	for mode_id in ["brawl_ball", "candy_rush", "showdown"]:
+		menu.show_select(mode_id)
+		await get_tree().process_frame
 	expect(menu._arena in GameData.arenas_for_mode("king_of_the_hill"), "king of the hill only offers arenas with a zone")
 	menu.show_select("duel")
 	menu._type_filter = "fire"
@@ -374,7 +383,7 @@ func _drag(at: Vector2, relative: Vector2) -> void:
 
 ## Stop every bot and park everyone but the player (and `keep`) far away.
 func _freeze_all(main: Node, keep: Brawler = null) -> void:
-	for team: int in [0, 1]:
+	for team: int in main.teams:
 		for b: Brawler in main.teams[team]:
 			for child in b.get_children():
 				if child is BotController or child is PlayerController:
@@ -722,5 +731,143 @@ func _check_swimming_and_gaps() -> void:
 	Engine.time_scale = 1.0
 	bot.queue_free()
 	expect(arrived, "bots path through Dragon's Den's centre (ended %.1f m away)" % walker.global_position.distance_to(goal))
+	main.queue_free()
+	await get_tree().process_frame
+
+
+func _check_breakable_walls() -> void:
+	print("Breakable walls")
+	var main := await _start_match("boulder_gym", "duel", "geodude", [])
+	await _freeze_all(main)
+	var arena: Arena = main.arena
+	var wall: Breakable = null
+	for node in get_tree().get_nodes_in_group("breakables"):
+		if (node as Breakable).kind == "wall":
+			wall = node
+			break
+	expect(wall != null and not arena.is_walkable(wall.global_position), "maps have breakable walls that block paths")
+	var player: Brawler = main.player
+	expect(not wall.take_attack(player, player.main_move), "main attacks don't break walls")
+	var cell := wall.cell
+	expect(wall.take_attack(player, player.species.super_move), "supers smash breakable walls")
+	await get_tree().physics_frame
+	expect(arena.is_walkable(arena.cell_center(cell)), "the smashed tile can be walked on")
+	main.end_round("victory")
+	await get_tree().process_frame
+	expect(main.hud._summary != null and main.summary_rows().size() == 6, "the match ends on a summary of all 6 Pokémon")
+	var mvps := main.summary_rows().filter(func(r: Dictionary) -> bool: return r["mvp"])
+	expect(mvps.size() == 1, "one MVP")
+	main.queue_free()
+	await get_tree().process_frame
+
+
+func _check_brawl_ball() -> void:
+	print("Brawl Ball")
+	var main := await _start_match("pallet_pitch", "brawl_ball", "machop", [])
+	await _freeze_all(main)
+	var arena: Arena = main.arena
+	var ball: Ball = main.mode_logic.ball
+	var player: Brawler = main.player
+	expect(ball != null and arena.goal_cells[0].size() > 0 and arena.goal_cells[1].size() > 0, "pitch has a ball and two goals")
+	player.position = arena.cell_center(Vector2i(17, 5))
+	ball.reset(player.position)
+	ball._all_lock = 0.0
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	expect(ball.carrier == player and player.ball == ball, "walking onto the ball picks it up")
+	player._attack_lock = 0.0
+	var goal := arena.goal_center(1)
+	expect(player.use_main(goal - player.global_position), "attacking while carrying kicks the ball")
+	await get_tree().create_timer(1.0, false, true).timeout
+	expect(main.scores[0] == 1.0 and player.goals == 1, "kicking it into their goal scores (score %s)" % [main.scores])
+	expect(ball.global_position.distance_to(arena.center_point()) < 1.0, "the ball goes back to the middle")
+	main.mode_logic._reset_pause = 0.0
+	ball.reset(goal)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	expect(main.round_over and main.hud.result_title.text == "VICTORY!", "two goals wins")
+	main.queue_free()
+	await get_tree().process_frame
+
+
+func _check_candy_rush() -> void:
+	print("Rare Candy Rush")
+	var main := await _start_match("route_1", "candy_rush", "pikachu", [])
+	await _freeze_all(main, main.enemy)
+	var logic: Node = main.mode_logic
+	var player: Brawler = main.player
+	var enemy: Brawler = main.enemy
+	logic.spawn_candy(player.global_position, player.global_position)
+	await get_tree().create_timer(0.7, false, true).timeout
+	expect(player.candies == 1 and player.candies_collected == 1, "walking over a Rare Candy collects it")
+	enemy.candies = 3
+	enemy._protect_time = 0.0
+	enemy.take_damage(1000000.0, player)
+	await get_tree().physics_frame
+	expect(enemy.candies == 0 and get_tree().get_nodes_in_group("collectibles").size() >= 3, "fainting drops your candies")
+	player.candies = 10
+	await get_tree().physics_frame
+	expect(logic.countdown_team == 0, "holding 10 candies with the lead starts the countdown")
+	logic.countdown_left = 0.05
+	await get_tree().create_timer(0.2, false, true).timeout
+	expect(main.round_over and main.hud.result_title.text == "VICTORY!", "surviving the countdown wins")
+	main.queue_free()
+	await get_tree().process_frame
+
+
+func _check_showdown() -> void:
+	print("Showdown")
+	var main := await _start_match("viridian_forest", "showdown", "charmander", [])
+	var logic: Node = main.mode_logic
+	var player: Brawler = main.player
+	expect(main.teams.size() == 6, "six Pokémon, each on its own team")
+	var spawn_spread := INF
+	for a: int in main.teams:
+		for b: int in main.teams:
+			if a < b:
+				spawn_spread = minf(spawn_spread, main.teams[a][0].global_position.distance_to(main.teams[b][0].global_position))
+	expect(spawn_spread > 6.0, "spawns are spread out (closest %.1f m)" % spawn_spread)
+	await _freeze_all(main)
+	var crate: Breakable = null
+	for node in get_tree().get_nodes_in_group("breakables"):
+		if (node as Breakable).kind == "crate":
+			crate = node
+	expect(crate != null, "the map has power-cube crates")
+	var hp_before := player.max_health
+	var at := crate.global_position
+	for i in 40:
+		player._attack_lock = 0.0
+		crate.take_attack(player, player.main_move)
+		if crate.is_broken:
+			break
+	expect(crate.is_broken, "attacks break crates")
+	await get_tree().create_timer(0.6, false, true).timeout
+	player.position = at
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	expect(player.power_cubes == 1 and player.max_health > hp_before * 1.05, "power cubes add max HP (%d -> %d)" % [hp_before, player.max_health])
+	player.position = main.arena.nearest_open(Vector3(0, 0, 3))
+	await get_tree().physics_frame
+	logic.elapsed = 200.0
+	var victim: Brawler = main.teams[1][0]
+	victim._protect_time = 0.0
+	victim.position = main.arena.nearest_open(Vector3(-14, 0, -18))
+	await get_tree().physics_frame
+	var victim_hp := victim.health
+	await get_tree().create_timer(1.2, false, true).timeout
+	expect(victim.health < victim_hp, "the poison cloud hurts Pokémon outside the safe zone")
+	player.health = player.max_health
+	for team: int in main.teams:
+		if team != 0:
+			var b: Brawler = main.teams[team][0]
+			b._protect_time = 0.0
+			if not b.is_dead:
+				b.take_damage(10000000.0, player)
+			await get_tree().physics_frame
+	await get_tree().create_timer(0.5, false, true).timeout
+	expect(main.round_over and main.hud.result_title.text == "VICTORY!", "last one standing wins Showdown")
+	expect(not main.teams[1][0].is_dead or main.teams[1][0].respawn_left <= 0.0, "nobody respawns")
+	var rows: Array[Dictionary] = main.summary_rows()
+	expect(rows[0]["is_player"] and int(rows[0]["placement"]) == 1, "the summary ranks you #1")
 	main.queue_free()
 	await get_tree().process_frame

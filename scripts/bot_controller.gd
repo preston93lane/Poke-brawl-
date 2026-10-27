@@ -26,6 +26,8 @@ var has_objective := false
 ## Stay within leash_radius of leash_center (raid bosses guard the middle). 0 = no leash.
 var leash_center := Vector3.ZERO
 var leash_radius := 0.0
+## Brawl Ball / Rare Candy Rush / Showdown rules; asked what to do each frame.
+var mode_logic: MatchMode
 
 var _think_timer := 0.0
 var _retarget_timer := 0.0
@@ -80,6 +82,10 @@ func _physics_process(delta: float) -> void:
 		_go_to(leash_center, delta)
 		return
 
+	if mode_logic and _follow_plan(mode_logic.plan_for(brawler), delta):
+		_check_stuck(delta)
+		return
+
 	var item := _wanted_item()
 	if item:
 		_go_to(item.global_position, delta)
@@ -111,6 +117,56 @@ func _physics_process(delta: float) -> void:
 	else:
 		_search(delta)
 	_check_stuck(delta)
+
+
+## Carry out a mode plan (see MatchMode.plan_for). Returns false if there's nothing
+## special to do, so the bot fights as usual.
+func _follow_plan(plan: Dictionary, delta: float) -> bool:
+	if plan.is_empty():
+		return false
+	if plan.has("kick"):
+		brawler.use_main(plan["kick"])
+		return true
+	var forced: Brawler = plan.get("target") as Brawler
+	if forced and not forced.is_dead and brawler.can_see(forced):
+		target = forced
+		_retarget_timer = 0.5
+	if not plan.has("go"):
+		return false
+	var goal: Vector3 = plan["go"]
+	if plan.has("shoot"):
+		var point: Vector3 = plan["shoot"]
+		var to := point - brawler.global_position
+		to.y = 0.0
+		var main := brawler.main_move
+		if to.length() <= main.effective_reach() + 0.6 and brawler.can_shoot():
+			_think_timer -= delta
+			if _think_timer <= 0.0:
+				_think_timer = reaction_time * 0.6
+				if main.kind == "stream":
+					_stream_aim = to
+					_stream_time = 0.6
+				else:
+					brawler.use_main(to, to.length())
+			if to.length() < 2.5 or not main.is_close_range():
+				brawler.move_input = Vector2.ZERO
+				return true
+	_go_to(goal, delta)
+	# Fight back on the way unless we're carrying the ball.
+	if not plan.get("hold", false):
+		_retarget_timer -= delta
+		if _retarget_timer <= 0.0 or target == null or not brawler.can_see(target):
+			_retarget_timer = 0.5
+			_pick_target()
+		if target and brawler.can_see(target):
+			var to_target := target.global_position - brawler.global_position
+			to_target.y = 0.0
+			var dist := to_target.length()
+			_think_timer -= delta
+			if _think_timer <= 0.0 and dist < brawler.main_move.effective_reach() + 2.0:
+				_think_timer = reaction_time * randf_range(0.7, 1.3)
+				_try_attack(to_target / maxf(dist, 0.01), dist)
+	return true
 
 
 ## A nearby item worth grabbing: potions when hurt, anything else when no enemy is close.

@@ -1,15 +1,21 @@
 extends Node3D
-## Sets up and referees a 3v3 match: you plus bot teammates vs a bot team, in
-## Battle (first team to N KOs) or King of the Hill (hold the zone).
+## Sets up and referees a match: 3v3 Battle (first team to N KOs), King of the
+## Hill (hold the zone), Brawl Ball, Rare Candy Rush, or free-for-all Showdown.
+## The last three keep their rules in scripts/modes/.
 ## Normally configured by the menu; running main.tscn directly uses these exports.
 
 const BRAWLER_SCENE := preload("res://scenes/brawler.tscn")
 ## Team id for neutral raid bosses: an enemy to both sides.
-const NEUTRAL_TEAM := 2
+const NEUTRAL_TEAM := 9
+const MODE_SCRIPTS := {
+	"brawl_ball": preload("res://scripts/modes/brawl_ball.gd"),
+	"candy_rush": preload("res://scripts/modes/candy_rush.gd"),
+	"showdown": preload("res://scripts/modes/showdown.gd"),
+}
 const MENU_SCENE := "res://scenes/menu.tscn"
 
 @export var arena_id := "route_1"
-@export_enum("duel", "king_of_the_hill") var mode := "duel"
+@export_enum("duel", "king_of_the_hill", "brawl_ball", "candy_rush", "showdown") var mode := "duel"
 
 @export_group("Player")
 @export var player_species := "charmander"
@@ -45,6 +51,9 @@ var legendaries: Array[Brawler] = []
 var shrine_hold := [0.0, 0.0]
 var shrine_cooldown := 0.0
 var _item_timer := 0.0
+## Rules object for Brawl Ball / Rare Candy Rush / Showdown (null for Battle and King of the Hill).
+var mode_logic: MatchMode
+var _hud_kick := false
 var _hud_main: MoveData
 
 @onready var arena: Arena = $Arena
@@ -64,7 +73,16 @@ func _ready() -> void:
 		mode = "duel"
 		mode_rules = GameData.rule("modes/duel", {})
 
+	if MODE_SCRIPTS.has(mode):
+		mode_logic = MODE_SCRIPTS[mode].new()
+		mode_logic.main = self
+		mode_logic.rules = mode_rules
+		add_child(mode_logic)
 	var team_size := int(GameData.rule("team_size", 3))
+	if mode == "showdown":
+		teams = {}
+		for i in int(mode_rules.get("players", 6)):
+			teams[i] = []
 	player = _spawn(player_species, player_level, 0, true, player_main)
 	player.preferred_evolution = player_evolution
 	GameData.local_player = player
@@ -75,12 +93,22 @@ func _ready() -> void:
 	player_controller.super_button = hud.super_button
 	player.add_child(player_controller)
 
-	for species_id in _fill_team(ally_team, team_size - 1, [player_species]):
-		_spawn_bot(species_id, 0)
-	for species_id in _fill_team(enemy_team, team_size, []):
-		var bot := _spawn_bot(species_id, 1)
-		if enemy == null:
-			enemy = bot
+	if mode == "showdown":
+		# Everyone for themselves: each opponent is its own team.
+		var others := _fill_team(enemy_team, teams.size() - 1, [player_species])
+		for i in others.size():
+			var bot := _spawn_bot(others[i], i + 1)
+			if enemy == null:
+				enemy = bot
+	else:
+		for species_id in _fill_team(ally_team, team_size - 1, [player_species]):
+			_spawn_bot(species_id, 0)
+		for species_id in _fill_team(enemy_team, team_size, []):
+			var bot := _spawn_bot(species_id, 1)
+			if enemy == null:
+				enemy = bot
+	if mode_logic:
+		mode_logic.start()
 
 	var half := arena.world_size() * 0.5
 	var x_limit := maxf(0.0, half.x - 14.0)
@@ -148,6 +176,7 @@ func _spawn_bot(species_id: String, team: int) -> Brawler:
 	if mode == "king_of_the_hill":
 		bot.objective = arena.zone_center
 		bot.has_objective = true
+	bot.mode_logic = mode_logic
 	# Stagger bots so they don't all move on the same frame.
 	bot.start_delay = 1.0 + 0.15 * teams[team].size()
 	brawler.add_child(bot)
@@ -159,12 +188,18 @@ func _spawn(species_id: String, level: int, team: int, is_player: bool, main_id 
 	brawler.setup(species_id, level, team, is_player, arena, main_id)
 	_spawn_index[brawler] = teams[team].size()
 	teams[team].append(brawler)
-	brawler.position = arena.spawn_point(team, _spawn_index[brawler])
+	brawler.position = spawn_position(brawler)
 	arena.add_child(brawler)
 	brawler.protect(float(GameData.rule("spawn_protection", 2.0)))
 	brawler.died.connect(_on_brawler_died)
 	brawler.evolved.connect(_on_brawler_evolved)
 	return brawler
+
+
+func spawn_position(b: Brawler) -> Vector3:
+	if mode_logic:
+		return mode_logic.spawn_position(b)
+	return arena.spawn_point(b.team, _spawn_index[b])
 
 
 func _physics_process(delta: float) -> void:
@@ -178,6 +213,13 @@ func _physics_process(delta: float) -> void:
 	_tick_items(delta)
 	if player.main_move != _hud_main:
 		_refresh_hud_moves()  # Evolving or devolving swaps in that stage's version.
+	if (player.ball != null) != _hud_kick:
+		_hud_kick = player.ball != null
+		hud.set_kick(_hud_kick, player.main_move)
+	if mode_logic:
+		mode_logic.tick(delta)
+		_update_status()
+		return
 	if mode != "king_of_the_hill":
 		_tick_raid()
 		_update_status()
@@ -193,7 +235,7 @@ func _physics_process(delta: float) -> void:
 		scores[holder] += delta
 		arena.set_zone_owner(holder)
 		if scores[holder] >= float(mode_rules.get("hold_time", 60.0)):
-			_end_round("victory" if holder == player.team else "defeat")
+			end_round("victory" if holder == player.team else "defeat")
 	else:
 		arena.set_zone_owner(-2 if teams_in_zone.size() > 1 else -1)
 	_update_status()
@@ -208,13 +250,18 @@ func _on_brawler_died(victim: Brawler, killer: Brawler) -> void:
 	if killer and killer != victim:
 		killer.register_kill()
 	hud.add_kill(killer, victim)
+	if mode_logic and mode_logic.on_died(victim, killer):
+		_update_status()
+		return  # Showdown: no respawns.
+	if round_over:
+		return
 	var by_boss := killer != null and killer.team == NEUTRAL_TEAM
 	if mode == "duel" and not by_boss:
 		var scoring_team := 1 - victim.team
 		scores[scoring_team] += 1
 		_update_status()
 		if scores[scoring_team] >= float(mode_rules.get("kills_to_win", 10)):
-			_end_round("victory" if scoring_team == player.team else "defeat")
+			end_round("victory" if scoring_team == player.team else "defeat")
 			return
 	var wait := float(mode_rules.get("respawn_time", 3.0))
 	victim.respawn_left = wait
@@ -222,7 +269,7 @@ func _on_brawler_died(victim: Brawler, killer: Brawler) -> void:
 		hud.announce("Fainted! Back in %d…" % ceili(wait))
 	await get_tree().create_timer(wait, false).timeout
 	if not round_over and is_instance_valid(victim):
-		victim.respawn(arena.spawn_point(victim.team, _spawn_index[victim]))
+		victim.respawn(spawn_position(victim))
 
 
 func _refresh_hud_moves() -> void:
@@ -362,17 +409,54 @@ func _tick_shrine(delta: float, teams_in_zone: Dictionary) -> void:
 			summon_legendary(guardian, holder, arena.zone_center)
 
 
-func _end_round(result_name: String) -> void:
+## `subtitle` is an extra line under VICTORY/DEFEAT (e.g. your Showdown placing).
+func end_round(result_name: String, subtitle := "") -> void:
+	if round_over:
+		return
 	round_over = true
 	_update_status()
-	hud.show_result(result_name)
+	hud.show_result(result_name, summary_rows(), mode_logic.stat_name() if mode_logic else "", subtitle)
+
+
+## One row per Pokémon for the match summary, with an MVP picked by score.
+func summary_rows() -> Array[Dictionary]:
+	var rows: Array[Dictionary] = []
+	for team: int in teams:
+		for b: Brawler in teams[team]:
+			if not is_instance_valid(b):
+				continue
+			var stat := mode_logic.stat_value(b) if mode_logic else 0
+			var score := b.damage_dealt + b.healing_done * 0.8 + b.kills * 1200.0 + stat * 900.0 - b.deaths * 300.0
+			rows.append({
+				"brawler": b, "team": team, "is_player": b.is_player, "name": b.species.display_name,
+				"sprite": b.species.sprite, "kills": b.kills, "deaths": b.deaths, "damage": roundi(b.damage_dealt),
+				"healing": roundi(b.healing_done), "stat": stat, "score": score, "placement": b.placement, "mvp": false,
+			})
+	if mode == "showdown":
+		var place := 1
+		for row in rows:
+			if int(row["placement"]) == 0:
+				row["placement"] = place  # Still standing at the end.
+		rows.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return int(a["placement"]) < int(b["placement"]))
+	var best := -1
+	for i in rows.size():
+		if best < 0 or float(rows[i]["score"]) > float(rows[best]["score"]):
+			best = i
+	if best >= 0:
+		rows[best]["mvp"] = true
+	return rows
 
 
 ## Time's up: the team ahead wins; level scores are a draw.
 func _end_on_time() -> void:
+	if mode_logic:
+		var result := mode_logic.time_up()
+		if result != "":
+			end_round(result, "#%d" % player.placement if mode == "showdown" else "")
+			return
 	var mine: float = scores[player.team]
 	var theirs: float = scores[1 - player.team]
-	_end_round("victory" if mine > theirs else ("defeat" if theirs > mine else "draw"))
+	end_round("victory" if mine > theirs else ("defeat" if theirs > mine else "draw"))
 
 
 func _team_names(team: int) -> String:
@@ -384,7 +468,14 @@ func _team_names(team: int) -> String:
 
 func _update_status() -> void:
 	var target := float(mode_rules.get("kills_to_win", 10)) if mode == "duel" else float(mode_rules.get("hold_time", 60.0))
+	if mode == "brawl_ball":
+		target = float(mode_rules.get("goals_to_win", 2))
+	elif mode == "candy_rush":
+		target = float(mode_rules.get("candies_to_win", 10))
 	hud.set_scores(mode, scores, target, time_left)
+	hud.set_mode_info(mode_logic.scoreboard_info() if mode_logic else {})
+	if mode_logic:
+		return
 	if mode == "king_of_the_hill":
 		hud.set_shrine(shrine_hold, float(GameData.rule("legendary/shrine_hold", 20.0)), shrine_cooldown,
 				str(GameData.arenas.get(arena_id, {}).get("guardian", "")))

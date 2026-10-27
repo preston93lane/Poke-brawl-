@@ -38,7 +38,7 @@ func _physics_process(delta: float) -> void:
 		move = keys.normalized()
 	brawler.move_input = move
 
-	var streaming_move := brawler.main_move.kind == "stream"
+	var streaming_move := _is_stream()
 	if aim_stick.output != Vector2.ZERO:
 		var dir := _to_world(aim_stick.output)
 		brawler.show_aim(dir, aim_stick.output.length() * brawler.main_move.reach)
@@ -72,7 +72,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	match key.physical_keycode:
 		KEY_F:
-			if brawler.main_move.kind != "stream":
+			if not _is_stream():
 				_try("main")
 		KEY_SPACE:
 			_try("gadget")
@@ -80,8 +80,13 @@ func _unhandled_input(event: InputEvent) -> void:
 			_try("super")
 
 
+## Streams fire while held, except while carrying the Brawl Ball (then it's a kick).
+func _is_stream() -> bool:
+	return brawler.main_move.kind == "stream" and brawler.ball == null
+
+
 func _on_aim_released(output: Vector2, was_tap: bool) -> void:
-	if brawler.main_move.kind == "stream":
+	if _is_stream():
 		if was_tap:
 			_auto_stream_time = AUTO_STREAM_TIME
 		return

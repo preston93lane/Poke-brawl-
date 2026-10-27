@@ -4,8 +4,11 @@ extends Control
 
 const MAIN_SCENE := "res://scenes/main.tscn"
 const MODES := {
-	"duel": { "title": "BATTLE 3v3", "blurb": "First team to 10 KOs wins." },
-	"king_of_the_hill": { "title": "KING OF THE HILL 3v3", "blurb": "Hold the zone with only your team in it." },
+	"duel": { "button": "BATTLE", "title": "BATTLE 3v3", "blurb": "First team to 10 KOs wins." },
+	"king_of_the_hill": { "button": "KING OF THE HILL", "title": "KING OF THE HILL 3v3", "blurb": "Hold the zone with only your team in it." },
+	"brawl_ball": { "button": "BRAWL BALL", "title": "BRAWL BALL 3v3", "blurb": "Kick the Poké Ball into their goal. First to 2." },
+	"candy_rush": { "button": "RARE CANDY RUSH", "title": "RARE CANDY RUSH 3v3", "blurb": "Grab 10 Rare Candies from the mine and hold them for 15 s." },
+	"showdown": { "button": "SHOWDOWN", "title": "SHOWDOWN", "blurb": "Everyone for themselves. Smash crates for power cubes. Last one standing wins." },
 }
 
 var _screen: Control
@@ -70,13 +73,20 @@ func show_home() -> void:
 	count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(count)
 
-	for entry in [["BATTLE", show_select.bind("duel")],
-			["KING OF THE HILL", show_select.bind("king_of_the_hill")],
-			["POKéDEX", show_pokedex.bind("")]]:
-		var b := UiKit.button(entry[0], entry[1], 30)
-		b.custom_minimum_size = Vector2(440, 72)
-		b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		v.add_child(b)
+	var modes := GridContainer.new()
+	modes.columns = 3
+	modes.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	modes.add_theme_constant_override("h_separation", 14)
+	modes.add_theme_constant_override("v_separation", 14)
+	for mode_id: String in MODES:
+		var b := UiKit.button(MODES[mode_id]["button"], show_select.bind(mode_id), 24)
+		b.custom_minimum_size = Vector2(300, 64)
+		modes.add_child(b)
+	var dex := UiKit.button("POKéDEX", show_pokedex.bind(""), 24)
+	dex.custom_minimum_size = Vector2(300, 64)
+	dex.add_theme_stylebox_override("normal", UiKit.box(Color(0.75, 0.3, 0.3)))
+	modes.add_child(dex)
+	v.add_child(modes)
 	_set_screen(v)
 
 
@@ -323,10 +333,15 @@ func _refresh_select_details() -> void:
 		_details.add_child(branches)
 
 	var team_size := int(GameData.rule("team_size", 3))
-	_details.add_child(_section("TEAMMATES  (pick up to %d, the rest are random)" % (team_size - 1)))
-	_details.add_child(_team_picker(_allies, team_size - 1))
-	_details.add_child(_section("OPPONENTS  (pick up to %d, the rest are random)" % team_size))
-	_details.add_child(_team_picker(_enemies, team_size))
+	if _mode == "showdown":
+		var rivals := int(GameData.rule("modes/showdown/players", 6)) - 1
+		_details.add_child(_section("OPPONENTS  (pick up to %d, the rest are random)" % rivals))
+		_details.add_child(_team_picker(_enemies, rivals))
+	else:
+		_details.add_child(_section("TEAMMATES  (pick up to %d, the rest are random)" % (team_size - 1)))
+		_details.add_child(_team_picker(_allies, team_size - 1))
+		_details.add_child(_section("OPPONENTS  (pick up to %d, the rest are random)" % team_size))
+		_details.add_child(_team_picker(_enemies, team_size))
 
 	_details.add_child(_section("BOT DIFFICULTY"))
 	var difficulty_row := HBoxContainer.new()

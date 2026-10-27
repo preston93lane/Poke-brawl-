@@ -16,6 +16,9 @@ var target := 10.0
 var time_left := 0.0
 ## King of the hill shrine: { "hold": [blue, red], "need": s, "cooldown": s, "guardian": id }
 var shrine := {}
+## Mode extras from MatchMode.scoreboard_info(): candy counts and countdown, Showdown
+## Pokémon left / cloud timer / cubes, goal text.
+var info := {}
 ## [{ "killer": Brawler, "victim": Brawler, "time": float }]
 var _feed: Array[Dictionary] = []
 
@@ -43,6 +46,9 @@ func _draw() -> void:
 	var mid := size.x * 0.5
 	var top := 10.0
 
+	if mode == "showdown":
+		_draw_showdown(font, mid, top)
+		return
 	# Centre panel: blue score | timer | red score (or zone percentages).
 	var panel := Rect2(mid - 150, top, 300, 62)
 	_box(panel, Color(0.06, 0.07, 0.12, 0.8), 16)
@@ -53,6 +59,9 @@ func _draw() -> void:
 	if mode == "king_of_the_hill":
 		left_text = "%d%%" % (100.0 * scores[0] / target)
 		right_text = "%d%%" % (100.0 * scores[1] / target)
+	elif mode == "candy_rush":
+		left_text = str(int(info.get("left", 0)))
+		right_text = str(int(info.get("right", 0)))
 	else:
 		left_text = str(int(scores[0]))
 		right_text = str(int(scores[1]))
@@ -62,6 +71,8 @@ func _draw() -> void:
 	var clock_color := Color(1, 0.4, 0.35) if seconds <= 20 else Color.WHITE
 	_text(font, Vector2(mid - 50, top + 38), 100, "%d:%02d" % [seconds / 60, seconds % 60], 28, clock_color)
 	var goal := "HOLD THE ZONE" if mode == "king_of_the_hill" else "FIRST TO %d" % int(target)
+	if info.has("goal"):
+		goal = str(info["goal"])
 	_text(font, Vector2(mid - 50, top + 56), 100, goal, 11, Color(1, 1, 1, 0.7))
 	if mode == "king_of_the_hill":
 		for team in [0, 1]:
@@ -81,6 +92,13 @@ func _draw() -> void:
 			_portrait(Rect2(x, top + 8, PORTRAIT, PORTRAIT), b, BLUE if team == 0 else RED, font)
 
 	var y := top + 80.0
+	var countdown_team := int(info.get("countdown_team", -1))
+	if countdown_team >= 0:
+		var ours := countdown_team == GameData.local_team
+		var msg := "%s WIN IN %d" % ["YOU" if ours else "THEY", ceili(float(info.get("countdown", 0.0)))]
+		_box(Rect2(mid - 120, y, 240, 34), (BLUE if ours else RED).darkened(0.1), 12)
+		_text(font, Vector2(mid - 120, y + 26), 240, msg, 22, Color.WHITE)
+		y += 44.0
 	if mode == "king_of_the_hill" and not shrine.is_empty():
 		_draw_shrine(Rect2(mid - 150, y, 300, 26), font)
 		y += 36.0
@@ -92,6 +110,29 @@ func _draw() -> void:
 		var alpha := clampf(float(entry["time"]), 0.0, 1.0)
 		var killer: Brawler = entry["killer"] if is_instance_valid(entry["killer"]) else null
 		_feed_row(Vector2(mid, y), killer, entry["victim"], alpha)
+		y += 34.0
+
+
+## Showdown: Pokémon left in the middle, your power cubes left, poison cloud timer right.
+func _draw_showdown(font: Font, mid: float, top: float) -> void:
+	var panel := Rect2(mid - 150, top, 300, 62)
+	_box(panel, Color(0.06, 0.07, 0.12, 0.8), 16)
+	_box(Rect2(panel.position + Vector2(4, 4), Vector2(96, 54)), Color(0.2, 0.6, 0.3), 12)
+	_box(Rect2(panel.position + Vector2(200, 4), Vector2(96, 54)), Color(0.35, 0.5, 0.2), 12)
+	draw_texture_rect(load("res://assets/items/power_cube.png"), Rect2(panel.position + Vector2(10, 14), Vector2(32, 32)), false)
+	_text(font, Vector2(panel.position.x + 40, top + 44), 56, str(int(info.get("cubes", 0))), 32, Color.WHITE)
+	_text(font, Vector2(mid - 50, top + 38), 100, str(int(info.get("left", 0))), 32, Color.WHITE)
+	_text(font, Vector2(mid - 50, top + 56), 100, "POKéMON LEFT", 11, Color(1, 1, 1, 0.75))
+	var cloud_in := float(info.get("cloud_in", 0.0))
+	var cloud_text := "%ds" % ceili(cloud_in) if cloud_in > 0.0 else "CLOSING"
+	_text(font, Vector2(panel.position.x + 200, top + 28), 96, "CLOUD", 14, Color(0.8, 1, 0.7))
+	_text(font, Vector2(panel.position.x + 200, top + 52), 96, cloud_text, 20, Color.WHITE)
+	var y := top + 80.0
+	for entry in _feed:
+		if not is_instance_valid(entry["victim"]):
+			continue
+		var killer: Brawler = entry["killer"] if is_instance_valid(entry["killer"]) else null
+		_feed_row(Vector2(mid, y), killer, entry["victim"], clampf(float(entry["time"]), 0.0, 1.0))
 		y += 34.0
 
 

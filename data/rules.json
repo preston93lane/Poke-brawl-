@@ -42,6 +42,33 @@
 			"hold_time": 60.0,
 			"respawn_time": 3.0,
 			"time_limit": 150.0
+		},
+		"brawl_ball": {
+			"goals_to_win": 2,
+			"respawn_time": 3.0,
+			"time_limit": 150.0
+		},
+		"candy_rush": {
+			"_comment": "Rare Candy Rush (Gem Grab): a candy pops out of the mine every spawn_interval s; a team holding candies_to_win and the lead for countdown s wins.",
+			"candies_to_win": 10,
+			"countdown": 15.0,
+			"spawn_interval": 7.0,
+			"respawn_time": 3.0,
+			"time_limit": 150.0
+		},
+		"showdown": {
+			"_comment": "Free-for-all, no respawns. The poison cloud starts closing at cloud_start s and reaches a safe_width x safe_depth box at cloud_end s; its damage grows over time. Each power cube adds cube_hp max HP and cube_damage damage.",
+			"players": 6,
+			"time_limit": 180.0,
+			"cloud_start": 25.0,
+			"cloud_end": 110.0,
+			"cloud_dps": 450.0,
+			"safe_width": 6.0,
+			"safe_depth": 8.0,
+			"crate_hp": 3000.0,
+			"crates_if_none": 12,
+			"cube_hp": 0.1,
+			"cube_damage": 0.1
 		}
 	},
 	"spawn_protection": 2.0,
