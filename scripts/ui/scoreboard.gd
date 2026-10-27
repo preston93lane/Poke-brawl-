@@ -47,7 +47,8 @@ func _process(delta: float) -> void:
 
 func _draw() -> void:
 	var font := ThemeDB.fallback_font
-	var mid := size.x * 0.5
+	# The screen's width, not this control's (which can be zero-sized on phones).
+	var mid := get_viewport_rect().size.x * 0.5
 	var top := 10.0
 	# Draw everything bigger, scaled around the top centre of the screen.
 	draw_set_transform(Vector2(mid * (1.0 - SCALE), 0), 0.0, Vector2(SCALE, SCALE))

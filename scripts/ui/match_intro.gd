@@ -5,10 +5,22 @@ extends Control
 
 signal finished
 
+var _tween: Tween
+
+
+## Tap anywhere to skip to the match.
+func _input(event: InputEvent) -> void:
+	if (event is InputEventScreenTouch or event is InputEventKey) and event.is_pressed():
+		if _tween and _tween.is_valid() and not _skip:
+			_skip = true
+			_tween.set_speed_scale(8.0)
+
 const BLUE := Color(0.16, 0.42, 0.95)
 const RED := Color(0.9, 0.2, 0.22)
-const SLIDE := 0.45
-const HOLD := 1.9
+const SLIDE := 0.9
+const HOLD := 5.6
+
+var _skip := false
 
 
 func play(allies: Array, enemies: Array, mode_title: String, arena_name: String) -> void:
@@ -55,6 +67,7 @@ func play(allies: Array, enemies: Array, mode_title: String, arena_name: String)
 	tween.tween_property(middle, "modulate:a", 1.0, 0.3).set_delay(SLIDE * 0.6)
 	tween.tween_property(middle, "scale", Vector2.ONE, 0.35).set_delay(SLIDE * 0.6).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tween.chain().tween_interval(HOLD)
+	_tween = tween
 	tween.chain().set_parallel()
 	tween.tween_property(top, "position:x", -view.x, 0.35).set_ease(Tween.EASE_IN)
 	tween.tween_property(bottom, "position:x", view.x, 0.35).set_ease(Tween.EASE_IN)

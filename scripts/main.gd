@@ -306,7 +306,10 @@ func _refresh_hud_moves() -> void:
 
 func _on_brawler_evolved(brawler: Brawler, from_name: String) -> void:
 	if brawler.team == player.team:
-		hud.announce("%s evolved into %s!" % [from_name, brawler.species.display_name])
+		if from_name == brawler.species.display_name:
+			hud.announce("%s powered up!" % from_name)
+		else:
+			hud.announce("%s evolved into %s!" % [from_name, brawler.species.display_name])
 
 
 # --- Items -----------------------------------------------------------------

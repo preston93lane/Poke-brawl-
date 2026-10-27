@@ -40,6 +40,11 @@ func setup(p_cell: Vector2i, p_kind: String, mesh: Mesh, material: Material, p_m
 	add_child(shape)
 
 
+func set_mesh(mesh: Mesh, basis_value: Basis) -> void:
+	_mesh.mesh = mesh
+	_mesh.basis = basis_value
+
+
 ## Twist / resize the visible mesh (the collider stays one tile).
 func set_mesh_basis(basis_value: Basis) -> void:
 	_mesh.basis = basis_value
@@ -86,8 +91,10 @@ func smash() -> void:
 	collision_layer = 0
 	var parent := get_parent()
 	var at := global_position + Vector3(0, 0.6, 0)
-	Vfx.burst(parent, at, "rock" if kind != "crate" else "grass", 30, 0.6, 4.0)
-	Vfx.ring(parent, global_position, 0.9, "ground", 24)
+	# A big, obvious burst of rubble so you can see supers breaking things.
+	Vfx.burst(parent, at, "rock" if kind != "crate" else "grass", 60, 0.8, 6.0)
+	Vfx.burst(parent, at + Vector3(0, 0.4, 0), "ground", 40, 0.6, 4.5)
+	Vfx.ring(parent, global_position, 1.3, "ground", 40)
 	broken.emit(self)
 	if parent is Arena:
 		(parent as Arena).on_breakable_broken(self)

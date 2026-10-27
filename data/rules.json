@@ -26,7 +26,9 @@
 	"evolution": {
 		"kills_to_evolve": 3,
 		"devolve_on_death": true,
-		"heal_on_evolve": true,
+		"heal_on_evolve": 0.3,
+		"power_up_bonus": 0.12,
+		"_power_comment": "heal_on_evolve = share of max HP healed on evolving or powering up. Pokémon that can't evolve further power up instead (+power_up_bonus HP and attack) up to 3 - stage times.",
 		"_comment": "Any KOs count toward evolving (they are kept when you faint); evolving resets the count."
 	},
 	"tall_grass": {

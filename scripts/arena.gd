@@ -66,6 +66,7 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 		width = maxi(width, row.length())
 	var floor_tile := str(def.get("floor", "grass"))
 	var wall_tile := str(def.get("wall", "rock"))
+	var breakable_walls := bool(def.get("breakable_walls", true))
 	liquid = str(def.get("liquid", "water"))
 	var graves: Array[Transform3D] = []
 	var path_blobs: Array[Transform3D] = []
@@ -105,6 +106,10 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 			if not floors.has(floor_name):
 				floors[floor_name] = []
 			floors[floor_name].append(Transform3D(Basis(), center))
+			if c == "#" and breakable_walls and x > 1 and y > 1 and x < width - 2 and y < height - 2:
+				# Inner walls break to supers (like Brawl Stars); the map's edge stays solid.
+				breakable_cells[cell] = "wall_style"
+				c = ""
 			match c:
 				"T":
 					solid_cells[cell] = true
@@ -182,12 +187,15 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 		"cracked": _tile_material("cracked", true),
 		"boulder": _tile_material("boulder", true),
 		"ice_block": _tile_material("ice_block", true),
+		"wall_style": _tile_material(wall_tile, true),
 		"crate": _tile_material("crate", true),
 	}
 	_crate_material = materials["crate"]
 	for cell: Vector2i in breakable_cells:
 		var kind: String = breakable_cells[cell]
-		_add_breakable(cell, "crate" if kind == "crate" else "wall", materials[kind])
+		var b := _add_breakable(cell, "crate" if kind == "crate" else "wall", materials[kind])
+		if kind == "wall_style" and wall_tile not in ORGANIC_WALLS:
+			b.set_mesh(_crate_mesh_box, Basis())  # Brick / metal / wood walls stay blocky.
 
 	var grass_mat := ShaderMaterial.new()
 	grass_mat.shader = GRASS_SHADER

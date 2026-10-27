@@ -34,6 +34,7 @@ func _ready() -> void:
 	await _check_fullscreen_button()
 	await _check_intro()
 	await _check_menu_fits()
+	await _check_power_ups()
 	Engine.time_scale = 1.0
 	print("SMOKE TEST: %s" % ("PASS" if failures == 0 else "FAIL (%d)" % failures))
 	get_tree().quit(1 if failures > 0 else 0)
@@ -993,8 +994,14 @@ func _check_intro() -> void:
 		if child.get_script() == main.MATCH_INTRO:
 			banners += 1
 	expect(get_tree().paused and banners == 1, "the team banners play before the match, with the game paused")
-	await get_tree().create_timer(3.5, true).timeout
-	expect(not get_tree().paused, "the match starts after the intro")
+	await get_tree().create_timer(2.0, true).timeout
+	expect(get_tree().paused, "the intro takes its time")
+	var tap := InputEventScreenTouch.new()
+	tap.pressed = true
+	tap.position = Vector2(400, 300)
+	get_viewport().push_input(tap, true)
+	await get_tree().create_timer(2.0, true).timeout
+	expect(not get_tree().paused, "tapping skips the intro and starts the match")
 	main.queue_free()
 	await get_tree().process_frame
 
@@ -1020,4 +1027,23 @@ func _check_menu_fits() -> void:
 		var width: float = menu._screen.get_combined_minimum_size().x
 		expect(width <= view.x, "%s fits the screen (needs %d of %d px)" % [entry[0], width, view.x])
 	menu.queue_free()
+	await get_tree().process_frame
+
+
+func _check_power_ups() -> void:
+	print("Power Ups and evolving heals")
+	var main := await _start_match("route_1", "duel", "tauros", [])
+	var tauros: Brawler = main.player
+	var hp := tauros.max_health
+	tauros.health = tauros.max_health * 0.5
+	for i in 3:
+		tauros.register_kill()
+	expect(tauros.power_ups == 1 and tauros.max_health > hp * 1.1, "single-stage Pokémon power up every 3 KOs (%d -> %d)" % [hp, tauros.max_health])
+	expect(tauros.health < tauros.max_health * 0.9, "powering up only heals a little")
+	for i in 9:
+		tauros.register_kill()
+	expect(tauros.power_ups == 2, "two Power Ups at most")
+	tauros.respawn(main.arena.spawn_point(0, 0))
+	expect(tauros.power_ups == 0, "fainting loses them")
+	main.queue_free()
 	await get_tree().process_frame

@@ -97,6 +97,8 @@ var placement := 0
 var candies := 0
 ## Showdown power cubes: each adds max HP and damage.
 var power_cubes := 0
+## Power Ups from KOs for Pokémon that can't evolve any further (lost on fainting).
+var power_ups := 0
 ## Brawl Ball: the ball while you're carrying it (your attack kicks it).
 var ball: Ball
 
@@ -368,8 +370,9 @@ func _apply_species() -> void:
 	can_swim = flying or species.has_type(crosses) or species.has_type("flying")
 	collision_mask = walk_mask()
 	var bonus := 1.0 + float(GameData.rule("level/stat_bonus_per_level", 0.05)) * (level - 1)
-	max_health = species.hp * bonus * (1.0 + _hp_bonus + float(GameData.rule("modes/showdown/cube_hp", 0.1)) * power_cubes)
-	attack = species.attack * bonus
+	var growth := 1.0 + float(GameData.rule("evolution/power_up_bonus", 0.12)) * power_ups
+	max_health = species.hp * bonus * growth * (1.0 + _hp_bonus + float(GameData.rule("modes/showdown/cube_hp", 0.1)) * power_cubes)
+	attack = species.attack * bonus * growth
 	defense = species.defense * bonus
 	move_speed = species.speed * float(GameData.rule("speed_to_meters", 0.05))
 	# Sheets hold front / side / back views; the frame follows the way you're facing.
@@ -399,7 +402,8 @@ func evolve() -> bool:
 	evolve_kills = 0
 	_apply_species()
 	_refresh_main_move()
-	health = max_health if GameData.rule("evolution/heal_on_evolve", true) else max_health * health_ratio
+	# Keep the same share of health, plus a modest heal (a full heal was too big a swing).
+	health = minf(max_health, max_health * (health_ratio + float(GameData.rule("evolution/heal_on_evolve", 0.3))))
 	Vfx.ring(get_parent(), global_position, 1.2, "fairy", 50)
 	Vfx.burst(get_parent(), global_position + Vector3(0, 1, 0), "fairy", 30, 0.6, 3.0)
 	_pop = 0.3
@@ -413,11 +417,36 @@ func can_evolve() -> bool:
 
 func register_kill() -> void:
 	kills += 1
-	if species.evolves_to == "" or is_legendary:
+	if is_legendary:
+		return
+	if species.evolves_to == "" and power_ups >= max_power_ups():
 		return
 	evolve_kills += 1
 	if evolve_kills >= int(GameData.rule("evolution/kills_to_evolve", 3)):
-		evolve()
+		if species.evolves_to != "":
+			evolve()
+		else:
+			power_up()
+
+
+## Every Pokémon grows twice per life: by evolving, or (once it can't evolve any
+## further) by Power Ups. A single-stage Pokémon gets 2, a two-stage final form 1.
+func max_power_ups() -> int:
+	return maxi(0, 3 - species.stage)
+
+
+## Stronger without evolving: more max HP and attack until you faint.
+func power_up() -> void:
+	evolve_kills = 0
+	power_ups += 1
+	var before := max_health
+	var ratio := health / max_health
+	_apply_species()
+	health = minf(max_health, max_health * (ratio + float(GameData.rule("evolution/heal_on_evolve", 0.3))))
+	_spawn_floating_text("POWER UP!", Color(1, 0.8, 0.3), 72, 2.6)
+	Vfx.ring(get_parent(), global_position, 1.2, "fighting", 50)
+	_pop = 0.4
+	evolved.emit(self, species.display_name)
 
 
 func respawn(spawn_position: Vector3) -> void:
@@ -429,6 +458,7 @@ func respawn(spawn_position: Vector3) -> void:
 	_extra_ammo = 0
 	_hp_bonus = 0.0
 	power_cubes = 0
+	power_ups = 0
 	_apply_species()
 	_refresh_main_move()
 	protect(float(GameData.rule("spawn_protection", 2.0)))
@@ -1174,14 +1204,14 @@ func _build_static_visuals() -> void:
 	shadow_mesh.top_radius = 0.5
 	shadow_mesh.bottom_radius = 0.5
 	shadow_mesh.height = 0.02
-	shadow.mesh = shadow_mesh
+	shadow.mesh = null  # No ground shadow: it hid the Pokémon.
 	shadow.material_override = _flat_material(Color(0, 0, 0, 0.35))
 	shadow.position.y = 0.02
 
 	var ring_mesh := TorusMesh.new()
 	ring_mesh.inner_radius = 0.6
 	ring_mesh.outer_radius = 0.72
-	team_ring.mesh = ring_mesh
+	team_ring.mesh = null  # No team ring either; health bar colours show teams.
 	team_ring.scale = Vector3(1, 0.1, 1)
 	team_ring.position.y = 0.04
 	var ring_color := Color(1.0, 0.25, 0.25, 0.9)
