@@ -1,5 +1,6 @@
 {
 	"name": "Voltorb",
+	"dex": 100,
 	"types": ["electric"],
 	"sprite": "res://assets/brawlers/voltorb.png",
 	"sprite_scale": 1.288,

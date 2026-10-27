@@ -1,5 +1,6 @@
 {
 	"name": "Gengar",
+	"dex": 94,
 	"types": ["ghost", "poison"],
 	"sprite": "res://assets/brawlers/gengar.png",
 	"sprite_scale": 1.0,

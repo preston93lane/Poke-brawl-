@@ -1,5 +1,6 @@
 {
 	"name": "Clefairy",
+	"dex": 35,
 	"types": ["fairy"],
 	"sprite": "res://assets/brawlers/clefairy.png",
 	"sprite_scale": 1.0,

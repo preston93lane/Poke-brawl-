@@ -1,5 +1,6 @@
 {
 	"name": "Sandshrew",
+	"dex": 27,
 	"types": ["ground"],
 	"sprite": "res://assets/brawlers/sandshrew.png",
 	"sprite_scale": 1.0,

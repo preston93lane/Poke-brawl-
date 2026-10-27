@@ -1,5 +1,6 @@
 {
 	"name": "Golduck",
+	"dex": 55,
 	"types": ["water"],
 	"sprite": "res://assets/brawlers/golduck.png",
 	"sprite_scale": 1.0,

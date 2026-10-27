@@ -1,5 +1,6 @@
 {
 	"name": "Slowbro",
+	"dex": 80,
 	"types": ["water", "psychic"],
 	"sprite": "res://assets/brawlers/slowbro.png",
 	"sprite_scale": 1.0,

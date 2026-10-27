@@ -1,5 +1,6 @@
 {
 	"name": "Rhyhorn",
+	"dex": 111,
 	"types": ["ground", "rock"],
 	"sprite": "res://assets/brawlers/rhyhorn.png",
 	"sprite_scale": 1.0,

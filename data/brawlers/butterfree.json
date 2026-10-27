@@ -1,5 +1,6 @@
 {
 	"name": "Butterfree",
+	"dex": 12,
 	"types": ["bug", "flying"],
 	"sprite": "res://assets/brawlers/butterfree.png",
 	"sprite_scale": 1.0,

@@ -8,8 +8,8 @@ signal died(victim: Brawler, killer: Brawler)
 signal evolved(brawler: Brawler, from_name: String)
 
 const PROJECTILE_SCENE := preload("res://scenes/projectile.tscn")
-## Horizontal hit radius used by melee checks and shots.
-const BODY_RADIUS := 0.5
+## Horizontal hit radius used by melee checks and shots (a little generous, like Brawl Stars).
+const BODY_RADIUS := 0.58
 ## Radius of the walking collision capsule (smaller than BODY_RADIUS so brawlers
 ## fit through one-tile gaps between walls and water).
 const COLLIDER_RADIUS := 0.36
@@ -17,7 +17,8 @@ const SPRITE_HEIGHT := 0.85
 ## World units per sprite pixel: a 32px sprite is 1.6 units tall.
 const PIXEL_SIZE := 0.05
 ## World units per pixel for front/side/back sheets (96px Black/White frames).
-const SHEET_PIXEL_SIZE := 0.022
+## Keep in sync with tools/import_bw_sprites.py.
+const SHEET_PIXEL_SIZE := 0.0253
 const DOT_TICK := 0.5
 ## Physics layers that stop walking and teleports: world + water.
 const MOVE_BLOCK_MASK := 1 | 8
@@ -363,7 +364,8 @@ func _refresh_main_move() -> void:
 
 
 func _apply_species() -> void:
-	can_swim = flying or species.has_type("water") or species.has_type("flying")
+	var crosses := "fire" if arena != null and arena.liquid == "lava" else "water"
+	can_swim = flying or species.has_type(crosses) or species.has_type("flying")
 	collision_mask = walk_mask()
 	var bonus := 1.0 + float(GameData.rule("level/stat_bonus_per_level", 0.05)) * (level - 1)
 	max_health = species.hp * bonus * (1.0 + _hp_bonus + float(GameData.rule("modes/showdown/cube_hp", 0.1)) * power_cubes)

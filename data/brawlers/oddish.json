@@ -1,5 +1,6 @@
 {
 	"name": "Oddish",
+	"dex": 43,
 	"types": ["grass", "poison"],
 	"sprite": "res://assets/brawlers/oddish.png",
 	"sprite_scale": 1.073,

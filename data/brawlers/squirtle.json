@@ -1,5 +1,6 @@
 {
 	"name": "Squirtle",
+	"dex": 7,
 	"types": ["water"],
 	"sprite": "res://assets/brawlers/squirtle.png",
 	"sprite_scale": 1.0,

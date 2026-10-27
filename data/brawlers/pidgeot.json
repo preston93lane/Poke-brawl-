@@ -1,5 +1,6 @@
 {
 	"name": "Pidgeot",
+	"dex": 18,
 	"types": ["normal", "flying"],
 	"sprite": "res://assets/brawlers/pidgeot.png",
 	"sprite_scale": 1.0,

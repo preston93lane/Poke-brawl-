@@ -1,5 +1,6 @@
 {
 	"name": "Meowth",
+	"dex": 52,
 	"types": ["normal"],
 	"sprite": "res://assets/brawlers/meowth.png",
 	"sprite_scale": 1.0,

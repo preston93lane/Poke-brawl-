@@ -1,5 +1,6 @@
 {
 	"name": "Charizard",
+	"dex": 6,
 	"types": ["fire", "flying"],
 	"sprite": "res://assets/brawlers/charizard.png",
 	"sprite_scale": 1.0,

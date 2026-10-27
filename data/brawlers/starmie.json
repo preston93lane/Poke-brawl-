@@ -1,5 +1,6 @@
 {
 	"name": "Starmie",
+	"dex": 121,
 	"types": ["water", "psychic"],
 	"sprite": "res://assets/brawlers/starmie.png",
 	"sprite_scale": 1.0,

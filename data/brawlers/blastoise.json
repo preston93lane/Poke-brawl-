@@ -1,5 +1,6 @@
 {
 	"name": "Blastoise",
+	"dex": 9,
 	"types": ["water"],
 	"sprite": "res://assets/brawlers/blastoise.png",
 	"sprite_scale": 1.0,

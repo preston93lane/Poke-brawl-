@@ -1,5 +1,6 @@
 {
 	"name": "Arcanine",
+	"dex": 59,
 	"types": ["fire"],
 	"sprite": "res://assets/brawlers/arcanine.png",
 	"sprite_scale": 1.0,

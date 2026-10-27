@@ -1,5 +1,6 @@
 {
 	"name": "Charmeleon",
+	"dex": 5,
 	"types": ["fire"],
 	"sprite": "res://assets/brawlers/charmeleon.png",
 	"sprite_scale": 1.0,

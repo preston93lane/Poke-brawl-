@@ -1,5 +1,6 @@
 {
 	"name": "Mewtwo",
+	"dex": 150,
 	"types": ["psychic"],
 	"sprite": "res://assets/brawlers/mewtwo.png",
 	"sprite_scale": 1.0,

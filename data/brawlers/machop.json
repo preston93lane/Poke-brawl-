@@ -1,5 +1,6 @@
 {
 	"name": "Machop",
+	"dex": 66,
 	"types": ["fighting"],
 	"sprite": "res://assets/brawlers/machop.png",
 	"sprite_scale": 1.0,

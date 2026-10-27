@@ -1,5 +1,6 @@
 {
 	"name": "Weedle",
+	"dex": 13,
 	"types": ["bug", "poison"],
 	"sprite": "res://assets/brawlers/weedle.png",
 	"sprite_scale": 1.017,

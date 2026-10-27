@@ -39,6 +39,7 @@ func _ready() -> void:
 	status_label.visible = false
 	_build_buttons()
 	_build_rotate_overlay()
+	apply_layout(GameData.control_layout())
 	_blind_overlay = ColorRect.new()
 	_blind_overlay.color = Color(1, 1, 0.92, 0.55)
 	_blind_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -97,6 +98,47 @@ func _build_rotate_overlay() -> void:
 	_rotate_overlay.add_child(label)
 	add_child(_rotate_overlay)
 	_rotate_overlay.visible = false
+
+
+## Place the sticks and buttons from a layout (see GameData.DEFAULT_LAYOUT).
+func apply_layout(layout: Dictionary) -> void:
+	var scale := clampf(float(layout.get("scale", 1.0)), 0.6, 1.6)
+	var swapped := bool(layout.get("swapped", false))
+	_place_stick(move_stick, layout["move"], 0.5 if swapped else 0.0, scale)
+	_place_stick(aim_stick, layout["aim"], 0.0 if swapped else 0.5, scale)
+	for entry in [[gadget_button, layout["gadget"]], [super_button, layout["super"]]]:
+		var button: TouchButton = entry[0]
+		var at: Array = entry[1]
+		var half := 55.0 * scale
+		button.set_anchors_preset(Control.PRESET_TOP_LEFT)
+		button.anchor_left = float(at[0])
+		button.anchor_right = float(at[0])
+		button.anchor_top = float(at[1])
+		button.anchor_bottom = float(at[1])
+		button.offset_left = -half
+		button.offset_right = half
+		button.offset_top = -half
+		button.offset_bottom = half
+
+
+## A stick's touch zone is the half of the screen it's on (from 30% down); it
+## rests at `at` (screen fractions).
+func _place_stick(stick: VirtualJoystick, at: Array, zone_left: float, scale: float) -> void:
+	stick.anchor_left = zone_left
+	stick.anchor_right = zone_left + 0.5
+	stick.anchor_top = 0.3
+	stick.anchor_bottom = 1.0
+	stick.offset_left = 0
+	stick.offset_right = 0
+	stick.offset_top = 0
+	stick.offset_bottom = 0
+	stick.rest_anchor = Vector2(clampf((float(at[0]) - zone_left) / 0.5, 0.0, 1.0), clampf((float(at[1]) - 0.3) / 0.7, 0.0, 1.0))
+	stick.rest_offset = Vector2.ZERO
+	stick.radius = 110.0 * scale
+	stick.knob_radius = 46.0 * scale
+	if stick.touch_radius > 0.0:
+		stick.touch_radius = 240.0 * scale
+	stick._reset()
 
 
 func set_matchup(player_name: String, enemy_name: String, arena_name: String) -> void:

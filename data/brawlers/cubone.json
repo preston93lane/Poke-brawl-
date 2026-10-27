@@ -1,5 +1,6 @@
 {
 	"name": "Cubone",
+	"dex": 104,
 	"types": ["ground"],
 	"sprite": "res://assets/brawlers/cubone.png",
 	"sprite_scale": 1.0,

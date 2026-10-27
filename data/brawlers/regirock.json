@@ -1,5 +1,6 @@
 {
 	"name": "Regirock",
+	"dex": 377,
 	"types": ["rock"],
 	"sprite": "res://assets/brawlers/regirock.png",
 	"sprite_scale": 1.15,

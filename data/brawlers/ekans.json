@@ -1,5 +1,6 @@
 {
 	"name": "Ekans",
+	"dex": 23,
 	"types": ["poison"],
 	"sprite": "res://assets/brawlers/ekans.png",
 	"sprite_scale": 1.0,

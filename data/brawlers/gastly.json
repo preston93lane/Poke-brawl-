@@ -1,5 +1,6 @@
 {
 	"name": "Gastly",
+	"dex": 92,
 	"types": ["ghost", "poison"],
 	"sprite": "res://assets/brawlers/gastly.png",
 	"sprite_scale": 1.0,

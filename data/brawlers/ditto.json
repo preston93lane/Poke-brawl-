@@ -1,5 +1,6 @@
 {
 	"name": "Ditto",
+	"dex": 132,
 	"types": ["normal"],
 	"sprite": "res://assets/brawlers/ditto.png",
 	"sprite_scale": 1.332,

@@ -29,6 +29,7 @@ func _ready() -> void:
 	await _check_brawl_ball()
 	await _check_candy_rush()
 	await _check_showdown()
+	await _check_settings_and_map_maker()
 	Engine.time_scale = 1.0
 	print("SMOKE TEST: %s" % ("PASS" if failures == 0 else "FAIL (%d)" % failures))
 	get_tree().quit(1 if failures > 0 else 0)
@@ -881,3 +882,62 @@ func _check_showdown() -> void:
 	expect(rows[0]["is_player"] and int(rows[0]["placement"]) == 1, "the summary ranks you #1")
 	main.queue_free()
 	await get_tree().process_frame
+
+
+func _check_settings_and_map_maker() -> void:
+	print("Settings, sorting and map maker")
+	expect(GameData.base_species()[0].id == "bulbasaur" and GameData.base_species(true)[0].id == "abra", "Pokémon sort by Pokédex number (A-Z optional)")
+	# Control layout: swapped sides puts the move stick on the right half.
+	var layout: Dictionary = GameData.DEFAULT_LAYOUT.duplicate(true)
+	layout["swapped"] = true
+	layout["move"] = [0.8, 0.75]
+	layout["aim"] = [0.2, 0.75]
+	GameData.set_setting("layout", layout)
+	var main := await _start_match("route_1", "duel", "charmander", [])
+	expect(is_equal_approx(main.hud.move_stick.anchor_left, 0.5) and is_equal_approx(main.hud.aim_stick.anchor_left, 0.0), "saved control layout is used in matches")
+	main.queue_free()
+	await get_tree().process_frame
+	GameData.settings.erase("layout")
+	GameData.save_settings()
+
+	var menu := MENU_SCENE.instantiate()
+	add_child(menu)
+	await get_tree().process_frame
+	menu.show_settings()
+	await get_tree().process_frame
+	menu.show_map_editor()
+	await get_tree().process_frame
+	var editor = menu._screen.get_child(0)
+	editor.mirror = "quad"
+	editor.brush = "X"
+	editor.paint(Vector2i(5, 10))
+	expect(editor.cell(Vector2i(30, 10)) == "X" and editor.cell(Vector2i(5, 37)) == "X" and editor.cell(Vector2i(30, 37)) == "X", "quadrant mirroring paints all four corners")
+	editor.mirror = "vertical"
+	editor.brush = "1"
+	editor.paint(Vector2i(10, 40))
+	expect(editor.cell(Vector2i(10, 7)) == "2" and editor.cell(Vector2i(25, 40)) == ".", "top/bottom mirroring flips spawns to the other team only")
+	editor._name_edit.text = "Smoke Test Arena"
+	editor.floor_tile = "sand"
+	editor.wall_tile = "brick"
+	editor.liquid = "lava"
+	editor.brush = "~"
+	editor.paint(Vector2i(17, 20))
+	editor.brush = "K"
+	editor.paint(Vector2i(8, 15))
+	editor.brush = "I"
+	editor.paint(Vector2i(12, 15))
+	var id: String = editor.save()
+	expect(GameData.is_custom_arena(id) and id in GameData.arenas_for_mode("duel"), "saved maps show up in the mode lists (%s)" % id)
+	menu.queue_free()
+	await get_tree().process_frame
+	var custom := await _start_match(id, "duel", "charmander", [])
+	var arena: Arena = custom.arena
+	expect(arena.liquid == "lava" and custom.player.can_swim, "lava maps: Fire types walk on lava")
+	var squirtle: Brawler = custom._spawn("squirtle", 1, 0, false)
+	await get_tree().physics_frame
+	expect(not squirtle.can_swim, "...and Water types don't")
+	expect(not arena.is_walkable(arena.cell_center(Vector2i(8, 15))) and not arena.is_walkable(arena.cell_center(Vector2i(12, 15))), "gravestones and ice blocks block the way")
+	custom.queue_free()
+	await get_tree().process_frame
+	GameData.delete_custom_arena(id)
+	expect(not GameData.arenas.has(id), "custom maps can be deleted")

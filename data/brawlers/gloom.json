@@ -1,5 +1,6 @@
 {
 	"name": "Gloom",
+	"dex": 44,
 	"types": ["grass", "poison"],
 	"sprite": "res://assets/brawlers/gloom.png",
 	"sprite_scale": 1.0,

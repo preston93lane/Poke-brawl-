@@ -1,5 +1,6 @@
 {
 	"name": "Victreebel",
+	"dex": 71,
 	"types": ["grass", "poison"],
 	"sprite": "res://assets/brawlers/victreebel.png",
 	"sprite_scale": 1.0,

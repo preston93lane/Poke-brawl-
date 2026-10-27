@@ -22,8 +22,8 @@ OUT = os.path.join(ROOT, "assets", "brawlers")
 DATA = os.path.join(ROOT, "data", "brawlers")
 FRAME = 96
 ## Metres per sprite pixel in game (keep in sync with Brawler.SHEET_PIXEL_SIZE).
-METRES_PER_PX = 0.022
-MIN_HEIGHT, MAX_HEIGHT = 0.85, 2.3
+METRES_PER_PX = 0.0253
+MIN_HEIGHT, MAX_HEIGHT = 0.98, 2.65
 LEGENDARY_BOOST = 1.15
 
 

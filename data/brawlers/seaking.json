@@ -1,5 +1,6 @@
 {
 	"name": "Seaking",
+	"dex": 119,
 	"types": ["water"],
 	"sprite": "res://assets/brawlers/seaking.png",
 	"sprite_scale": 1.0,

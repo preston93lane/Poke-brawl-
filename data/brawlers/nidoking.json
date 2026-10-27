@@ -1,5 +1,6 @@
 {
 	"name": "Nidoking",
+	"dex": 34,
 	"types": ["poison", "ground"],
 	"sprite": "res://assets/brawlers/nidoking.png",
 	"sprite_scale": 1.0,

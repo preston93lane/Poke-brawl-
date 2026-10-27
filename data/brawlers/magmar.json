@@ -1,5 +1,6 @@
 {
 	"name": "Magmar",
+	"dex": 126,
 	"types": ["fire"],
 	"sprite": "res://assets/brawlers/magmar.png",
 	"sprite_scale": 1.0,

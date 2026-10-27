@@ -1,5 +1,6 @@
 {
 	"name": "Lickitung",
+	"dex": 108,
 	"types": ["normal"],
 	"sprite": "res://assets/brawlers/lickitung.png",
 	"sprite_scale": 1.0,

@@ -1,5 +1,6 @@
 {
 	"name": "Venonat",
+	"dex": 48,
 	"types": ["bug", "poison"],
 	"sprite": "res://assets/brawlers/venonat.png",
 	"sprite_scale": 1.0,

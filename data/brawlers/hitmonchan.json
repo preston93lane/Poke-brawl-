@@ -1,5 +1,6 @@
 {
 	"name": "Hitmonchan",
+	"dex": 107,
 	"types": ["fighting"],
 	"sprite": "res://assets/brawlers/hitmonchan.png",
 	"sprite_scale": 1.0,

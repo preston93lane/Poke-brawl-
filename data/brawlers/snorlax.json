@@ -1,5 +1,6 @@
 {
 	"name": "Snorlax",
+	"dex": 143,
 	"types": ["normal"],
 	"sprite": "res://assets/brawlers/snorlax.png",
 	"sprite_scale": 1.0,

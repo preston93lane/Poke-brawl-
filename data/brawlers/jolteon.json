@@ -1,5 +1,6 @@
 {
 	"name": "Jolteon",
+	"dex": 135,
 	"types": ["electric"],
 	"sprite": "res://assets/brawlers/jolteon.png",
 	"sprite_scale": 1.0,

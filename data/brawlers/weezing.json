@@ -1,5 +1,6 @@
 {
 	"name": "Weezing",
+	"dex": 110,
 	"types": ["poison"],
 	"sprite": "res://assets/brawlers/weezing.png",
 	"sprite_scale": 1.0,

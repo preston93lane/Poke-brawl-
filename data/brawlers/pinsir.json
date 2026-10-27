@@ -1,5 +1,6 @@
 {
 	"name": "Pinsir",
+	"dex": 127,
 	"types": ["bug"],
 	"sprite": "res://assets/brawlers/pinsir.png",
 	"sprite_scale": 1.0,

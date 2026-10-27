@@ -1,5 +1,6 @@
 {
 	"name": "Alakazam",
+	"dex": 65,
 	"types": ["psychic"],
 	"sprite": "res://assets/brawlers/alakazam.png",
 	"sprite_scale": 1.0,

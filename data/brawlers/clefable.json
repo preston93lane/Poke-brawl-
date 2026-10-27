@@ -1,5 +1,6 @@
 {
 	"name": "Clefable",
+	"dex": 36,
 	"types": ["fairy"],
 	"sprite": "res://assets/brawlers/clefable.png",
 	"sprite_scale": 1.0,

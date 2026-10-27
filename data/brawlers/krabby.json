@@ -1,5 +1,6 @@
 {
 	"name": "Krabby",
+	"dex": 98,
 	"types": ["water"],
 	"sprite": "res://assets/brawlers/krabby.png",
 	"sprite_scale": 1.0,

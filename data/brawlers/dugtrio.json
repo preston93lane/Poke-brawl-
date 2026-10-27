@@ -1,5 +1,6 @@
 {
 	"name": "Dugtrio",
+	"dex": 51,
 	"types": ["ground"],
 	"sprite": "res://assets/brawlers/dugtrio.png",
 	"sprite_scale": 1.0,

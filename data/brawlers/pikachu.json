@@ -1,5 +1,6 @@
 {
 	"name": "Pikachu",
+	"dex": 25,
 	"types": ["electric"],
 	"sprite": "res://assets/brawlers/pikachu.png",
 	"sprite_scale": 1.0,

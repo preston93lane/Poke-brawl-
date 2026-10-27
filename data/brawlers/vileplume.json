@@ -1,5 +1,6 @@
 {
 	"name": "Vileplume",
+	"dex": 45,
 	"types": ["grass", "poison"],
 	"sprite": "res://assets/brawlers/vileplume.png",
 	"sprite_scale": 1.0,

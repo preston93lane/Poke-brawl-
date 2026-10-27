@@ -1,5 +1,6 @@
 {
 	"name": "Rayquaza",
+	"dex": 384,
 	"types": ["dragon", "flying"],
 	"sprite": "res://assets/brawlers/rayquaza.png",
 	"sprite_scale": 1.15,

@@ -1,5 +1,6 @@
 {
 	"name": "Rattata",
+	"dex": 19,
 	"types": ["normal"],
 	"sprite": "res://assets/brawlers/rattata.png",
 	"sprite_scale": 1.0,

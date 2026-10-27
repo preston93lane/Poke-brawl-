@@ -1,5 +1,6 @@
 {
 	"name": "Geodude",
+	"dex": 74,
 	"types": ["rock", "ground"],
 	"sprite": "res://assets/brawlers/geodude.png",
 	"sprite_scale": 1.38,

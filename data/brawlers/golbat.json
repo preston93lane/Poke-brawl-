@@ -1,5 +1,6 @@
 {
 	"name": "Golbat",
+	"dex": 42,
 	"types": ["poison", "flying"],
 	"sprite": "res://assets/brawlers/golbat.png",
 	"sprite_scale": 1.0,

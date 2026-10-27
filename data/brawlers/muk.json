@@ -1,5 +1,6 @@
 {
 	"name": "Muk",
+	"dex": 89,
 	"types": ["poison"],
 	"sprite": "res://assets/brawlers/muk.png",
 	"sprite_scale": 1.0,

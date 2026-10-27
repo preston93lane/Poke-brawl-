@@ -1,5 +1,6 @@
 {
 	"name": "Ninetales",
+	"dex": 38,
 	"types": ["fire"],
 	"sprite": "res://assets/brawlers/ninetales.png",
 	"sprite_scale": 1.0,

@@ -1,5 +1,6 @@
 {
 	"name": "Sandslash",
+	"dex": 28,
 	"types": ["ground"],
 	"sprite": "res://assets/brawlers/sandslash.png",
 	"sprite_scale": 1.0,

@@ -1,5 +1,6 @@
 {
 	"name": "Tangela",
+	"dex": 114,
 	"types": ["grass"],
 	"sprite": "res://assets/brawlers/tangela.png",
 	"sprite_scale": 1.0,

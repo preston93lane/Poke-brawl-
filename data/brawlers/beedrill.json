@@ -1,5 +1,6 @@
 {
 	"name": "Beedrill",
+	"dex": 15,
 	"types": ["bug", "poison"],
 	"sprite": "res://assets/brawlers/beedrill.png",
 	"sprite_scale": 1.0,

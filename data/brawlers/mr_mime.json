@@ -1,5 +1,6 @@
 {
 	"name": "Mr. Mime",
+	"dex": 122,
 	"types": ["psychic", "fairy"],
 	"sprite": "res://assets/brawlers/mr_mime.png",
 	"sprite_scale": 1.0,

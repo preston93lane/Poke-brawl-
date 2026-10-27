@@ -1,5 +1,6 @@
 {
 	"name": "Hypno",
+	"dex": 97,
 	"types": ["psychic"],
 	"sprite": "res://assets/brawlers/hypno.png",
 	"sprite_scale": 1.0,

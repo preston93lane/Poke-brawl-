@@ -1,5 +1,6 @@
 {
 	"name": "Vaporeon",
+	"dex": 134,
 	"types": ["water"],
 	"sprite": "res://assets/brawlers/vaporeon.png",
 	"sprite_scale": 1.0,

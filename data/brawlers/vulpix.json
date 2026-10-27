@@ -1,5 +1,6 @@
 {
 	"name": "Vulpix",
+	"dex": 37,
 	"types": ["fire"],
 	"sprite": "res://assets/brawlers/vulpix.png",
 	"sprite_scale": 1.0,

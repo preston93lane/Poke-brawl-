@@ -1,5 +1,6 @@
 {
 	"name": "Nidorino",
+	"dex": 33,
 	"types": ["poison"],
 	"sprite": "res://assets/brawlers/nidorino.png",
 	"sprite_scale": 1.0,

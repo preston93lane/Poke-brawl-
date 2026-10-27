@@ -28,6 +28,9 @@ var local_team := 0
 var match_settings: Dictionary = {}
 ## The brawler the person is controlling (for blindness and the camera).
 var local_player: Brawler
+## Player settings (control layout, aim assist...), saved to SETTINGS_PATH.
+var settings: Dictionary = {}
+const SETTINGS_PATH := "user://settings.json"
 
 var _type_colors: Dictionary = {}
 ## attacking type -> { defending type: multiplier }
@@ -40,6 +43,7 @@ const GAME_FONT := "res://assets/fonts/lilita-one.woff"
 func _ready() -> void:
 	_install_font()
 	load_all()
+	load_settings()
 
 
 ## Use Lilita One (chunky, Brawl Stars-like) everywhere: menus, HUD, damage numbers.
@@ -86,6 +90,7 @@ func load_all() -> void:
 	arenas.clear()
 	for file in _json_files(DATA_DIR + "/arenas"):
 		arenas[file.get_basename()] = _load_json(DATA_DIR + "/arenas/" + file)
+	_load_custom_arenas()
 
 	var item_data := _load_json(DATA_DIR + "/items.json")
 	items = item_data.get("items", {})
@@ -95,6 +100,94 @@ func load_all() -> void:
 		items[item_id]["texture"] = load(path) if ResourceLoader.exists(path) else null
 
 	print("GameData: %d species, %d moves, %d arenas" % [species.size(), moves.size(), arenas.size()])
+
+
+# --- Custom maps (map maker) -------------------------------------------------
+
+## Maps made or edited in the map maker live here; a file with a built-in map's
+## id replaces that map until it's reverted.
+const CUSTOM_ARENA_DIR := "user://arenas"
+## Ids of the built-in maps (so the map maker knows what can be reverted).
+var builtin_arenas: Array[String] = []
+
+
+func _load_custom_arenas() -> void:
+	builtin_arenas.clear()
+	for id: String in arenas:
+		builtin_arenas.append(id)
+	if not DirAccess.dir_exists_absolute(CUSTOM_ARENA_DIR):
+		return
+	for file in DirAccess.get_files_at(CUSTOM_ARENA_DIR):
+		if not file.ends_with(".json"):
+			continue
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(CUSTOM_ARENA_DIR + "/" + file))
+		if parsed is Dictionary and (parsed as Dictionary).has("map"):
+			arenas[file.get_basename()] = parsed
+
+
+func is_custom_arena(arena_id: String) -> bool:
+	return FileAccess.file_exists("%s/%s.json" % [CUSTOM_ARENA_DIR, arena_id])
+
+
+func save_custom_arena(arena_id: String, def: Dictionary) -> void:
+	DirAccess.make_dir_recursive_absolute(CUSTOM_ARENA_DIR)
+	var f := FileAccess.open("%s/%s.json" % [CUSTOM_ARENA_DIR, arena_id], FileAccess.WRITE)
+	if f:
+		f.store_string(JSON.stringify(def, "\t"))
+		f.close()
+	arenas[arena_id] = def
+
+
+## Deletes a custom map, or puts an edited built-in map back the way it shipped.
+func delete_custom_arena(arena_id: String) -> void:
+	DirAccess.remove_absolute("%s/%s.json" % [CUSTOM_ARENA_DIR, arena_id])
+	if arena_id in builtin_arenas:
+		arenas[arena_id] = _load_json(DATA_DIR + "/arenas/" + arena_id + ".json")
+	else:
+		arenas.erase(arena_id)
+
+
+# --- Settings --------------------------------------------------------------
+
+func setting(key: String, default_value: Variant) -> Variant:
+	return settings.get(key, default_value)
+
+
+func set_setting(key: String, value: Variant) -> void:
+	settings[key] = value
+	save_settings()
+
+
+## Where the on-screen controls sit, as fractions of the screen (x right, y down),
+## plus a size multiplier. "swapped" puts the move stick on the right.
+const DEFAULT_LAYOUT := {
+	"move": [0.18, 0.74], "aim": [0.82, 0.74], "gadget": [0.69, 0.86], "super": [0.67, 0.6],
+	"scale": 1.0, "swapped": false,
+}
+
+
+func control_layout() -> Dictionary:
+	var layout: Dictionary = DEFAULT_LAYOUT.duplicate(true)
+	var saved: Variant = settings.get("layout", {})
+	if saved is Dictionary:
+		for key: String in saved:
+			if layout.has(key):
+				layout[key] = saved[key]
+	return layout
+
+
+func load_settings() -> void:
+	settings = {}
+	if FileAccess.file_exists(SETTINGS_PATH):
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(SETTINGS_PATH))
+		if parsed is Dictionary:
+			settings = parsed
+
+
+func save_settings() -> void:
+	var f := FileAccess.open(SETTINGS_PATH, FileAccess.WRITE)
+	if f:
+		f.store_string(JSON.stringify(settings, "\t"))
 
 
 # --- Lookups ---------------------------------------------------------------
@@ -120,10 +213,15 @@ func rule(path: String, default_value: Variant) -> Variant:
 	return node
 
 
-## First-stage species, sorted by id: the ones you pick before a match.
-func base_species() -> Array[SpeciesData]:
+## First-stage species: the ones you pick before a match. Pokédex order by
+## default, or A-Z by name.
+func base_species(alphabetical := false) -> Array[SpeciesData]:
 	var result: Array[SpeciesData] = []
-	for id: String in _sorted_ids():
+	var ids := _sorted_ids()
+	if alphabetical:
+		ids.sort_custom(func(a: String, b: String) -> bool:
+			return species[a].display_name.naturalnocasecmp_to(species[b].display_name) < 0)
+	for id: String in ids:
 		if species[id].stage == 1 and not species[id].legendary:
 			result.append(species[id])
 	return result
@@ -203,9 +301,13 @@ func arenas_for_mode(mode: String) -> Array[String]:
 	return result
 
 
+## Species ids in National Pokédex order.
 func _sorted_ids() -> Array:
 	var ids: Array = species.keys()
-	ids.sort()
+	ids.sort_custom(func(a: String, b: String) -> bool:
+		var da: int = species[a].dex
+		var db: int = species[b].dex
+		return da < db if da != db else a < b)
 	return ids
 
 

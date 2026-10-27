@@ -1,5 +1,6 @@
 {
 	"name": "Slowpoke",
+	"dex": 79,
 	"types": ["water", "psychic"],
 	"sprite": "res://assets/brawlers/slowpoke.png",
 	"sprite_scale": 1.0,

@@ -216,6 +216,114 @@ def goal():
     save(np.full((S, S, 3), 255.0), "goal", alpha=a + 30)
 
 
+def sand():
+    n = noise(6, 91) * 0.7 + noise(16, 92, 2) * 0.3
+    img = colorize(n, [(0, (196, 168, 112)), (0.55, (222, 196, 140)), (1, (240, 220, 170))])
+    save(img, "sand")
+
+
+def wood():
+    """Plank floor (Fuchsia gym, wooden halls)."""
+    n = noise(3, 93)
+    img = np.zeros((S, S, 3))
+    for y in range(S):
+        plank = y // 16
+        grain = 0.5 + 0.5 * np.sin((np.arange(S) + plank * 23) * 0.35 + n[y] * 6)
+        base = np.array((150, 104, 64)) * (0.92 + 0.1 * (plank % 2))
+        img[y] = base[None, :] * (0.86 + 0.16 * grain[:, None])
+        if y % 16 < 1:
+            img[y] *= 0.6
+    save(img, "wood")
+
+
+def metal():
+    """Riveted steel plates (Vermilion gym)."""
+    n = noise(4, 94)
+    img = colorize(n, [(0, (120, 128, 140)), (0.6, (150, 158, 170)), (1, (176, 184, 196))])
+    yy, xx = np.mgrid[0:S, 0:S]
+    seam = (xx % 32 < 2) | (yy % 32 < 2)
+    img[seam] *= 0.65
+    for cx, cy in [(5, 5), (27, 5), (5, 27), (27, 27)]:
+        for ox in (0, 32):
+            for oy in (0, 32):
+                d = (xx - cx - ox) ** 2 + (yy - cy - oy) ** 2
+                img[d < 5] = (205, 210, 220)
+    save(img, "metal")
+
+
+def pool():
+    """Light blue pool-side tiles (Cerulean gym)."""
+    n = noise(4, 95)
+    img = colorize(n, [(0, (150, 196, 226)), (1, (190, 222, 244))])
+    yy, xx = np.mgrid[0:S, 0:S]
+    img[(xx % 16 < 1) | (yy % 16 < 1)] = (120, 160, 196)
+    save(img, "pool")
+
+
+def ice_floor():
+    n = noise(5, 96) * 0.6 + noise(14, 97, 2) * 0.4
+    img = colorize(n, [(0, (170, 210, 236)), (0.6, (206, 234, 250)), (1, (240, 250, 255))])
+    save(img, "ice")
+
+
+def dark():
+    """Grave soil (Lavender graveyard, Agatha)."""
+    n = noise(5, 98) * 0.7 + noise(14, 99, 2) * 0.3
+    img = colorize(n, [(0, (52, 46, 66)), (0.6, (74, 66, 90)), (1, (96, 88, 112))])
+    save(img, "dark")
+
+
+def psychic():
+    """Purple checker tiles (Saffron gym)."""
+    n = noise(4, 100)
+    yy, xx = np.mgrid[0:S, 0:S]
+    checker = ((xx // 32 + yy // 32) % 2)[..., None]
+    a = colorize(n, [(0, (150, 96, 176)), (1, (180, 126, 204))])
+    b = colorize(n, [(0, (214, 170, 228)), (1, (234, 200, 244))])
+    save(a * checker + b * (1 - checker), "psychic")
+
+
+def volcanic():
+    """Cracked dark basalt with glowing seams (Cinnabar gym)."""
+    n = noise(4, 101) * 0.7 + noise(12, 102, 2) * 0.3
+    img = colorize(n, [(0, (54, 42, 40)), (0.6, (84, 66, 60)), (1, (110, 88, 78))])
+    cracks = Image.new("L", (S, S), 0)
+    r = np.random.default_rng(103)
+    def draw(d, dx, dy):
+        for _ in range(5):
+            x, y = r.integers(0, S), r.integers(0, S)
+            d.line([(x + dx, y + dy), (x + dx + r.integers(-20, 20), y + dy + r.integers(-20, 20))], fill=255, width=2)
+    wrap_draw(cracks, draw)
+    c = np.asarray(cracks).astype(float)[..., None] / 255
+    save(img * (1 - c) + np.array((240, 110, 40)) * c, "volcanic")
+
+
+def lava():
+    n = noise(4, 104) * 0.6 + noise(12, 105, 2) * 0.4
+    img = colorize(n, [(0, (170, 30, 10)), (0.5, (236, 96, 20)), (1, (255, 210, 80))])
+    save(img, "lava")
+
+
+def hedge():
+    n = noise(6, 106) * 0.6 + noise(16, 107, 2) * 0.4
+    img = colorize(n, [(0, (30, 86, 36)), (0.6, (52, 124, 50)), (1, (96, 168, 74))])
+    save(img, "hedge")
+
+
+def gravestone():
+    """Upright headstone sprite (drawn like trees): grey slab on a little mound."""
+    W, H = 64, 80
+    im = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    d.ellipse([6, 62, 58, 80], fill=(70, 62, 80, 255))
+    d.rounded_rectangle([14, 14, 50, 72], radius=14, fill=(150, 150, 162, 255), outline=(60, 58, 70, 255), width=3)
+    d.rectangle([14, 40, 50, 72], fill=(150, 150, 162, 255), outline=(60, 58, 70, 255), width=3)
+    d.line([(32, 26), (32, 50)], fill=(90, 90, 104, 255), width=4)
+    d.line([(24, 34), (40, 34)], fill=(90, 90, 104, 255), width=4)
+    d.line([(18, 20), (18, 66)], fill=(190, 190, 200, 255), width=2)
+    im.save(os.path.join(OUT, "gravestone.png"))
+
+
 def edge_shadow():
     """Soft dark gradient laid on floor tiles beside walls (fake ambient occlusion)."""
     yy = np.mgrid[0:S, 0:S][0].astype(float)
@@ -227,9 +335,15 @@ if __name__ == "__main__":
     for seed in (0, 1, 2):
         grass(seed)
     path(); boulder(); water(); tall_grass(); tree(); zone(); edge_shadow(); cracked(); crate(); goal()
+    sand(); wood(); metal(); pool(); ice_floor(); dark(); psychic(); volcanic(); lava(); hedge(); gravestone()
+    stone_blocks("brick", (170, 84, 64), 4, 108)
+    stone_blocks("ice_block", (176, 222, 244), 1, 109)
+    stone_blocks("wood_wall", (128, 86, 52), 4, 110, bevel=False)
+    stone_blocks("metal_wall", (130, 138, 152), 2, 111)
     stone_blocks("rock", (150, 144, 140), 2, 31)
     stone_blocks("gym_floor", (210, 196, 160), 2, 33, bevel=False)
-    names = ["grass_0", "grass_1", "grass_2", "path", "gym_floor", "rock", "boulder", "water", "tall_grass", "zone", "edge_shadow", "tree", "cracked", "crate", "goal"]
+    names = ["grass_0", "grass_1", "grass_2", "path", "gym_floor", "rock", "boulder", "water", "tall_grass", "zone", "edge_shadow", "tree", "cracked", "crate", "goal",
+             "sand", "wood", "metal", "pool", "ice", "dark", "psychic", "volcanic", "lava", "hedge", "brick", "ice_block", "wood_wall", "metal_wall", "gravestone"]
     if len(sys.argv) > 1:
         sheet = Image.new("RGBA", (len(names) * 132, 260), (58, 62, 84, 255))
         for i, n in enumerate(names):

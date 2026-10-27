@@ -1,5 +1,6 @@
 {
 	"name": "Tauros",
+	"dex": 128,
 	"types": ["normal"],
 	"sprite": "res://assets/brawlers/tauros.png",
 	"sprite_scale": 1.0,

@@ -1,5 +1,6 @@
 {
 	"name": "Haunter",
+	"dex": 93,
 	"types": ["ghost", "poison"],
 	"sprite": "res://assets/brawlers/haunter.png",
 	"sprite_scale": 1.0,

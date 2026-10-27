@@ -1,5 +1,6 @@
 {
 	"name": "Poliwrath",
+	"dex": 62,
 	"types": ["water", "fighting"],
 	"sprite": "res://assets/brawlers/poliwrath.png",
 	"sprite_scale": 1.0,

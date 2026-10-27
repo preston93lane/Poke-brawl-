@@ -1,5 +1,6 @@
 {
 	"name": "Horsea",
+	"dex": 116,
 	"types": ["water"],
 	"sprite": "res://assets/brawlers/horsea.png",
 	"sprite_scale": 1.104,

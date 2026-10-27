@@ -1,5 +1,6 @@
 {
 	"name": "Zapdos",
+	"dex": 145,
 	"types": ["electric", "flying"],
 	"sprite": "res://assets/brawlers/zapdos.png",
 	"sprite_scale": 1.15,

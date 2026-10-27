@@ -1,5 +1,6 @@
 {
 	"name": "Bulbasaur",
+	"dex": 1,
 	"types": ["grass", "poison"],
 	"sprite": "res://assets/brawlers/bulbasaur.png",
 	"sprite_scale": 1.171,

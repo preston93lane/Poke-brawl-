@@ -1,5 +1,6 @@
 {
 	"name": "Poliwag",
+	"dex": 60,
 	"types": ["water"],
 	"sprite": "res://assets/brawlers/poliwag.png",
 	"sprite_scale": 1.136,

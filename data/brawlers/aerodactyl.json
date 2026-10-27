@@ -1,5 +1,6 @@
 {
 	"name": "Aerodactyl",
+	"dex": 142,
 	"types": ["rock", "flying"],
 	"sprite": "res://assets/brawlers/aerodactyl.png",
 	"sprite_scale": 1.0,

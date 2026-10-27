@@ -1,5 +1,6 @@
 {
 	"name": "Scyther",
+	"dex": 123,
 	"types": ["bug", "flying"],
 	"sprite": "res://assets/brawlers/scyther.png",
 	"sprite_scale": 1.0,

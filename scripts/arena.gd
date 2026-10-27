@@ -3,7 +3,8 @@ extends Node3D
 ## Builds an arena from an ASCII tile map in data/arenas/<id>.json.
 ##
 ## Legend: . floor   , path   " tall grass (hide)   T tree   # rock wall (permanent)
-##         X cracked wall, B boulder (breakable: supers smash them)
+##         X cracked wall, B boulder, I ice block (breakable: supers smash them)
+##         K gravestone (permanent)
 ##         ~ water (blocks walking except for Water/Flying types, not shots)   1/2 team spawns
 ##         (one tile per teammate)   Z king-of-the-hill zone   G Brawl Ball goal
 ##         S Showdown spawn   P Showdown power-cube crate
@@ -29,6 +30,9 @@ var rows := PackedStringArray()
 var spawns := { 0: [], 1: [] }
 var zone_center := Vector3.ZERO
 var mode := "duel"
+## "water" (Water and Flying types cross it) or "lava" (Fire and Flying types cross it).
+var liquid := "water"
+const GRAVE_SPRITE_SIZE := Vector2(1.0, 1.25)
 ## Brawl Ball: team -> { cell: true } of the goal that team defends.
 var goal_cells := { 0: {}, 1: {} }
 ## Showdown spawn points (S tiles).
@@ -58,6 +62,9 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 	for row in rows:
 		width = maxi(width, row.length())
 	var floor_tile := str(def.get("floor", "grass"))
+	var wall_tile := str(def.get("wall", "rock"))
+	liquid = str(def.get("liquid", "water"))
+	var graves: Array[Transform3D] = []
 
 	var floors := {}  # texture name -> Array[Transform3D]
 	var rocks: Array[Transform3D] = []
@@ -104,6 +111,12 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 					breakable_cells[cell] = "boulder"
 				"X":
 					breakable_cells[cell] = "cracked"
+				"I":
+					breakable_cells[cell] = "ice_block"
+				"K":
+					solid_cells[cell] = true
+					var grave_base := center + Vector3(0, 0, TILE * 0.3)
+					graves.append(Transform3D(tilt, grave_base + tilt.y * GRAVE_SPRITE_SIZE.y * 0.5))
 				"P":
 					breakable_cells[cell] = "crate"
 				"G":
@@ -149,12 +162,13 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 
 	var block := BoxMesh.new()
 	block.size = Vector3(TILE, WALL_HEIGHT, TILE)
-	_add_multimesh(block, _tile_material("rock", true), rocks)
+	_add_multimesh(block, _tile_material(wall_tile, true), rocks)
 	_add_multimesh(block, _tile_material("boulder", true), boulders)
 	_breakable_mesh = block
 	var materials := {
 		"cracked": _tile_material("cracked", true),
 		"boulder": _tile_material("boulder", true),
+		"ice_block": _tile_material("ice_block", true),
 		"crate": _tile_material("crate", true),
 	}
 	_crate_material = materials["crate"]
@@ -172,6 +186,11 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 	var tree_mat := _tile_material("tree", false, true)
 	tree_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_add_multimesh(tree_quad, tree_mat, trees, false)
+	var grave_quad := QuadMesh.new()
+	grave_quad.size = GRAVE_SPRITE_SIZE
+	var grave_mat := _tile_material("gravestone", false, true)
+	grave_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_add_multimesh(grave_quad, grave_mat, graves, false)
 
 	if not zone.is_empty():
 		_zone_material = _tile_material("goal" if mode == "brawl_ball" else "zone", false, false)
@@ -399,7 +418,7 @@ func _edge_shadow_material() -> StandardMaterial3D:
 func _water_material() -> ShaderMaterial:
 	var mat := ShaderMaterial.new()
 	mat.shader = WATER_SHADER
-	mat.set_shader_parameter("water_tex", load(TILE_DIR + "water.png"))
+	mat.set_shader_parameter("water_tex", load(TILE_DIR + ("lava.png" if liquid == "lava" else "water.png")))
 	return mat
 
 

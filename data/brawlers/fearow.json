@@ -1,5 +1,6 @@
 {
 	"name": "Fearow",
+	"dex": 22,
 	"types": ["normal", "flying"],
 	"sprite": "res://assets/brawlers/fearow.png",
 	"sprite_scale": 1.0,

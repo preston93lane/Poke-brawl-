@@ -1,5 +1,6 @@
 {
 	"name": "Nidoran F",
+	"dex": 29,
 	"types": ["poison"],
 	"sprite": "res://assets/brawlers/nidoran_f.png",
 	"sprite_scale": 1.073,

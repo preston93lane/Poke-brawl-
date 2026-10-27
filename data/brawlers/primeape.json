@@ -1,5 +1,6 @@
 {
 	"name": "Primeape",
+	"dex": 57,
 	"types": ["fighting"],
 	"sprite": "res://assets/brawlers/primeape.png",
 	"sprite_scale": 1.0,

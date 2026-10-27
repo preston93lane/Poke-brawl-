@@ -1,5 +1,6 @@
 {
 	"name": "Marowak",
+	"dex": 105,
 	"types": ["ground"],
 	"sprite": "res://assets/brawlers/marowak.png",
 	"sprite_scale": 1.0,

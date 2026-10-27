@@ -1,5 +1,6 @@
 {
 	"name": "Magneton",
+	"dex": 82,
 	"types": ["electric", "steel"],
 	"sprite": "res://assets/brawlers/magneton.png",
 	"sprite_scale": 1.0,

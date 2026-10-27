@@ -1,5 +1,6 @@
 {
 	"name": "Rhydon",
+	"dex": 112,
 	"types": ["ground", "rock"],
 	"sprite": "res://assets/brawlers/rhydon.png",
 	"sprite_scale": 1.0,

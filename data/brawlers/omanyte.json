@@ -1,5 +1,6 @@
 {
 	"name": "Omanyte",
+	"dex": 138,
 	"types": ["rock", "water"],
 	"sprite": "res://assets/brawlers/omanyte.png",
 	"sprite_scale": 1.136,

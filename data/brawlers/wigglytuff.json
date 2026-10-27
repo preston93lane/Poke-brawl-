@@ -1,5 +1,6 @@
 {
 	"name": "Wigglytuff",
+	"dex": 40,
 	"types": ["normal", "fairy"],
 	"sprite": "res://assets/brawlers/wigglytuff.png",
 	"sprite_scale": 1.0,

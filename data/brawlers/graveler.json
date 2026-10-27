@@ -1,5 +1,6 @@
 {
 	"name": "Graveler",
+	"dex": 75,
 	"types": ["rock", "ground"],
 	"sprite": "res://assets/brawlers/graveler.png",
 	"sprite_scale": 1.0,

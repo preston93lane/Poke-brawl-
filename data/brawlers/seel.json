@@ -1,5 +1,6 @@
 {
 	"name": "Seel",
+	"dex": 86,
 	"types": ["water"],
 	"sprite": "res://assets/brawlers/seel.png",
 	"sprite_scale": 1.0,

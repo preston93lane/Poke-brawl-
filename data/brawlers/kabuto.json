@@ -1,5 +1,6 @@
 {
 	"name": "Kabuto",
+	"dex": 140,
 	"types": ["rock", "water"],
 	"sprite": "res://assets/brawlers/kabuto.png",
 	"sprite_scale": 1.207,

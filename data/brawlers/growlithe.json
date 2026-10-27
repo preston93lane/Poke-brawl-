@@ -1,5 +1,6 @@
 {
 	"name": "Growlithe",
+	"dex": 58,
 	"types": ["fire"],
 	"sprite": "res://assets/brawlers/growlithe.png",
 	"sprite_scale": 1.0,

@@ -1,5 +1,6 @@
 {
 	"name": "Venomoth",
+	"dex": 49,
 	"types": ["bug", "poison"],
 	"sprite": "res://assets/brawlers/venomoth.png",
 	"sprite_scale": 1.0,

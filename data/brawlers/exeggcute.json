@@ -1,5 +1,6 @@
 {
 	"name": "Exeggcute",
+	"dex": 102,
 	"types": ["grass", "psychic"],
 	"sprite": "res://assets/brawlers/exeggcute.png",
 	"sprite_scale": 1.073,

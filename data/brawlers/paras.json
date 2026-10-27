@@ -1,5 +1,6 @@
 {
 	"name": "Paras",
+	"dex": 46,
 	"types": ["bug", "grass"],
 	"sprite": "res://assets/brawlers/paras.png",
 	"sprite_scale": 1.044,

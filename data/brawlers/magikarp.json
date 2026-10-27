@@ -1,5 +1,6 @@
 {
 	"name": "Magikarp",
+	"dex": 129,
 	"types": ["water"],
 	"sprite": "res://assets/brawlers/magikarp.png",
 	"sprite_scale": 1.0,

@@ -1,5 +1,6 @@
 {
 	"name": "Lapras",
+	"dex": 131,
 	"types": ["water", "ice"],
 	"sprite": "res://assets/brawlers/lapras.png",
 	"sprite_scale": 1.0,

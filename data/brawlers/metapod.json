@@ -1,5 +1,6 @@
 {
 	"name": "Metapod",
+	"dex": 11,
 	"types": ["bug"],
 	"sprite": "res://assets/brawlers/metapod.png",
 	"sprite_scale": 1.0,

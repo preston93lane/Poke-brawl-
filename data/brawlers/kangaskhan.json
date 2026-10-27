@@ -1,5 +1,6 @@
 {
 	"name": "Kangaskhan",
+	"dex": 115,
 	"types": ["normal"],
 	"sprite": "res://assets/brawlers/kangaskhan.png",
 	"sprite_scale": 1.0,

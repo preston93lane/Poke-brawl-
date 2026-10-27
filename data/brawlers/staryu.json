@@ -1,5 +1,6 @@
 {
 	"name": "Staryu",
+	"dex": 120,
 	"types": ["water"],
 	"sprite": "res://assets/brawlers/staryu.png",
 	"sprite_scale": 1.0,

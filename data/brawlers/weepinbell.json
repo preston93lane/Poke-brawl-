@@ -1,5 +1,6 @@
 {
 	"name": "Weepinbell",
+	"dex": 70,
 	"types": ["grass", "poison"],
 	"sprite": "res://assets/brawlers/weepinbell.png",
 	"sprite_scale": 1.0,

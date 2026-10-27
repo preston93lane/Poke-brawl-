@@ -1,5 +1,6 @@
 {
 	"name": "Gyarados",
+	"dex": 130,
 	"types": ["water", "flying"],
 	"sprite": "res://assets/brawlers/gyarados.png",
 	"sprite_scale": 1.0,

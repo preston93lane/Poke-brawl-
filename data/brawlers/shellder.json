@@ -1,5 +1,6 @@
 {
 	"name": "Shellder",
+	"dex": 90,
 	"types": ["water"],
 	"sprite": "res://assets/brawlers/shellder.png",
 	"sprite_scale": 1.246,

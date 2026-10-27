@@ -1,5 +1,6 @@
 {
 	"name": "Farfetch'd",
+	"dex": 83,
 	"types": ["normal", "flying"],
 	"sprite": "res://assets/brawlers/farfetchd.png",
 	"sprite_scale": 1.0,

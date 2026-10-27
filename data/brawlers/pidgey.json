@@ -1,5 +1,6 @@
 {
 	"name": "Pidgey",
+	"dex": 16,
 	"types": ["normal", "flying"],
 	"sprite": "res://assets/brawlers/pidgey.png",
 	"sprite_scale": 1.0,

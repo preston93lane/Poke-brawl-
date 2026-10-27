@@ -1,5 +1,6 @@
 {
 	"name": "Arbok",
+	"dex": 24,
 	"types": ["poison"],
 	"sprite": "res://assets/brawlers/arbok.png",
 	"sprite_scale": 1.0,

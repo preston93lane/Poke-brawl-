@@ -6,11 +6,13 @@ extends Node
 ## around walls (and over water if it can swim), uses its gadget and super,
 ## and in King of the Hill heads for the zone.
 
-## Difficulty presets: [reaction seconds, aim error degrees, how much they lead targets 0..1].
+## Difficulty presets: [reaction seconds, aim error degrees, how much they lead targets 0..1,
+## how hard they strafe 0..1, seconds they stand still after attacking].
+## Like Brawl Stars bots, easier bots move more predictably and plant their feet to shoot.
 const DIFFICULTY := {
-	"easy": [0.95, 26.0, 0.0],
-	"normal": [0.7, 17.0, 0.35],
-	"hard": [0.5, 9.0, 0.8],
+	"easy": [0.95, 26.0, 0.0, 0.35, 0.55],
+	"normal": [0.7, 17.0, 0.35, 0.6, 0.35],
+	"hard": [0.5, 9.0, 0.8, 0.95, 0.15],
 }
 
 @export var reaction_time := 0.7
@@ -32,6 +34,11 @@ var mode_logic: MatchMode
 var _think_timer := 0.0
 var _retarget_timer := 0.0
 var _strafe_sign := 1.0
+## 0..1: how fast the bot sidesteps while fighting.
+var strafe_amount := 0.6
+## Seconds the bot stands still after an attack.
+var plant_time := 0.35
+var _plant := 0.0
 var _strafe_timer := 0.0
 var _wall_flip_cooldown := 0.0
 var _last_seen := Vector3.ZERO
@@ -55,6 +62,8 @@ func set_difficulty(level: String) -> void:
 	reaction_time = preset[0]
 	aim_error_degrees = preset[1]
 	lead_skill = preset[2]
+	strafe_amount = preset[3]
+	plant_time = preset[4]
 
 
 func _physics_process(delta: float) -> void:
@@ -248,7 +257,11 @@ func preferred_range() -> float:
 
 func _fight(delta: float, dir: Vector3, dist: float) -> void:
 	_update_strafe(delta)
-	var strafe := Vector3(-dir.z, 0, dir.x) * _strafe_sign
+	var strafe := Vector3(-dir.z, 0, dir.x) * _strafe_sign * strafe_amount
+	_plant -= delta
+	if _plant > 0.0 and not brawler.main_move.is_close_range():
+		brawler.move_input = Vector2.ZERO  # Standing still to shoot.
+		return
 	var preferred := preferred_range()
 	var close_range := brawler.main_move.is_close_range()
 	var desired: Vector3
@@ -264,7 +277,8 @@ func _fight(delta: float, dir: Vector3, dist: float) -> void:
 	else:
 		desired = strafe + dir * 0.15
 	_path.clear()
-	brawler.move_input = Vector2(desired.x, desired.z).normalized()
+	# Not normalized: gentle strafing means slower sidesteps.
+	brawler.move_input = Vector2(desired.x, desired.z).limit_length(1.0)
 
 
 ## Follow a grid path to `goal`, skipping waypoints we can walk straight past.
@@ -309,7 +323,7 @@ func _update_strafe(delta: float) -> void:
 	_wall_flip_cooldown -= delta
 	if _strafe_timer <= 0.0:
 		_strafe_sign = -1.0 if randf() < 0.5 else 1.0
-		_strafe_timer = randf_range(0.8, 2.0)
+		_strafe_timer = randf_range(1.2, 2.6)
 	if brawler.is_on_wall() and _wall_flip_cooldown <= 0.0:
 		_strafe_sign *= -1.0
 		_wall_flip_cooldown = 0.6
@@ -325,6 +339,7 @@ func _try_attack(dir: Vector3, dist: float) -> void:
 	var main := brawler.main_move
 	if not brawler.can_shoot():
 		return
+	_plant = plant_time
 	match main.kind:
 		"melee":
 			if dist <= main.reach + Brawler.BODY_RADIUS * 0.6 and line_of_sight:

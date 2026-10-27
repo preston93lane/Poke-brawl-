@@ -1,5 +1,6 @@
 {
 	"name": "Ponyta",
+	"dex": 77,
 	"types": ["fire"],
 	"sprite": "res://assets/brawlers/ponyta.png",
 	"sprite_scale": 1.0,

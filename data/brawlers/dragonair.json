@@ -1,5 +1,6 @@
 {
 	"name": "Dragonair",
+	"dex": 148,
 	"types": ["dragon"],
 	"sprite": "res://assets/brawlers/dragonair.png",
 	"sprite_scale": 1.0,

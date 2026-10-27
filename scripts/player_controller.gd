@@ -4,6 +4,10 @@ extends Node
 ## Keyboard fallback for desktop testing: WASD move, F attack (hold for streams),
 ## Space gadget, E super.
 
+## How much of a target's movement auto-aim leads (1 = perfect prediction).
+const LEAD := 0.9
+## Dragged shots within this many degrees of an enemy bend onto it.
+const ASSIST_DEGREES := 11.0
 ## A tap that can't fire yet (attack delay, reloading) is retried for this long.
 const INPUT_BUFFER := 0.35
 ## A tap on the aim stick with a stream attack fires it for this long.
@@ -91,7 +95,8 @@ func _on_aim_released(output: Vector2, was_tap: bool) -> void:
 			_auto_stream_time = AUTO_STREAM_TIME
 		return
 	if output != Vector2.ZERO:
-		brawler.use_main(_to_world(output), output.length() * brawler.main_move.reach)
+		var dir := _assist(_to_world(output), brawler.main_move)
+		brawler.use_main(dir, output.length() * brawler.main_move.reach)
 	elif was_tap:
 		_try("main")
 	# Otherwise the player dragged back to the centre: cancel the shot.
@@ -132,13 +137,53 @@ func _auto_aim_with_distance(move: MoveData) -> Array:
 	var target := _auto_target(move.effective_reach())
 	if target == null:
 		return [brawler.facing, -1.0]
+	var to := _predict(target, move)
+	return [to, to.length()]
+
+
+## Offset from us to where `target` will be when `move` reaches it (solves the
+## intercept a few times, since a further point takes longer to reach).
+func _predict(target: Brawler, move: MoveData) -> Vector3:
 	var to := target.global_position - brawler.global_position
 	to.y = 0.0
-	if move.kind == "projectile":
-		var travel := to.length() / maxf(1.0, move.speed)
-		to += target.velocity * travel * 0.8
+	var speed := 0.0
+	match move.kind:
+		"projectile":
+			speed = move.speed
+		"dash":
+			speed = move.dash_speed
+	if speed <= 0.0:
+		return to
+	var aim := to
+	var velocity := Vector3(target.velocity.x, 0, target.velocity.z)
+	for i in 3:
+		var t := aim.length() / speed + (0.05 if move.lob else 0.0)
+		aim = to + velocity * t * LEAD
+	if move.lob:
+		aim = aim.limit_length(move.reach)
+	return aim
+
+
+## Aim assist: a dragged shot that's close to an enemy bends onto it.
+func _assist(dir: Vector3, move: MoveData) -> Vector3:
+	if not bool(GameData.setting("aim_assist", true)) or move.kind == "stream":
+		return dir
+	var best: Vector3 = dir
+	var best_angle := deg_to_rad(ASSIST_DEGREES)
+	for enemy in brawler.enemies():
+		if not brawler.can_see(enemy):
+			continue
+		var to := enemy.global_position - brawler.global_position
 		to.y = 0.0
-	return [to, to.length()]
+		if to.length() > move.effective_reach() * 1.1:
+			continue
+		var angle := dir.angle_to(to)
+		if angle < best_angle and (move.lob or brawler.has_line_of_sight_to(enemy)):
+			best_angle = angle
+			best = _predict(enemy, move)
+	if best == dir:
+		return dir
+	return dir.normalized().slerp(best.normalized(), 0.75) * dir.length()
 
 
 func _auto_target(reach: float) -> Brawler:
@@ -183,7 +228,7 @@ func _do_super() -> bool:
 	else:
 		var target := _auto_target(move.effective_reach())
 		if target:
-			dir = target.global_position - brawler.global_position
+			dir = _predict(target, move)
 			distance = Vector2(dir.x, dir.z).length()
 			if move.blink > 0.0:
 				dir = -dir  # Teleport away from danger by default.

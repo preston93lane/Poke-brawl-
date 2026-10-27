@@ -1,5 +1,6 @@
 {
 	"name": "Caterpie",
+	"dex": 10,
 	"types": ["bug"],
 	"sprite": "res://assets/brawlers/caterpie.png",
 	"sprite_scale": 1.104,

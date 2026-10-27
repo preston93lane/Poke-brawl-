@@ -1,5 +1,6 @@
 {
 	"name": "Annihilape",
+	"dex": 979,
 	"types": ["fighting", "ghost"],
 	"sprite": "res://assets/brawlers/annihilape.png",
 	"sprite_scale": 0.766,

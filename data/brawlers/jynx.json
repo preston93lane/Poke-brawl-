@@ -1,5 +1,6 @@
 {
 	"name": "Jynx",
+	"dex": 124,
 	"types": ["ice", "psychic"],
 	"sprite": "res://assets/brawlers/jynx.png",
 	"sprite_scale": 1.0,

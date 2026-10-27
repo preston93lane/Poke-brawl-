@@ -22,6 +22,8 @@ var _shiny := false
 ## Species list filters: "" = all.
 var _type_filter := ""
 var _style_filter := ""
+## "dex" (Pokédex number, default) or "name".
+var _sort := "dex"
 var _grid: GridContainer
 var _group: ButtonGroup
 ## Chosen bot teammates / opponents; empty slots are filled randomly.
@@ -87,6 +89,11 @@ func show_home() -> void:
 	dex.custom_minimum_size = Vector2(300, 64)
 	dex.add_theme_stylebox_override("normal", UiKit.box(Color(0.75, 0.3, 0.3)))
 	modes.add_child(dex)
+	for entry in [["MAP MAKER", show_map_editor], ["SETTINGS", show_settings]]:
+		var extra := UiKit.button(entry[0], entry[1], 24)
+		extra.custom_minimum_size = Vector2(300, 64)
+		extra.add_theme_stylebox_override("normal", UiKit.box(Color(0.35, 0.38, 0.5)))
+		modes.add_child(extra)
 	v.add_child(modes)
 	_set_screen(v)
 
@@ -121,6 +128,8 @@ func show_select(mode: String) -> void:
 			func(value: String) -> void: _type_filter = value))
 	left_box.add_child(_filter_row("STYLE", _style_options(), func() -> String: return _style_filter,
 			func(value: String) -> void: _style_filter = value))
+	left_box.add_child(_filter_row("SORT", [["dex", "No."], ["name", "A–Z"]], func() -> String: return _sort,
+			func(value: String) -> void: _sort = value))
 	_grid = GridContainer.new()
 	_grid.columns = 3
 	_grid.add_theme_constant_override("h_separation", 6)
@@ -143,6 +152,57 @@ func show_select(mode: String) -> void:
 	_refresh_select_details()
 
 
+const LAYOUT_EDITOR := preload("res://scripts/ui/layout_editor.gd")
+const MAP_EDITOR := preload("res://scripts/ui/map_editor.gd")
+
+
+## Settings: drag the controls where you want them; size, sides, aim assist.
+func show_settings() -> void:
+	var root := VBoxContainer.new()
+	root.add_theme_constant_override("separation", 10)
+	var editor = LAYOUT_EDITOR.new()
+	var top := HFlowContainer.new()
+	top.add_theme_constant_override("h_separation", 8)
+	top.add_child(UiKit.button("‹ SAVE & BACK", func() -> void:
+		editor.save()
+		show_home()))
+	top.add_child(UiKit.label("  CONTROLS  ", 26))
+	var size_label := UiKit.label("", 20)
+	var update_size := func() -> void:
+		size_label.text = "SIZE %d%%" % roundi(float(editor.layout["scale"]) * 100.0)
+	top.add_child(UiKit.button("SIZE −", func() -> void:
+		editor.change_scale(-0.1)
+		update_size.call()))
+	top.add_child(size_label)
+	top.add_child(UiKit.button("SIZE +", func() -> void:
+		editor.change_scale(0.1)
+		update_size.call()))
+	top.add_child(UiKit.button("SWAP SIDES", func() -> void: editor.swap_sides()))
+	top.add_child(UiKit.button("RESET", func() -> void:
+		editor.reset()
+		update_size.call()))
+	var assist := Button.new()
+	assist.toggle_mode = true
+	assist.button_pressed = bool(GameData.setting("aim_assist", true))
+	assist.text = "AIM ASSIST: ON" if assist.button_pressed else "AIM ASSIST: OFF"
+	assist.add_theme_font_size_override("font_size", 20)
+	assist.toggled.connect(func(on: bool) -> void:
+		GameData.set_setting("aim_assist", on)
+		assist.text = "AIM ASSIST: ON" if on else "AIM ASSIST: OFF")
+	top.add_child(assist)
+	root.add_child(top)
+	editor.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	root.add_child(editor)
+	_set_screen(root)
+	update_size.call()
+
+
+func show_map_editor() -> void:
+	var editor = MAP_EDITOR.new()
+	editor.menu = self
+	_set_screen(editor)
+
+
 func show_pokedex(selected_id: String) -> void:
 	var root := VBoxContainer.new()
 	root.add_theme_constant_override("separation", 12)
@@ -163,7 +223,7 @@ func show_pokedex(selected_id: String) -> void:
 	var group := ButtonGroup.new()
 	for s in all:
 		var b := Button.new()
-		b.text = s.display_name
+		b.text = "#%03d  %s" % [s.dex, s.display_name]
 		b.icon = s.sprite
 		b.expand_icon = true
 		b.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
@@ -194,7 +254,7 @@ func show_pokedex(selected_id: String) -> void:
 
 func _fill_species_grid() -> void:
 	_clear(_grid)
-	for s in GameData.base_species():
+	for s in GameData.base_species(_sort == "name"):
 		if not _matches_filters(s):
 			continue
 		var card := _species_button(s, _group, s == _species)
@@ -550,6 +610,11 @@ func _species_button(s: SpeciesData, group: ButtonGroup, selected: bool) -> Butt
 	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	b.add_theme_font_size_override("font_size", 15)
 	b.clip_text = true
+	var number := UiKit.label("#%03d" % s.dex, 12, Color(1, 1, 1, 0.75))
+	number.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	number.position = Vector2(-40, 4)
+	number.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	b.add_child(number)
 	# Type chips in the top corner (both types for dual-type Pokémon).
 	var chips := VBoxContainer.new()
 	chips.add_theme_constant_override("separation", 2)

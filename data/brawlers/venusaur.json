@@ -1,5 +1,6 @@
 {
 	"name": "Venusaur",
+	"dex": 3,
 	"types": ["grass", "poison"],
 	"sprite": "res://assets/brawlers/venusaur.png",
 	"sprite_scale": 1.0,

@@ -1,5 +1,6 @@
 {
 	"name": "Kabutops",
+	"dex": 141,
 	"types": ["rock", "water"],
 	"sprite": "res://assets/brawlers/kabutops.png",
 	"sprite_scale": 1.0,

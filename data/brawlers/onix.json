@@ -1,5 +1,6 @@
 {
 	"name": "Onix",
+	"dex": 95,
 	"types": ["rock", "ground"],
 	"sprite": "res://assets/brawlers/onix.png",
 	"sprite_scale": 1.0,

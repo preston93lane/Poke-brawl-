@@ -1,5 +1,6 @@
 {
 	"name": "Zubat",
+	"dex": 41,
 	"types": ["poison", "flying"],
 	"sprite": "res://assets/brawlers/zubat.png",
 	"sprite_scale": 1.0,

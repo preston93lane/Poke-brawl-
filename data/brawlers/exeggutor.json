@@ -1,5 +1,6 @@
 {
 	"name": "Exeggutor",
+	"dex": 103,
 	"types": ["grass", "psychic"],
 	"sprite": "res://assets/brawlers/exeggutor.png",
 	"sprite_scale": 1.0,

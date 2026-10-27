@@ -1,5 +1,6 @@
 {
 	"name": "Koffing",
+	"dex": 109,
 	"types": ["poison"],
 	"sprite": "res://assets/brawlers/koffing.png",
 	"sprite_scale": 1.0,

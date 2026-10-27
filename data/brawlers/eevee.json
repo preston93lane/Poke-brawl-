@@ -1,5 +1,6 @@
 {
 	"name": "Eevee",
+	"dex": 133,
 	"types": ["normal"],
 	"sprite": "res://assets/brawlers/eevee.png",
 	"sprite_scale": 1.0,

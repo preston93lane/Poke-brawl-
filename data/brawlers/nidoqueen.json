@@ -1,5 +1,6 @@
 {
 	"name": "Nidoqueen",
+	"dex": 31,
 	"types": ["poison", "ground"],
 	"sprite": "res://assets/brawlers/nidoqueen.png",
 	"sprite_scale": 1.0,

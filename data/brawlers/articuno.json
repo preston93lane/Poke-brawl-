@@ -1,5 +1,6 @@
 {
 	"name": "Articuno",
+	"dex": 144,
 	"types": ["ice", "flying"],
 	"sprite": "res://assets/brawlers/articuno.png",
 	"sprite_scale": 1.15,

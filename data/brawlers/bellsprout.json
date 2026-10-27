@@ -1,5 +1,6 @@
 {
 	"name": "Bellsprout",
+	"dex": 69,
 	"types": ["grass", "poison"],
 	"sprite": "res://assets/brawlers/bellsprout.png",
 	"sprite_scale": 1.0,

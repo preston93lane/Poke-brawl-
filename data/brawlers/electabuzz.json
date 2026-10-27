@@ -1,5 +1,6 @@
 {
 	"name": "Electabuzz",
+	"dex": 125,
 	"types": ["electric"],
 	"sprite": "res://assets/brawlers/electabuzz.png",
 	"sprite_scale": 1.0,

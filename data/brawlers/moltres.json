@@ -1,5 +1,6 @@
 {
 	"name": "Moltres",
+	"dex": 146,
 	"types": ["fire", "flying"],
 	"sprite": "res://assets/brawlers/moltres.png",
 	"sprite_scale": 1.15,

@@ -1,7 +1,7 @@
 {
 	"_comment": "Global tuning knobs. Stats around 100 are 'average'; damage = power * attack / defense * STAB * type * crit * damage_scale.",
 	"team_size": 3,
-	"speed_to_meters": 0.029,
+	"speed_to_meters": 0.026,
 	"damage_scale": 0.8,
 	"hp_multiplier": 1.5,
 	"shiny_chance": 0.06,

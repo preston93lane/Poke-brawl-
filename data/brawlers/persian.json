@@ -1,5 +1,6 @@
 {
 	"name": "Persian",
+	"dex": 53,
 	"types": ["normal"],
 	"sprite": "res://assets/brawlers/persian.png",
 	"sprite_scale": 1.0,

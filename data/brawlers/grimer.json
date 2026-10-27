@@ -1,5 +1,6 @@
 {
 	"name": "Grimer",
+	"dex": 88,
 	"types": ["poison"],
 	"sprite": "res://assets/brawlers/grimer.png",
 	"sprite_scale": 1.0,

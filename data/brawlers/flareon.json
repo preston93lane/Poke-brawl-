@@ -1,5 +1,6 @@
 {
 	"name": "Flareon",
+	"dex": 136,
 	"types": ["fire"],
 	"sprite": "res://assets/brawlers/flareon.png",
 	"sprite_scale": 1.0,

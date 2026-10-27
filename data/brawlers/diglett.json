@@ -1,5 +1,6 @@
 {
 	"name": "Diglett",
+	"dex": 50,
 	"types": ["ground"],
 	"sprite": "res://assets/brawlers/diglett.png",
 	"sprite_scale": 1.431,

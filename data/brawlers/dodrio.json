@@ -1,5 +1,6 @@
 {
 	"name": "Dodrio",
+	"dex": 85,
 	"types": ["normal", "flying"],
 	"sprite": "res://assets/brawlers/dodrio.png",
 	"sprite_scale": 1.0,

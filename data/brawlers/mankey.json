@@ -1,5 +1,6 @@
 {
 	"name": "Mankey",
+	"dex": 56,
 	"types": ["fighting"],
 	"sprite": "res://assets/brawlers/mankey.png",
 	"sprite_scale": 1.0,

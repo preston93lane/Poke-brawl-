@@ -1,5 +1,6 @@
 {
 	"name": "Golem",
+	"dex": 76,
 	"types": ["rock", "ground"],
 	"sprite": "res://assets/brawlers/golem.png",
 	"sprite_scale": 1.0,

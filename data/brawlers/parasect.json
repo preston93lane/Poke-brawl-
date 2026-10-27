@@ -1,5 +1,6 @@
 {
 	"name": "Parasect",
+	"dex": 47,
 	"types": ["bug", "grass"],
 	"sprite": "res://assets/brawlers/parasect.png",
 	"sprite_scale": 1.0,

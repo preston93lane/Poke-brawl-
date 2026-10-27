@@ -1,5 +1,6 @@
 {
 	"name": "Dratini",
+	"dex": 147,
 	"types": ["dragon"],
 	"sprite": "res://assets/brawlers/dratini.png",
 	"sprite_scale": 1.0,

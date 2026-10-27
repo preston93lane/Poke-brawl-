@@ -1,5 +1,6 @@
 {
 	"name": "Psyduck",
+	"dex": 54,
 	"types": ["water"],
 	"sprite": "res://assets/brawlers/psyduck.png",
 	"sprite_scale": 1.0,

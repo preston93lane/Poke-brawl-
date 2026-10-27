@@ -1,5 +1,6 @@
 {
 	"name": "Electrode",
+	"dex": 101,
 	"types": ["electric"],
 	"sprite": "res://assets/brawlers/electrode.png",
 	"sprite_scale": 1.0,

@@ -1,5 +1,6 @@
 {
 	"name": "Mew",
+	"dex": 151,
 	"types": ["psychic"],
 	"sprite": "res://assets/brawlers/mew.png",
 	"sprite_scale": 1.0,

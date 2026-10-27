@@ -1,5 +1,6 @@
 {
 	"name": "Celebi",
+	"dex": 251,
 	"types": ["psychic", "grass"],
 	"sprite": "res://assets/brawlers/celebi.png",
 	"sprite_scale": 1.15,

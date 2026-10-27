@@ -1,5 +1,6 @@
 {
 	"name": "Raticate",
+	"dex": 20,
 	"types": ["normal"],
 	"sprite": "res://assets/brawlers/raticate.png",
 	"sprite_scale": 1.0,

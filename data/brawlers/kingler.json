@@ -1,5 +1,6 @@
 {
 	"name": "Kingler",
+	"dex": 99,
 	"types": ["water"],
 	"sprite": "res://assets/brawlers/kingler.png",
 	"sprite_scale": 1.0,

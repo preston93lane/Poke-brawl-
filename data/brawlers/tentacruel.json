@@ -1,5 +1,6 @@
 {
 	"name": "Tentacruel",
+	"dex": 73,
 	"types": ["water", "poison"],
 	"sprite": "res://assets/brawlers/tentacruel.png",
 	"sprite_scale": 1.0,

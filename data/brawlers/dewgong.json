@@ -1,5 +1,6 @@
 {
 	"name": "Dewgong",
+	"dex": 87,
 	"types": ["water", "ice"],
 	"sprite": "res://assets/brawlers/dewgong.png",
 	"sprite_scale": 1.0,

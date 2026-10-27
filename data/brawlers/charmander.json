@@ -1,5 +1,6 @@
 {
 	"name": "Charmander",
+	"dex": 4,
 	"types": ["fire"],
 	"sprite": "res://assets/brawlers/charmander.png",
 	"sprite_scale": 1.0,

@@ -1,5 +1,6 @@
 {
 	"name": "Chansey",
+	"dex": 113,
 	"types": ["normal"],
 	"sprite": "res://assets/brawlers/chansey.png",
 	"sprite_scale": 1.0,

@@ -1,5 +1,6 @@
 {
 	"name": "Machamp",
+	"dex": 68,
 	"types": ["fighting"],
 	"sprite": "res://assets/brawlers/machamp.png",
 	"sprite_scale": 1.0,

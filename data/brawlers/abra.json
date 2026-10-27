@@ -1,5 +1,6 @@
 {
 	"name": "Abra",
+	"dex": 63,
 	"types": ["psychic"],
 	"sprite": "res://assets/brawlers/abra.png",
 	"sprite_scale": 1.0,

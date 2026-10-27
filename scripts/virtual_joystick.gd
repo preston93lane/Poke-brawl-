@@ -15,6 +15,8 @@ const TAP_MAX_DRAG := 0.5
 @export_range(0.0, 1.0) var deadzone := 0.2
 ## Floating sticks re-centre wherever the finger lands inside the zone.
 @export var floating := true
+## Only touches this close to the resting stick count (0 = anywhere in the zone).
+@export var touch_radius := 0.0
 @export var rest_anchor := Vector2(0.0, 1.0)
 @export var rest_offset := Vector2(230, -190)
 @export var color := Color(1, 1, 1)
@@ -59,7 +61,8 @@ func _input(event: InputEvent) -> void:
 		if touch.pressed and _touch_index == -1:
 			if not Rect2(Vector2.ZERO, size).has_point(local) or TouchButton.any_contains(touch.position):
 				return
-			if not floating and local.distance_to(_rest_center()) > radius * 2.2:
+			var reach := touch_radius if touch_radius > 0.0 else (INF if floating else radius * 2.2)
+			if local.distance_to(_rest_center()) > reach:
 				return
 			_touch_index = touch.index
 			_center = local if floating else _rest_center()

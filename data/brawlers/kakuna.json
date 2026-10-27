@@ -1,5 +1,6 @@
 {
 	"name": "Kakuna",
+	"dex": 14,
 	"types": ["bug", "poison"],
 	"sprite": "res://assets/brawlers/kakuna.png",
 	"sprite_scale": 1.0,

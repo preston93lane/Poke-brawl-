@@ -1,5 +1,6 @@
 {
 	"name": "Spearow",
+	"dex": 21,
 	"types": ["normal", "flying"],
 	"sprite": "res://assets/brawlers/spearow.png",
 	"sprite_scale": 1.0,

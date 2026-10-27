@@ -1,5 +1,6 @@
 {
 	"name": "Omastar",
+	"dex": 139,
 	"types": ["rock", "water"],
 	"sprite": "res://assets/brawlers/omastar.png",
 	"sprite_scale": 1.0,

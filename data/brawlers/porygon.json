@@ -1,5 +1,6 @@
 {
 	"name": "Porygon",
+	"dex": 137,
 	"types": ["normal"],
 	"sprite": "res://assets/brawlers/porygon.png",
 	"sprite_scale": 1.0,

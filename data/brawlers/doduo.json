@@ -1,5 +1,6 @@
 {
 	"name": "Doduo",
+	"dex": 84,
 	"types": ["normal", "flying"],
 	"sprite": "res://assets/brawlers/doduo.png",
 	"sprite_scale": 1.0,

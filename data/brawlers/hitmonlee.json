@@ -1,5 +1,6 @@
 {
 	"name": "Hitmonlee",
+	"dex": 106,
 	"types": ["fighting"],
 	"sprite": "res://assets/brawlers/hitmonlee.png",
 	"sprite_scale": 1.0,

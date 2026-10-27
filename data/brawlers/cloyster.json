@@ -1,5 +1,6 @@
 {
 	"name": "Cloyster",
+	"dex": 91,
 	"types": ["water", "ice"],
 	"sprite": "res://assets/brawlers/cloyster.png",
 	"sprite_scale": 1.0,

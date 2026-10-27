@@ -1,5 +1,6 @@
 {
 	"name": "Ivysaur",
+	"dex": 2,
 	"types": ["grass", "poison"],
 	"sprite": "res://assets/brawlers/ivysaur.png",
 	"sprite_scale": 1.0,

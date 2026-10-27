@@ -4,6 +4,8 @@ extends RefCounted
 
 var id := ""
 var display_name := ""
+## National Pokédex number (sorting and display).
+var dex := 0
 var types: Array[String] = []
 ## Front view, for menus and the HUD (cropped close around the Pokémon).
 var sprite: Texture2D
@@ -48,6 +50,7 @@ static func from_dict(species_id: String, d: Dictionary) -> SpeciesData:
 	var s := SpeciesData.new()
 	s.id = species_id
 	s.display_name = str(d.get("name", species_id.capitalize()))
+	s.dex = int(d.get("dex", 0))
 	for t in d.get("types", ["normal"]):
 		s.types.append(str(t))
 	s.sprite_scale = float(d.get("sprite_scale", 1.0))

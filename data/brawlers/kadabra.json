@@ -1,5 +1,6 @@
 {
 	"name": "Kadabra",
+	"dex": 64,
 	"types": ["psychic"],
 	"sprite": "res://assets/brawlers/kadabra.png",
 	"sprite_scale": 1.0,

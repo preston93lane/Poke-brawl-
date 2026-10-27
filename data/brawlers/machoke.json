@@ -1,5 +1,6 @@
 {
 	"name": "Machoke",
+	"dex": 67,
 	"types": ["fighting"],
 	"sprite": "res://assets/brawlers/machoke.png",
 	"sprite_scale": 1.0,

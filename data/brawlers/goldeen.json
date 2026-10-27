@@ -1,5 +1,6 @@
 {
 	"name": "Goldeen",
+	"dex": 118,
 	"types": ["water"],
 	"sprite": "res://assets/brawlers/goldeen.png",
 	"sprite_scale": 1.0,
