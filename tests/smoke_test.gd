@@ -31,6 +31,7 @@ func _ready() -> void:
 	await _check_showdown()
 	await _check_settings_and_map_maker()
 	await _check_all_arenas()
+	await _check_fullscreen_button()
 	Engine.time_scale = 1.0
 	print("SMOKE TEST: %s" % ("PASS" if failures == 0 else "FAIL (%d)" % failures))
 	get_tree().quit(1 if failures > 0 else 0)
@@ -958,3 +959,17 @@ func _check_all_arenas() -> void:
 		expect(ok, "%s builds with spawns and a route between teams (%d steps)" % [arena_id, path.size()])
 		main.queue_free()
 		await get_tree().process_frame
+
+
+func _check_fullscreen_button() -> void:
+	print("Full screen button")
+	var fs: Node = get_node("/root/FullscreenButton")
+	var view := get_viewport().get_visible_rect().size
+	var rect: Rect2 = Rect2(fs._button.position, fs._button.size)
+	expect(rect.end.x <= view.x and rect.position.x > view.x - 70 and rect.position.y < 20, "full screen button sits in the top-right corner (%s)" % rect)
+	var main := await _start_match("route_1", "duel", "pikachu", [])
+	var scoreboard_panel := Rect2(view.x * 0.5 - 150 - 3 * 54 - 12, 10, 300 + 2 * (3 * 54 + 12), 62)
+	expect(not rect.intersects(scoreboard_panel), "it doesn't cover the scoreboard")
+	expect(not rect.intersects(Rect2(main.hud.super_button.get_global_rect())) and not rect.intersects(Rect2(main.hud.gadget_button.get_global_rect())), "or the buttons")
+	main.queue_free()
+	await get_tree().process_frame
