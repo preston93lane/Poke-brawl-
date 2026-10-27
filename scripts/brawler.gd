@@ -152,7 +152,7 @@ func _ready() -> void:
 	add_to_group("brawlers")
 	var capsule := ($CollisionShape3D as CollisionShape3D).shape as CapsuleShape3D
 	if capsule:
-		capsule = capsule.duplicate()
+		capsule = capsule.duplicate() as CapsuleShape3D
 		capsule.radius = COLLIDER_RADIUS
 		$CollisionShape3D.shape = capsule
 	_build_static_visuals()
@@ -346,7 +346,9 @@ func evolve() -> bool:
 		return false
 	var next_id := species.evolves_to
 	if species.evolutions.size() > 1:
-		next_id = preferred_evolution if preferred_evolution in species.evolutions else species.evolutions.pick_random()
+		next_id = preferred_evolution
+		if next_id not in species.evolutions:
+			next_id = species.evolutions[randi() % species.evolutions.size()]
 	var next: SpeciesData = GameData.get_species(next_id)
 	if next == null:
 		return false

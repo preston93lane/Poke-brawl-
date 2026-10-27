@@ -199,7 +199,7 @@ static func move_card(move: MoveData, unlock_level := 0) -> PanelContainer:
 	top.add_child(label(move.display_name, 22))
 	top.add_child(type_chip(move.type, 14))
 	var slot_names := { "main": "ATTACK", "gadget": "GADGET", "super": "SUPER" }
-	var slot_color := { "super": Color(1, 0.85, 0.3), "gadget": Color(0.55, 1.0, 0.75) }.get(move.slot, Color(0.7, 0.8, 1))
+	var slot_color: Color = { "super": Color(1, 0.85, 0.3), "gadget": Color(0.55, 1.0, 0.75) }.get(move.slot, Color(0.7, 0.8, 1))
 	top.add_child(label(slot_names.get(move.slot, ""), 16, slot_color))
 	v.add_child(top)
 	var summary := label(move_summary(move), 16, Color(0.85, 0.88, 0.95))

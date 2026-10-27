@@ -298,11 +298,11 @@ func _check_menu() -> void:
 	menu._type_filter = "fire"
 	menu._fill_species_grid()
 	await get_tree().process_frame
-	var all_fire := menu._grid.get_child_count() >= 4
-	for card in menu._grid.get_children():
+	var all_fire: bool = menu._grid.get_child_count() >= 4
+	for grid_card in menu._grid.get_children():
 		var picked: SpeciesData = null
 		for s in GameData.base_species():
-			if card is Button and (card as Button).text == s.display_name:
+			if grid_card is Button and (grid_card as Button).text == s.display_name:
 				picked = s
 		if picked == null or not menu._matches_filters(picked):
 			all_fire = false
