@@ -3,6 +3,7 @@
 	"types": ["ground"],
 	"sprite": "res://assets/brawlers/sandshrew.png",
 	"sprite_scale": 1.0,
+	"sprite_height": 39,
 	"style": "spinner",
 	"stats": {"hp": 3950, "attack": 111, "defense": 94, "speed": 91},
 	"super": "sandshrew_super",

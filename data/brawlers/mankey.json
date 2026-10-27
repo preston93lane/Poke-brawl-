@@ -3,6 +3,7 @@
 	"types": ["fighting"],
 	"sprite": "res://assets/brawlers/mankey.png",
 	"sprite_scale": 1.0,
+	"sprite_height": 49,
 	"style": "brawler",
 	"stats": {"hp": 3900, "attack": 113, "defense": 84, "speed": 103},
 	"super": "bulk_up",

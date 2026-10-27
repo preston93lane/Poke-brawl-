@@ -3,6 +3,7 @@
 	"types": ["fire"],
 	"sprite": "res://assets/brawlers/vulpix.png",
 	"sprite_scale": 1.0,
+	"sprite_height": 48,
 	"style": "homing",
 	"stats": {"hp": 2950, "attack": 99, "defense": 92, "speed": 101},
 	"super": "vulpix_super",

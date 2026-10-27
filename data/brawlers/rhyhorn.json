@@ -3,6 +3,7 @@
 	"types": ["ground", "rock"],
 	"sprite": "res://assets/brawlers/rhyhorn.png",
 	"sprite_scale": 1.0,
+	"sprite_height": 54,
 	"style": "shotgun",
 	"stats": {"hp": 4250, "attack": 113, "defense": 98, "speed": 85},
 	"super": "rhyhorn_super",

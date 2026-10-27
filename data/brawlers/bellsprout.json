@@ -3,6 +3,7 @@
 	"types": ["grass", "poison"],
 	"sprite": "res://assets/brawlers/bellsprout.png",
 	"sprite_scale": 1.0,
+	"sprite_height": 46,
 	"style": "lasher",
 	"stats": {"hp": 3700, "attack": 115, "defense": 80, "speed": 91},
 	"super": "sleep_powder",

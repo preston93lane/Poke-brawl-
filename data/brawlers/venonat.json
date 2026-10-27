@@ -3,6 +3,7 @@
 	"types": ["bug", "poison"],
 	"sprite": "res://assets/brawlers/venonat.png",
 	"sprite_scale": 1.0,
+	"sprite_height": 53,
 	"style": "homing",
 	"stats": {"hp": 3350, "attack": 101, "defense": 92, "speed": 93},
 	"super": "venonat_super",

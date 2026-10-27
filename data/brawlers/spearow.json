@@ -3,6 +3,7 @@
 	"types": ["normal", "flying"],
 	"sprite": "res://assets/brawlers/spearow.png",
 	"sprite_scale": 1.0,
+	"sprite_height": 40,
 	"style": "gunner",
 	"stats": {"hp": 3200, "attack": 105, "defense": 78, "speed": 103},
 	"super": "spearow_super",

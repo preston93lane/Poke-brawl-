@@ -3,6 +3,7 @@
 	"types": ["dragon"],
 	"sprite": "res://assets/brawlers/dratini.png",
 	"sprite_scale": 1.0,
+	"sprite_height": 46,
 	"style": "lasher",
 	"stats": {"hp": 3400, "attack": 107, "defense": 88, "speed": 95},
 	"super": "agility",

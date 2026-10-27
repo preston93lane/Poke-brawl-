@@ -3,6 +3,7 @@
 	"types": ["normal", "flying"],
 	"sprite": "res://assets/brawlers/pidgey.png",
 	"sprite_scale": 1.0,
+	"sprite_height": 41,
 	"style": "piercer",
 	"stats": {"hp": 3200, "attack": 99, "defense": 82, "speed": 97},
 	"super": "pidgey_super",

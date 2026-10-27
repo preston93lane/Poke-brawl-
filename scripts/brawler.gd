@@ -16,6 +16,8 @@ const COLLIDER_RADIUS := 0.36
 const SPRITE_HEIGHT := 0.85
 ## World units per sprite pixel: a 32px sprite is 1.6 units tall.
 const PIXEL_SIZE := 0.05
+## World units per pixel for front/side/back sheets (96px Black/White frames).
+const SHEET_PIXEL_SIZE := 0.022
 const DOT_TICK := 0.5
 ## Physics layers that stop walking and teleports: world + water.
 const MOVE_BLOCK_MASK := 1 | 8
@@ -60,6 +62,8 @@ var invulnerable := false
 var flying := false
 ## Water and Flying types walk over water tiles.
 var can_swim := false
+## Uses the shiny colours (set before it enters the tree).
+var shiny := false
 ## Damage taken per attacking team (raid bosses use this to pick who gets them).
 var damage_by_team := {}
 ## Seconds left before a summoned legendary leaves (shown above it).
@@ -324,6 +328,11 @@ func _pick_move(slot: String, move_id: String) -> MoveData:
 	return species.default_move(slot, level)
 
 
+## Front-view icon in this brawler's colours (shiny or normal).
+func portrait() -> Texture2D:
+	return species.shiny_sprite if shiny and species.shiny_sprite else species.sprite
+
+
 ## Damage multiplier from level (attacks get a little stronger as you level up).
 func power_bonus() -> float:
 	return (1.0 + float(GameData.rule("level_power_bonus", 0.04)) * (level - 1)) \
@@ -362,10 +371,11 @@ func _apply_species() -> void:
 	defense = species.defense * bonus
 	move_speed = species.speed * float(GameData.rule("speed_to_meters", 0.05))
 	# Sheets hold front / side / back views; the frame follows the way you're facing.
-	sprite.texture = species.sheet if species.sheet else species.sprite
+	var sheet := species.shiny_sheet if shiny and species.shiny_sheet else species.sheet
+	sprite.texture = sheet if sheet else species.sprite
 	sprite.hframes = 3 if species.sheet else 1
 	sprite.frame = 0
-	sprite.pixel_size = PIXEL_SIZE * 0.5 * species.sprite_scale if species.sheet else PIXEL_SIZE * species.sprite_scale
+	sprite.pixel_size = SHEET_PIXEL_SIZE * species.sprite_scale if species.sheet else PIXEL_SIZE * species.sprite_scale
 
 
 ## Evolve to the next stage (after enough KOs). Returns false at final stage.

@@ -3,6 +3,7 @@
 	"types": ["poison"],
 	"sprite": "res://assets/brawlers/grimer.png",
 	"sprite_scale": 1.0,
+	"sprite_height": 39,
 	"style": "zone",
 	"stats": {"hp": 3850, "attack": 112, "defense": 90, "speed": 85},
 	"super": "grimer_super",

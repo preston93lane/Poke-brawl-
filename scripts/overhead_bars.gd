@@ -18,7 +18,10 @@ func _draw() -> void:
 		var brawler := node as Brawler
 		if brawler == null or brawler.is_dead or not brawler.visible_to_local_player():
 			continue
-		var world_pos := brawler.global_position + Vector3.UP * (HEAD_HEIGHT * brawler.species.sprite_scale + (0.9 if brawler.flying else 0.0))
+		var head := HEAD_HEIGHT * brawler.species.sprite_scale
+		if brawler.species.sprite_height > 0:
+			head = brawler.species.sprite_height * Brawler.SHEET_PIXEL_SIZE * brawler.species.sprite_scale + 0.75
+		var world_pos := brawler.global_position + Vector3.UP * (head + (0.9 if brawler.flying else 0.0))
 		if camera.is_position_behind(world_pos):
 			continue
 		var p := camera.unproject_position(world_pos)

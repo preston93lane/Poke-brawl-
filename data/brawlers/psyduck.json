@@ -3,6 +3,7 @@
 	"types": ["water"],
 	"sprite": "res://assets/brawlers/psyduck.png",
 	"sprite_scale": 1.0,
+	"sprite_height": 45,
 	"style": "homing",
 	"stats": {"hp": 3100, "attack": 105, "defense": 89, "speed": 97},
 	"super": "psyduck_super",

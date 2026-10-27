@@ -410,6 +410,16 @@ func _check_legendaries_and_items() -> void:
 	expect(player.health < hp, "damage lands once protection ends")
 
 	expect(player.species.sprite is AtlasTexture and player.species.sheet != null, "sprites load as front/side/back sheets")
+	var missing_shiny: Array[String] = []
+	for s: SpeciesData in GameData.species.values():
+		if s.sheet == null or s.shiny_sheet == null or s.sheet.get_height() != 96 or s.sprite_height <= 0:
+			missing_shiny.append(s.id)
+	expect(missing_shiny.is_empty(), "every Pokémon has 96px normal + shiny sheets (missing: %s)" % ", ".join(missing_shiny))
+	var shiny_bot: Brawler = main._spawn("charizard", 1, 1, false)
+	shiny_bot.shiny = true
+	shiny_bot._apply_species()
+	expect(shiny_bot.sprite.texture == shiny_bot.species.shiny_sheet, "shiny Pokémon use the shiny sheet")
+	shiny_bot.queue_free()
 	for case: Array in [[Vector3(1, 0, 0), 1, false], [Vector3(-1, 0, 0), 1, true], [Vector3(0, 0, -1), 2, false], [Vector3(0, 0, 1), 0, false]]:
 		player.facing = case[0]
 		await get_tree().process_frame

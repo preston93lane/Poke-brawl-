@@ -3,6 +3,7 @@
 	"types": ["fire"],
 	"sprite": "res://assets/brawlers/ponyta.png",
 	"sprite_scale": 1.0,
+	"sprite_height": 59,
 	"style": "spinner",
 	"stats": {"hp": 3350, "attack": 108, "defense": 96, "speed": 111},
 	"super": "ponyta_super",

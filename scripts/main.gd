@@ -24,6 +24,7 @@ const MENU_SCENE := "res://scenes/menu.tscn"
 @export var player_main := ""
 ## Branch for lines that split (Eevee); blank = random.
 @export var player_evolution := ""
+@export var player_shiny := false
 
 @export_group("Bots")
 ## Your bot teammates; missing slots are filled with random Pokémon.
@@ -138,6 +139,7 @@ func _apply_match_settings() -> void:
 	player_level = int(s.get("level", player_level))
 	player_main = str(s.get("main", ""))
 	player_evolution = str(s.get("evolution", ""))
+	player_shiny = bool(s.get("shiny", false))
 	ally_team = PackedStringArray(s.get("allies", []))
 	enemy_team = PackedStringArray(s.get("enemies", []))
 	bot_level = int(s.get("bot_level", player_level))
@@ -186,6 +188,8 @@ func _spawn_bot(species_id: String, team: int) -> Brawler:
 func _spawn(species_id: String, level: int, team: int, is_player: bool, main_id := "") -> Brawler:
 	var brawler: Brawler = BRAWLER_SCENE.instantiate()
 	brawler.setup(species_id, level, team, is_player, arena, main_id)
+	# The player picks shiny in the menu; bots are shiny once in a while.
+	brawler.shiny = player_shiny if is_player else randf() < float(GameData.rule("shiny_chance", 0.06))
 	_spawn_index[brawler] = teams[team].size()
 	teams[team].append(brawler)
 	brawler.position = spawn_position(brawler)
@@ -430,7 +434,7 @@ func summary_rows() -> Array[Dictionary]:
 			var score := b.damage_dealt + b.healing_done * 0.8 + b.kills * 1200.0 + stat * 900.0 - b.deaths * 300.0
 			rows.append({
 				"brawler": b, "team": team, "is_player": b.is_player, "name": b.species.display_name,
-				"sprite": b.species.sprite, "kills": b.kills, "deaths": b.deaths, "damage": roundi(b.damage_dealt),
+				"sprite": b.portrait(), "kills": b.kills, "deaths": b.deaths, "damage": roundi(b.damage_dealt),
 				"healing": roundi(b.healing_done), "stat": stat, "score": score, "placement": b.placement, "mvp": false,
 			})
 	if mode == "showdown":

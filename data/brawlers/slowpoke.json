@@ -3,6 +3,7 @@
 	"types": ["water", "psychic"],
 	"sprite": "res://assets/brawlers/slowpoke.png",
 	"sprite_scale": 1.0,
+	"sprite_height": 44,
 	"style": "tank_wave",
 	"stats": {"hp": 5650, "attack": 106, "defense": 92, "speed": 81},
 	"super": "slowpoke_super",

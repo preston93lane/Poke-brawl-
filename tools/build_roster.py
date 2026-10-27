@@ -200,7 +200,7 @@ def balance(st, goal, style):
 
 
 def dump_species(path, d):
-    order = ["name", "types", "sprite", "sprite_scale", "legendary", "style", "stats", "super", "gadget", "evolves_from", "evolves_to", "moves"]
+    order = ["name", "types", "sprite", "sprite_scale", "sprite_height", "legendary", "style", "stats", "super", "gadget", "evolves_from", "evolves_to", "moves"]
     d = {k: d[k] for k in order if k in d}
     out = ["{"]
     keys = list(d)
@@ -273,6 +273,7 @@ def build():
             scale = old.get("sprite_scale", {1: 1.0, 2: 1.15, 3: 1.3}[stage] if len(members) > 1 else 1.15)
             d = {"name": name, "types": types, "sprite": f"res://assets/brawlers/{sid}.png", "sprite_scale": scale,
                  "style": fam["style"], "stats": stats, "super": super_id, "gadget": STYLES[fam["style"]]["gadget"]}
+            if "sprite_height" in old: d["sprite_height"] = old["sprite_height"]
             if evolves_from: d["evolves_from"] = evolves_from
             if evolves_to: d["evolves_to"] = evolves_to
             if moves: d["moves"] = moves

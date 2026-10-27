@@ -3,6 +3,7 @@
 	"types": ["psychic"],
 	"sprite": "res://assets/brawlers/drowzee.png",
 	"sprite_scale": 1.0,
+	"sprite_height": 52,
 	"style": "boomerang",
 	"stats": {"hp": 3500, "attack": 96, "defense": 100, "speed": 92},
 	"super": "drowzee_super",

@@ -3,6 +3,7 @@
 	"types": ["normal"],
 	"sprite": "res://assets/brawlers/eevee.png",
 	"sprite_scale": 1.0,
+	"sprite_height": 47,
 	"style": "shotgun",
 	"stats": {"hp": 3850, "attack": 99, "defense": 94, "speed": 97},
 	"super": "eevee_super",

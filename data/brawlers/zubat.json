@@ -3,6 +3,7 @@
 	"types": ["poison", "flying"],
 	"sprite": "res://assets/brawlers/zubat.png",
 	"sprite_scale": 1.0,
+	"sprite_height": 48,
 	"style": "assassin",
 	"stats": {"hp": 3200, "attack": 99, "defense": 82, "speed": 97},
 	"super": "zubat_super",

@@ -18,6 +18,7 @@ var _level := 1
 var _main := ""
 ## Branch for Eevee-style split lines ("" = random).
 var _evolution := ""
+var _shiny := false
 ## Species list filters: "" = all.
 var _type_filter := ""
 var _style_filter := ""
@@ -273,6 +274,20 @@ func _refresh_select_details() -> void:
 
 	_details.add_child(_style_box(s))
 
+	if s.shiny_sheet:
+		var shiny_row := HBoxContainer.new()
+		var shiny_button := Button.new()
+		shiny_button.text = "SHINY: ON" if _shiny else "SHINY: OFF"
+		shiny_button.toggle_mode = true
+		shiny_button.button_pressed = _shiny
+		shiny_button.add_theme_font_size_override("font_size", 20)
+		shiny_button.pressed.connect(func() -> void:
+			_shiny = not _shiny
+			_refresh_select_details())
+		shiny_row.add_child(shiny_button)
+		shiny_row.add_child(UiKit.label("  Play with shiny colours", 16, Color(0.75, 0.8, 0.9)))
+		_details.add_child(shiny_row)
+
 	_details.add_child(_section("LEVEL"))
 	var levels := HBoxContainer.new()
 	var level_group := ButtonGroup.new()
@@ -406,6 +421,7 @@ func _start_match() -> void:
 		"level": _level,
 		"main": _main,
 		"evolution": _evolution,
+		"shiny": _shiny,
 		"allies": _allies.duplicate(),
 		"enemies": _enemies.duplicate(),
 		"bot_level": _level,
@@ -423,6 +439,7 @@ func _restore_last_choices() -> void:
 	_level = int(last.get("level", 1))
 	_main = str(last.get("main", ""))
 	_evolution = str(last.get("evolution", ""))
+	_shiny = bool(last.get("shiny", false))
 	for id in last.get("allies", []):
 		_allies.append(str(id))
 	for id in last.get("enemies", []):
@@ -435,7 +452,7 @@ func _restore_last_choices() -> void:
 
 func _show_dex_entry(s: SpeciesData) -> void:
 	_clear(_details)
-	_details.add_child(_species_header(s, 144))
+	_details.add_child(_species_header(s, 144, true))
 	for stat in ["hp", "attack", "defense", "speed"]:
 		_details.add_child(UiKit.stat_bar(stat, _stat(s, stat)))
 	_details.add_child(_style_box(s))
@@ -499,10 +516,14 @@ func _set_screen(content: Control) -> void:
 	add_child(margin)
 
 
-func _species_header(s: SpeciesData, sprite_size: float) -> HBoxContainer:
+## `both_colours` shows the shiny next to the normal one (Pokédex).
+func _species_header(s: SpeciesData, sprite_size: float, both_colours := false) -> HBoxContainer:
 	var header := HBoxContainer.new()
 	header.add_theme_constant_override("separation", 16)
-	header.add_child(UiKit.sprite(s.sprite, sprite_size))
+	var shown := s.shiny_sprite if _shiny and s.shiny_sprite and not both_colours else s.sprite
+	header.add_child(UiKit.sprite(shown, sprite_size))
+	if both_colours and s.shiny_sprite:
+		header.add_child(UiKit.sprite(s.shiny_sprite, sprite_size * 0.7))
 	var info := VBoxContainer.new()
 	info.alignment = BoxContainer.ALIGNMENT_CENTER
 	info.add_child(UiKit.label(s.display_name, 40))

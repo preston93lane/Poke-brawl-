@@ -3,6 +3,7 @@
 	"types": ["water"],
 	"sprite": "res://assets/brawlers/seel.png",
 	"sprite_scale": 1.0,
+	"sprite_height": 46,
 	"style": "bouncer",
 	"stats": {"hp": 3450, "attack": 94, "defense": 98, "speed": 93},
 	"super": "seel_super",

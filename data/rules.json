@@ -4,6 +4,7 @@
 	"speed_to_meters": 0.029,
 	"damage_scale": 0.8,
 	"hp_multiplier": 1.5,
+	"shiny_chance": 0.06,
 	"_hp_comment": "Every species' JSON hp is multiplied by this (fights last longer).",
 	"gadget": {
 		"uses": 3,

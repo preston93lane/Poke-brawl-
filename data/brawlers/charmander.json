@@ -3,6 +3,7 @@
 	"types": ["fire"],
 	"sprite": "res://assets/brawlers/charmander.png",
 	"sprite_scale": 1.0,
+	"sprite_height": 42,
 	"style": "stream",
 	"stats": {"hp": 3100, "attack": 104, "defense": 88, "speed": 101},
 	"super": "fire_spin",

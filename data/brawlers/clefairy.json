@@ -3,6 +3,7 @@
 	"types": ["fairy"],
 	"sprite": "res://assets/brawlers/clefairy.png",
 	"sprite_scale": 1.0,
+	"sprite_height": 40,
 	"style": "healer",
 	"stats": {"hp": 3500, "attack": 103, "defense": 94, "speed": 89},
 	"super": "clefairy_super",

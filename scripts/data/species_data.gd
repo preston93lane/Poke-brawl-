@@ -5,8 +5,13 @@ extends RefCounted
 var id := ""
 var display_name := ""
 var types: Array[String] = []
-## Front view, for menus and the HUD.
+## Front view, for menus and the HUD (cropped close around the Pokémon).
 var sprite: Texture2D
+## Shiny colours: sheet and front view (null if there's no shiny art).
+var shiny_sheet: Texture2D
+var shiny_sprite: Texture2D
+## Height of the Pokémon inside a sheet frame, in pixels (0 = unknown).
+var sprite_height := 0
 ## Three views side by side (front, side facing right, back) for in-game; null if
 ## the PNG is a single image.
 var sheet: Texture2D
@@ -46,6 +51,7 @@ static func from_dict(species_id: String, d: Dictionary) -> SpeciesData:
 	for t in d.get("types", ["normal"]):
 		s.types.append(str(t))
 	s.sprite_scale = float(d.get("sprite_scale", 1.0))
+	s.sprite_height = int(d.get("sprite_height", 0))
 	s.legendary = bool(d.get("legendary", false))
 	var stats: Dictionary = d.get("stats", {})
 	s.hp = float(stats.get("hp", s.hp))
@@ -69,13 +75,28 @@ static func from_dict(species_id: String, d: Dictionary) -> SpeciesData:
 		var texture: Texture2D = load(sprite_path)
 		if texture and texture.get_width() >= texture.get_height() * 3:
 			s.sheet = texture
-			var front := AtlasTexture.new()
-			front.atlas = texture
-			front.region = Rect2(0, 0, texture.get_height(), texture.get_height())
-			s.sprite = front
+			s.sprite = s._front_icon(texture)
 		else:
 			s.sprite = texture
+	# Shiny sheets live next to the normal ones: assets/brawlers/shiny/<id>.png.
+	var shiny_path := sprite_path.get_base_dir() + "/shiny/" + sprite_path.get_file()
+	if sprite_path != "" and s.sheet and ResourceLoader.exists(shiny_path):
+		s.shiny_sheet = load(shiny_path)
+		s.shiny_sprite = s._front_icon(s.shiny_sheet)
 	return s
+
+
+## Front view cropped to a square around the Pokémon (feet at the bottom), so
+## small Pokémon don't look tiny in menus.
+func _front_icon(sheet_texture: Texture2D) -> AtlasTexture:
+	var frame := float(sheet_texture.get_height())
+	var side := frame
+	if sprite_height > 0:
+		side = clampf(sprite_height + 6.0, 36.0, frame)
+	var icon := AtlasTexture.new()
+	icon.atlas = sheet_texture
+	icon.region = Rect2((frame - side) * 0.5, frame - side, side, side)
+	return icon
 
 
 ## Moves usable in `slot` ("main") at `level`, in unlock order.

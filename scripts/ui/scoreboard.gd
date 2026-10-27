@@ -164,7 +164,7 @@ func _portrait(rect: Rect2, b: Brawler, team_color: Color, font: Font) -> void:
 	_box(rect.grow(3), ring, 12)
 	_box(rect, Color(0.12, 0.13, 0.2), 10)
 	var tint := Color(0.35, 0.35, 0.35) if b.is_dead else Color.WHITE
-	draw_texture_rect(b.species.sprite, rect.grow(-3), false, tint)
+	draw_texture_rect(b.portrait(), rect.grow(-3), false, tint)
 	if b.is_dead:
 		_text(font, Vector2(rect.position.x, rect.position.y + rect.size.y * 0.68), rect.size.x, str(ceili(b.respawn_left)), 24, Color.WHITE)
 	else:
@@ -180,7 +180,7 @@ func _feed_row(center: Vector2, killer: Brawler, victim: Brawler, alpha: float) 
 	if killer:
 		var kc := BLUE if killer.team == GameData.local_team else RED
 		_box(Rect2(row.position + Vector2(6, 2), Vector2(icon, icon)), Color(kc, 0.8 * alpha), 6)
-		draw_texture_rect(killer.species.sprite, Rect2(row.position + Vector2(6, 2), Vector2(icon, icon)), false, Color(1, 1, 1, alpha))
+		draw_texture_rect(killer.portrait(), Rect2(row.position + Vector2(6, 2), Vector2(icon, icon)), false, Color(1, 1, 1, alpha))
 	# Crossed swords between them.
 	var c := row.get_center()
 	draw_line(c + Vector2(-9, -9), c + Vector2(9, 9), Color(1, 1, 1, alpha), 3.0, true)
@@ -188,7 +188,7 @@ func _feed_row(center: Vector2, killer: Brawler, victim: Brawler, alpha: float) 
 	var vc := BLUE if victim.team == GameData.local_team else RED
 	var vr := Rect2(row.end.x - 6 - icon, row.position.y + 2, icon, icon)
 	_box(vr, Color(vc, 0.8 * alpha), 6)
-	draw_texture_rect(victim.species.sprite, vr, false, Color(0.6, 0.6, 0.6, alpha))
+	draw_texture_rect(victim.portrait(), vr, false, Color(0.6, 0.6, 0.6, alpha))
 
 
 func _box(rect: Rect2, color: Color, radius: int) -> void:

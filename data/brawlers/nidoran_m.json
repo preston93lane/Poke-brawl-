@@ -3,6 +3,7 @@
 	"types": ["poison"],
 	"sprite": "res://assets/brawlers/nidoran_m.png",
 	"sprite_scale": 1.0,
+	"sprite_height": 40,
 	"style": "brawler",
 	"stats": {"hp": 4450, "attack": 104, "defense": 84, "speed": 95},
 	"super": "nidoran_m_super",

@@ -3,6 +3,7 @@
 	"types": ["water"],
 	"sprite": "res://assets/brawlers/squirtle.png",
 	"sprite_scale": 1.0,
+	"sprite_height": 39,
 	"style": "gunner",
 	"stats": {"hp": 3300, "attack": 99, "defense": 99, "speed": 92},
 	"super": "withdraw",

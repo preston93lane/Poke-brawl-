@@ -3,6 +3,7 @@
 	"types": ["water"],
 	"sprite": "res://assets/brawlers/magikarp.png",
 	"sprite_scale": 1.0,
+	"sprite_height": 57,
 	"style": "stream",
 	"stats": {"hp": 3100, "attack": 85, "defense": 82, "speed": 107},
 	"super": "magikarp_super",

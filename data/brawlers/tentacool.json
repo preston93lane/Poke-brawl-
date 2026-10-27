@@ -3,6 +3,7 @@
 	"types": ["water", "poison"],
 	"sprite": "res://assets/brawlers/tentacool.png",
 	"sprite_scale": 1.0,
+	"sprite_height": 53,
 	"style": "lasher",
 	"stats": {"hp": 3150, "attack": 96, "defense": 100, "speed": 103},
 	"super": "tentacool_super",

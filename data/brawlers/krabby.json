@@ -3,6 +3,7 @@
 	"types": ["water"],
 	"sprite": "res://assets/brawlers/krabby.png",
 	"sprite_scale": 1.0,
+	"sprite_height": 42,
 	"style": "brawler",
 	"stats": {"hp": 3600, "attack": 126, "defense": 94, "speed": 95},
 	"super": "krabby_super",

@@ -3,6 +3,7 @@
 	"types": ["psychic"],
 	"sprite": "res://assets/brawlers/abra.png",
 	"sprite_scale": 1.0,
+	"sprite_height": 44,
 	"style": "sniper",
 	"stats": {"hp": 2200, "attack": 123, "defense": 81, "speed": 111},
 	"super": "teleport",

@@ -3,6 +3,7 @@
 	"types": ["ground"],
 	"sprite": "res://assets/brawlers/cubone.png",
 	"sprite_scale": 1.0,
+	"sprite_height": 39,
 	"style": "boomerang",
 	"stats": {"hp": 3400, "attack": 99, "defense": 104, "speed": 89},
 	"super": "cubone_super",
