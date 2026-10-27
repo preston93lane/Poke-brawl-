@@ -197,16 +197,11 @@ func _fill_species_grid() -> void:
 		_grid.add_child(UiKit.label("No match", 18))
 
 
-## A line matches a type filter if any stage has that type.
+## Matches the Pokémon's own type(s): dual types show up under both.
 func _matches_filters(s: SpeciesData) -> bool:
 	if _style_filter != "" and s.style != _style_filter:
 		return false
-	if _type_filter == "":
-		return true
-	for stage in GameData.evolution_line(s.id):
-		if stage.has_type(_type_filter):
-			return true
-	return false
+	return _type_filter == "" or s.has_type(_type_filter)
 
 
 func _type_options() -> Array:
@@ -519,6 +514,16 @@ func _species_button(s: SpeciesData, group: ButtonGroup, selected: bool) -> Butt
 	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	b.add_theme_font_size_override("font_size", 15)
 	b.clip_text = true
+	# Type chips in the top corner (both types for dual-type Pokémon).
+	var chips := VBoxContainer.new()
+	chips.add_theme_constant_override("separation", 2)
+	chips.position = Vector2(4, 4)
+	chips.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for t in s.types:
+		var chip := UiKit.type_chip(t, 10, t.substr(0, 3).to_upper())
+		chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		chips.add_child(chip)
+	b.add_child(chips)
 	return b
 
 

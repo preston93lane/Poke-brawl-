@@ -306,7 +306,14 @@ func _check_menu() -> void:
 				picked = s
 		if picked == null or not menu._matches_filters(picked):
 			all_fire = false
-	expect(all_fire, "type filter shows only fire lines (%d)" % menu._grid.get_child_count())
+	expect(all_fire, "type filter shows only fire Pokémon (%d)" % menu._grid.get_child_count())
+	menu._type_filter = "steel"
+	menu._fill_species_grid()
+	var steel_names: Array[String] = []
+	for grid_card in menu._grid.get_children():
+		if grid_card is Button:
+			steel_names.append((grid_card as Button).text)
+	expect("Magnemite" in steel_names and "Charmander" not in steel_names, "dual types count: Magnemite is under steel (%s)" % ", ".join(steel_names))
 	menu._type_filter = ""
 	menu._fill_species_grid()
 	await get_tree().process_frame
@@ -351,7 +358,7 @@ func _check_menu() -> void:
 
 func _touch(at: Vector2, pressed: bool) -> void:
 	var e := InputEventScreenTouch.new()
-	e.index = 0
+	e.index = 913  # Like iPhone Safari: finger ids aren't 0.
 	e.position = at
 	e.pressed = pressed
 	get_viewport().push_input(e, true)
@@ -359,7 +366,7 @@ func _touch(at: Vector2, pressed: bool) -> void:
 
 func _drag(at: Vector2, relative: Vector2) -> void:
 	var e := InputEventScreenDrag.new()
-	e.index = 0
+	e.index = 913
 	e.position = at
 	e.relative = relative
 	get_viewport().push_input(e, true)

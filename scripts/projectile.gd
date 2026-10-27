@@ -30,6 +30,10 @@ var _bounces_left := 0
 var _returning := false
 var _lob_start := Vector3.ZERO
 var _lob_height := 2.0
+## Breakables this shot already smashed through (supers), ignored by later rays.
+var _smashed: Array[RID] = []
+var _core: Sprite3D
+var _spin := false
 
 @onready var mesh: MeshInstance3D = $Mesh
 @onready var shape: CollisionShape3D = $CollisionShape3D
@@ -49,6 +53,12 @@ func _ready() -> void:
 	mesh.material_override = Vfx.core_material(move.type)
 	var size := move.radius / 0.3
 	mesh.scale = Vector3.ONE * size * (1.3 if move.lob else 0.8)
+	# Shaped core (fireball, bolt, droplet, leaf...) instead of a plain glowing ball.
+	_core = Vfx.core_sprite(move.type, move.radius * (1.3 if move.lob else 1.0))
+	if _core:
+		mesh.visible = false
+		add_child(_core)
+		_spin = Vfx.style(move.type).get("spin", false)
 	_jitter = float(Vfx.style(move.type).get("jitter", 0.0))
 	_trail = Vfx.trail(move.type, move.radius)
 	add_child(_trail)
@@ -59,9 +69,17 @@ func _ready() -> void:
 	_lob_height = clampf(lob_distance * 0.3, 1.2, 3.0)
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if _jitter > 0.0:  # Electric shots crackle.
 		mesh.position = Vector3(randf_range(-1, 1), randf_range(-1, 1), randf_range(-1, 1)) * _jitter
+	if _core:
+		if _jitter > 0.0:  # Lightning flickers between poses.
+			_core.position = mesh.position
+			if randf() < 0.4:
+				_core.rotation.z = randf_range(-0.6, 0.6)
+				_core.flip_h = randf() < 0.5
+		elif _spin:
+			_core.rotation.z += delta * 9.0
 
 
 func _physics_process(delta: float) -> void:
@@ -84,8 +102,15 @@ func _physics_process(delta: float) -> void:
 		var to := from + direction * step
 		if not _returning:
 			var query := PhysicsRayQueryParameters3D.create(from, to + direction * move.radius, Brawler.WALL_MASK)
+			query.exclude = _smashed
 			var hit := space.intersect_ray(query)
 			if not hit.is_empty():
+				var breakable := hit.get("collider") as Breakable
+				if breakable and is_instance_valid(shooter) and move.explode_radius <= 0.0:
+					var broke := breakable.take_attack(shooter, move, _distance_multiplier())
+					if broke and move.slot == "super":
+						_smashed.append(breakable.get_rid())  # Supers smash straight through.
+						continue
 				_hit_wall(hit)
 				return
 		global_position = to
@@ -188,7 +213,7 @@ func _check_brawlers() -> void:
 		if target.team == team:
 			if move.heal_allies > 0.0 and target not in _healed and is_instance_valid(shooter):
 				_healed.append(target)
-				target.heal(move.heal_allies * shooter.power_bonus())
+				target.heal(move.heal_allies * shooter.power_bonus(), shooter)
 			continue
 		if target in _hit:
 			continue
@@ -247,25 +272,8 @@ func _chain_from(first: Brawler) -> void:
 
 
 func _zap(a: Vector3, b: Vector3) -> void:
-	var from := a + Vector3(0, 0.9, 0)
 	var to := b + Vector3(0, 0.9, 0)
-	var bolt := MeshInstance3D.new()
-	var box := BoxMesh.new()
-	box.size = Vector3(0.12, 0.12, from.distance_to(to))
-	bolt.mesh = box
-	var mat := StandardMaterial3D.new()
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.albedo_color = Color(GameData.type_color(move.type).lightened(0.5), 0.9)
-	bolt.material_override = mat
-	bolt.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	get_parent().add_child(bolt)
-	bolt.global_position = (from + to) * 0.5
-	if from.distance_to(to) > 0.01:
-		bolt.look_at(to, Vector3.UP)
-	var tween := bolt.create_tween()
-	tween.tween_property(mat, "albedo_color:a", 0.0, 0.25)
-	tween.tween_callback(bolt.queue_free)
+	Vfx.lightning(get_parent(), a + Vector3(0, 0.9, 0), to, move.type)
 	Vfx.burst(get_parent(), to, move.type, 8, 0.2, 2.5)
 
 
@@ -309,6 +317,7 @@ func _explode(radius: float) -> void:
 					and Brawler.clear_between(self, global_position, target.global_position):
 				target.take_hit(shooter, move, _distance_multiplier())
 				_knock(target)
+		Breakable.hit_area(get_tree(), global_position, radius, shooter, move, _distance_multiplier())
 	_spawn_explosion_fx(radius)
 	Vfx.burst(get_parent(), global_position, move.type, 36, radius * 0.4, 5.0)
 	Vfx.ring(get_parent(), Vector3(global_position.x, 0, global_position.z), radius, move.type)

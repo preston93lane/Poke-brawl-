@@ -2,9 +2,11 @@ class_name Arena
 extends Node3D
 ## Builds an arena from an ASCII tile map in data/arenas/<id>.json.
 ##
-## Legend: . floor   , path   " tall grass (hide)   T tree   # rock wall
-##         B boulder   ~ water (blocks walking except for Water/Flying types, not shots)   1/2 team spawns
-##         (one tile per teammate)   Z king-of-the-hill zone
+## Legend: . floor   , path   " tall grass (hide)   T tree   # rock wall (permanent)
+##         X cracked wall, B boulder (breakable: supers smash them)
+##         ~ water (blocks walking except for Water/Flying types, not shots)   1/2 team spawns
+##         (one tile per teammate)   Z king-of-the-hill zone   G Brawl Ball goal
+##         S Showdown spawn   P Showdown power-cube crate
 ##
 ## Also builds an AStarGrid2D so bots can path around walls (find_path).
 
@@ -26,6 +28,14 @@ var rows := PackedStringArray()
 ## team -> Array[Vector3], one spawn point per teammate.
 var spawns := { 0: [], 1: [] }
 var zone_center := Vector3.ZERO
+var mode := "duel"
+## Brawl Ball: team -> { cell: true } of the goal that team defends.
+var goal_cells := { 0: {}, 1: {} }
+## Showdown spawn points (S tiles).
+var showdown_spawns: Array[Vector3] = []
+var _crate_mesh: BoxMesh
+var _crate_material: StandardMaterial3D
+var _breakable_mesh: BoxMesh
 
 var _zone_cells := {}
 var _zone_material: StandardMaterial3D
@@ -34,8 +44,10 @@ var _astar := AStarGrid2D.new()
 var _swim_astar := AStarGrid2D.new()
 
 
-## use_zone = false treats Z tiles as plain floor (modes without a zone).
-func build(arena_id: String, sprite_tilt_degrees: float, use_zone := true) -> void:
+## Mode-specific tiles (Z zone, G goals, P crates) are plain floor in other modes.
+func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> void:
+	mode = p_mode
+	var use_zone := mode == "king_of_the_hill"
 	var def: Dictionary = GameData.arenas.get(arena_id, {})
 	if def.is_empty():
 		push_error("Arena: unknown arena '%s'" % arena_id)
@@ -55,6 +67,9 @@ func build(arena_id: String, sprite_tilt_degrees: float, use_zone := true) -> vo
 	var zone: Array[Transform3D] = []
 	var solid_cells := {}
 	var water_cells := {}
+	## Breakable tiles: block paths like walls but get their own bodies.
+	var breakable_cells := {}  # cell -> "cracked" / "boulder" / "crate"
+	var goal_tiles: Array[Vector2i] = []
 
 	var tilt := Basis(Vector3.RIGHT, -deg_to_rad(sprite_tilt_degrees))
 	for y in height:
@@ -62,6 +77,8 @@ func build(arena_id: String, sprite_tilt_degrees: float, use_zone := true) -> vo
 			var cell := Vector2i(x, y)
 			var c := _char_at(cell)
 			if c == "Z" and not use_zone:
+				c = "."
+			if (c == "G" and mode != "brawl_ball") or (c == "P" and mode != "showdown"):
 				c = "."
 			var center := cell_center(cell)
 			var floor_name := floor_tile
@@ -84,8 +101,16 @@ func build(arena_id: String, sprite_tilt_degrees: float, use_zone := true) -> vo
 					solid_cells[cell] = true
 					rocks.append(Transform3D(Basis(), center + Vector3(0, WALL_HEIGHT * 0.5, 0)))
 				"B":
-					solid_cells[cell] = true
-					boulders.append(Transform3D(Basis(), center + Vector3(0, WALL_HEIGHT * 0.5, 0)))
+					breakable_cells[cell] = "boulder"
+				"X":
+					breakable_cells[cell] = "cracked"
+				"P":
+					breakable_cells[cell] = "crate"
+				"G":
+					goal_tiles.append(cell)
+					zone.append(Transform3D(Basis(), center + Vector3(0, 0.02, 0)))
+				"S":
+					showdown_spawns.append(center)
 				"~":
 					water_cells[cell] = true
 				"\"":
@@ -102,10 +127,18 @@ func build(arena_id: String, sprite_tilt_degrees: float, use_zone := true) -> vo
 
 	_build_colliders(solid_cells, WORLD_LAYER, TREE_COLLIDER_HEIGHT)
 	_build_colliders(water_cells, WATER_LAYER, 1.0)
-	_build_pathfinding(solid_cells, water_cells)
+	var path_blocked := solid_cells.duplicate()
+	for cell: Vector2i in breakable_cells:
+		path_blocked[cell] = true
+	_build_pathfinding(path_blocked, water_cells)
 	for team: int in spawns:
 		if spawns[team].is_empty():
 			spawns[team].append(Vector3(0, 0, (height * 0.5 - 3.0) * (1.0 if team == 0 else -1.0)))
+	# Each goal belongs to the team whose spawn is nearer (they defend it).
+	for cell in goal_tiles:
+		var p := cell_center(cell)
+		var team := 0 if p.distance_to(spawns[0][0]) < p.distance_to(spawns[1][0]) else 1
+		goal_cells[team][cell] = true
 
 	var floor_plane := PlaneMesh.new()
 	floor_plane.size = Vector2(TILE, TILE)
@@ -118,6 +151,16 @@ func build(arena_id: String, sprite_tilt_degrees: float, use_zone := true) -> vo
 	block.size = Vector3(TILE, WALL_HEIGHT, TILE)
 	_add_multimesh(block, _tile_material("rock", true), rocks)
 	_add_multimesh(block, _tile_material("boulder", true), boulders)
+	_breakable_mesh = block
+	var materials := {
+		"cracked": _tile_material("cracked", true),
+		"boulder": _tile_material("boulder", true),
+		"crate": _tile_material("crate", true),
+	}
+	_crate_material = materials["crate"]
+	for cell: Vector2i in breakable_cells:
+		var kind: String = breakable_cells[cell]
+		_add_breakable(cell, "crate" if kind == "crate" else "wall", materials[kind])
 
 	var grass_mat := ShaderMaterial.new()
 	grass_mat.shader = GRASS_SHADER
@@ -131,7 +174,7 @@ func build(arena_id: String, sprite_tilt_degrees: float, use_zone := true) -> vo
 	_add_multimesh(tree_quad, tree_mat, trees, false)
 
 	if not zone.is_empty():
-		_zone_material = _tile_material("zone", false, false)
+		_zone_material = _tile_material("goal" if mode == "brawl_ball" else "zone", false, false)
 		_zone_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		_zone_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		_add_multimesh(floor_plane, _zone_material, zone, false)
@@ -140,6 +183,8 @@ func build(arena_id: String, sprite_tilt_degrees: float, use_zone := true) -> vo
 			sum += t.origin
 		zone_center = Vector3(sum.x, 0, sum.z) / zone.size()
 		set_zone_owner(-1)
+		if mode == "brawl_ball":
+			_zone_material.albedo_color = Color(1, 1, 1, 0.9)
 
 	# Dark ground outside the map so the edge of the world isn't empty.
 	var outside_mat := _tile_material("grass_1")
@@ -152,6 +197,67 @@ func build(arena_id: String, sprite_tilt_degrees: float, use_zone := true) -> vo
 	outside.material_override = outside_mat
 	outside.position.y = -0.03
 	add_child(outside)
+
+
+func _add_breakable(cell: Vector2i, kind: String, material: Material) -> Breakable:
+	var b := Breakable.new()
+	b.setup(cell, kind, _breakable_mesh, material, float(GameData.rule("modes/showdown/crate_hp", 3000.0)))
+	b.position = cell_center(cell)
+	add_child(b)
+	return b
+
+
+## Puts a power-cube crate on an open floor tile (Showdown on maps without P tiles).
+func add_crate(cell: Vector2i) -> Breakable:
+	_astar.set_point_solid(cell)
+	_swim_astar.set_point_solid(cell)
+	rows[cell.y] = rows[cell.y].substr(0, cell.x) + "P" + rows[cell.y].substr(cell.x + 1)
+	return _add_breakable(cell, "crate", _crate_material)
+
+
+## A breakable tile was destroyed: the ground there is open now.
+func on_breakable_broken(b: Breakable) -> void:
+	_astar.set_point_solid(b.cell, false)
+	_swim_astar.set_point_solid(b.cell, false)
+	rows[b.cell.y] = rows[b.cell.y].substr(0, b.cell.x) + "." + rows[b.cell.y].substr(b.cell.x + 1)
+
+
+## Which team defends the goal at `world_pos` (-1 if it isn't in a goal).
+func goal_owner(world_pos: Vector3) -> int:
+	var cell := world_to_cell(world_pos)
+	for team: int in goal_cells:
+		if goal_cells[team].has(cell):
+			return team
+	return -1
+
+
+## Middle of the goal `team` defends.
+func goal_center(team: int) -> Vector3:
+	var sum := Vector3.ZERO
+	for cell: Vector2i in goal_cells[team]:
+		sum += cell_center(cell)
+	return sum / maxf(1.0, goal_cells[team].size())
+
+
+## Spawn for Showdown player `index` of `count`: S tiles, else spread around the map.
+func showdown_point(index: int, count: int) -> Vector3:
+	if showdown_spawns.size() >= count:
+		return showdown_spawns[index]
+	var angle := TAU * index / count + 0.4
+	var want := Vector3(sin(angle) * width * 0.36, 0, cos(angle) * height * 0.38)
+	return nearest_open(want)
+
+
+## The walkable tile centre closest to `world_pos`.
+func nearest_open(world_pos: Vector3) -> Vector3:
+	var start := world_to_cell(world_pos)
+	for radius in range(0, 12):
+		for dy in range(-radius, radius + 1):
+			for dx in range(-radius, radius + 1):
+				var cell := start + Vector2i(dx, dy)
+				if _astar.is_in_boundsv(cell) and not _astar.is_point_solid(cell) and _char_at(cell) != "\"":
+					return cell_center(cell)
+	return world_pos
 
 
 ## Spawn point for the `index`-th member of `team`.
@@ -181,7 +287,7 @@ func random_open_point() -> Vector3:
 	for attempt in 60:
 		var cell := Vector2i(randi_range(1, width - 2), randi_range(1, height - 2))
 		var c := _char_at(cell)
-		if c in [".", ",", "Z"] and not _astar.is_point_solid(cell):
+		if c in [".", ",", "Z", "S"] and not _astar.is_point_solid(cell):
 			return cell_center(cell)
 	return Vector3.ZERO
 

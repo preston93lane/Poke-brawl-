@@ -184,18 +184,22 @@ func all_types() -> Array[String]:
 	return result
 
 
-## Arenas that support a mode ("king_of_the_hill" needs Z tiles).
+## Arenas that support a mode: King of the Hill needs Z tiles, Brawl Ball needs G goals,
+## and an arena's optional "modes" list limits it to those modes.
 func arenas_for_mode(mode: String) -> Array[String]:
 	var result: Array[String] = []
 	var ids: Array = arenas.keys()
 	ids.sort()
 	for id: String in ids:
-		var has_zone := false
-		for row in arenas[id].get("map", []):
-			if "Z" in str(row):
-				has_zone = true
-		if mode != "king_of_the_hill" or has_zone:
-			result.append(id)
+		var allowed: Array = arenas[id].get("modes", [])
+		if not allowed.is_empty() and mode not in allowed:
+			continue
+		var text := "".join(PackedStringArray(arenas[id].get("map", [])))
+		if mode == "king_of_the_hill" and "Z" not in text:
+			continue
+		if mode == "brawl_ball" and "G" not in text:
+			continue
+		result.append(id)
 	return result
 
 

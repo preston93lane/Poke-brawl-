@@ -55,4 +55,5 @@ func _physics_process(delta: float) -> void:
 		offset.y = 0.0
 		if offset.length() <= move.linger_radius + Brawler.BODY_RADIUS * 0.5:
 			target.take_hit(shooter, move, TICK)
+	Breakable.hit_area(get_tree(), global_position, move.linger_radius, shooter, move, TICK)
 	Vfx.burst(get_parent(), global_position + Vector3(0, 0.2, 0), move.type, 6, move.linger_radius * 0.6, 1.2)

@@ -80,6 +80,21 @@ var evolve_kills := 0
 ## Branch to take when a line splits (Eevee); "" = random.
 var preferred_evolution := ""
 
+# Match stats for the summary screen.
+var damage_dealt := 0.0
+var healing_done := 0.0
+var deaths := 0
+var goals := 0
+var candies_collected := 0
+## Showdown finishing place (1 = winner, 0 = not out yet).
+var placement := 0
+## Rare Candies carried (Rare Candy Rush); dropped when you faint.
+var candies := 0
+## Showdown power cubes: each adds max HP and damage.
+var power_cubes := 0
+## Brawl Ball: the ball while you're carrying it (your attack kicks it).
+var ball: Ball
+
 var _gadget_timer := 0.0
 ## Short shove from knockback (or a pull), applied over a few frames.
 var _knock_velocity := Vector3.ZERO
@@ -115,6 +130,7 @@ var _dash_time := 0.0
 var _dash_dir := Vector3.ZERO
 var _dash_move: MoveData
 var _dash_hit: Array[Brawler] = []
+var _dash_broke: Array[Breakable] = []
 
 var _melee_material: StandardMaterial3D
 var _melee_tween: Tween
@@ -253,6 +269,15 @@ func pickup(item: Dictionary) -> void:
 		_apply_species()
 		health += max_health - before
 	_spawn_floating_text(str(item.get("name", "Item")).to_upper(), Color(0.7, 1.0, 1.0), 56, 2.4)
+
+
+## Showdown power cube: more max HP (and healed by the same amount) and more damage.
+func add_power_cube() -> void:
+	power_cubes += 1
+	var before := max_health
+	_apply_species()
+	health += max_health - before
+	_spawn_floating_text("POWER UP!", Color(0.5, 1.0, 0.55), 56, 2.4)
 	Vfx.burst(get_parent(), global_position + Vector3(0, 0.9, 0), "fairy", 16, 0.4, 2.0)
 
 
@@ -269,11 +294,14 @@ func _buff(stat: String) -> float:
 	return float(b.get("amount", 0.0)) if float(b.get("time", 0.0)) > 0.0 else 0.0
 
 
-func heal(amount: float) -> void:
+## `source` (if any) gets credit for the healing on the match summary.
+func heal(amount: float, source: Brawler = null) -> void:
 	if is_dead or amount <= 0.0:
 		return
 	var healed := minf(amount, max_health - health)
 	health += healed
+	if is_instance_valid(source):
+		source.healing_done += healed
 	if healed >= 1.0:
 		_spawn_floating_text("+%d" % roundi(healed), Color(0.5, 1.0, 0.5), 56)
 		if healed > max_health * 0.05:
@@ -298,7 +326,8 @@ func _pick_move(slot: String, move_id: String) -> MoveData:
 
 ## Damage multiplier from level (attacks get a little stronger as you level up).
 func power_bonus() -> float:
-	return 1.0 + float(GameData.rule("level_power_bonus", 0.04)) * (level - 1)
+	return (1.0 + float(GameData.rule("level_power_bonus", 0.04)) * (level - 1)) \
+			* (1.0 + float(GameData.rule("modes/showdown/cube_damage", 0.1)) * power_cubes)
 
 
 ## Physics layers that stop this brawler walking (swimmers cross water).
@@ -328,7 +357,7 @@ func _apply_species() -> void:
 	can_swim = flying or species.has_type("water") or species.has_type("flying")
 	collision_mask = walk_mask()
 	var bonus := 1.0 + float(GameData.rule("level/stat_bonus_per_level", 0.05)) * (level - 1)
-	max_health = species.hp * bonus * (1.0 + _hp_bonus)
+	max_health = species.hp * bonus * (1.0 + _hp_bonus + float(GameData.rule("modes/showdown/cube_hp", 0.1)) * power_cubes)
 	attack = species.attack * bonus
 	defense = species.defense * bonus
 	move_speed = species.speed * float(GameData.rule("speed_to_meters", 0.05))
@@ -387,6 +416,7 @@ func respawn(spawn_position: Vector3) -> void:
 	_boosts = { "attack": 0.0, "defense": 0.0, "speed": 0.0 }
 	_extra_ammo = 0
 	_hp_bonus = 0.0
+	power_cubes = 0
 	_apply_species()
 	_refresh_main_move()
 	protect(float(GameData.rule("spawn_protection", 2.0)))
@@ -441,7 +471,7 @@ func is_streaming() -> bool:
 ## while the trigger is held; it stops by itself when calls stop.
 func stream(direction: Vector3) -> bool:
 	direction.y = 0.0
-	if main_move.kind != "stream" or direction.length_squared() < 0.0001 or not can_shoot():
+	if ball != null or main_move.kind != "stream" or direction.length_squared() < 0.0001 or not can_shoot():
 		return false
 	_stream_dir = direction.normalized()
 	facing = _stream_dir
@@ -457,6 +487,8 @@ func stream(direction: Vector3) -> bool:
 
 ## Fire the main attack. `distance` is where lobbed shots land (< 0 = full range).
 func use_main(direction: Vector3, distance := -1.0) -> bool:
+	if ball != null:
+		return _kick(direction, distance)
 	if main_move.kind == "stream":
 		return stream(direction)
 	direction.y = 0.0
@@ -466,6 +498,24 @@ func use_main(direction: Vector3, distance := -1.0) -> bool:
 	ammo -= 1.0
 	_on_attack(direction, main_move)
 	_perform(main_move, direction, distance)
+	return true
+
+
+## Brawl Ball: while carrying, the attack kicks the ball (`distance` < 0 = full power).
+func _kick(direction: Vector3, distance: float) -> bool:
+	direction.y = 0.0
+	if _busy() or _attack_lock > 0.0:
+		return false
+	if direction.length_squared() < 0.0001:
+		direction = facing
+	direction = direction.normalized()
+	facing = direction
+	_attack_lock = 0.35
+	_pop = 1.15
+	_reveal_timer = float(GameData.rule("tall_grass/reveal_time_after_attack", 1.0))
+	_invisible_time = 0.0
+	_protect_time = 0.0
+	ball.kick(self, direction, distance)
 	return true
 
 
@@ -555,6 +605,7 @@ func _melee_swing(move: MoveData, direction: Vector3) -> void:
 	for other in _enemies_in_cone(direction, move.reach, move.arc):
 		other.take_hit(self, move)
 		other.knock_from(global_position, move.knockback)
+	Breakable.hit_cone(get_tree(), global_position, direction, move.reach, move.arc, self, move)
 
 
 ## Push away from `origin` by `distance` metres (negative pulls toward it, stopping short).
@@ -599,6 +650,7 @@ func _start_dash(move: MoveData, direction: Vector3) -> void:
 	_dash_dir = direction
 	_dash_time = move.dash_distance / move.dash_speed
 	_dash_hit.clear()
+	_dash_broke.clear()
 	if _dash_trail:
 		_dash_trail.queue_free()
 	_dash_trail = Vfx.trail(move.type, 0.5)
@@ -652,6 +704,7 @@ func _area_strike(move: MoveData, center: Vector3) -> void:
 		if offset.length() <= move.area_radius + BODY_RADIUS and Brawler.clear_between(self, center, other.global_position):
 			other.take_hit(self, move)
 			other.knock_from(center, move.knockback)
+	Breakable.hit_area(get_tree(), center, move.area_radius, self, move)
 	Vfx.ring(parent, center, move.area_radius, move.type, 50)
 	Vfx.burst(parent, center + Vector3(0, 0.3, 0), move.type, 30, move.area_radius * 0.6, 3.5)
 	var mat := fx.material_override as StandardMaterial3D
@@ -676,7 +729,7 @@ func _apply_support(move: MoveData, direction: Vector3) -> void:
 		allies = allies_within(move.support_radius)
 	if move.team_heal > 0.0:
 		for ally: Brawler in allies:
-			ally.heal(ally.max_health * move.team_heal)
+			ally.heal(ally.max_health * move.team_heal, self)
 	if not move.buff.is_empty():
 		apply_buff(move.buff)
 		if move.buff.get("allies", false):
@@ -719,6 +772,12 @@ func is_blind() -> bool:
 
 func _process_dash(delta: float) -> void:
 	_dash_time -= delta
+	# Crates in the way take a hit; dashing supers smash through breakable walls.
+	for b in Breakable.near(get_tree(), global_position + _dash_dir * 0.7, 0.2):
+		if b not in _dash_broke:
+			_dash_broke.append(b)
+			if not b.take_attack(self, _dash_move):
+				_dash_time = 0.0
 	velocity = _dash_dir * _dash_move.dash_speed
 	move_and_slide()
 	for other in enemies():
@@ -751,6 +810,7 @@ func _slam(move: MoveData) -> void:
 		if offset.length() <= move.explode_radius + BODY_RADIUS and has_line_of_sight_to(other):
 			other.take_hit(self, move)
 			other.knock_from(global_position, move.knockback)
+	Breakable.hit_area(get_tree(), global_position, move.explode_radius, self, move)
 	Vfx.ring(parent, global_position, move.explode_radius, move.type, 50)
 	Vfx.burst(parent, global_position + Vector3(0, 0.3, 0), move.type, 30, move.explode_radius * 0.5, 4.0)
 	_pop = 0.75
@@ -862,6 +922,8 @@ func take_damage(amount: float, source: Brawler = null, effectiveness := 1.0, cr
 	if source:
 		_last_attacker = source
 		damage_by_team[source.team] = float(damage_by_team.get(source.team, 0.0)) + minf(amount, health)
+		if source != self:
+			source.damage_dealt += minf(amount, health)
 	_pop = 0.86
 	health = maxf(0.0, health - amount)
 	_regen_timer = 0.0
@@ -979,6 +1041,7 @@ func _tick_stream(delta: float) -> void:
 		_stream_tick += STREAM_TICK
 		for other in _enemies_in_cone(_stream_dir, move.reach, move.arc):
 			other.take_hit(self, move, STREAM_TICK)
+		Breakable.hit_cone(get_tree(), global_position, _stream_dir, move.reach, move.arc, self, move, STREAM_TICK)
 	if ammo <= 0.0:
 		_stream_hold = 0.0
 	# Visual: a flickering cone, cut short by walls.
@@ -998,6 +1061,9 @@ func _tick_stream(delta: float) -> void:
 
 func _die() -> void:
 	is_dead = true
+	deaths += 1
+	if ball:
+		ball.drop()
 	_stream_hold = 0.0
 	_invisible_time = 0.0
 	Vfx.burst(get_parent(), global_position + Vector3(0, 0.6, 0), "normal", 30, 0.5, 3.5)

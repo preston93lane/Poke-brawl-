@@ -11,6 +11,8 @@ const DRAG_THRESHOLD := 14.0
 const FRICTION := 4.0
 
 var _tracking := false
+## Finger being followed. iPhone Safari numbers fingers with big arbitrary ids, not 0, 1, 2…
+var _touch_index := -1
 var _dragging := false
 var _start := Vector2.ZERO
 var _last_y := 0.0
@@ -58,18 +60,18 @@ func _input(event: InputEvent) -> void:
 		return
 	if event is InputEventScreenTouch:
 		var touch := event as InputEventScreenTouch
-		if touch.index != 0:
-			return
-		if touch.pressed and _inside(touch.position):
+		if touch.pressed and not _tracking and _inside(touch.position):
 			_tracking = true
+			_touch_index = touch.index
 			_dragging = false
 			_start = touch.position
 			_last_y = touch.position.y
 			_velocity = 0.0
 			_fling = 0.0
 			get_viewport().set_input_as_handled()
-		elif not touch.pressed and _tracking:
+		elif not touch.pressed and _tracking and touch.index == _touch_index:
 			_tracking = false
+			_touch_index = -1
 			if _dragging:
 				_fling = _velocity
 			else:
@@ -77,7 +79,7 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 	elif event is InputEventScreenDrag and _tracking:
 		var drag := event as InputEventScreenDrag
-		if drag.index != 0:
+		if drag.index != _touch_index:
 			return
 		if not _dragging and absf(drag.position.y - _start.y) > DRAG_THRESHOLD:
 			_dragging = true

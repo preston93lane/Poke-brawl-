@@ -53,7 +53,31 @@ def pp_up():
     return shade(im)
 
 
+def rare_candy():
+    """Rare Candy: blue wrapper with twisted ends and a white star-diamond."""
+    im = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    d.polygon([(4, 20), (18, 28), (18, 36), (4, 44)], fill=(90, 150, 240, 255), outline=OL)
+    d.polygon([(60, 20), (46, 28), (46, 36), (60, 44)], fill=(90, 150, 240, 255), outline=OL)
+    d.ellipse([14, 14, 50, 50], fill=(70, 120, 230, 255), outline=OL, width=3)
+    d.polygon([(32, 20), (40, 32), (32, 44), (24, 32)], fill=(250, 250, 255, 255), outline=OL)
+    d.ellipse([20, 18, 28, 26], fill=(190, 215, 255, 200))
+    return shade(im)
+
+
+def power_cube():
+    """Showdown power cube: glowing green box."""
+    im = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    d.polygon([(32, 6), (58, 18), (32, 30), (6, 18)], fill=(170, 255, 180, 255), outline=OL)
+    d.polygon([(6, 18), (32, 30), (32, 60), (6, 46)], fill=(60, 200, 90, 255), outline=OL)
+    d.polygon([(58, 18), (32, 30), (32, 60), (58, 46)], fill=(30, 150, 60, 255), outline=OL)
+    return shade(im)
+
+
 ITEMS = {
+    "rare_candy": rare_candy,
+    "power_cube": power_cube,
     "potion": potion,
     "protein": lambda: bottle((220, 70, 60, 255), (250, 240, 230, 255), "ATK", (200, 40, 30, 255)),
     "iron": lambda: bottle((70, 120, 220, 255), (250, 240, 230, 255), "DEF", (40, 80, 190, 255)),

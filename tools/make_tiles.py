@@ -173,6 +173,49 @@ def zone():
     save(np.full((S, S, 3), 255.0), "zone", alpha=a + 40)
 
 
+def cracked():
+    """Breakable wall: warm sandstone blocks with big dark cracks (supers smash these)."""
+    n = noise(5, 81)
+    img = colorize(n, [(0, (128, 96, 66)), (0.6, (170, 132, 92)), (1, (204, 166, 118))])
+    shade = np.ones((S, S))
+    for y in range(S):
+        for x in range(S):
+            if y % 32 < 2 or (x + (16 if (y // 32) % 2 else 0)) % 32 < 2:
+                shade[y, x] = 0.55
+    cracks = Image.new("L", (S, S), 0)
+    d = ImageDraw.Draw(cracks)
+    r = np.random.default_rng(82)
+    for _ in range(4):
+        x, y = r.integers(6, S - 6), r.integers(6, S - 6)
+        for _ in range(4):
+            nx, ny = x + r.integers(-12, 12), y + r.integers(-12, 12)
+            d.line([(x, y), (nx, ny)], fill=255, width=2)
+            x, y = nx, ny
+    c = np.asarray(cracks).astype(float) / 255
+    save(img * shade[..., None] * (1 - 0.6 * c[..., None]), "cracked")
+
+
+def crate():
+    """Power cube box for Showdown: wooden crate with a glowing cube emblem."""
+    im = Image.new("RGB", (S, S), (150, 100, 56))
+    d = ImageDraw.Draw(im)
+    for y in range(0, S, 16):
+        d.line([(0, y), (S, y)], fill=(112, 72, 40), width=2)
+    d.rectangle([0, 0, S - 1, S - 1], outline=(84, 52, 28), width=5)
+    d.line([(4, 4), (S - 5, S - 5)], fill=(120, 78, 42), width=6)
+    d.rectangle([22, 22, 42, 42], fill=(90, 230, 120), outline=(30, 90, 40), width=3)
+    d.rectangle([26, 26, 32, 32], fill=(210, 255, 220))
+    save(np.asarray(im).astype(float), "crate")
+
+
+def goal():
+    """Brawl Ball goal mouth: white net lines."""
+    a = np.zeros((S, S)); yy, xx = np.mgrid[0:S, 0:S]
+    a[(xx % 8 < 2) | (yy % 8 < 2)] = 150
+    a[(xx < 3) | (yy < 3) | (xx > S - 4) | (yy > S - 4)] = 230
+    save(np.full((S, S, 3), 255.0), "goal", alpha=a + 30)
+
+
 def edge_shadow():
     """Soft dark gradient laid on floor tiles beside walls (fake ambient occlusion)."""
     yy = np.mgrid[0:S, 0:S][0].astype(float)
@@ -183,12 +226,12 @@ def edge_shadow():
 if __name__ == "__main__":
     for seed in (0, 1, 2):
         grass(seed)
-    path(); boulder(); water(); tall_grass(); tree(); zone(); edge_shadow()
+    path(); boulder(); water(); tall_grass(); tree(); zone(); edge_shadow(); cracked(); crate(); goal()
     stone_blocks("rock", (150, 144, 140), 2, 31)
     stone_blocks("gym_floor", (210, 196, 160), 2, 33, bevel=False)
-    names = ["grass_0", "grass_1", "grass_2", "path", "gym_floor", "rock", "boulder", "water", "tall_grass", "zone", "edge_shadow", "tree"]
+    names = ["grass_0", "grass_1", "grass_2", "path", "gym_floor", "rock", "boulder", "water", "tall_grass", "zone", "edge_shadow", "tree", "cracked", "crate", "goal"]
     if len(sys.argv) > 1:
-        sheet = Image.new("RGBA", (12 * 132, 260), (58, 62, 84, 255))
+        sheet = Image.new("RGBA", (len(names) * 132, 260), (58, 62, 84, 255))
         for i, n in enumerate(names):
             im = Image.open(os.path.join(OUT, n + ".png")).convert("RGBA")
             im = im.resize((128, 128 if n != "tree" else 160), Image.NEAREST)

@@ -58,7 +58,7 @@ func _ready() -> void:
 		push_error("Main: unknown species '%s'. Available: %s" % [player_species, ", ".join(GameData.species.keys())])
 		return
 	mode_rules = GameData.rule("modes/" + mode, {})
-	arena.build(arena_id, camera.pitch_degrees, mode == "king_of_the_hill")
+	arena.build(arena_id, camera.pitch_degrees, mode)
 	if mode == "king_of_the_hill" and not arena.has_zone():
 		push_warning("Arena '%s' has no Z tiles; switching to battle" % arena_id)
 		mode = "duel"
