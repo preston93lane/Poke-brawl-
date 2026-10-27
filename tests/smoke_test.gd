@@ -953,7 +953,7 @@ func _check_all_arenas() -> void:
 		var main := await _start_match(arena_id, mode, "pikachu", [])
 		var arena: Arena = main.arena
 		var path: PackedVector3Array = arena.find_path(main.teams[0][0].global_position, main.teams[1][0].global_position)
-		var ok := not path.is_empty() and (mode == "showdown" or (arena.spawns[0].size() >= 3 and arena.spawns[1].size() >= 3))
+		var ok: bool = not path.is_empty() and (mode == "showdown" or (arena.spawns[0].size() >= 3 and arena.spawns[1].size() >= 3))
 		expect(ok, "%s builds with spawns and a route between teams (%d steps)" % [arena_id, path.size()])
 		main.queue_free()
 		await get_tree().process_frame
