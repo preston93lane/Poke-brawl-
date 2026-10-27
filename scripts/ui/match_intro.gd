@@ -5,6 +5,12 @@ extends Control
 
 signal finished
 
+const BLUE := Color(0.16, 0.42, 0.95)
+const RED := Color(0.9, 0.2, 0.22)
+## About 4 seconds in all: slide in, hold, slide out.
+const SLIDE := 0.6
+const HOLD := 3.0
+
 var _hold_left := 0.0
 
 
@@ -14,6 +20,7 @@ func _input(event: InputEvent) -> void:
 	if (event is InputEventScreenTouch or event is InputEventKey) and event.is_pressed():
 		if _hold_left > 0.0 and _hold_left < HOLD - 1.0:
 			_hold_left = 0.0
+
 
 func play(allies: Array, enemies: Array, mode_title: String, arena_name: String) -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
