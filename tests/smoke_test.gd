@@ -299,7 +299,8 @@ func _check_menu() -> void:
 	await get_tree().process_frame
 	menu.show_select("king_of_the_hill")
 	await get_tree().process_frame
-	expect(GameData.arenas_for_mode("brawl_ball") == ["pallet_pitch"], "only goal arenas offer Brawl Ball")
+	var ball_maps: Array[String] = GameData.arenas_for_mode("brawl_ball")
+	expect("pallet_pitch" in ball_maps and "vermilion_gym" in ball_maps and "route_1" not in ball_maps, "only goal arenas offer Brawl Ball (%s)" % ", ".join(ball_maps))
 	expect("viridian_forest" in GameData.arenas_for_mode("showdown") and "viridian_forest" not in GameData.arenas_for_mode("duel"), "Viridian Forest is Showdown-only")
 	for mode_id in ["brawl_ball", "candy_rush", "showdown"]:
 		menu.show_select(mode_id)
