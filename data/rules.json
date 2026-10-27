@@ -52,7 +52,7 @@
 		"candy_rush": {
 			"_comment": "Rare Candy Rush (Gem Grab): a candy pops out of the mine every spawn_interval s; a team holding candies_to_win and the lead for countdown s wins.",
 			"candies_to_win": 10,
-			"countdown": 15.0,
+			"countdown": 10.0,
 			"spawn_interval": 7.0,
 			"respawn_time": 3.0,
 			"time_limit": 150.0

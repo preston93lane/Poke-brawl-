@@ -44,7 +44,7 @@ The web build uses Godot's Compatibility renderer, so lighting is slightly simpl
 - **Types matter:** STAB, an 18-type chart and coverage moves. Super-effective hits pop up orange with "!".
 - **Evolve** every 3 KOs (yellow pips next to your health bar; fainting doesn't reset them). Faint and you drop back a stage.
 - **Brawl Ball:** touch the Poké Ball to pick it up; your attack kicks it. First to 2 goals.
-  **Rare Candy Rush:** candies pop out of the mine; hold 10 as a team with the lead for 15 s. Fainting drops yours.
+  **Rare Candy Rush:** candies pop out of the mine; hold 10 as a team with the lead for 10 s. Fainting drops yours.
   **Showdown:** 6 Pokémon, everyone for themselves, no respawns. Smash crates for power cubes (+HP, +damage);
   the poison cloud closes in. After every match a summary shows KOs, damage, healing and the MVP.
 - **Walls:** rock walls, trees and gravestones are permanent; cracked walls, boulders and ice blocks break when a

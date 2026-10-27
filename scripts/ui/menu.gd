@@ -7,7 +7,7 @@ const MODES := {
 	"duel": { "button": "BATTLE", "title": "BATTLE 3v3", "blurb": "First team to 10 KOs wins." },
 	"king_of_the_hill": { "button": "KING OF THE HILL", "title": "KING OF THE HILL 3v3", "blurb": "Hold the zone with only your team in it." },
 	"brawl_ball": { "button": "BRAWL BALL", "title": "BRAWL BALL 3v3", "blurb": "Kick the Poké Ball into their goal. First to 2." },
-	"candy_rush": { "button": "RARE CANDY RUSH", "title": "RARE CANDY RUSH 3v3", "blurb": "Grab 10 Rare Candies from the mine and hold them for 15 s." },
+	"candy_rush": { "button": "RARE CANDY RUSH", "title": "RARE CANDY RUSH 3v3", "blurb": "Grab 10 Rare Candies from the mine and hold them for 10 s." },
 	"showdown": { "button": "SHOWDOWN", "title": "SHOWDOWN", "blurb": "Everyone for themselves. Smash crates for power cubes. Last one standing wins." },
 }
 
@@ -113,6 +113,10 @@ func show_select(mode: String) -> void:
 	var title := UiKit.label("%s  —  %s" % [MODES[mode]["title"], MODES[mode]["blurb"]], 26)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	# Long blurbs shorten with "…" instead of pushing the START button off screen.
+	title.clip_text = true
+	title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	title.custom_minimum_size.x = 80
 	top.add_child(title)
 	var start := UiKit.button("START ›", _start_match, 30)
 	start.add_theme_stylebox_override("normal", UiKit.box(Color(0.25, 0.7, 0.35)))
@@ -561,7 +565,16 @@ func _show_dex_entry(s: SpeciesData) -> void:
 
 # --- Helpers ---------------------------------------------------------------
 
+## Every label added to the menu is checked so long text can't make a row wider than
+## the screen: long labels in a row wrap onto more lines instead.
+func _on_node_added(node: Node) -> void:
+	if node is Label and is_ancestor_of(node):
+		UiKit.fit_label.call_deferred(node)
+
+
 func _set_screen(content: Control) -> void:
+	if not get_tree().node_added.is_connected(_on_node_added):
+		get_tree().node_added.connect(_on_node_added)
 	if _screen:
 		_screen.queue_free()
 	var margin := MarginContainer.new()

@@ -33,6 +33,7 @@ func _ready() -> void:
 	await _check_all_arenas()
 	await _check_fullscreen_button()
 	await _check_intro()
+	await _check_menu_fits()
 	Engine.time_scale = 1.0
 	print("SMOKE TEST: %s" % ("PASS" if failures == 0 else "FAIL (%d)" % failures))
 	get_tree().quit(1 if failures > 0 else 0)
@@ -995,4 +996,28 @@ func _check_intro() -> void:
 	await get_tree().create_timer(3.5, true).timeout
 	expect(not get_tree().paused, "the match starts after the intro")
 	main.queue_free()
+	await get_tree().process_frame
+
+
+## Every menu screen must fit the window: nothing pushed off the right edge.
+func _check_menu_fits() -> void:
+	print("Menus fit the screen")
+	var menu := MENU_SCENE.instantiate()
+	add_child(menu)
+	await get_tree().process_frame
+	var view := get_viewport().get_visible_rect().size
+	var screens := []
+	for mode_id in ["duel", "king_of_the_hill", "brawl_ball", "candy_rush", "showdown"]:
+		screens.append(["select " + mode_id, func() -> void: menu.show_select(mode_id)])
+	screens.append(["pokédex", func() -> void: menu.show_pokedex("mewtwo")])
+	screens.append(["settings", func() -> void: menu.show_settings()])
+	screens.append(["map maker", func() -> void: menu.show_map_editor()])
+	screens.append(["home", func() -> void: menu.show_home()])
+	for entry in screens:
+		entry[1].call()
+		for i in 3:
+			await get_tree().process_frame
+		var width: float = menu._screen.get_combined_minimum_size().x
+		expect(width <= view.x, "%s fits the screen (needs %d of %d px)" % [entry[0], width, view.x])
+	menu.queue_free()
 	await get_tree().process_frame

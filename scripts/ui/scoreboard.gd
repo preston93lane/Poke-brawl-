@@ -7,6 +7,10 @@ const PORTRAIT := 46.0
 const BLUE := Color(0.2, 0.5, 1.0)
 const RED := Color(0.95, 0.25, 0.25)
 const FEED_TIME := 4.0
+## The whole scoreboard is drawn this much bigger than its layout numbers.
+const SCALE := 1.35
+## Height of the scaled scoreboard panel on screen (for placing things under it).
+const PANEL_BOTTOM := (10.0 + 62.0) * SCALE
 
 ## team -> Array[Brawler]
 var teams := {}
@@ -45,7 +49,35 @@ func _draw() -> void:
 	var font := ThemeDB.fallback_font
 	var mid := size.x * 0.5
 	var top := 10.0
+	# Draw everything bigger, scaled around the top centre of the screen.
+	draw_set_transform(Vector2(mid * (1.0 - SCALE), 0), 0.0, Vector2(SCALE, SCALE))
+	_draw_board(font, mid, top)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	_draw_countdowns(font, mid)
 
+
+## Big numbers under the scoreboard: the last 10 seconds of the match, and in Rare
+## Candy Rush the countdown when a team is about to win. Translucent so they don't
+## hide the fight.
+func _draw_countdowns(font: Font, mid: float) -> void:
+	var y := PANEL_BOTTOM + 18.0
+	var pulse := 0.5 + 0.5 * sin(Time.get_ticks_msec() * 0.012)
+	var candy_team := int(info.get("countdown_team", -1))
+	if candy_team >= 0:
+		var left := float(info.get("countdown", 0.0))
+		var ours := candy_team == GameData.local_team
+		var color := BLUE.lightened(0.25) if ours else RED.lightened(0.15)
+		var heading := "YOUR TEAM WINS IN" if ours else "ENEMY TEAM WINS IN"
+		_text(font, Vector2(mid - 200, y + 22), 400, heading, 24, Color(color, 0.95))
+		_text(font, Vector2(mid - 200, y + 22 + 74), 400, str(ceili(left)), 80 + int(pulse * 10), Color(color, 0.9))
+		return
+	if mode == "showdown":
+		return
+	if time_left <= 10.0 and time_left > 0.0:
+		_text(font, Vector2(mid - 200, y + 70), 400, str(ceili(time_left)), 76 + int(pulse * 10), Color(1, 0.45, 0.35, 0.85))
+
+
+func _draw_board(font: Font, mid: float, top: float) -> void:
 	if mode == "showdown":
 		_draw_showdown(font, mid, top)
 		return
@@ -68,8 +100,11 @@ func _draw() -> void:
 	_text(font, Vector2(panel.position.x + 4, top + 44), 96, left_text, 36, Color.WHITE)
 	_text(font, Vector2(panel.position.x + 200, top + 44), 96, right_text, 36, Color.WHITE)
 	var seconds := maxi(0, ceili(time_left))
-	var clock_color := Color(1, 0.4, 0.35) if seconds <= 20 else Color.WHITE
-	_text(font, Vector2(mid - 50, top + 38), 100, "%d:%02d" % [seconds / 60, seconds % 60], 28, clock_color)
+	var clock_color := Color.WHITE
+	if seconds <= 30:
+		# Last 30 seconds: the clock turns red and pulses.
+		clock_color = Color(1, 0.4, 0.35).lerp(Color.WHITE, 0.5 + 0.5 * sin(Time.get_ticks_msec() * 0.01))
+	_text(font, Vector2(mid - 50, top + 40), 100, "%d:%02d" % [seconds / 60, seconds % 60], 32, clock_color)
 	var goal := "HOLD THE ZONE" if mode == "king_of_the_hill" else "FIRST TO %d" % int(target)
 	if info.has("goal"):
 		goal = str(info["goal"])
@@ -92,13 +127,8 @@ func _draw() -> void:
 			_portrait(Rect2(x, top + 8, PORTRAIT, PORTRAIT), b, BLUE if team == 0 else RED, font)
 
 	var y := top + 80.0
-	var countdown_team := int(info.get("countdown_team", -1))
-	if countdown_team >= 0:
-		var ours := countdown_team == GameData.local_team
-		var msg := "%s WIN IN %d" % ["YOU" if ours else "THEY", ceili(float(info.get("countdown", 0.0)))]
-		_box(Rect2(mid - 120, y, 240, 34), (BLUE if ours else RED).darkened(0.1), 12)
-		_text(font, Vector2(mid - 120, y + 26), 240, msg, 22, Color.WHITE)
-		y += 44.0
+	if int(info.get("countdown_team", -1)) >= 0 or (time_left <= 10.0 and mode != "showdown"):
+		y += 78.0  # Room for the big countdown (drawn unscaled, under the board).
 	if mode == "king_of_the_hill" and not shrine.is_empty():
 		_draw_shrine(Rect2(mid - 150, y, 300, 26), font)
 		y += 36.0

@@ -215,6 +215,21 @@ static func panel(child: Control) -> PanelContainer:
 	return p
 
 
+## Keep a label from forcing its row wider than the screen: long text in a
+## horizontal row wraps (or, if it's set to clip, shortens with "…").
+static func fit_label(label: Label) -> void:
+	if not is_instance_valid(label) or label.clip_text or label.autowrap_mode != TextServer.AUTOWRAP_OFF:
+		return
+	var parent := label.get_parent()
+	if not (parent is HBoxContainer or parent is HFlowContainer or parent is GridContainer):
+		return
+	if label.text.length() < 26:
+		return
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.custom_minimum_size.x = maxf(label.custom_minimum_size.x, 140.0)
+
+
 ## Touch-friendly vertical scroll list (see DragScroll).
 static func scroll(child: Control) -> ScrollContainer:
 	var s := DragScroll.new()
