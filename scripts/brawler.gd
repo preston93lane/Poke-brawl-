@@ -326,7 +326,7 @@ func _refresh_main_move() -> void:
 
 func _apply_species() -> void:
 	can_swim = flying or species.has_type("water") or species.has_type("flying")
-	collision_mask = (1 | 2) if can_swim else (1 | 2 | WATER_LAYER)
+	collision_mask = walk_mask()
 	var bonus := 1.0 + float(GameData.rule("level/stat_bonus_per_level", 0.05)) * (level - 1)
 	max_health = species.hp * bonus * (1.0 + _hp_bonus)
 	attack = species.attack * bonus

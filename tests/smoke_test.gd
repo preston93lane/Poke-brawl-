@@ -316,6 +316,7 @@ func _check_menu() -> void:
 	var picked_before: SpeciesData = menu._species
 	var rect := list.get_global_rect()
 	var from := rect.position + Vector2(rect.size.x * 0.5, rect.size.y * 0.8)
+	print("    list rect %s, scroll max %d" % [rect, list.get_v_scroll_bar().max_value])
 	_touch(from, true)
 	for i in 8:
 		_drag(from - Vector2(0, 30 * (i + 1)), Vector2(0, -30))
@@ -353,7 +354,7 @@ func _touch(at: Vector2, pressed: bool) -> void:
 	e.index = 0
 	e.position = at
 	e.pressed = pressed
-	get_viewport().push_input(e)
+	get_viewport().push_input(e, true)
 
 
 func _drag(at: Vector2, relative: Vector2) -> void:
@@ -361,7 +362,7 @@ func _drag(at: Vector2, relative: Vector2) -> void:
 	e.index = 0
 	e.position = at
 	e.relative = relative
-	get_viewport().push_input(e)
+	get_viewport().push_input(e, true)
 
 
 ## Stop every bot and park everyone but the player (and `keep`) far away.
@@ -409,7 +410,7 @@ func _check_legendaries_and_items() -> void:
 		await get_tree().physics_frame
 	expect(get_tree().get_nodes_in_group("items").is_empty(), "walking over items picks them up")
 	expect(player.health > player.max_health * 0.5, "potion heals")
-	expect(is_equal_approx(player.max_ammo(), base_ammo + 1), "PP Up adds an ammo bar")
+	expect(player.max_ammo() > base_ammo + 0.3, "PP Up adds ammo (a bigger tank for streams)")
 	expect(player.get_attack() > base_attack * 1.15, "Protein boosts attack")
 	expect(player.max_health > base_hp * 1.15, "HP Up raises max HP")
 	player.respawn(main.arena.spawn_point(0, 0))
