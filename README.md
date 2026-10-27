@@ -47,7 +47,13 @@ The web build uses Godot's Compatibility renderer, so lighting is slightly simpl
   **Rare Candy Rush:** candies pop out of the mine; hold 10 as a team with the lead for 15 s. Fainting drops yours.
   **Showdown:** 6 Pokémon, everyone for themselves, no respawns. Smash crates for power cubes (+HP, +damage);
   the poison cloud closes in. After every match a summary shows KOs, damage, healing and the MVP.
-- **Walls:** rock walls and trees are permanent; cracked walls and boulders break when a super hits them.
+- **Walls:** rock walls, trees and gravestones are permanent; cracked walls, boulders and ice blocks break when a
+  super hits them. Lava (Cinnabar Gym) can only be crossed by Fire and Flying types.
+- **Arenas:** Route 1, Boulder Gym, Dragon's Den, Pallet Pitch, Viridian Forest, all eight Kanto gyms, the Elite Four,
+  the Pokémon Tower graveyard and the Safari Zone.
+- **Map maker** (home screen): paint tiles, pick floor / wall / liquid, mirror top↔bottom or in quadrants, name and
+  save, edit or revert the built-in maps, and test straight away. Maps are saved on your device.
+- **Settings:** drag the sticks and buttons where you like them, resize them, swap sides, toggle aim assist.
 - **Tall grass** hides you until you attack, get hit, or an enemy walks close.
 - Health regenerates after 3 s out of combat. You respawn inside a protective bubble for 2 s (attacking pops it).
 - **Items** appear around the map: Potion (heal), Protein / Iron / Carbos (attack / defense / speed until you faint),

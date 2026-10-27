@@ -126,7 +126,10 @@ The map's top is the enemy side. Keep it 180°-symmetric for fairness.
 **Tiles:** `.` floor, `,` path, `"` tall grass, `T` tree and `#` rock wall (permanent), `X` cracked wall and
 `B` boulder (breakable: supers smash them), `~` water (Water/Flying types walk on it), `1`/`2` team spawns,
 `Z` King of the Hill zone, `G` Brawl Ball goal (each goal belongs to the nearer team), `S` Showdown spawn,
-`P` Showdown power-cube crate. Mode tiles are plain floor in other modes. An optional `"modes": [...]` limits an
+`P` Showdown power-cube crate, `I` ice block (breakable), `K` gravestone (permanent). Optional `"floor"` (grass,
+gym_floor, sand, wood, metal, pool, ice, dark, psychic, volcanic, path), `"wall"` (rock, metal_wall, brick, hedge,
+ice_block, wood_wall, cracked) and `"liquid"` (`water`: Water/Flying types cross it, `lava`: Fire/Flying types).
+Maps made in the map maker are saved to `user://arenas/` and override a built-in map with the same id. Mode tiles are plain floor in other modes. An optional `"modes": [...]` limits an
 arena to those modes (Brawl Ball also needs `G` tiles, King of the Hill needs `Z`). Rare Candy Rush puts its mine
 in the zone's centre, or the middle of the map. Showdown without `S`/`P` tiles spreads spawns and crates itself.
 Mode rules (goals to win, candy countdown, cloud timing and damage, power cube bonuses) are in `rules.json → modes`.

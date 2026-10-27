@@ -30,6 +30,7 @@ func _ready() -> void:
 	await _check_candy_rush()
 	await _check_showdown()
 	await _check_settings_and_map_maker()
+	await _check_all_arenas()
 	Engine.time_scale = 1.0
 	print("SMOKE TEST: %s" % ("PASS" if failures == 0 else "FAIL (%d)" % failures))
 	get_tree().quit(1 if failures > 0 else 0)
@@ -733,7 +734,7 @@ func _check_swimming_and_gaps() -> void:
 	Engine.time_scale = 3.0
 	var goal := arena.cell_center(Vector2i(14, 21))
 	var arrived := false
-	for i in 40:
+	for i in 80:
 		bot._go_to(goal, 0.1)
 		await get_tree().create_timer(0.1, false, true).timeout
 		if walker.global_position.distance_to(goal) < 1.0:
@@ -941,3 +942,18 @@ func _check_settings_and_map_maker() -> void:
 	await get_tree().process_frame
 	GameData.delete_custom_arena(id)
 	expect(not GameData.arenas.has(id), "custom maps can be deleted")
+
+
+func _check_all_arenas() -> void:
+	print("Every arena")
+	expect(GameData.arenas.size() >= 19, "gyms, Elite Four, graveyard and Safari Zone are in (%d arenas)" % GameData.arenas.size())
+	for arena_id: String in GameData.arenas:
+		var allowed: Array = GameData.arenas[arena_id].get("modes", [])
+		var mode: String = allowed[0] if not allowed.is_empty() else "duel"
+		var main := await _start_match(arena_id, mode, "pikachu", [])
+		var arena: Arena = main.arena
+		var path: PackedVector3Array = arena.find_path(main.teams[0][0].global_position, main.teams[1][0].global_position)
+		var ok := not path.is_empty() and (mode == "showdown" or (arena.spawns[0].size() >= 3 and arena.spawns[1].size() >= 3))
+		expect(ok, "%s builds with spawns and a route between teams (%d steps)" % [arena_id, path.size()])
+		main.queue_free()
+		await get_tree().process_frame

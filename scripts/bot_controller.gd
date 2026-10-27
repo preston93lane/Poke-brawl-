@@ -259,7 +259,8 @@ func _fight(delta: float, dir: Vector3, dist: float) -> void:
 	_update_strafe(delta)
 	var strafe := Vector3(-dir.z, 0, dir.x) * _strafe_sign * strafe_amount
 	_plant -= delta
-	if _plant > 0.0 and not brawler.main_move.is_close_range():
+	var heading_for_objective := has_objective and not _in_objective()
+	if _plant > 0.0 and not brawler.main_move.is_close_range() and not heading_for_objective:
 		brawler.move_input = Vector2.ZERO  # Standing still to shoot.
 		return
 	var preferred := preferred_range()
@@ -339,7 +340,13 @@ func _try_attack(dir: Vector3, dist: float) -> void:
 	var main := brawler.main_move
 	if not brawler.can_shoot():
 		return
-	_plant = plant_time
+	var ammo_before := brawler.ammo
+	_attack_main(main, dir, dist, line_of_sight)
+	if brawler.ammo < ammo_before or _stream_time > 0.0:
+		_plant = plant_time  # Only after actually firing.
+
+
+func _attack_main(main: MoveData, dir: Vector3, dist: float, line_of_sight: bool) -> void:
 	match main.kind:
 		"melee":
 			if dist <= main.reach + Brawler.BODY_RADIUS * 0.6 and line_of_sight:
