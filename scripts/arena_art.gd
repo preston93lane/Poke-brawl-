@@ -199,7 +199,7 @@ static func _add_cylinder(st: SurfaceTool, base: Vector3, r_top: float, r_bottom
 		var p2 := base + Vector3(cos(b) * r_top, height, sin(b) * r_top)
 		var p3 := base + Vector3(cos(a) * r_top, height, sin(a) * r_top)
 		var n := Vector3(cos((a + b) * 0.5), 0, sin((a + b) * 0.5))
-		for v in [p0, p1, p2, p0, p2, p3]:
+		for v in [p0, p2, p1, p0, p3, p2]:
 			st.set_color(color)
 			st.set_normal(n)
 			st.add_vertex(v)
@@ -222,7 +222,7 @@ static func _add_blob(st: SurfaceTool, center: Vector3, radius: float, variant: 
 	for r in rings:
 		for s in segs:
 			var quad := [points[r][s], points[r][(s + 1) % segs], points[r + 1][(s + 1) % segs], points[r + 1][s]]
-			for k in [0, 1, 2, 0, 2, 3]:
+			for k in [0, 2, 1, 0, 3, 2]:
 				var d: Vector3 = quad[k]
 				var world := center + d * radius
 				var light := clampf(d.y * 0.5 + 0.5, 0.0, 1.0)
@@ -276,10 +276,10 @@ static func rock_mesh(variant: int) -> ArrayMesh:
 		var n := (b - a).cross(c - a)
 		if n.length() < 0.000001:
 			continue
-		n = -n.normalized()
+		n = n.normalized()
 		var shade := rng.randf_range(0.85, 1.08)
 		var up := clampf(n.y * 0.5 + 0.5, 0.0, 1.0)
-		var color := Color(0.4, 0.35, 0.31).lerp(Color(0.68, 0.62, 0.53), up) * shade
+		var color := Color(0.5, 0.48, 0.45).lerp(Color(0.85, 0.82, 0.76), up) * shade
 		for v in [a, b, c]:
 			st.set_color(color)
 			st.set_normal(n)
