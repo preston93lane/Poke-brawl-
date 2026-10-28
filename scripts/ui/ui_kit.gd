@@ -341,3 +341,19 @@ static func _icon_poly(ci: CanvasItem, c: Vector2, s: float, color: Color, point
 	ci.draw_colored_polygon(pts, color)
 	pts.append(pts[0])
 	ci.draw_polyline(pts, Color(0, 0, 0, 0.35), 2.0, true)
+
+
+## Phone browsers can't type into Godot text boxes, so on the web tapping the
+## box opens the browser's own text prompt and copies the answer in.
+## `on_done` (optional) is called with the text afterwards, like pressing Enter.
+static func web_typable(edit: LineEdit, question: String, on_done := Callable()) -> void:
+	if not OS.has_feature("web"):
+		return
+	edit.focus_entered.connect(func() -> void:
+		edit.release_focus()
+		var answer: Variant = JavaScriptBridge.eval("window.prompt(%s, %s)" % [JSON.stringify(question), JSON.stringify(edit.text)], true)
+		if answer != null and str(answer) != "null":
+			edit.text = str(answer).strip_edges()
+			edit.text_changed.emit(edit.text)
+			if on_done.is_valid():
+				on_done.call(edit.text))

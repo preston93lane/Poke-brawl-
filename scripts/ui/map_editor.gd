@@ -71,6 +71,7 @@ func _ready() -> void:
 	_name_edit.custom_minimum_size = Vector2(260, 48)
 	_name_edit.add_theme_font_size_override("font_size", 22)
 	_name_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	UiKit.web_typable(_name_edit, "Map name")
 	top.add_child(_name_edit)
 	top.add_child(UiKit.button("NEW", new_map, 20))
 	top.add_child(UiKit.button("OPEN", _show_open_list, 20))

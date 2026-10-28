@@ -72,7 +72,7 @@ static func bag(menu: Node, last_prizes: Array[Dictionary] = []) -> Control:
 		var n := Profile.count(ball)
 		var b := UiKit.button("OPEN %s  (%d)" % [Profile.item_name(ball).to_upper(), n], func() -> void:
 			var prizes := Profile.open_ball(ball)
-			menu.show_bag(prizes), 20)
+			menu.play_ball_opening(ball, prizes), 20)
 		b.disabled = n <= 0
 		balls.add_child(b)
 	v.add_child(balls)
@@ -166,11 +166,13 @@ static func account(menu: Node, message := "") -> Control:
 	email.add_theme_font_size_override("font_size", 24)
 	email.custom_minimum_size = Vector2(420, 56)
 	email.text = str(menu.get_meta("account_email", ""))
+	UiKit.web_typable(email, "Your email address")
 	var code := LineEdit.new()
 	code.placeholder_text = "6-digit code"
 	code.virtual_keyboard_type = LineEdit.KEYBOARD_TYPE_NUMBER
 	code.add_theme_font_size_override("font_size", 24)
 	code.custom_minimum_size = Vector2(240, 56)
+	UiKit.web_typable(code, "The 6-digit code from the email")
 	var feedback := UiKit.label(message, 20, Color(1, 0.85, 0.5))
 	feedback.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var row1 := HBoxContainer.new()

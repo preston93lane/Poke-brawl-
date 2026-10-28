@@ -154,6 +154,14 @@ func show_bag(prizes: Array[Dictionary] = []) -> void:
 	_set_screen(TrainerScreens.bag(self, prizes))
 
 
+## Plays the ball opening over the bag, then shows the bag with what came out.
+func play_ball_opening(ball: String, prizes: Array[Dictionary]) -> void:
+	var anim := BallOpening.new()
+	anim.setup(ball, prizes)
+	anim.finished.connect(show_bag.bind(prizes))
+	add_child(anim)
+
+
 func show_account(message := "") -> void:
 	_set_screen(TrainerScreens.account(self, message))
 
@@ -285,6 +293,7 @@ func show_settings() -> void:
 			else:
 				code.text = ""
 				code.placeholder_text = "Wrong code")
+		UiKit.web_typable(code, "Dev code", func(text: String) -> void: code.text_submitted.emit(text))
 		top.add_child(code)
 	root.add_child(top)
 	editor.size_flags_vertical = Control.SIZE_EXPAND_FILL

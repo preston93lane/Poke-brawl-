@@ -63,6 +63,16 @@ func _menu_shot(screen: String, out_dir: String) -> void:
 			menu.show_battle_modes()
 		"challenges":
 			menu.show_challenges()
+		"ball":
+			var prizes: Array[Dictionary] = [{ "item": "money", "text": "512 ₽" }, { "item": "rare_candy", "text": "Rare Candy ×3" },
+					{ "item": "protein", "text": "Protein" }, { "item": "tm_flamethrower", "text": "TM Flamethrower" },
+					{ "item": "pokemon", "family": "geodude", "text": "NEW: Geodude" }]
+			menu.show_bag()
+			menu.play_ball_opening("ultra_ball", prizes)
+			for t in [40, 110, 170, 140]:
+				for i in t:
+					await get_tree().process_frame
+				get_viewport().get_texture().get_image().save_png("%s/menu_ball_%d.png" % [out_dir, t])
 		_:
 			menu.show_home()
 	for i in 20:
