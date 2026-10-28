@@ -57,7 +57,7 @@ def main():
            "- **Evolving:** 3 KOs in a match, or 2 once your line has reached the main-series evolve level.",
            "- **Lines that can't evolve further** Power Up instead: 3 KOs, or 2 from level %d (first) and %d (second)." % tuple(power_levels),
            "- **Main attacks:** the first is known from the start; the others unlock at the level shown, or right away with the TM.",
-           "- **TM supers** replace your super at every stage once you own the TM. **HMs** are taught one line at a time.", ""]
+           "- **TM supers:** each stage can use the TM supers of its own types (two per type), shaped to its play style and a little weaker before the final evolution. **HMs** are taught one line at a time.", ""]
     for base in bases:
         line = line_of(base)
         d = defs[base]
@@ -85,8 +85,11 @@ def main():
         gadget = moves.get(d.get("gadget", ""), {})
         out.append("- **Gadget:** " + gadget.get("name", "-"))
         out.append("- **Supers:** " + "; ".join("%s: %s" % (defs[s]["name"], moves[defs[s]["super"]]["name"]) for s in line))
-        tms = [moves["tmsuper_" + t]["name"] for t in prog["tm_supers"].get(base, [])]
-        out.append("- **TM supers:** " + (", ".join(tms) if tms else "none"))
+        by_stage = []
+        for st in line:
+            names = sorted(moves[t["super"]]["name"] for t in prog["tms"].values() if t.get("super") and moves[t["super"]]["type"] in defs[st]["types"])
+            by_stage.append("%s: %s" % (defs[st]["name"], ", ".join(names) or "none"))
+        out.append("- **TM supers** (by type, per stage): " + "; ".join(by_stage))
         out.append("- **HMs:** " + ", ".join(h.replace("_", " ").title() for h in prog["hms"].get(base, [])))
         out.append("")
     path = os.path.join(ROOT, "docs", "pokemon_notes.md")

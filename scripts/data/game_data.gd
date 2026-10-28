@@ -13,6 +13,9 @@ var rules: Dictionary = {}
 var species: Dictionary = {}
 ## id -> MoveData
 var moves: Dictionary = {}
+## id -> the raw Dictionary each move was loaded from (for scaled copies).
+var move_dicts: Dictionary = {}
+var _scaled_moves: Dictionary = {}
 ## id -> raw arena Dictionary
 var arenas: Dictionary = {}
 ## Item pickups (data/items.json): id -> Dictionary, plus "spawn" settings.
@@ -81,6 +84,7 @@ func load_all() -> void:
 				continue
 			if moves.has(move_id):
 				push_error("GameData: move '%s' is defined twice (%s)" % [move_id, move_file])
+			move_dicts[move_id] = move_defs[move_id]
 			var move := MoveData.from_dict(move_id, move_defs[move_id])
 			_check_type(move.type, "moves/%s → %s" % [move_file, move_id])
 			moves[move_id] = move
@@ -211,6 +215,36 @@ func get_species(species_id: String) -> SpeciesData:
 
 func get_move(move_id: String) -> MoveData:
 	return moves.get(move_id)
+
+
+## A copy of a move with its power (and damage over time) multiplied by `scale`, cached.
+func scaled_move(move_id: String, scale: float) -> MoveData:
+	if is_equal_approx(scale, 1.0) or not move_dicts.has(move_id):
+		return get_move(move_id)
+	var key := "%s@%.2f" % [move_id, scale]
+	if not _scaled_moves.has(key):
+		var d: Dictionary = (move_dicts[move_id] as Dictionary).duplicate(true)
+		d["power"] = float(d.get("power", 0.0)) * scale
+		_scaled_moves[key] = MoveData.from_dict(move_id, d)
+	return _scaled_moves[key]
+
+
+## TM supers by type: type -> [base id] (tmsuper_fire_blast...).
+func tm_supers_of_type(type_name: String) -> Array[String]:
+	var result: Array[String] = []
+	for tm: Dictionary in progression.get("tms", {}).values():
+		var id := str(tm.get("super", ""))
+		if id != "" and moves.has(id) and (moves[id] as MoveData).type == type_name:
+			result.append(id)
+	result.sort()
+	return result
+
+
+## Play style -> TM super shape.
+const STYLE_SHAPES := {
+	"shotgun": "burst", "brawler": "burst", "assassin": "burst", "spinner": "burst", "lasher": "burst", "stream": "burst",
+	"tank_wave": "burst", "thrower": "lob", "zone": "lob", "healer": "lob", "sniper": "beam", "piercer": "beam",
+}
 
 
 ## Reads a nested rule such as "evolution/kills_to_evolve".

@@ -439,11 +439,23 @@ func unlocked_mains(species_id: String) -> Array[String]:
 	return result
 
 
-## TM supers this line could learn (owned or not).
+## TM supers a stage can use: those of its own types (owned or not).
+func stage_tm_supers(stage_id: String) -> Array[String]:
+	var result: Array[String] = []
+	var s: SpeciesData = GameData.species.get(stage_id)
+	if s:
+		for t in s.types:
+			result.append_array(GameData.tm_supers_of_type(t))
+	return result
+
+
+## TM supers any stage of this line could use (owned or not).
 func tm_super_options(species_id: String) -> Array[String]:
 	var result: Array[String] = []
-	for sid in GameData.progression.get("tm_supers", {}).get(GameData.family_root(species_id), []):
-		result.append("tmsuper_" + str(sid))
+	for stage in GameData.evolution_line(species_id):
+		for id in stage_tm_supers(stage.id):
+			if id not in result:
+				result.append(id)
 	return result
 
 
@@ -461,8 +473,8 @@ func super_options(stage_id: String) -> Array[String]:
 		if s.evolves_from == "":
 			break
 		id = s.evolves_from
-	for tm_super in tm_super_options(stage_id):
-		if owns_tm_super(tm_super) and GameData.moves.has(tm_super):
+	for tm_super in stage_tm_supers(stage_id):
+		if owns_tm_super(tm_super):
 			result.append(tm_super)
 	return result
 

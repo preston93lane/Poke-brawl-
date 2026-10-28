@@ -361,8 +361,22 @@ func _pick_move(slot: String, move_id: String) -> MoveData:
 ## The super in use: an equipped TM super, or this stage's own.
 func current_super() -> MoveData:
 	var pick := str(super_choices.get(species.id, ""))
-	var move: MoveData = GameData.get_move(pick) if pick != "" else null
-	return move if move else species.super_move
+	if pick.begins_with("tmsuper_") and pick in Profile.stage_tm_supers(species.id):
+		# Shaped to this Pokémon's play style, and about as strong as its own super.
+		var shape: String = GameData.STYLE_SHAPES.get(species.style, "shot")
+		var move := GameData.scaled_move(pick + "_" + shape, tm_super_scale())
+		if move:
+			return move
+	var own: MoveData = GameData.get_move(pick) if pick != "" and not pick.begins_with("tmsuper_") else null
+	return own if own else species.super_move
+
+
+## TM supers hit softer on early stages: base forms 75%, middle stages 88%,
+## single-stage lines 90%, final evolutions full power.
+func tm_super_scale() -> float:
+	if species.evolves_to == "":
+		return 1.0 if species.stage > 1 else 0.9
+	return 0.75 if species.stage == 1 else 0.88
 
 
 ## Front-view icon in this brawler's colours (shiny or normal).

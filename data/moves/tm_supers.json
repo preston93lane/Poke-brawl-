@@ -1,42 +1,447 @@
 {
-	"_comment": "TM supers (tools/build_progression.py): any line that learns the move by TM in the games can equip it instead of its own super.",
+	"_comment": "TM supers (tools/build_progression.py): tmsuper_<id> is the one shown in menus; tmsuper_<id>_<shape> is what's used, picked by the user's play style. Only Pok\u00e9mon of the move's type can use it.",
 	"tmsuper_hyper_beam": {
 		"name": "Hyper Beam",
 		"type": "normal",
 		"slot": "super",
 		"kind": "projectile",
-		"power": 2100,
-		"speed": 11.0,
-		"range": 9.0,
-		"radius": 0.9,
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0
+	},
+	"tmsuper_hyper_beam_burst": {
+		"name": "Hyper Beam",
+		"type": "normal",
+		"slot": "super",
+		"kind": "area",
+		"power": 1000,
+		"range": 3.5,
+		"area_radius": 2.4
+	},
+	"tmsuper_hyper_beam_lob": {
+		"name": "Hyper Beam",
+		"type": "normal",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 950,
+		"lob": true,
+		"speed": 9.0,
+		"range": 7.5,
+		"radius": 0.7,
+		"explode_radius": 2.4
+	},
+	"tmsuper_hyper_beam_beam": {
+		"name": "Hyper Beam",
+		"type": "normal",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1150,
+		"speed": 15.0,
+		"range": 10.0,
+		"radius": 0.7,
 		"pierce": true
+	},
+	"tmsuper_hyper_beam_shot": {
+		"name": "Hyper Beam",
+		"type": "normal",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0
+	},
+	"tmsuper_giga_impact": {
+		"name": "Giga Impact",
+		"type": "normal",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0
+	},
+	"tmsuper_giga_impact_burst": {
+		"name": "Giga Impact",
+		"type": "normal",
+		"slot": "super",
+		"kind": "area",
+		"power": 1000,
+		"range": 3.5,
+		"area_radius": 2.4
+	},
+	"tmsuper_giga_impact_lob": {
+		"name": "Giga Impact",
+		"type": "normal",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 950,
+		"lob": true,
+		"speed": 9.0,
+		"range": 7.5,
+		"radius": 0.7,
+		"explode_radius": 2.4
+	},
+	"tmsuper_giga_impact_beam": {
+		"name": "Giga Impact",
+		"type": "normal",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1150,
+		"speed": 15.0,
+		"range": 10.0,
+		"radius": 0.7,
+		"pierce": true
+	},
+	"tmsuper_giga_impact_shot": {
+		"name": "Giga Impact",
+		"type": "normal",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0
 	},
 	"tmsuper_solar_beam": {
 		"name": "Solar Beam",
 		"type": "grass",
 		"slot": "super",
 		"kind": "projectile",
-		"power": 1900,
-		"speed": 12.0,
-		"range": 10.0,
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
 		"radius": 0.8,
-		"pierce": true
+		"explode_radius": 2.0,
+		"effect": {
+			"type": "leech",
+			"chance": 0.5,
+			"duration": 3.0,
+			"dps": 120
+		}
+	},
+	"tmsuper_solar_beam_burst": {
+		"name": "Solar Beam",
+		"type": "grass",
+		"slot": "super",
+		"kind": "area",
+		"power": 1000,
+		"range": 3.5,
+		"area_radius": 2.4,
+		"effect": {
+			"type": "leech",
+			"chance": 0.5,
+			"duration": 3.0,
+			"dps": 120
+		}
+	},
+	"tmsuper_solar_beam_lob": {
+		"name": "Solar Beam",
+		"type": "grass",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 950,
+		"lob": true,
+		"speed": 9.0,
+		"range": 7.5,
+		"radius": 0.7,
+		"explode_radius": 2.4,
+		"effect": {
+			"type": "leech",
+			"chance": 0.5,
+			"duration": 3.0,
+			"dps": 120
+		}
+	},
+	"tmsuper_solar_beam_beam": {
+		"name": "Solar Beam",
+		"type": "grass",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1150,
+		"speed": 15.0,
+		"range": 10.0,
+		"radius": 0.7,
+		"pierce": true,
+		"effect": {
+			"type": "leech",
+			"chance": 0.5,
+			"duration": 3.0,
+			"dps": 120
+		}
+	},
+	"tmsuper_solar_beam_shot": {
+		"name": "Solar Beam",
+		"type": "grass",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0,
+		"effect": {
+			"type": "leech",
+			"chance": 0.5,
+			"duration": 3.0,
+			"dps": 120
+		}
+	},
+	"tmsuper_leaf_storm": {
+		"name": "Leaf Storm",
+		"type": "grass",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0,
+		"effect": {
+			"type": "leech",
+			"chance": 0.5,
+			"duration": 3.0,
+			"dps": 120
+		}
+	},
+	"tmsuper_leaf_storm_burst": {
+		"name": "Leaf Storm",
+		"type": "grass",
+		"slot": "super",
+		"kind": "area",
+		"power": 1000,
+		"range": 3.5,
+		"area_radius": 2.4,
+		"effect": {
+			"type": "leech",
+			"chance": 0.5,
+			"duration": 3.0,
+			"dps": 120
+		}
+	},
+	"tmsuper_leaf_storm_lob": {
+		"name": "Leaf Storm",
+		"type": "grass",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 950,
+		"lob": true,
+		"speed": 9.0,
+		"range": 7.5,
+		"radius": 0.7,
+		"explode_radius": 2.4,
+		"effect": {
+			"type": "leech",
+			"chance": 0.5,
+			"duration": 3.0,
+			"dps": 120
+		}
+	},
+	"tmsuper_leaf_storm_beam": {
+		"name": "Leaf Storm",
+		"type": "grass",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1150,
+		"speed": 15.0,
+		"range": 10.0,
+		"radius": 0.7,
+		"pierce": true,
+		"effect": {
+			"type": "leech",
+			"chance": 0.5,
+			"duration": 3.0,
+			"dps": 120
+		}
+	},
+	"tmsuper_leaf_storm_shot": {
+		"name": "Leaf Storm",
+		"type": "grass",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0,
+		"effect": {
+			"type": "leech",
+			"chance": 0.5,
+			"duration": 3.0,
+			"dps": 120
+		}
 	},
 	"tmsuper_fire_blast": {
 		"name": "Fire Blast",
 		"type": "fire",
 		"slot": "super",
 		"kind": "projectile",
-		"power": 1700,
-		"speed": 8.5,
-		"range": 7.5,
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
 		"radius": 0.8,
-		"explode_radius": 2.6,
+		"explode_radius": 2.0,
 		"effect": {
 			"type": "burn",
 			"chance": 0.6,
 			"duration": 3.0,
-			"dps": 160
+			"dps": 140
+		}
+	},
+	"tmsuper_fire_blast_burst": {
+		"name": "Fire Blast",
+		"type": "fire",
+		"slot": "super",
+		"kind": "area",
+		"power": 1000,
+		"range": 3.5,
+		"area_radius": 2.4,
+		"effect": {
+			"type": "burn",
+			"chance": 0.6,
+			"duration": 3.0,
+			"dps": 140
+		}
+	},
+	"tmsuper_fire_blast_lob": {
+		"name": "Fire Blast",
+		"type": "fire",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 950,
+		"lob": true,
+		"speed": 9.0,
+		"range": 7.5,
+		"radius": 0.7,
+		"explode_radius": 2.4,
+		"effect": {
+			"type": "burn",
+			"chance": 0.6,
+			"duration": 3.0,
+			"dps": 140
+		}
+	},
+	"tmsuper_fire_blast_beam": {
+		"name": "Fire Blast",
+		"type": "fire",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1150,
+		"speed": 15.0,
+		"range": 10.0,
+		"radius": 0.7,
+		"pierce": true,
+		"effect": {
+			"type": "burn",
+			"chance": 0.6,
+			"duration": 3.0,
+			"dps": 140
+		}
+	},
+	"tmsuper_fire_blast_shot": {
+		"name": "Fire Blast",
+		"type": "fire",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0,
+		"effect": {
+			"type": "burn",
+			"chance": 0.6,
+			"duration": 3.0,
+			"dps": 140
+		}
+	},
+	"tmsuper_overheat": {
+		"name": "Overheat",
+		"type": "fire",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0,
+		"effect": {
+			"type": "burn",
+			"chance": 0.6,
+			"duration": 3.0,
+			"dps": 140
+		}
+	},
+	"tmsuper_overheat_burst": {
+		"name": "Overheat",
+		"type": "fire",
+		"slot": "super",
+		"kind": "area",
+		"power": 1000,
+		"range": 3.5,
+		"area_radius": 2.4,
+		"effect": {
+			"type": "burn",
+			"chance": 0.6,
+			"duration": 3.0,
+			"dps": 140
+		}
+	},
+	"tmsuper_overheat_lob": {
+		"name": "Overheat",
+		"type": "fire",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 950,
+		"lob": true,
+		"speed": 9.0,
+		"range": 7.5,
+		"radius": 0.7,
+		"explode_radius": 2.4,
+		"effect": {
+			"type": "burn",
+			"chance": 0.6,
+			"duration": 3.0,
+			"dps": 140
+		}
+	},
+	"tmsuper_overheat_beam": {
+		"name": "Overheat",
+		"type": "fire",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1150,
+		"speed": 15.0,
+		"range": 10.0,
+		"radius": 0.7,
+		"pierce": true,
+		"effect": {
+			"type": "burn",
+			"chance": 0.6,
+			"duration": 3.0,
+			"dps": 140
+		}
+	},
+	"tmsuper_overheat_shot": {
+		"name": "Overheat",
+		"type": "fire",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0,
+		"effect": {
+			"type": "burn",
+			"chance": 0.6,
+			"duration": 3.0,
+			"dps": 140
 		}
 	},
 	"tmsuper_scald": {
@@ -44,30 +449,273 @@
 		"type": "water",
 		"slot": "super",
 		"kind": "projectile",
-		"power": 1300,
+		"power": 1000,
 		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0
+	},
+	"tmsuper_scald_burst": {
+		"name": "Scald",
+		"type": "water",
+		"slot": "super",
+		"kind": "area",
+		"power": 1000,
+		"range": 3.5,
+		"area_radius": 2.4
+	},
+	"tmsuper_scald_lob": {
+		"name": "Scald",
+		"type": "water",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 950,
+		"lob": true,
+		"speed": 9.0,
 		"range": 7.5,
 		"radius": 0.7,
-		"count": 3,
-		"spread": 18,
-		"effect": {
-			"type": "burn",
-			"chance": 0.5,
-			"duration": 3.0,
-			"dps": 120
-		}
+		"explode_radius": 2.4
+	},
+	"tmsuper_scald_beam": {
+		"name": "Scald",
+		"type": "water",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1150,
+		"speed": 15.0,
+		"range": 10.0,
+		"radius": 0.7,
+		"pierce": true
+	},
+	"tmsuper_scald_shot": {
+		"name": "Scald",
+		"type": "water",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0
+	},
+	"tmsuper_muddy_water": {
+		"name": "Muddy Water",
+		"type": "water",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0
+	},
+	"tmsuper_muddy_water_burst": {
+		"name": "Muddy Water",
+		"type": "water",
+		"slot": "super",
+		"kind": "area",
+		"power": 1000,
+		"range": 3.5,
+		"area_radius": 2.4
+	},
+	"tmsuper_muddy_water_lob": {
+		"name": "Muddy Water",
+		"type": "water",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 950,
+		"lob": true,
+		"speed": 9.0,
+		"range": 7.5,
+		"radius": 0.7,
+		"explode_radius": 2.4
+	},
+	"tmsuper_muddy_water_beam": {
+		"name": "Muddy Water",
+		"type": "water",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1150,
+		"speed": 15.0,
+		"range": 10.0,
+		"radius": 0.7,
+		"pierce": true
+	},
+	"tmsuper_muddy_water_shot": {
+		"name": "Muddy Water",
+		"type": "water",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0
 	},
 	"tmsuper_thunder": {
 		"name": "Thunder",
 		"type": "electric",
 		"slot": "super",
-		"kind": "area",
-		"power": 1700,
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
 		"range": 8.0,
-		"area_radius": 2.0,
+		"radius": 0.8,
+		"explode_radius": 2.0,
 		"effect": {
 			"type": "slow",
-			"chance": 0.6,
+			"chance": 0.5,
+			"duration": 1.5,
+			"amount": 0.5
+		}
+	},
+	"tmsuper_thunder_burst": {
+		"name": "Thunder",
+		"type": "electric",
+		"slot": "super",
+		"kind": "area",
+		"power": 1000,
+		"range": 3.5,
+		"area_radius": 2.4,
+		"effect": {
+			"type": "slow",
+			"chance": 0.5,
+			"duration": 1.5,
+			"amount": 0.5
+		}
+	},
+	"tmsuper_thunder_lob": {
+		"name": "Thunder",
+		"type": "electric",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 950,
+		"lob": true,
+		"speed": 9.0,
+		"range": 7.5,
+		"radius": 0.7,
+		"explode_radius": 2.4,
+		"effect": {
+			"type": "slow",
+			"chance": 0.5,
+			"duration": 1.5,
+			"amount": 0.5
+		}
+	},
+	"tmsuper_thunder_beam": {
+		"name": "Thunder",
+		"type": "electric",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1150,
+		"speed": 15.0,
+		"range": 10.0,
+		"radius": 0.7,
+		"pierce": true,
+		"effect": {
+			"type": "slow",
+			"chance": 0.5,
+			"duration": 1.5,
+			"amount": 0.5
+		}
+	},
+	"tmsuper_thunder_shot": {
+		"name": "Thunder",
+		"type": "electric",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0,
+		"effect": {
+			"type": "slow",
+			"chance": 0.5,
+			"duration": 1.5,
+			"amount": 0.5
+		}
+	},
+	"tmsuper_zap_cannon": {
+		"name": "Zap Cannon",
+		"type": "electric",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0,
+		"effect": {
+			"type": "slow",
+			"chance": 0.5,
+			"duration": 1.5,
+			"amount": 0.5
+		}
+	},
+	"tmsuper_zap_cannon_burst": {
+		"name": "Zap Cannon",
+		"type": "electric",
+		"slot": "super",
+		"kind": "area",
+		"power": 1000,
+		"range": 3.5,
+		"area_radius": 2.4,
+		"effect": {
+			"type": "slow",
+			"chance": 0.5,
+			"duration": 1.5,
+			"amount": 0.5
+		}
+	},
+	"tmsuper_zap_cannon_lob": {
+		"name": "Zap Cannon",
+		"type": "electric",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 950,
+		"lob": true,
+		"speed": 9.0,
+		"range": 7.5,
+		"radius": 0.7,
+		"explode_radius": 2.4,
+		"effect": {
+			"type": "slow",
+			"chance": 0.5,
+			"duration": 1.5,
+			"amount": 0.5
+		}
+	},
+	"tmsuper_zap_cannon_beam": {
+		"name": "Zap Cannon",
+		"type": "electric",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1150,
+		"speed": 15.0,
+		"range": 10.0,
+		"radius": 0.7,
+		"pierce": true,
+		"effect": {
+			"type": "slow",
+			"chance": 0.5,
+			"duration": 1.5,
+			"amount": 0.5
+		}
+	},
+	"tmsuper_zap_cannon_shot": {
+		"name": "Zap Cannon",
+		"type": "electric",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0,
+		"effect": {
+			"type": "slow",
+			"chance": 0.5,
 			"duration": 1.5,
 			"amount": 0.5
 		}
@@ -76,14 +724,167 @@
 		"name": "Blizzard",
 		"type": "ice",
 		"slot": "super",
-		"kind": "area",
-		"power": 900,
-		"range": 6.5,
-		"area_radius": 3.0,
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0,
 		"effect": {
 			"type": "slow",
-			"chance": 1.0,
-			"duration": 2.5,
+			"chance": 0.8,
+			"duration": 2.0,
+			"amount": 0.5
+		}
+	},
+	"tmsuper_blizzard_burst": {
+		"name": "Blizzard",
+		"type": "ice",
+		"slot": "super",
+		"kind": "area",
+		"power": 1000,
+		"range": 3.5,
+		"area_radius": 2.4,
+		"effect": {
+			"type": "slow",
+			"chance": 0.8,
+			"duration": 2.0,
+			"amount": 0.5
+		}
+	},
+	"tmsuper_blizzard_lob": {
+		"name": "Blizzard",
+		"type": "ice",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 950,
+		"lob": true,
+		"speed": 9.0,
+		"range": 7.5,
+		"radius": 0.7,
+		"explode_radius": 2.4,
+		"effect": {
+			"type": "slow",
+			"chance": 0.8,
+			"duration": 2.0,
+			"amount": 0.5
+		}
+	},
+	"tmsuper_blizzard_beam": {
+		"name": "Blizzard",
+		"type": "ice",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1150,
+		"speed": 15.0,
+		"range": 10.0,
+		"radius": 0.7,
+		"pierce": true,
+		"effect": {
+			"type": "slow",
+			"chance": 0.8,
+			"duration": 2.0,
+			"amount": 0.5
+		}
+	},
+	"tmsuper_blizzard_shot": {
+		"name": "Blizzard",
+		"type": "ice",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0,
+		"effect": {
+			"type": "slow",
+			"chance": 0.8,
+			"duration": 2.0,
+			"amount": 0.5
+		}
+	},
+	"tmsuper_avalanche": {
+		"name": "Avalanche",
+		"type": "ice",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0,
+		"effect": {
+			"type": "slow",
+			"chance": 0.8,
+			"duration": 2.0,
+			"amount": 0.5
+		}
+	},
+	"tmsuper_avalanche_burst": {
+		"name": "Avalanche",
+		"type": "ice",
+		"slot": "super",
+		"kind": "area",
+		"power": 1000,
+		"range": 3.5,
+		"area_radius": 2.4,
+		"effect": {
+			"type": "slow",
+			"chance": 0.8,
+			"duration": 2.0,
+			"amount": 0.5
+		}
+	},
+	"tmsuper_avalanche_lob": {
+		"name": "Avalanche",
+		"type": "ice",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 950,
+		"lob": true,
+		"speed": 9.0,
+		"range": 7.5,
+		"radius": 0.7,
+		"explode_radius": 2.4,
+		"effect": {
+			"type": "slow",
+			"chance": 0.8,
+			"duration": 2.0,
+			"amount": 0.5
+		}
+	},
+	"tmsuper_avalanche_beam": {
+		"name": "Avalanche",
+		"type": "ice",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1150,
+		"speed": 15.0,
+		"range": 10.0,
+		"radius": 0.7,
+		"pierce": true,
+		"effect": {
+			"type": "slow",
+			"chance": 0.8,
+			"duration": 2.0,
+			"amount": 0.5
+		}
+	},
+	"tmsuper_avalanche_shot": {
+		"name": "Avalanche",
+		"type": "ice",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0,
+		"effect": {
+			"type": "slow",
+			"chance": 0.8,
+			"duration": 2.0,
 			"amount": 0.5
 		}
 	},
@@ -91,49 +892,552 @@
 		"name": "Earthquake",
 		"type": "ground",
 		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0
+	},
+	"tmsuper_earthquake_burst": {
+		"name": "Earthquake",
+		"type": "ground",
+		"slot": "super",
 		"kind": "area",
-		"power": 1500,
-		"range": 0.0,
-		"area_radius": 3.6
+		"power": 1000,
+		"range": 3.5,
+		"area_radius": 2.4
+	},
+	"tmsuper_earthquake_lob": {
+		"name": "Earthquake",
+		"type": "ground",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 950,
+		"lob": true,
+		"speed": 9.0,
+		"range": 7.5,
+		"radius": 0.7,
+		"explode_radius": 2.4
+	},
+	"tmsuper_earthquake_beam": {
+		"name": "Earthquake",
+		"type": "ground",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1150,
+		"speed": 15.0,
+		"range": 10.0,
+		"radius": 0.7,
+		"pierce": true
+	},
+	"tmsuper_earthquake_shot": {
+		"name": "Earthquake",
+		"type": "ground",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0
+	},
+	"tmsuper_earth_power": {
+		"name": "Earth Power",
+		"type": "ground",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0
+	},
+	"tmsuper_earth_power_burst": {
+		"name": "Earth Power",
+		"type": "ground",
+		"slot": "super",
+		"kind": "area",
+		"power": 1000,
+		"range": 3.5,
+		"area_radius": 2.4
+	},
+	"tmsuper_earth_power_lob": {
+		"name": "Earth Power",
+		"type": "ground",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 950,
+		"lob": true,
+		"speed": 9.0,
+		"range": 7.5,
+		"radius": 0.7,
+		"explode_radius": 2.4
+	},
+	"tmsuper_earth_power_beam": {
+		"name": "Earth Power",
+		"type": "ground",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1150,
+		"speed": 15.0,
+		"range": 10.0,
+		"radius": 0.7,
+		"pierce": true
+	},
+	"tmsuper_earth_power_shot": {
+		"name": "Earth Power",
+		"type": "ground",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0
 	},
 	"tmsuper_psychic": {
 		"name": "Psychic",
 		"type": "psychic",
 		"slot": "super",
 		"kind": "projectile",
-		"power": 1600,
+		"power": 1000,
 		"speed": 10.0,
-		"range": 8.5,
-		"radius": 0.9,
-		"knockback": 2.0
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0,
+		"effect": {
+			"type": "slow",
+			"chance": 0.3,
+			"duration": 1.0,
+			"amount": 0.3
+		}
+	},
+	"tmsuper_psychic_burst": {
+		"name": "Psychic",
+		"type": "psychic",
+		"slot": "super",
+		"kind": "area",
+		"power": 1000,
+		"range": 3.5,
+		"area_radius": 2.4,
+		"effect": {
+			"type": "slow",
+			"chance": 0.3,
+			"duration": 1.0,
+			"amount": 0.3
+		}
+	},
+	"tmsuper_psychic_lob": {
+		"name": "Psychic",
+		"type": "psychic",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 950,
+		"lob": true,
+		"speed": 9.0,
+		"range": 7.5,
+		"radius": 0.7,
+		"explode_radius": 2.4,
+		"effect": {
+			"type": "slow",
+			"chance": 0.3,
+			"duration": 1.0,
+			"amount": 0.3
+		}
+	},
+	"tmsuper_psychic_beam": {
+		"name": "Psychic",
+		"type": "psychic",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1150,
+		"speed": 15.0,
+		"range": 10.0,
+		"radius": 0.7,
+		"pierce": true,
+		"effect": {
+			"type": "slow",
+			"chance": 0.3,
+			"duration": 1.0,
+			"amount": 0.3
+		}
+	},
+	"tmsuper_psychic_shot": {
+		"name": "Psychic",
+		"type": "psychic",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0,
+		"effect": {
+			"type": "slow",
+			"chance": 0.3,
+			"duration": 1.0,
+			"amount": 0.3
+		}
+	},
+	"tmsuper_psyshock": {
+		"name": "Psyshock",
+		"type": "psychic",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0,
+		"effect": {
+			"type": "slow",
+			"chance": 0.3,
+			"duration": 1.0,
+			"amount": 0.3
+		}
+	},
+	"tmsuper_psyshock_burst": {
+		"name": "Psyshock",
+		"type": "psychic",
+		"slot": "super",
+		"kind": "area",
+		"power": 1000,
+		"range": 3.5,
+		"area_radius": 2.4,
+		"effect": {
+			"type": "slow",
+			"chance": 0.3,
+			"duration": 1.0,
+			"amount": 0.3
+		}
+	},
+	"tmsuper_psyshock_lob": {
+		"name": "Psyshock",
+		"type": "psychic",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 950,
+		"lob": true,
+		"speed": 9.0,
+		"range": 7.5,
+		"radius": 0.7,
+		"explode_radius": 2.4,
+		"effect": {
+			"type": "slow",
+			"chance": 0.3,
+			"duration": 1.0,
+			"amount": 0.3
+		}
+	},
+	"tmsuper_psyshock_beam": {
+		"name": "Psyshock",
+		"type": "psychic",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1150,
+		"speed": 15.0,
+		"range": 10.0,
+		"radius": 0.7,
+		"pierce": true,
+		"effect": {
+			"type": "slow",
+			"chance": 0.3,
+			"duration": 1.0,
+			"amount": 0.3
+		}
+	},
+	"tmsuper_psyshock_shot": {
+		"name": "Psyshock",
+		"type": "psychic",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0,
+		"effect": {
+			"type": "slow",
+			"chance": 0.3,
+			"duration": 1.0,
+			"amount": 0.3
+		}
 	},
 	"tmsuper_rock_slide": {
 		"name": "Rock Slide",
 		"type": "rock",
 		"slot": "super",
 		"kind": "projectile",
-		"power": 900,
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0
+	},
+	"tmsuper_rock_slide_burst": {
+		"name": "Rock Slide",
+		"type": "rock",
+		"slot": "super",
+		"kind": "area",
+		"power": 1000,
+		"range": 3.5,
+		"area_radius": 2.4
+	},
+	"tmsuper_rock_slide_lob": {
+		"name": "Rock Slide",
+		"type": "rock",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 950,
+		"lob": true,
 		"speed": 9.0,
-		"range": 7.0,
+		"range": 7.5,
 		"radius": 0.7,
-		"count": 3,
-		"spread": 30
+		"explode_radius": 2.4
+	},
+	"tmsuper_rock_slide_beam": {
+		"name": "Rock Slide",
+		"type": "rock",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1150,
+		"speed": 15.0,
+		"range": 10.0,
+		"radius": 0.7,
+		"pierce": true
+	},
+	"tmsuper_rock_slide_shot": {
+		"name": "Rock Slide",
+		"type": "rock",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0
+	},
+	"tmsuper_rock_tomb": {
+		"name": "Rock Tomb",
+		"type": "rock",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0
+	},
+	"tmsuper_rock_tomb_burst": {
+		"name": "Rock Tomb",
+		"type": "rock",
+		"slot": "super",
+		"kind": "area",
+		"power": 1000,
+		"range": 3.5,
+		"area_radius": 2.4
+	},
+	"tmsuper_rock_tomb_lob": {
+		"name": "Rock Tomb",
+		"type": "rock",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 950,
+		"lob": true,
+		"speed": 9.0,
+		"range": 7.5,
+		"radius": 0.7,
+		"explode_radius": 2.4
+	},
+	"tmsuper_rock_tomb_beam": {
+		"name": "Rock Tomb",
+		"type": "rock",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1150,
+		"speed": 15.0,
+		"range": 10.0,
+		"radius": 0.7,
+		"pierce": true
+	},
+	"tmsuper_rock_tomb_shot": {
+		"name": "Rock Tomb",
+		"type": "rock",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0
 	},
 	"tmsuper_sludge_bomb": {
 		"name": "Sludge Bomb",
 		"type": "poison",
 		"slot": "super",
 		"kind": "projectile",
-		"power": 1200,
-		"speed": 8.0,
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0,
+		"effect": {
+			"type": "poison",
+			"chance": 0.8,
+			"duration": 4.0,
+			"dps": 150
+		}
+	},
+	"tmsuper_sludge_bomb_burst": {
+		"name": "Sludge Bomb",
+		"type": "poison",
+		"slot": "super",
+		"kind": "area",
+		"power": 1000,
+		"range": 3.5,
+		"area_radius": 2.4,
+		"effect": {
+			"type": "poison",
+			"chance": 0.8,
+			"duration": 4.0,
+			"dps": 150
+		}
+	},
+	"tmsuper_sludge_bomb_lob": {
+		"name": "Sludge Bomb",
+		"type": "poison",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 950,
+		"lob": true,
+		"speed": 9.0,
 		"range": 7.5,
 		"radius": 0.7,
 		"explode_radius": 2.4,
 		"effect": {
 			"type": "poison",
-			"chance": 1.0,
+			"chance": 0.8,
 			"duration": 4.0,
-			"dps": 180
+			"dps": 150
+		}
+	},
+	"tmsuper_sludge_bomb_beam": {
+		"name": "Sludge Bomb",
+		"type": "poison",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1150,
+		"speed": 15.0,
+		"range": 10.0,
+		"radius": 0.7,
+		"pierce": true,
+		"effect": {
+			"type": "poison",
+			"chance": 0.8,
+			"duration": 4.0,
+			"dps": 150
+		}
+	},
+	"tmsuper_sludge_bomb_shot": {
+		"name": "Sludge Bomb",
+		"type": "poison",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0,
+		"effect": {
+			"type": "poison",
+			"chance": 0.8,
+			"duration": 4.0,
+			"dps": 150
+		}
+	},
+	"tmsuper_gunk_shot": {
+		"name": "Gunk Shot",
+		"type": "poison",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0,
+		"effect": {
+			"type": "poison",
+			"chance": 0.8,
+			"duration": 4.0,
+			"dps": 150
+		}
+	},
+	"tmsuper_gunk_shot_burst": {
+		"name": "Gunk Shot",
+		"type": "poison",
+		"slot": "super",
+		"kind": "area",
+		"power": 1000,
+		"range": 3.5,
+		"area_radius": 2.4,
+		"effect": {
+			"type": "poison",
+			"chance": 0.8,
+			"duration": 4.0,
+			"dps": 150
+		}
+	},
+	"tmsuper_gunk_shot_lob": {
+		"name": "Gunk Shot",
+		"type": "poison",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 950,
+		"lob": true,
+		"speed": 9.0,
+		"range": 7.5,
+		"radius": 0.7,
+		"explode_radius": 2.4,
+		"effect": {
+			"type": "poison",
+			"chance": 0.8,
+			"duration": 4.0,
+			"dps": 150
+		}
+	},
+	"tmsuper_gunk_shot_beam": {
+		"name": "Gunk Shot",
+		"type": "poison",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1150,
+		"speed": 15.0,
+		"range": 10.0,
+		"radius": 0.7,
+		"pierce": true,
+		"effect": {
+			"type": "poison",
+			"chance": 0.8,
+			"duration": 4.0,
+			"dps": 150
+		}
+	},
+	"tmsuper_gunk_shot_shot": {
+		"name": "Gunk Shot",
+		"type": "poison",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0,
+		"effect": {
+			"type": "poison",
+			"chance": 0.8,
+			"duration": 4.0,
+			"dps": 150
 		}
 	},
 	"tmsuper_shadow_ball": {
@@ -141,10 +1445,153 @@
 		"type": "ghost",
 		"slot": "super",
 		"kind": "projectile",
-		"power": 1600,
-		"speed": 9.0,
+		"power": 1000,
+		"speed": 10.0,
 		"range": 8.0,
-		"radius": 0.9,
+		"radius": 0.8,
+		"explode_radius": 2.0,
+		"effect": {
+			"type": "blind",
+			"chance": 0.5,
+			"duration": 1.5
+		}
+	},
+	"tmsuper_shadow_ball_burst": {
+		"name": "Shadow Ball",
+		"type": "ghost",
+		"slot": "super",
+		"kind": "area",
+		"power": 1000,
+		"range": 3.5,
+		"area_radius": 2.4,
+		"effect": {
+			"type": "blind",
+			"chance": 0.5,
+			"duration": 1.5
+		}
+	},
+	"tmsuper_shadow_ball_lob": {
+		"name": "Shadow Ball",
+		"type": "ghost",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 950,
+		"lob": true,
+		"speed": 9.0,
+		"range": 7.5,
+		"radius": 0.7,
+		"explode_radius": 2.4,
+		"effect": {
+			"type": "blind",
+			"chance": 0.5,
+			"duration": 1.5
+		}
+	},
+	"tmsuper_shadow_ball_beam": {
+		"name": "Shadow Ball",
+		"type": "ghost",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1150,
+		"speed": 15.0,
+		"range": 10.0,
+		"radius": 0.7,
+		"pierce": true,
+		"effect": {
+			"type": "blind",
+			"chance": 0.5,
+			"duration": 1.5
+		}
+	},
+	"tmsuper_shadow_ball_shot": {
+		"name": "Shadow Ball",
+		"type": "ghost",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0,
+		"effect": {
+			"type": "blind",
+			"chance": 0.5,
+			"duration": 1.5
+		}
+	},
+	"tmsuper_hex": {
+		"name": "Hex",
+		"type": "ghost",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0,
+		"effect": {
+			"type": "blind",
+			"chance": 0.5,
+			"duration": 1.5
+		}
+	},
+	"tmsuper_hex_burst": {
+		"name": "Hex",
+		"type": "ghost",
+		"slot": "super",
+		"kind": "area",
+		"power": 1000,
+		"range": 3.5,
+		"area_radius": 2.4,
+		"effect": {
+			"type": "blind",
+			"chance": 0.5,
+			"duration": 1.5
+		}
+	},
+	"tmsuper_hex_lob": {
+		"name": "Hex",
+		"type": "ghost",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 950,
+		"lob": true,
+		"speed": 9.0,
+		"range": 7.5,
+		"radius": 0.7,
+		"explode_radius": 2.4,
+		"effect": {
+			"type": "blind",
+			"chance": 0.5,
+			"duration": 1.5
+		}
+	},
+	"tmsuper_hex_beam": {
+		"name": "Hex",
+		"type": "ghost",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1150,
+		"speed": 15.0,
+		"range": 10.0,
+		"radius": 0.7,
+		"pierce": true,
+		"effect": {
+			"type": "blind",
+			"chance": 0.5,
+			"duration": 1.5
+		}
+	},
+	"tmsuper_hex_shot": {
+		"name": "Hex",
+		"type": "ghost",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0,
 		"effect": {
 			"type": "blind",
 			"chance": 0.5,
@@ -155,61 +1602,698 @@
 		"name": "Sky Attack",
 		"type": "flying",
 		"slot": "super",
-		"kind": "dash",
-		"power": 1800,
-		"dash_distance": 8.0,
-		"dash_speed": 20.0,
-		"dash_pierce": true
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0
+	},
+	"tmsuper_sky_attack_burst": {
+		"name": "Sky Attack",
+		"type": "flying",
+		"slot": "super",
+		"kind": "area",
+		"power": 1000,
+		"range": 3.5,
+		"area_radius": 2.4
+	},
+	"tmsuper_sky_attack_lob": {
+		"name": "Sky Attack",
+		"type": "flying",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 950,
+		"lob": true,
+		"speed": 9.0,
+		"range": 7.5,
+		"radius": 0.7,
+		"explode_radius": 2.4
+	},
+	"tmsuper_sky_attack_beam": {
+		"name": "Sky Attack",
+		"type": "flying",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1150,
+		"speed": 15.0,
+		"range": 10.0,
+		"radius": 0.7,
+		"pierce": true
+	},
+	"tmsuper_sky_attack_shot": {
+		"name": "Sky Attack",
+		"type": "flying",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0
+	},
+	"tmsuper_hurricane": {
+		"name": "Hurricane",
+		"type": "flying",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0
+	},
+	"tmsuper_hurricane_burst": {
+		"name": "Hurricane",
+		"type": "flying",
+		"slot": "super",
+		"kind": "area",
+		"power": 1000,
+		"range": 3.5,
+		"area_radius": 2.4
+	},
+	"tmsuper_hurricane_lob": {
+		"name": "Hurricane",
+		"type": "flying",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 950,
+		"lob": true,
+		"speed": 9.0,
+		"range": 7.5,
+		"radius": 0.7,
+		"explode_radius": 2.4
+	},
+	"tmsuper_hurricane_beam": {
+		"name": "Hurricane",
+		"type": "flying",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1150,
+		"speed": 15.0,
+		"range": 10.0,
+		"radius": 0.7,
+		"pierce": true
+	},
+	"tmsuper_hurricane_shot": {
+		"name": "Hurricane",
+		"type": "flying",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0
 	},
 	"tmsuper_focus_blast": {
 		"name": "Focus Blast",
 		"type": "fighting",
 		"slot": "super",
 		"kind": "projectile",
-		"power": 2200,
-		"speed": 8.0,
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0
+	},
+	"tmsuper_focus_blast_burst": {
+		"name": "Focus Blast",
+		"type": "fighting",
+		"slot": "super",
+		"kind": "area",
+		"power": 1000,
+		"range": 3.5,
+		"area_radius": 2.4
+	},
+	"tmsuper_focus_blast_lob": {
+		"name": "Focus Blast",
+		"type": "fighting",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 950,
+		"lob": true,
+		"speed": 9.0,
 		"range": 7.5,
-		"radius": 0.9,
-		"knockback": 2.5
+		"radius": 0.7,
+		"explode_radius": 2.4
+	},
+	"tmsuper_focus_blast_beam": {
+		"name": "Focus Blast",
+		"type": "fighting",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1150,
+		"speed": 15.0,
+		"range": 10.0,
+		"radius": 0.7,
+		"pierce": true
+	},
+	"tmsuper_focus_blast_shot": {
+		"name": "Focus Blast",
+		"type": "fighting",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0
+	},
+	"tmsuper_close_combat": {
+		"name": "Close Combat",
+		"type": "fighting",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0
+	},
+	"tmsuper_close_combat_burst": {
+		"name": "Close Combat",
+		"type": "fighting",
+		"slot": "super",
+		"kind": "area",
+		"power": 1000,
+		"range": 3.5,
+		"area_radius": 2.4
+	},
+	"tmsuper_close_combat_lob": {
+		"name": "Close Combat",
+		"type": "fighting",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 950,
+		"lob": true,
+		"speed": 9.0,
+		"range": 7.5,
+		"radius": 0.7,
+		"explode_radius": 2.4
+	},
+	"tmsuper_close_combat_beam": {
+		"name": "Close Combat",
+		"type": "fighting",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1150,
+		"speed": 15.0,
+		"range": 10.0,
+		"radius": 0.7,
+		"pierce": true
+	},
+	"tmsuper_close_combat_shot": {
+		"name": "Close Combat",
+		"type": "fighting",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0
 	},
 	"tmsuper_bug_buzz": {
 		"name": "Bug Buzz",
 		"type": "bug",
 		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0
+	},
+	"tmsuper_bug_buzz_burst": {
+		"name": "Bug Buzz",
+		"type": "bug",
+		"slot": "super",
 		"kind": "area",
-		"power": 1100,
-		"range": 0.0,
-		"area_radius": 3.2,
-		"effect": {
-			"type": "slow",
-			"chance": 0.5,
-			"duration": 1.5,
-			"amount": 0.4
-		}
+		"power": 1000,
+		"range": 3.5,
+		"area_radius": 2.4
+	},
+	"tmsuper_bug_buzz_lob": {
+		"name": "Bug Buzz",
+		"type": "bug",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 950,
+		"lob": true,
+		"speed": 9.0,
+		"range": 7.5,
+		"radius": 0.7,
+		"explode_radius": 2.4
+	},
+	"tmsuper_bug_buzz_beam": {
+		"name": "Bug Buzz",
+		"type": "bug",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1150,
+		"speed": 15.0,
+		"range": 10.0,
+		"radius": 0.7,
+		"pierce": true
+	},
+	"tmsuper_bug_buzz_shot": {
+		"name": "Bug Buzz",
+		"type": "bug",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0
+	},
+	"tmsuper_signal_beam": {
+		"name": "Signal Beam",
+		"type": "bug",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0
+	},
+	"tmsuper_signal_beam_burst": {
+		"name": "Signal Beam",
+		"type": "bug",
+		"slot": "super",
+		"kind": "area",
+		"power": 1000,
+		"range": 3.5,
+		"area_radius": 2.4
+	},
+	"tmsuper_signal_beam_lob": {
+		"name": "Signal Beam",
+		"type": "bug",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 950,
+		"lob": true,
+		"speed": 9.0,
+		"range": 7.5,
+		"radius": 0.7,
+		"explode_radius": 2.4
+	},
+	"tmsuper_signal_beam_beam": {
+		"name": "Signal Beam",
+		"type": "bug",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1150,
+		"speed": 15.0,
+		"range": 10.0,
+		"radius": 0.7,
+		"pierce": true
+	},
+	"tmsuper_signal_beam_shot": {
+		"name": "Signal Beam",
+		"type": "bug",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0
 	},
 	"tmsuper_dragon_pulse": {
 		"name": "Dragon Pulse",
 		"type": "dragon",
 		"slot": "super",
 		"kind": "projectile",
-		"power": 1800,
-		"speed": 10.5,
-		"range": 9.0,
-		"radius": 1.0,
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0
+	},
+	"tmsuper_dragon_pulse_burst": {
+		"name": "Dragon Pulse",
+		"type": "dragon",
+		"slot": "super",
+		"kind": "area",
+		"power": 1000,
+		"range": 3.5,
+		"area_radius": 2.4
+	},
+	"tmsuper_dragon_pulse_lob": {
+		"name": "Dragon Pulse",
+		"type": "dragon",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 950,
+		"lob": true,
+		"speed": 9.0,
+		"range": 7.5,
+		"radius": 0.7,
+		"explode_radius": 2.4
+	},
+	"tmsuper_dragon_pulse_beam": {
+		"name": "Dragon Pulse",
+		"type": "dragon",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1150,
+		"speed": 15.0,
+		"range": 10.0,
+		"radius": 0.7,
 		"pierce": true
+	},
+	"tmsuper_dragon_pulse_shot": {
+		"name": "Dragon Pulse",
+		"type": "dragon",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0
+	},
+	"tmsuper_draco_meteor": {
+		"name": "Draco Meteor",
+		"type": "dragon",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0
+	},
+	"tmsuper_draco_meteor_burst": {
+		"name": "Draco Meteor",
+		"type": "dragon",
+		"slot": "super",
+		"kind": "area",
+		"power": 1000,
+		"range": 3.5,
+		"area_radius": 2.4
+	},
+	"tmsuper_draco_meteor_lob": {
+		"name": "Draco Meteor",
+		"type": "dragon",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 950,
+		"lob": true,
+		"speed": 9.0,
+		"range": 7.5,
+		"radius": 0.7,
+		"explode_radius": 2.4
+	},
+	"tmsuper_draco_meteor_beam": {
+		"name": "Draco Meteor",
+		"type": "dragon",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1150,
+		"speed": 15.0,
+		"range": 10.0,
+		"radius": 0.7,
+		"pierce": true
+	},
+	"tmsuper_draco_meteor_shot": {
+		"name": "Draco Meteor",
+		"type": "dragon",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0
 	},
 	"tmsuper_dazzling_gleam": {
 		"name": "Dazzling Gleam",
 		"type": "fairy",
 		"slot": "super",
-		"kind": "area",
-		"power": 1300,
-		"range": 0.0,
-		"area_radius": 3.4,
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0,
 		"effect": {
 			"type": "blind",
-			"chance": 0.6,
+			"chance": 0.4,
 			"duration": 1.2
 		}
+	},
+	"tmsuper_dazzling_gleam_burst": {
+		"name": "Dazzling Gleam",
+		"type": "fairy",
+		"slot": "super",
+		"kind": "area",
+		"power": 1000,
+		"range": 3.5,
+		"area_radius": 2.4,
+		"effect": {
+			"type": "blind",
+			"chance": 0.4,
+			"duration": 1.2
+		}
+	},
+	"tmsuper_dazzling_gleam_lob": {
+		"name": "Dazzling Gleam",
+		"type": "fairy",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 950,
+		"lob": true,
+		"speed": 9.0,
+		"range": 7.5,
+		"radius": 0.7,
+		"explode_radius": 2.4,
+		"effect": {
+			"type": "blind",
+			"chance": 0.4,
+			"duration": 1.2
+		}
+	},
+	"tmsuper_dazzling_gleam_beam": {
+		"name": "Dazzling Gleam",
+		"type": "fairy",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1150,
+		"speed": 15.0,
+		"range": 10.0,
+		"radius": 0.7,
+		"pierce": true,
+		"effect": {
+			"type": "blind",
+			"chance": 0.4,
+			"duration": 1.2
+		}
+	},
+	"tmsuper_dazzling_gleam_shot": {
+		"name": "Dazzling Gleam",
+		"type": "fairy",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0,
+		"effect": {
+			"type": "blind",
+			"chance": 0.4,
+			"duration": 1.2
+		}
+	},
+	"tmsuper_moonblast": {
+		"name": "Moonblast",
+		"type": "fairy",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0,
+		"effect": {
+			"type": "blind",
+			"chance": 0.4,
+			"duration": 1.2
+		}
+	},
+	"tmsuper_moonblast_burst": {
+		"name": "Moonblast",
+		"type": "fairy",
+		"slot": "super",
+		"kind": "area",
+		"power": 1000,
+		"range": 3.5,
+		"area_radius": 2.4,
+		"effect": {
+			"type": "blind",
+			"chance": 0.4,
+			"duration": 1.2
+		}
+	},
+	"tmsuper_moonblast_lob": {
+		"name": "Moonblast",
+		"type": "fairy",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 950,
+		"lob": true,
+		"speed": 9.0,
+		"range": 7.5,
+		"radius": 0.7,
+		"explode_radius": 2.4,
+		"effect": {
+			"type": "blind",
+			"chance": 0.4,
+			"duration": 1.2
+		}
+	},
+	"tmsuper_moonblast_beam": {
+		"name": "Moonblast",
+		"type": "fairy",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1150,
+		"speed": 15.0,
+		"range": 10.0,
+		"radius": 0.7,
+		"pierce": true,
+		"effect": {
+			"type": "blind",
+			"chance": 0.4,
+			"duration": 1.2
+		}
+	},
+	"tmsuper_moonblast_shot": {
+		"name": "Moonblast",
+		"type": "fairy",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0,
+		"effect": {
+			"type": "blind",
+			"chance": 0.4,
+			"duration": 1.2
+		}
+	},
+	"tmsuper_flash_cannon": {
+		"name": "Flash Cannon",
+		"type": "steel",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0
+	},
+	"tmsuper_flash_cannon_burst": {
+		"name": "Flash Cannon",
+		"type": "steel",
+		"slot": "super",
+		"kind": "area",
+		"power": 1000,
+		"range": 3.5,
+		"area_radius": 2.4
+	},
+	"tmsuper_flash_cannon_lob": {
+		"name": "Flash Cannon",
+		"type": "steel",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 950,
+		"lob": true,
+		"speed": 9.0,
+		"range": 7.5,
+		"radius": 0.7,
+		"explode_radius": 2.4
+	},
+	"tmsuper_flash_cannon_beam": {
+		"name": "Flash Cannon",
+		"type": "steel",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1150,
+		"speed": 15.0,
+		"range": 10.0,
+		"radius": 0.7,
+		"pierce": true
+	},
+	"tmsuper_flash_cannon_shot": {
+		"name": "Flash Cannon",
+		"type": "steel",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0
+	},
+	"tmsuper_iron_head": {
+		"name": "Iron Head",
+		"type": "steel",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0
+	},
+	"tmsuper_iron_head_burst": {
+		"name": "Iron Head",
+		"type": "steel",
+		"slot": "super",
+		"kind": "area",
+		"power": 1000,
+		"range": 3.5,
+		"area_radius": 2.4
+	},
+	"tmsuper_iron_head_lob": {
+		"name": "Iron Head",
+		"type": "steel",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 950,
+		"lob": true,
+		"speed": 9.0,
+		"range": 7.5,
+		"radius": 0.7,
+		"explode_radius": 2.4
+	},
+	"tmsuper_iron_head_beam": {
+		"name": "Iron Head",
+		"type": "steel",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1150,
+		"speed": 15.0,
+		"range": 10.0,
+		"radius": 0.7,
+		"pierce": true
+	},
+	"tmsuper_iron_head_shot": {
+		"name": "Iron Head",
+		"type": "steel",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1000,
+		"speed": 10.0,
+		"range": 8.0,
+		"radius": 0.8,
+		"explode_radius": 2.0
 	}
 }

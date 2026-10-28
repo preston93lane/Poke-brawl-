@@ -10,8 +10,8 @@ from the PokeAPI repository (data/v2/csv).
   in the games (spaced out, see MAIN_LEVELS), or earlier with its TM if the move
   is a TM in any game the line can use it in. Writes "level" and "tm" into the
   base form's "moves" list in data/brawlers/<id>.json.
-- TM supers (data/moves/tm_supers.json): big signature moves any line that can
-  learn them by TM may equip instead of its own super.
+- TM supers (data/moves/tm_supers.json): two per type; a stage can equip one of
+  its own types instead of its super, shaped to its play style.
 - HMs: one or two per line that fit it, out of Cut, Fly, Surf, Strength,
   Flash and Rock Smash (compatible in the games, then picked by type).
 - Writes data/progression.json (TM catalogue, TM supers and HMs per line).
@@ -26,52 +26,47 @@ LEVEL_UP, MACHINE = "1", "4"
 MAIN_LEVELS = {1: (8, 30, 14), 2: (20, 50, 32)}
 MIN_GAP = 8
 
-## TM supers: id -> (move identifier in PokeAPI, display name, type).
+## TM supers: two per type. Only Pokémon of that type can use one (per stage:
+## Charizard can use a Flying one, Charmander can't). id -> (display name, type).
 TM_SUPERS = {
-    "hyper_beam": ("hyper-beam", "Hyper Beam", "normal"),
-    "solar_beam": ("solar-beam", "Solar Beam", "grass"),
-    "fire_blast": ("fire-blast", "Fire Blast", "fire"),
-    "scald": ("scald", "Scald", "water"),
-    "thunder": ("thunder", "Thunder", "electric"),
-    "blizzard": ("blizzard", "Blizzard", "ice"),
-    "earthquake": ("earthquake", "Earthquake", "ground"),
-    "psychic": ("psychic", "Psychic", "psychic"),
-    "rock_slide": ("rock-slide", "Rock Slide", "rock"),
-    "sludge_bomb": ("sludge-bomb", "Sludge Bomb", "poison"),
-    "shadow_ball": ("shadow-ball", "Shadow Ball", "ghost"),
-    "sky_attack": ("sky-attack", "Sky Attack", "flying"),
-    "focus_blast": ("focus-blast", "Focus Blast", "fighting"),
-    "bug_buzz": ("bug-buzz", "Bug Buzz", "bug"),
-    "dragon_pulse": ("dragon-pulse", "Dragon Pulse", "dragon"),
-    "dazzling_gleam": ("dazzling-gleam", "Dazzling Gleam", "fairy"),
+    "hyper_beam": ("Hyper Beam", "normal"), "giga_impact": ("Giga Impact", "normal"),
+    "solar_beam": ("Solar Beam", "grass"), "leaf_storm": ("Leaf Storm", "grass"),
+    "fire_blast": ("Fire Blast", "fire"), "overheat": ("Overheat", "fire"),
+    "scald": ("Scald", "water"), "muddy_water": ("Muddy Water", "water"),
+    "thunder": ("Thunder", "electric"), "zap_cannon": ("Zap Cannon", "electric"),
+    "blizzard": ("Blizzard", "ice"), "avalanche": ("Avalanche", "ice"),
+    "earthquake": ("Earthquake", "ground"), "earth_power": ("Earth Power", "ground"),
+    "psychic": ("Psychic", "psychic"), "psyshock": ("Psyshock", "psychic"),
+    "rock_slide": ("Rock Slide", "rock"), "rock_tomb": ("Rock Tomb", "rock"),
+    "sludge_bomb": ("Sludge Bomb", "poison"), "gunk_shot": ("Gunk Shot", "poison"),
+    "shadow_ball": ("Shadow Ball", "ghost"), "hex": ("Hex", "ghost"),
+    "sky_attack": ("Sky Attack", "flying"), "hurricane": ("Hurricane", "flying"),
+    "focus_blast": ("Focus Blast", "fighting"), "close_combat": ("Close Combat", "fighting"),
+    "bug_buzz": ("Bug Buzz", "bug"), "signal_beam": ("Signal Beam", "bug"),
+    "dragon_pulse": ("Dragon Pulse", "dragon"), "draco_meteor": ("Draco Meteor", "dragon"),
+    "dazzling_gleam": ("Dazzling Gleam", "fairy"), "moonblast": ("Moonblast", "fairy"),
+    "flash_cannon": ("Flash Cannon", "steel"), "iron_head": ("Iron Head", "steel"),
 }
-## Super templates by move: kind and numbers in the same scale as supers.json.
-TM_SUPER_STATS = {
-    "hyper_beam": {"kind": "projectile", "power": 2100, "speed": 11.0, "range": 9.0, "radius": 0.9, "pierce": True},
-    "solar_beam": {"kind": "projectile", "power": 1900, "speed": 12.0, "range": 10.0, "radius": 0.8, "pierce": True},
-    "fire_blast": {"kind": "projectile", "power": 1700, "speed": 8.5, "range": 7.5, "radius": 0.8, "explode_radius": 2.6,
-                   "effect": {"type": "burn", "chance": 0.6, "duration": 3.0, "dps": 160}},
-    "scald": {"kind": "projectile", "power": 1300, "speed": 10.0, "range": 7.5, "radius": 0.7, "count": 3, "spread": 18,
-              "effect": {"type": "burn", "chance": 0.5, "duration": 3.0, "dps": 120}},
-    "thunder": {"kind": "area", "power": 1700, "range": 8.0, "area_radius": 2.0,
-                "effect": {"type": "slow", "chance": 0.6, "duration": 1.5, "amount": 0.5}},
-    "blizzard": {"kind": "area", "power": 900, "range": 6.5, "area_radius": 3.0,
-                 "effect": {"type": "slow", "chance": 1.0, "duration": 2.5, "amount": 0.5}},
-    "earthquake": {"kind": "area", "power": 1500, "range": 0.0, "area_radius": 3.6},
-    "psychic": {"kind": "projectile", "power": 1600, "speed": 10.0, "range": 8.5, "radius": 0.9, "knockback": 2.0},
-    "rock_slide": {"kind": "projectile", "power": 900, "speed": 9.0, "range": 7.0, "radius": 0.7, "count": 3, "spread": 30},
-    "sludge_bomb": {"kind": "projectile", "power": 1200, "speed": 8.0, "range": 7.5, "radius": 0.7, "explode_radius": 2.4,
-                    "effect": {"type": "poison", "chance": 1.0, "duration": 4.0, "dps": 180}},
-    "shadow_ball": {"kind": "projectile", "power": 1600, "speed": 9.0, "range": 8.0, "radius": 0.9,
-                    "effect": {"type": "blind", "chance": 0.5, "duration": 1.5}},
-    "sky_attack": {"kind": "dash", "power": 1800, "dash_distance": 8.0, "dash_speed": 20.0, "dash_pierce": True},
-    "focus_blast": {"kind": "projectile", "power": 2200, "speed": 8.0, "range": 7.5, "radius": 0.9, "knockback": 2.5},
-    "bug_buzz": {"kind": "area", "power": 1100, "range": 0.0, "area_radius": 3.2,
-                 "effect": {"type": "slow", "chance": 0.5, "duration": 1.5, "amount": 0.4}},
-    "dragon_pulse": {"kind": "projectile", "power": 1800, "speed": 10.5, "range": 9.0, "radius": 1.0, "pierce": True},
-    "dazzling_gleam": {"kind": "area", "power": 1300, "range": 0.0, "area_radius": 3.4,
-                       "effect": {"type": "blind", "chance": 0.6, "duration": 1.2}},
+## Each TM super takes the shape that fits the user's play style (a stream
+## Pokémon's Fire Blast is a burst of flame up close; a sniper's is a long beam; "shot" is a mid-range blast).
+SHAPES = {
+    "burst": {"kind": "area", "power": 1000, "range": 3.5, "area_radius": 2.4},
+    "lob": {"kind": "projectile", "power": 950, "lob": True, "speed": 9.0, "range": 7.5, "radius": 0.7, "explode_radius": 2.4},
+    "beam": {"kind": "projectile", "power": 1150, "speed": 15.0, "range": 10.0, "radius": 0.7, "pierce": True},
+    "shot": {"kind": "projectile", "power": 1000, "speed": 10.0, "range": 8.0, "radius": 0.8, "explode_radius": 2.0},
 }
+## Status effect each type adds to its TM supers.
+TYPE_EFFECTS = {
+    "fire": {"type": "burn", "chance": 0.6, "duration": 3.0, "dps": 140},
+    "poison": {"type": "poison", "chance": 0.8, "duration": 4.0, "dps": 150},
+    "electric": {"type": "slow", "chance": 0.5, "duration": 1.5, "amount": 0.5},
+    "ice": {"type": "slow", "chance": 0.8, "duration": 2.0, "amount": 0.5},
+    "ghost": {"type": "blind", "chance": 0.5, "duration": 1.5},
+    "fairy": {"type": "blind", "chance": 0.4, "duration": 1.2},
+    "psychic": {"type": "slow", "chance": 0.3, "duration": 1.0, "amount": 0.3},
+    "grass": {"type": "leech", "chance": 0.5, "duration": 3.0, "dps": 120},
+}
+
 
 HMS = {"cut": "cut", "fly": "fly", "surf": "surf", "strength": "strength", "flash": "flash", "rock_smash": "rock-smash"}
 ## Type -> HM bonus (HMs that fit a type come first).
@@ -124,7 +119,6 @@ def main(src):
 
     bases = sorted([s for s, d in defs.items() if not d.get("evolves_from") and not d.get("legendary")], key=lambda s: defs[s]["dex"])
     tms = {}
-    tm_supers = {}
     hms = {}
     for base in bases:
         line = line_of(base)
@@ -160,8 +154,6 @@ def main(src):
             new_entries.append(e)
         _write_moves(os.path.join(DATA, "brawlers", base + ".json"), new_entries)
 
-        # TM supers this line can learn.
-        tm_supers[base] = [sid for sid, (ms, _, _) in TM_SUPERS.items() if has_tm(ms)]
 
         # HMs: compatible in the games, best fits first, at most two.
         compatible = [h for h, ms in HMS.items() if has_tm(ms)]
@@ -174,23 +166,26 @@ def main(src):
             picked = [next((FALLBACK_HM[t] for t in defs[base]["types"] if t in FALLBACK_HM), "strength")]
         hms[base] = picked
 
-    for sid, (_, name, mtype) in TM_SUPERS.items():
+    for sid, (name, mtype) in TM_SUPERS.items():
         tm_id = "tm_" + sid
         entry = tms.get(tm_id, {"name": "TM " + name, "move": name, "kind": "super", "type": mtype})
         entry["kind"] = "both" if entry["kind"] == "main" else "super"
         entry["super"] = "tmsuper_" + sid
         tms[tm_id] = entry
 
-    super_defs = {"_comment": "TM supers (tools/build_progression.py): any line that learns the move by TM in the games can equip it instead of its own super."}
-    for sid, (_, name, mtype) in TM_SUPERS.items():
-        d = {"name": name, "type": mtype, "slot": "super"}
-        d.update(TM_SUPER_STATS[sid])
-        super_defs["tmsuper_" + sid] = d
+    super_defs = {"_comment": "TM supers (tools/build_progression.py): tmsuper_<id> is the one shown in menus; tmsuper_<id>_<shape> is what's used, picked by the user's play style. Only Pokémon of the move's type can use it."}
+    for sid, (name, mtype) in TM_SUPERS.items():
+        for shape, stats in [("", SHAPES["shot"])] + list(SHAPES.items()):
+            d = {"name": name, "type": mtype, "slot": "super"}
+            d.update(stats)
+            if mtype in TYPE_EFFECTS:
+                d["effect"] = TYPE_EFFECTS[mtype]
+            super_defs["tmsuper_" + sid + ("_" + shape if shape else "")] = d
     json.dump(super_defs, open(os.path.join(DATA, "moves", "tm_supers.json"), "w"), indent="\t")
 
     out = {
-        "_comment": "Generated by tools/build_progression.py. tms: catalogue (main = unlocks that main attack variant for every line that has it; super/both = also unlocks the TM super for the lines in tm_supers). hms: one or two per evolution line (base form id).",
-        "tms": dict(sorted(tms.items())), "tm_supers": tm_supers, "hms": hms,
+        "_comment": "Generated by tools/build_progression.py. tms: catalogue (main = unlocks that main attack variant for every line that has it; super/both = also unlocks the TM super for every Pokémon of its type). hms: one or two per evolution line (base form id).",
+        "tms": dict(sorted(tms.items())), "hms": hms,
     }
     json.dump(out, open(os.path.join(DATA, "progression.json"), "w"), indent="\t")
     print(f"{len(bases)} lines, {len(tms)} TMs, HMs: " + ", ".join(f"{b}={'/'.join(h)}" for b, h in list(hms.items())[:12]))

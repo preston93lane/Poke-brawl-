@@ -47,6 +47,7 @@ func _ready() -> void:
 	await _check_hms()
 	await _check_faint_stops_attacks()
 	await _check_text_boxes()
+	await _check_tm_super_shapes()
 	Engine.time_scale = 1.0
 	Profile.data = real_profile
 	Profile.save()
@@ -1184,6 +1185,15 @@ func _check_progression() -> void:
 	expect(Profile.super_options("charizard").slice(0, 3) == ["blast_burn", "flame_charge", "fire_spin"], "Charizard can pick any of its line's supers")
 	Profile._add_tm("tm_fire_blast")
 	expect("tmsuper_fire_blast" in Profile.super_options("charmander"), "an owned TM super is an option at every stage")
+	Profile._add_tm("tm_hurricane")
+	Profile._add_tm("tm_hyper_beam")
+	expect("tmsuper_hurricane" not in Profile.super_options("charmander") and "tmsuper_hurricane" in Profile.super_options("charizard"),
+			"Flying TM supers only for Flying stages (Charizard yes, Charmander no)")
+	expect("tmsuper_hyper_beam" not in Profile.super_options("charizard"), "no Hyper Beam for the Charmander line")
+	for base in GameData.base_species():
+		for stage in GameData.evolution_line(base.id):
+			if Profile.stage_tm_supers(stage.id).size() < 2:
+				expect(false, "%s has at least two TM supers to aim for" % stage.id)
 	Profile.set_loadout("charizard", "super_charizard", "fire_spin")
 	expect(Profile.super_choices("charmander") == { "charizard": "fire_spin" }, "picks are saved per stage")
 	Profile._add_tm("tm_flamethrower")
@@ -1340,4 +1350,16 @@ func _check_text_boxes() -> void:
 		scroll._tap(at)
 		expect(first.has_focus(), "tapping the email box in a scroll list focuses it")
 	menu.queue_free()
+	await get_tree().process_frame
+
+
+func _check_tm_super_shapes() -> void:
+	print("TM super shapes")
+	var main := await _start_match("route_1", "duel", "charmander", [])
+	var p: Brawler = main.player
+	Profile._add_tm("tm_fire_blast")
+	p.super_choices = { "charmander": "tmsuper_fire_blast" }
+	var m := p.current_super()
+	expect(m.kind == "area" and m.power < 1000.0, "a stream Pokémon's Fire Blast is a close burst, weaker on a base form (%s, %d)" % [m.kind, m.power])
+	main.queue_free()
 	await get_tree().process_frame
