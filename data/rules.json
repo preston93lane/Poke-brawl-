@@ -37,7 +37,7 @@
 	},
 	"modes": {
 		"duel": {
-			"kills_to_win": 10,
+			"kills_to_win": 25,
 			"respawn_time": 3.0,
 			"time_limit": 150.0
 		},

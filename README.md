@@ -32,7 +32,7 @@ The web build uses Godot's Compatibility renderer, so lighting is slightly simpl
   moves, opponent and arena. Running `scenes/main.tscn` directly in the editor uses the **Main** node's Inspector values instead.
 - After every attack there's a short delay before you can attack again. Heavy moves have longer delays.
 - **3v3:** you plus two bot teammates against three bots. Pick teammates and opponents in the menu, or leave them random.
-- **Battle:** first team to 10 KOs. **King of the Hill:** your team alone in the striped zone fills your meter.
+- **Battle:** most KOs in 2:30, or first to 25 (a legendary raid boss lands at 1:30). **King of the Hill:** your team alone in the striped zone fills your meter.
   Matches last 2:30; when time runs out the team ahead wins, or it's a draw.
 - **Play styles:** every family fights like a Brawl Stars archetype: brawlers (Bull/El Primo), assassins (Mortis/Edgar),
   throwers who lob over walls (Barley/Dynamike), snipers (Piper), healers (Poco/Byron), boomerangs, bouncers (Rico),

@@ -4,7 +4,7 @@ extends Control
 
 const MAIN_SCENE := "res://scenes/main.tscn"
 const MODES := {
-	"duel": { "button": "BATTLE", "title": "BATTLE 3v3", "blurb": "First team to 10 KOs wins." },
+	"duel": { "button": "BATTLE", "title": "BATTLE 3v3", "blurb": "Most KOs in 2:30 wins — or first to 25." },
 	"king_of_the_hill": { "button": "KING OF THE HILL", "title": "KING OF THE HILL 3v3", "blurb": "Hold the zone with only your team in it." },
 	"brawl_ball": { "button": "BRAWL BALL", "title": "BRAWL BALL 3v3", "blurb": "Kick the Poké Ball into their goal. First to 2." },
 	"candy_rush": { "button": "RARE CANDY RUSH", "title": "RARE CANDY RUSH 3v3", "blurb": "Grab 10 Rare Candies from the mine and hold them for 10 s." },
