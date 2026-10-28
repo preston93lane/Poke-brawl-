@@ -8,9 +8,9 @@
 		"first_win": "great_ball", "challenge": "great_ball", "raid": "ultra_ball"
 	},
 	"balls": {
-		"poke_ball": { "name": "Poké Ball", "money": [50, 100], "candy": [0.25, 1, 1], "vitamin": [0.1, 1], "extra_vitamin": 0.0, "hm": 0.03, "tm": 0.01, "pokemon": 0.0 },
-		"great_ball": { "name": "Great Ball", "money": [150, 250], "candy": [1.0, 1, 2], "vitamin": [0.35, 1], "extra_vitamin": 0.0, "hm": 0.1, "tm": 0.1, "pokemon": 0.02 },
-		"ultra_ball": { "name": "Ultra Ball", "money": [400, 600], "candy": [1.0, 2, 4], "vitamin": [1.0, 1], "extra_vitamin": 0.3, "hm": 0.25, "tm": 0.3, "pokemon": 0.1 },
+		"poke_ball": { "name": "Poké Ball", "money": [50, 100], "candy": [0.25, 1, 1], "vitamin": [0.1, 1], "extra_vitamin": 0.0, "hm": 0.03, "tm": 0.01, "pokemon": 0.03 },
+		"great_ball": { "name": "Great Ball", "money": [150, 250], "candy": [1.0, 1, 2], "vitamin": [0.35, 1], "extra_vitamin": 0.0, "hm": 0.1, "tm": 0.1, "pokemon": 0.12 },
+		"ultra_ball": { "name": "Ultra Ball", "money": [400, 600], "candy": [1.0, 2, 4], "vitamin": [1.0, 1], "extra_vitamin": 0.3, "hm": 0.25, "tm": 0.3, "pokemon": 0.35 },
 		"master_ball": { "name": "Master Ball", "money": [1500, 1500], "candy": [1.0, 5, 5], "vitamin": [1.0, 3], "extra_vitamin": 0.0, "hm": 1.0, "tm": 1.0, "pokemon": 1.0 }
 	},
 	"milestones": {

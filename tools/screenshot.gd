@@ -1,7 +1,7 @@
 extends Node
 ## Renders a match and saves screenshots, for checking how a map looks:
 ##   godot --path . --rendering-driver opengl3 res://tools/screenshot.tscn -- <arena_id> <out_dir>
-## or, for a menu screen: -- menu:<select|store|bag|home> <out_dir>
+## or, for a menu screen: -- menu:<select|store|bag|battle|challenges|home> <out_dir>
 ## (on a server, run under xvfb-run). Bots are frozen so the shot is repeatable.
 
 const MAIN_SCENE := preload("res://scenes/main.tscn")
@@ -59,6 +59,10 @@ func _menu_shot(screen: String, out_dir: String) -> void:
 			menu.show_store("")
 		"bag":
 			menu.show_bag()
+		"battle":
+			menu.show_battle_modes()
+		"challenges":
+			menu.show_challenges()
 		_:
 			menu.show_home()
 	for i in 20:

@@ -1036,6 +1036,8 @@ func _check_menu_fits() -> void:
 	screens.append(["store", func() -> void: menu.show_store("")])
 	screens.append(["starter", func() -> void: menu._set_screen(TrainerScreens.starter(menu))])
 	screens.append(["account", func() -> void: menu.show_account("")])
+	screens.append(["battle modes", func() -> void: menu.show_battle_modes()])
+	screens.append(["challenges", func() -> void: menu.show_challenges()])
 	for entry in screens:
 		entry[1].call()
 		for i in 3:
@@ -1207,7 +1209,16 @@ func _check_progression() -> void:
 		Profile._add_xp("charmander", 5000)
 	Profile.data["stats"]["arena_mvps"]["pewter_gym"] = 10
 	var found: Dictionary = Profile._check_unlocks()
-	expect("geodude" in found["pokemon"] and Profile.is_unlocked("spearow"), "challenges and total level unlock new lines")
+	expect("geodude" in found["pokemon"] and Profile.is_unlocked("spearow") and Profile.is_unlocked("bulbasaur") and Profile.is_unlocked("squirtle"),
+			"challenges, the trainer road and the starter levels unlock new lines")
+	expect(not Profile.is_unlocked("mewtwo") and not Profile.is_unlocked("mew"), "Mewtwo and Mew need everything else first")
+	for base in GameData.base_species():
+		if base.id not in ["mewtwo", "mew"]:
+			Profile.unlock(base.id)
+	for boss in ["zapdos", "moltres", "articuno"]:
+		Profile.data["stats"]["raid_wins"][boss] = 5
+	Profile._check_unlocks()
+	expect(Profile.is_unlocked("mewtwo") and not Profile.is_unlocked("mew"), "Mewtwo after every other line and all raids")
 	Profile.data = saved
 	Profile.save()
 

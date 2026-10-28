@@ -40,7 +40,7 @@ static func blank() -> Dictionary:
 	return {
 		"version": VERSION, "levels": {}, "xp": {}, "dev": false, "money": 0, "unlocked": [], "starter": "",
 		"inventory": {}, "tms": [], "hms": {}, "vitamins": {}, "loadout": {},
-		"stats": { "matches": 0, "wins": 0, "arena_wins": {}, "arena_mvps": {}, "raid_wins": {} },
+		"stats": { "matches": 0, "wins": 0, "arena_wins": {}, "arena_mvps": {}, "raid_wins": {}, "mode_wins": {} },
 		"milestones": [], "since_ultra": 0, "store": {}, "daily": {}, "updated": 0,
 	}
 
@@ -142,15 +142,51 @@ func unlock(family: String) -> bool:
 ## How to unlock a locked line, for the select screen.
 func unlock_hint(species_id: String) -> String:
 	var family := GameData.family_root(species_id)
-	if family in GameData.unlocks.get("starters", []):
-		return "Unlocks after more wins"
+	var starters: Array = GameData.unlocks.get("starters", [])
+	if family in starters:
+		return "Reach trainer level %d" % next_starter_level()
+	var entry := unlock_entry(family)
+	if entry.has("challenge"):
+		var c: Dictionary = entry["challenge"]
+		return "Challenge: %s (%d/%d)" % [c["text"], challenge_progress(c), challenge_goal(c)]
+	if entry.has("trainer_level"):
+		return "Reach trainer level %d" % int(entry["trainer_level"])
+	return "Found in Poké Balls"
+
+
+func unlock_entry(family: String) -> Dictionary:
 	for entry: Dictionary in GameData.unlocks.get("order", []):
 		if entry["family"] == family:
-			if entry.has("challenge"):
-				var c: Dictionary = entry["challenge"]
-				return "%s (%d/%d)" % [c["text"], challenge_progress(c), int(c["count"])]
-			return "Total level %d, or find it in a Poké Ball" % int(entry.get("total_level", 0))
-	return ""
+			return entry
+	return {}
+
+
+## Trainer level that unlocks the next of the starters you didn't pick (0 = none left).
+func next_starter_level() -> int:
+	var waiting := 0
+	for id in GameData.unlocks.get("starters", []):
+		if id not in (data["unlocked"] as Array):
+			waiting += 1
+	var levels: Array = GameData.unlocks.get("starter_levels", [20, 40, 60])
+	var index := levels.size() - waiting
+	return int(levels[index]) if index >= 0 and index < levels.size() else 0
+
+
+func challenge_goal(c: Dictionary) -> int:
+	match str(c.get("type", "")):
+		"all":
+			return (c.get("parts", []) as Array).size()
+		"all_unlocked":
+			return _families_except(c.get("except", [])).size()
+	return int(c.get("count", 1))
+
+
+func _families_except(skip: Array) -> Array[String]:
+	var result: Array[String] = []
+	for s in GameData.base_species():
+		if s.id not in skip:
+			result.append(s.id)
+	return result
 
 
 func challenge_progress(c: Dictionary) -> int:
@@ -162,11 +198,35 @@ func challenge_progress(c: Dictionary) -> int:
 			return int(_stat_dict("arena_wins").get(c.get("arena", ""), 0))
 		"raid":
 			return int(_stat_dict("raid_wins").get(c.get("boss", ""), 0))
+		"mode_win":
+			return int(_stat_dict("mode_wins").get(c.get("mode", ""), 0))
 		"wins":
 			return int(stats.get("wins", 0))
 		"total_level":
 			return total_level()
+		"gyms_hard":
+			var done := 0
+			for m in data.get("milestones", []):
+				if str(m).begins_with("gym_"):
+					done += 1
+			return done
+		"all_unlocked":
+			var have := 0
+			for family in _families_except(c.get("except", [])):
+				if family in (data["unlocked"] as Array):
+					have += 1
+			return have
+		"all":
+			var done := 0
+			for part: Dictionary in c.get("parts", []):
+				if challenge_done(part):
+					done += 1
+			return done
 	return 0
+
+
+func challenge_done(c: Dictionary) -> bool:
+	return challenge_progress(c) >= challenge_goal(c)
 
 
 ## Unlocks every line whose requirement is met; returns { "pokemon": [...], "challenges": n }.
@@ -175,39 +235,42 @@ func _check_unlocks() -> Dictionary:
 	var challenges := 0
 	if needs_starter():
 		return { "pokemon": found, "challenges": 0 }
-	var wins := int(data["stats"].get("wins", 0))
-	var after: Array = GameData.unlocks.get("other_starters_after_wins", [5, 15, 30])
+	var total := total_level()
+	# The starters you didn't pick, one at each starter level.
 	var waiting: Array[String] = []
 	for id: String in GameData.unlocks.get("starters", []):
 		if id not in (data["unlocked"] as Array):
 			waiting.append(id)
-	var earned := 0
-	for w in after:
-		if wins >= int(w):
-			earned += 1
-	var have := (GameData.unlocks.get("starters", []) as Array).size() - waiting.size() - 1
-	for i in clampi(earned - have, 0, waiting.size()):
-		if unlock(waiting[i]):
-			found.append(waiting[i])
-	var total := total_level()
-	for entry: Dictionary in GameData.unlocks.get("order", []):
-		var family: String = entry["family"]
-		if family in (data["unlocked"] as Array):
-			continue
-		if entry.has("challenge"):
-			var c: Dictionary = entry["challenge"]
-			if challenge_progress(c) >= int(c["count"]) and unlock(family):
+	var levels: Array = GameData.unlocks.get("starter_levels", [20, 40, 60])
+	var given := levels.size() - waiting.size()
+	for i in range(maxi(0, given), levels.size()):
+		if total >= int(levels[i]) and not waiting.is_empty() and unlock(waiting[0]):
+			found.append(waiting.pop_front())
+	# Repeat: unlocking one can complete "unlock everything" challenges (Mewtwo, Mew).
+	var again := true
+	while again:
+		again = false
+		for entry: Dictionary in GameData.unlocks.get("order", []):
+			var family: String = entry["family"]
+			if family in (data["unlocked"] as Array):
+				continue
+			var ready := false
+			if entry.has("challenge"):
+				ready = challenge_done(entry["challenge"])
+				if ready:
+					challenges += 1
+			elif entry.has("trainer_level"):
+				ready = total >= int(entry["trainer_level"])
+			if ready and unlock(family):
 				found.append(family)
-				challenges += 1
-		elif total >= int(entry.get("total_level", 99999)) and unlock(family):
-			found.append(family)
+				again = true
 	return { "pokemon": found, "challenges": challenges }
 
 
 ## Next locked line that a Poké Ball can give (no challenge attached), or "".
 func next_ball_pokemon() -> String:
 	for entry: Dictionary in GameData.unlocks.get("order", []):
-		if not entry.has("challenge") and entry["family"] not in (data["unlocked"] as Array):
+		if not entry.has("challenge") and not entry.has("trainer_level") and entry["family"] not in (data["unlocked"] as Array):
 			return entry["family"]
 	return ""
 
@@ -264,7 +327,7 @@ func _add_xp(family: String, amount: int) -> int:
 	return gained
 
 
-## Sum of every unlocked line's level.
+## Trainer level: every unlocked line's level added up.
 func total_level() -> int:
 	var total := 0
 	for family in data.get("unlocked", []):
@@ -464,7 +527,7 @@ func set_loadout(species_id: String, key: String, value: String) -> void:
 # --- Match rewards -------------------------------------------------------------
 
 ## Called when a match ends. `info`: species, result ("victory"/"defeat"/"draw"),
-## kos, mvp, arena, difficulty, raid (boss id your team won, or "").
+## kos, mvp, arena, mode, difficulty, raid (boss id your team won, or "").
 ## Returns what was earned, for the results screen.
 func record_match(info: Dictionary) -> Dictionary:
 	var family := GameData.family_root(str(info.get("species", "")))
@@ -485,6 +548,9 @@ func record_match(info: Dictionary) -> Dictionary:
 		stats["wins"] = int(stats.get("wins", 0)) + 1
 		var aw := _stat_dict("arena_wins")
 		aw[arena] = int(aw.get(arena, 0)) + 1
+		var mw := _stat_dict("mode_wins")
+		var mode := str(info.get("mode", ""))
+		mw[mode] = int(mw.get(mode, 0)) + 1
 	if mvp:
 		var am := _stat_dict("arena_mvps")
 		am[arena] = int(am.get(arena, 0)) + 1

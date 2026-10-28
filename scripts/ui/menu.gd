@@ -76,41 +76,78 @@ func show_home() -> void:
 	starters.alignment = BoxContainer.ALIGNMENT_CENTER
 	for id in ["bulbasaur", "charmander", "squirtle", "pikachu", "eevee", "gastly", "dratini"]:
 		if GameData.species.has(id):
-			starters.add_child(UiKit.sprite(GameData.species[id].sprite, 96))
+			starters.add_child(UiKit.sprite(GameData.species[id].sprite, 88))
 	v.add_child(starters)
-	var count := UiKit.label("%d ₽   ·   Total level %d   ·   %d of %d Pokémon lines unlocked" % [Profile.money(), Profile.total_level(),
-			_unlocked_count(), GameData.base_species().size()], 22, Color(0.8, 0.85, 1))
-	count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	v.add_child(count)
 
-	var modes := GridContainer.new()
-	modes.columns = 3
-	modes.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	modes.add_theme_constant_override("h_separation", 14)
-	modes.add_theme_constant_override("v_separation", 14)
-	for mode_id: String in MODES:
-		var b := UiKit.button(MODES[mode_id]["button"], show_select.bind(mode_id), 24)
-		b.custom_minimum_size = Vector2(300, 64)
-		modes.add_child(b)
-	var dex := UiKit.button("POKéDEX", show_pokedex.bind(""), 24)
-	dex.custom_minimum_size = Vector2(300, 64)
-	dex.add_theme_stylebox_override("normal", UiKit.box(Color(0.75, 0.3, 0.3)))
-	modes.add_child(dex)
-	for entry in [["BAG", show_bag.bind([] as Array[Dictionary]), Color(0.25, 0.55, 0.45)], ["POKé MART", show_store.bind(""), Color(0.3, 0.45, 0.8)]]:
-		var shop := UiKit.button(entry[0], entry[1], 24)
-		shop.custom_minimum_size = Vector2(300, 64)
-		shop.add_theme_stylebox_override("normal", UiKit.box(entry[2]))
-		modes.add_child(shop)
-	var extras: Array = [["ACCOUNT", show_account.bind("")], ["MAP MAKER", show_map_editor], ["SETTINGS", show_settings]]
-	if Profile.is_dev():
-		extras.append(["DEV TOOLS", show_dev])
-	for entry in extras:
-		var extra := UiKit.button(entry[0], entry[1], 24)
-		extra.custom_minimum_size = Vector2(300, 64)
-		extra.add_theme_stylebox_override("normal", UiKit.box(Color(0.35, 0.38, 0.5)))
-		modes.add_child(extra)
-	v.add_child(modes)
+	# Trainer card: level, money, Pokémon unlocked; opens the challenges.
+	var card := UiKit.button("TRAINER LV %d   ·   %d ₽   ·   %d / %d POKéMON   ·   CHALLENGES ›" % [Profile.total_level(), Profile.money(),
+			_unlocked_count(), GameData.base_species().size()], show_challenges, 22)
+	card.add_theme_stylebox_override("normal", UiKit.box(Color(0.2, 0.25, 0.45)))
+	card.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	card.custom_minimum_size = Vector2(760, 56)
+	v.add_child(card)
+
+	var battle := UiKit.button("BATTLE", show_battle_modes, 48)
+	battle.custom_minimum_size = Vector2(560, 104)
+	battle.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	battle.add_theme_stylebox_override("normal", UiKit.box(Color(0.95, 0.6, 0.15)))
+	battle.add_theme_stylebox_override("hover", UiKit.box(Color(1.0, 0.68, 0.2)))
+	v.add_child(battle)
+
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 12)
+	for entry in [["POKéDEX", show_pokedex.bind(""), Color(0.75, 0.3, 0.3)], ["BAG", show_bag.bind([] as Array[Dictionary]), Color(0.25, 0.55, 0.45)],
+			["POKé MART", show_store.bind(""), Color(0.3, 0.45, 0.8)], ["ACCOUNT", show_account.bind(""), Color(0.35, 0.38, 0.5)],
+			["SETTINGS", show_settings, Color(0.35, 0.38, 0.5)]]:
+		var b := UiKit.button(entry[0], entry[1], 22)
+		b.custom_minimum_size = Vector2(196, 64)
+		b.add_theme_stylebox_override("normal", UiKit.box(entry[2]))
+		row.add_child(b)
+	v.add_child(row)
 	_set_screen(v)
+
+
+## BATTLE: every game mode, plus the map maker.
+func show_battle_modes() -> void:
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 16)
+	var top := HBoxContainer.new()
+	top.add_child(UiKit.button("‹ BACK", show_home))
+	top.add_child(UiKit.label("   CHOOSE A MODE", 34, Color(1, 0.85, 0.25)))
+	v.add_child(top)
+	var grid := GridContainer.new()
+	grid.columns = 3
+	grid.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	grid.add_theme_constant_override("h_separation", 14)
+	grid.add_theme_constant_override("v_separation", 14)
+	for mode_id: String in MODES:
+		grid.add_child(_mode_card(MODES[mode_id]["button"], MODES[mode_id]["blurb"], show_select.bind(mode_id), Color(0.22, 0.48, 0.9)))
+	grid.add_child(_mode_card("MAP MAKER", "Design your own arenas and test them.", show_map_editor, Color(0.35, 0.38, 0.5)))
+	v.add_child(grid)
+	_set_screen(v)
+
+
+func _mode_card(title: String, blurb: String, on_pressed: Callable, color: Color) -> Button:
+	var b := UiKit.button(title, on_pressed, 28)
+	b.custom_minimum_size = Vector2(340, 150)
+	b.add_theme_stylebox_override("normal", UiKit.box(color))
+	b.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
+	var text := UiKit.label(blurb, 16, Color(1, 1, 1, 0.85))
+	text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	text.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	text.offset_top = -52
+	text.offset_bottom = -10
+	text.offset_left = 12
+	text.offset_right = -12
+	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	b.add_child(text)
+	return b
+
+
+func show_challenges() -> void:
+	_set_screen(TrainerScreens.challenges(self))
 
 
 func show_bag(prizes: Array[Dictionary] = []) -> void:
@@ -148,7 +185,7 @@ func show_select(mode: String) -> void:
 	var root := VBoxContainer.new()
 	root.add_theme_constant_override("separation", 12)
 	var top := HBoxContainer.new()
-	top.add_child(UiKit.button("‹ BACK", show_home))
+	top.add_child(UiKit.button("‹ BACK", show_battle_modes))
 	var title := UiKit.label("%s  —  %s" % [MODES[mode]["title"], MODES[mode]["blurb"]], 26)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -234,6 +271,8 @@ func show_settings() -> void:
 		GameData.set_setting("aim_assist", on)
 		assist.text = "AIM ASSIST: ON" if on else "AIM ASSIST: OFF")
 	top.add_child(assist)
+	if Profile.is_dev():
+		top.add_child(UiKit.button("DEV TOOLS", show_dev))
 	if not Profile.is_dev():
 		var code := LineEdit.new()
 		code.placeholder_text = "Dev code"

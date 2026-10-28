@@ -43,8 +43,10 @@ The web build uses Godot's Compatibility renderer, so lighting is slightly simpl
 - Every Pokémon *stage* has its own **super**: big attacks, area poison, team heals, shields, teleports, blinding Flash…
 - **Types matter:** STAB, an 18-type chart and coverage moves. Super-effective hits pop up orange with "!".
 - **Evolve** every 3 KOs (yellow pips next to your health bar; fainting doesn't reset them). Faint and you drop back a stage.
-- **Progression:** pick a starter (Pidgey and Rattata come free); other lines unlock in Kanto catch order through
-  challenges, your total level or Poké Balls. Matches give XP (double on your first win of the day), Poké Dollars
+- **Progression:** pick a starter (Pidgey and Rattata come free); the other starters unlock at trainer level 20, 40
+  and 60 (trainer level = all your lines' levels added up). One line per Kanto area unlocks on the trainer road
+  (every 5 levels from 10), others through challenges (CHALLENGES on the home screen shows progress) or Poké
+  Balls; Mewtwo and Mew come last. `docs/pokemon_notes.md` lists every line's moves, levels, TMs and HMs. Matches give XP (double on your first win of the day), Poké Dollars
   and Poké Balls. Open balls in the BAG; spend ₽ in the daily POKé MART. Main attacks unlock at the level the line
   learns them in the games or from their TM; TM supers replace your super; HMs (Cut, Fly, Surf, Strength, Flash,
   Rock Smash) are taught one line at a time and used with the HM button. Vitamins: +3% each, 10 active per line.

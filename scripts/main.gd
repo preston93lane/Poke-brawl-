@@ -518,7 +518,7 @@ func end_round(result_name: String, subtitle := "") -> void:
 				mvp = row["mvp"]
 		rewards = Profile.record_match({
 			"species": player_species, "result": result_name, "kos": player.kills, "mvp": mvp,
-			"arena": arena_id, "difficulty": bot_difficulty, "raid": raid_won,
+			"arena": arena_id, "mode": mode, "difficulty": bot_difficulty, "raid": raid_won,
 		})
 	hud.show_result(result_name, rows, mode_logic.stat_name() if mode_logic else "", subtitle, rewards)
 

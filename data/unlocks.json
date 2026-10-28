@@ -1,5 +1,5 @@
 {
-	"_comment": "Unlock order (Kanto catch order). Pick one starter; the free Pokémon come with it. Every other line unlocks from its challenge, or (no challenge) once your total level (all lines' levels added up) reaches total_level, or earlier from a Poké Ball drop (balls give the next locked line without a challenge, in this order). The starters you didn't pick unlock after 5, 15 and 30 wins.",
+	"_comment": "Unlock order (Kanto catch order). Trainer level = every unlocked line's level added up. Pick one starter (Pidgey and Rattata come with it); the other starters unlock at the trainer levels in starter_levels. One line per area of Kanto unlocks at its trainer_level; lines with a challenge unlock by completing it (and give a Great Ball); every other line is found in Poké Balls, in this order. Mewtwo and Mew come last.",
 	"starters": [
 		"bulbasaur",
 		"charmander",
@@ -10,71 +10,62 @@
 		"pidgey",
 		"rattata"
 	],
-	"other_starters_after_wins": [
-		5,
-		15,
-		30
+	"starter_levels": [
+		20,
+		40,
+		60
 	],
 	"order": [
 		{
 			"family": "spearow",
-			"area": "Route 1, Route 2 & Viridian Forest",
-			"total_level": 16
+			"area": "Route 22",
+			"trainer_level": 10
 		},
 		{
 			"family": "nidoran_f",
-			"area": "Route 1, Route 2 & Viridian Forest",
-			"total_level": 24
+			"area": "Route 1, Route 2 & Viridian Forest"
 		},
 		{
 			"family": "nidoran_m",
-			"area": "Route 1, Route 2 & Viridian Forest",
-			"total_level": 32
+			"area": "Route 1, Route 2 & Viridian Forest"
 		},
 		{
 			"family": "caterpie",
-			"area": "Route 1, Route 2 & Viridian Forest",
-			"total_level": 40
+			"area": "Viridian Forest",
+			"trainer_level": 15
 		},
 		{
 			"family": "weedle",
-			"area": "Route 1, Route 2 & Viridian Forest",
-			"total_level": 48
+			"area": "Route 1, Route 2 & Viridian Forest"
 		},
 		{
 			"family": "mankey",
-			"area": "Route 1, Route 2 & Viridian Forest",
-			"total_level": 56
+			"area": "Route 1, Route 2 & Viridian Forest"
 		},
 		{
 			"family": "jigglypuff",
-			"area": "Pewter City & Mt. Moon",
-			"total_level": 64
+			"area": "Pewter City & Mt. Moon"
 		},
 		{
 			"family": "zubat",
-			"area": "Pewter City & Mt. Moon",
-			"total_level": 72
+			"area": "Mt. Moon",
+			"trainer_level": 25
 		},
 		{
 			"family": "paras",
-			"area": "Pewter City & Mt. Moon",
-			"total_level": 80
+			"area": "Pewter City & Mt. Moon"
 		},
 		{
 			"family": "clefairy",
-			"area": "Pewter City & Mt. Moon",
-			"total_level": 88
+			"area": "Pewter City & Mt. Moon"
 		},
 		{
 			"family": "ekans",
-			"area": "Pewter City & Mt. Moon",
-			"total_level": 96
+			"area": "Pewter City & Mt. Moon"
 		},
 		{
 			"family": "sandshrew",
-			"area": "Pewter City & Mt. Moon",
-			"total_level": 104
+			"area": "Pewter City & Mt. Moon"
 		},
 		{
 			"family": "geodude",
@@ -98,53 +89,44 @@
 		},
 		{
 			"family": "oddish",
-			"area": "Cerulean City",
-			"total_level": 112
+			"area": "Cerulean City"
 		},
 		{
 			"family": "bellsprout",
-			"area": "Cerulean City",
-			"total_level": 120
+			"area": "Cerulean City"
 		},
 		{
 			"family": "abra",
-			"area": "Cerulean City",
-			"total_level": 128
+			"area": "Cerulean City & Nugget Bridge",
+			"trainer_level": 30
 		},
 		{
 			"family": "meowth",
-			"area": "Cerulean City",
-			"total_level": 136
+			"area": "Cerulean City"
 		},
 		{
 			"family": "psyduck",
-			"area": "Cerulean City",
-			"total_level": 144
+			"area": "Cerulean City"
 		},
 		{
 			"family": "goldeen",
-			"area": "Cerulean City",
-			"total_level": 152
+			"area": "Cerulean City"
 		},
 		{
 			"family": "krabby",
-			"area": "Cerulean City",
-			"total_level": 160
+			"area": "Cerulean City"
 		},
 		{
 			"family": "poliwag",
-			"area": "Cerulean City",
-			"total_level": 168
+			"area": "Cerulean City"
 		},
 		{
 			"family": "slowpoke",
-			"area": "Cerulean City",
-			"total_level": 176
+			"area": "Cerulean City"
 		},
 		{
 			"family": "horsea",
-			"area": "Cerulean City",
-			"total_level": 184
+			"area": "Cerulean City"
 		},
 		{
 			"family": "staryu",
@@ -158,23 +140,21 @@
 		},
 		{
 			"family": "diglett",
-			"area": "Vermilion City & the S.S. Anne",
-			"total_level": 192
+			"area": "Diglett's Cave",
+			"trainer_level": 45
 		},
 		{
 			"family": "drowzee",
-			"area": "Vermilion City & the S.S. Anne",
-			"total_level": 200
+			"area": "Vermilion City & Route 11",
+			"trainer_level": 35
 		},
 		{
 			"family": "farfetchd",
-			"area": "Vermilion City & the S.S. Anne",
-			"total_level": 208
+			"area": "Vermilion City & the S.S. Anne"
 		},
 		{
 			"family": "tentacool",
-			"area": "Vermilion City & the S.S. Anne",
-			"total_level": 216
+			"area": "Vermilion City & the S.S. Anne"
 		},
 		{
 			"family": "magikarp",
@@ -198,23 +178,22 @@
 		},
 		{
 			"family": "magnemite",
-			"area": "Vermilion City & the S.S. Anne",
-			"total_level": 224
+			"area": "Power Plant",
+			"trainer_level": 90
 		},
 		{
 			"family": "machop",
-			"area": "Rock Tunnel & Lavender Town",
-			"total_level": 232
+			"area": "Rock Tunnel",
+			"trainer_level": 50
 		},
 		{
 			"family": "cubone",
-			"area": "Rock Tunnel & Lavender Town",
-			"total_level": 240
+			"area": "Lavender Town",
+			"trainer_level": 55
 		},
 		{
 			"family": "vulpix",
-			"area": "Rock Tunnel & Lavender Town",
-			"total_level": 248
+			"area": "Rock Tunnel & Lavender Town"
 		},
 		{
 			"family": "growlithe",
@@ -228,8 +207,7 @@
 		},
 		{
 			"family": "ponyta",
-			"area": "Rock Tunnel & Lavender Town",
-			"total_level": 256
+			"area": "Rock Tunnel & Lavender Town"
 		},
 		{
 			"family": "gastly",
@@ -243,13 +221,11 @@
 		},
 		{
 			"family": "venonat",
-			"area": "Celadon City",
-			"total_level": 264
+			"area": "Celadon City"
 		},
 		{
 			"family": "exeggcute",
-			"area": "Celadon City",
-			"total_level": 272
+			"area": "Celadon City"
 		},
 		{
 			"family": "tangela",
@@ -264,30 +240,22 @@
 		{
 			"family": "eevee",
 			"area": "Celadon City",
-			"challenge": {
-				"type": "wins",
-				"count": 50,
-				"text": "Win 50 matches"
-			}
+			"trainer_level": 65
 		},
 		{
 			"family": "porygon",
 			"area": "Celadon City",
 			"challenge": {
-				"type": "total_level",
-				"count": 300,
-				"text": "Reach a total level of 300"
+				"type": "mode_win",
+				"mode": "candy_rush",
+				"count": 20,
+				"text": "Win 20 Rare Candy Rush matches"
 			}
 		},
 		{
 			"family": "hitmonlee",
-			"area": "Saffron City & Fuchsia City",
-			"challenge": {
-				"type": "win",
-				"arena": "bruno_dojo",
-				"count": 10,
-				"text": "Win 10 matches in Bruno's dojo"
-			}
+			"area": "Saffron City",
+			"trainer_level": 70
 		},
 		{
 			"family": "hitmonchan",
@@ -301,28 +269,23 @@
 		},
 		{
 			"family": "mr_mime",
-			"area": "Saffron City & Fuchsia City",
-			"total_level": 280
+			"area": "Saffron City & Fuchsia City"
 		},
 		{
 			"family": "doduo",
-			"area": "Saffron City & Fuchsia City",
-			"total_level": 288
+			"area": "Saffron City & Fuchsia City"
 		},
 		{
 			"family": "koffing",
-			"area": "Saffron City & Fuchsia City",
-			"total_level": 296
+			"area": "Saffron City & Fuchsia City"
 		},
 		{
 			"family": "grimer",
-			"area": "Saffron City & Fuchsia City",
-			"total_level": 304
+			"area": "Saffron City & Fuchsia City"
 		},
 		{
 			"family": "rhyhorn",
-			"area": "Saffron City & Fuchsia City",
-			"total_level": 312
+			"area": "Saffron City & Fuchsia City"
 		},
 		{
 			"family": "kangaskhan",
@@ -346,13 +309,12 @@
 		},
 		{
 			"family": "pinsir",
-			"area": "Saffron City & Fuchsia City",
-			"total_level": 320
+			"area": "Saffron City & Fuchsia City"
 		},
 		{
 			"family": "tauros",
-			"area": "Saffron City & Fuchsia City",
-			"total_level": 328
+			"area": "Fuchsia City & the Safari Zone",
+			"trainer_level": 75
 		},
 		{
 			"family": "chansey",
@@ -386,18 +348,16 @@
 		},
 		{
 			"family": "seel",
-			"area": "Seafoam, Cinnabar & Victory Road",
-			"total_level": 336
+			"area": "Seafoam Islands",
+			"trainer_level": 80
 		},
 		{
 			"family": "shellder",
-			"area": "Seafoam, Cinnabar & Victory Road",
-			"total_level": 344
+			"area": "Seafoam, Cinnabar & Victory Road"
 		},
 		{
 			"family": "jynx",
-			"area": "Seafoam, Cinnabar & Victory Road",
-			"total_level": 352
+			"area": "Seafoam, Cinnabar & Victory Road"
 		},
 		{
 			"family": "electabuzz",
@@ -421,8 +381,7 @@
 		},
 		{
 			"family": "lickitung",
-			"area": "Seafoam, Cinnabar & Victory Road",
-			"total_level": 360
+			"area": "Seafoam, Cinnabar & Victory Road"
 		},
 		{
 			"family": "snorlax",
@@ -435,48 +394,90 @@
 		},
 		{
 			"family": "omanyte",
-			"area": "Seafoam, Cinnabar & Victory Road",
-			"total_level": 368
+			"area": "Cinnabar Island",
+			"trainer_level": 85
 		},
 		{
 			"family": "kabuto",
 			"area": "Seafoam, Cinnabar & Victory Road",
-			"total_level": 376
+			"challenge": {
+				"type": "mvp",
+				"arena": "cinnabar_gym",
+				"count": 5,
+				"text": "Get MVP 5 times in Cinnabar Gym"
+			}
 		},
 		{
 			"family": "aerodactyl",
 			"area": "Seafoam, Cinnabar & Victory Road",
 			"challenge": {
-				"type": "total_level",
-				"count": 600,
-				"text": "Reach a total level of 600"
+				"type": "mode_win",
+				"mode": "showdown",
+				"count": 10,
+				"text": "Win Showdown 10 times"
 			}
 		},
 		{
 			"family": "ditto",
-			"area": "Seafoam, Cinnabar & Victory Road",
-			"challenge": {
-				"type": "total_level",
-				"count": 800,
-				"text": "Reach a total level of 800"
-			}
+			"area": "Cerulean Cave",
+			"trainer_level": 95
 		},
 		{
 			"family": "mewtwo",
 			"area": "Seafoam, Cinnabar & Victory Road",
 			"challenge": {
-				"type": "total_level",
-				"count": 1200,
-				"text": "Reach a total level of 1200"
+				"type": "all",
+				"text": "Unlock every other Pokémon (except Mew), then win each legendary raid 5 times",
+				"parts": [
+					{
+						"type": "all_unlocked",
+						"except": [
+							"mewtwo",
+							"mew"
+						],
+						"text": "Unlock every other Pokémon"
+					},
+					{
+						"type": "raid",
+						"boss": "zapdos",
+						"count": 5,
+						"text": "Win the Zapdos raid 5 times"
+					},
+					{
+						"type": "raid",
+						"boss": "moltres",
+						"count": 5,
+						"text": "Win the Moltres raid 5 times"
+					},
+					{
+						"type": "raid",
+						"boss": "articuno",
+						"count": 5,
+						"text": "Win the Articuno raid 5 times"
+					}
+				]
 			}
 		},
 		{
 			"family": "mew",
 			"area": "Seafoam, Cinnabar & Victory Road",
 			"challenge": {
-				"type": "total_level",
-				"count": 1500,
-				"text": "Reach a total level of 1500"
+				"type": "all",
+				"text": "Unlock Mewtwo, then beat all 8 gyms on Hard",
+				"parts": [
+					{
+						"type": "all_unlocked",
+						"except": [
+							"mew"
+						],
+						"text": "Unlock every other Pokémon, Mewtwo included"
+					},
+					{
+						"type": "gyms_hard",
+						"count": 8,
+						"text": "Win on Hard in all 8 gyms"
+					}
+				]
 			}
 		}
 	]

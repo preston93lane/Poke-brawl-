@@ -21,7 +21,7 @@ static func starter(menu: Node) -> Control:
 	var free: Array[String] = []
 	for id: String in GameData.unlocks.get("free", []):
 		free.append(GameData.species[id].display_name)
-	var hint := UiKit.label("%s come with it. The others unlock as you play." % " and ".join(PackedStringArray(free)), 20, Color(0.8, 0.85, 1))
+	var hint := UiKit.label("%s come with it. The other starters unlock at trainer levels 20, 40 and 60." % " and ".join(PackedStringArray(free)), 20, Color(0.8, 0.85, 1))
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(hint)
 	var row := HBoxContainer.new()
@@ -195,3 +195,121 @@ static func account(menu: Node, message := "") -> Control:
 	v.add_child(row2)
 	v.add_child(feedback)
 	return UiKit.scroll(v)
+
+
+## Challenges: the trainer road (lines unlocked by trainer level), every
+## challenge with its progress, the Master Ball milestones, and what's left in
+## Poké Balls.
+static func challenges(menu: Node) -> Control:
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 10)
+	v.add_child(_top(menu, "TRAINER LV %d  ·  CHALLENGES" % Profile.total_level()))
+	var hint := UiKit.label("Trainer level = all your unlocked Pokémon's levels added up.", 18, Color(0.8, 0.85, 1))
+	v.add_child(hint)
+	var unlocked: Array = Profile.data.get("unlocked", [])
+
+	v.add_child(_heading("TRAINER ROAD  (unlocked by trainer level)"))
+	var road: Array = []
+	var starter_levels: Array = GameData.unlocks.get("starter_levels", [20, 40, 60])
+	var waiting: Array[String] = []
+	for id: String in GameData.unlocks.get("starters", []):
+		if id not in unlocked:
+			waiting.append(id)
+	var given := starter_levels.size() - waiting.size()
+	for i in starter_levels.size():
+		var label := "One of the starters you didn't pick"
+		if i >= given and i - given < waiting.size():
+			label = "Starter: " + GameData.species[waiting[i - given]].display_name
+		road.append([int(starter_levels[i]), label, i < given, ""])
+	for entry: Dictionary in GameData.unlocks.get("order", []):
+		if entry.has("trainer_level"):
+			var family: String = entry["family"]
+			road.append([int(entry["trainer_level"]), GameData.species[family].display_name, family in unlocked, str(entry["area"])])
+	road.sort_custom(func(a: Array, b: Array) -> bool: return int(a[0]) < int(b[0]))
+	var grid := GridContainer.new()
+	grid.columns = 4
+	grid.add_theme_constant_override("h_separation", 22)
+	for r in road:
+		var done: bool = r[2]
+		var color := Color(0.6, 1, 0.6) if done else (Color(1, 0.9, 0.5) if Profile.total_level() < int(r[0]) else Color.WHITE)
+		grid.add_child(UiKit.label("LV %d" % int(r[0]), 18, color))
+		grid.add_child(UiKit.label(str(r[1]), 18, color))
+		grid.add_child(UiKit.label(str(r[3]), 16, Color(0.75, 0.8, 0.9)))
+		grid.add_child(UiKit.label("✓ UNLOCKED" if done else "%d to go" % maxi(0, int(r[0]) - Profile.total_level()), 16, color))
+	v.add_child(grid)
+
+	v.add_child(_heading("CHALLENGES  (each unlocks a Pokémon and gives a Great Ball)"))
+	for entry: Dictionary in GameData.unlocks.get("order", []):
+		if not entry.has("challenge"):
+			continue
+		var family: String = entry["family"]
+		var c: Dictionary = entry["challenge"]
+		var done := family in unlocked
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 12)
+		row.add_child(UiKit.sprite(GameData.species[family].sprite, 40))
+		var name_label := UiKit.label(GameData.species[family].display_name, 19, Color(0.6, 1, 0.6) if done else Color.WHITE)
+		name_label.custom_minimum_size.x = 150
+		row.add_child(name_label)
+		var text := UiKit.label(str(c["text"]), 17, Color(0.85, 0.9, 1))
+		text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		text.custom_minimum_size.x = 380
+		row.add_child(text)
+		row.add_child(_progress(Profile.challenge_progress(c), Profile.challenge_goal(c), done))
+		v.add_child(row)
+		if c.get("type", "") == "all" and not done:
+			for part: Dictionary in c.get("parts", []):
+				var sub := HBoxContainer.new()
+				sub.add_theme_constant_override("separation", 12)
+				var spacer := Control.new()
+				spacer.custom_minimum_size.x = 202
+				sub.add_child(spacer)
+				var part_text := UiKit.label("• " + str(part["text"]), 15, Color(0.75, 0.8, 0.9))
+				part_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+				part_text.custom_minimum_size.x = 380
+				sub.add_child(part_text)
+				sub.add_child(_progress(Profile.challenge_progress(part), Profile.challenge_goal(part), Profile.challenge_done(part)))
+				v.add_child(sub)
+
+	v.add_child(_heading("MILESTONES  (a Master Ball each, once)"))
+	var done_list: Array = Profile.data.get("milestones", [])
+	var milestones := PackedStringArray()
+	for lvl in Profile.econ("milestones/total_levels", []):
+		milestones.append(("✓ " if "total_%d" % int(lvl) in done_list else "") + "Trainer level %d" % int(lvl))
+	for gym: String in Profile.econ("milestones/gyms", []):
+		milestones.append(("✓ " if "gym_" + gym in done_list else "") + "Win on Hard: %s" % str(GameData.arenas.get(gym, {}).get("name", gym)))
+	var m_label := UiKit.label("   ·   ".join(milestones), 17)
+	m_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	v.add_child(m_label)
+
+	v.add_child(_heading("IN POKé BALLS  (the next one in Kanto order comes from a ball)"))
+	var left := PackedStringArray()
+	for entry: Dictionary in GameData.unlocks.get("order", []):
+		if not entry.has("challenge") and not entry.has("trainer_level") and entry["family"] not in unlocked:
+			left.append(GameData.species[entry["family"]].display_name)
+	var ball_label := UiKit.label(("Next: %s   ·   still to find: %s" % [left[0], ", ".join(left.slice(1))]) if not left.is_empty() else "You've found them all!", 17)
+	ball_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	v.add_child(ball_label)
+	return UiKit.scroll(v)
+
+
+static func _heading(text: String) -> Label:
+	var l := UiKit.label(text, 22, Color(1, 0.85, 0.4))
+	l.add_theme_constant_override("outline_size", 3)
+	return l
+
+
+static func _progress(value: int, goal: int, done: bool) -> Control:
+	var box := HBoxContainer.new()
+	var bar := ProgressBar.new()
+	bar.max_value = maxi(1, goal)
+	bar.value = mini(value, goal)
+	bar.show_percentage = false
+	bar.custom_minimum_size = Vector2(150, 16)
+	bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	box.add_child(bar)
+	var label := UiKit.label(" ✓ DONE" if done else " %d / %d" % [mini(value, goal), goal], 16, Color(0.6, 1, 0.6) if done else Color.WHITE)
+	label.custom_minimum_size.x = 90
+	box.add_child(label)
+	return box

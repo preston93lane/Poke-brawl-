@@ -65,7 +65,7 @@ func _ready() -> void:
 	add_theme_constant_override("separation", 8)
 	var top := HBoxContainer.new()
 	top.add_theme_constant_override("separation", 8)
-	top.add_child(UiKit.button("‹ BACK", func() -> void: menu.show_home(), 20))
+	top.add_child(UiKit.button("‹ BACK", func() -> void: menu.show_battle_modes(), 20))
 	_name_edit = LineEdit.new()
 	_name_edit.placeholder_text = "Map name"
 	_name_edit.custom_minimum_size = Vector2(260, 48)
