@@ -13,7 +13,7 @@
 	"evolves_to": "seaking",
 	"moves": [
 		{"move": "goldeen_main1", "level": 1},
-		{"move": "goldeen_main2", "level": 2},
-		{"move": "goldeen_main3", "level": 3}
+		{"move": "goldeen_main2", "level": 24, "tm": "tm_waterfall"},
+		{"move": "goldeen_main3", "level": 32, "tm": "tm_megahorn"}
 	]
 }

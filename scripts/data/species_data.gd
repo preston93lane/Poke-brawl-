@@ -37,7 +37,9 @@ var evolve_level := 0
 var style := ""
 ## 1 for base forms, 2 for first evolutions, and so on.
 var stage := 1
-## [{ "move": MoveData, "level": int }]. Evolutions inherit the base form's list.
+## [{ "move": MoveData, "level": int, "tm": String }]: the profile level that unlocks
+## the move, and the TM that unlocks it sooner ("" = none). Evolutions inherit
+## the base form's list.
 var learnset: Array[Dictionary] = []
 ## Raw "moves" entries from JSON, resolved by GameData once all moves are loaded.
 var raw_moves: Array = []

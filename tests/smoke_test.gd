@@ -12,6 +12,12 @@ var failures := 0
 
 func _ready() -> void:
 	await get_tree().process_frame
+	# Start from a clean profile with every line unlocked (at level 1) so earlier runs don't matter;
+	# the real one is put back at the end.
+	var real_profile: Dictionary = Profile.data.duplicate(true)
+	Profile.data = Profile.blank()
+	for base in GameData.base_species():
+		Profile.data["unlocked"].append(base.id)
 	_check_data()
 	await _check_battle()
 	await _check_supers()
@@ -37,7 +43,10 @@ func _ready() -> void:
 	await _check_power_ups()
 	await _check_trainer_levels()
 	await _check_hazards()
+	await _check_progression()
 	Engine.time_scale = 1.0
+	Profile.data = real_profile
+	Profile.save()
 	print("SMOKE TEST: %s" % ("PASS" if failures == 0 else "FAIL (%d)" % failures))
 	get_tree().quit(1 if failures > 0 else 0)
 
@@ -78,7 +87,7 @@ func _check_data() -> void:
 	for s: SpeciesData in GameData.species.values():
 		expect(s.sprite != null and s.super_move != null, "%s has a sprite and super (%s)" % [s.id, s.super_move.id if s.super_move else "none"])
 		supers[s.super_move] = true
-		if s.moves_for("main", 1).size() != 1 or s.moves_for("main", 3).size() != 3:
+		if s.moves_for("main", 1).size() != 1 or s.moves_for("main", 999).size() != 3:
 			expect(false, "%s has one main attack variant per level" % s.id)
 		if s.gadget_move == null or s.style == "" or not GameData.styles.has(s.style):
 			expect(false, "%s has a gadget and a known play style ('%s')" % [s.id, s.style])
@@ -1022,6 +1031,9 @@ func _check_menu_fits() -> void:
 	screens.append(["settings", func() -> void: menu.show_settings()])
 	screens.append(["map maker", func() -> void: menu.show_map_editor()])
 	screens.append(["home", func() -> void: menu.show_home()])
+	screens.append(["bag", func() -> void: menu.show_bag()])
+	screens.append(["store", func() -> void: menu.show_store("")])
+	screens.append(["starter", func() -> void: menu._set_screen(TrainerScreens.starter(menu))])
 	for entry in screens:
 		entry[1].call()
 		for i in 3:
@@ -1148,3 +1160,51 @@ func _check_hazards() -> void:
 	main.queue_free()
 	await get_tree().process_frame
 	expect(GameData.arenas.has("ss_anne"), "the S.S. Anne is a map")
+
+
+func _check_progression() -> void:
+	print("Progression")
+	var saved: Dictionary = Profile.data.duplicate(true)
+	Profile.data = Profile.blank()
+	expect(Profile.needs_starter(), "a new profile picks a starter")
+	Profile.choose_starter("charmander")
+	expect(Profile.is_unlocked("charizard") and Profile.is_unlocked("pidgey") and not Profile.is_unlocked("bulbasaur"), "starter line and free Pokémon unlocked, others locked")
+	expect(Profile.unlocked_mains("charmander") == ["charmander_main1"], "only the first main attack at level 1")
+	var charmander: SpeciesData = GameData.get_species("charmander")
+	expect(int(charmander.learnset[1]["level"]) == 24 and str(charmander.learnset[1]["tm"]) == "tm_flamethrower", "Flamethrower at level 24 or by TM")
+	Profile._add_tm("tm_flamethrower")
+	expect("charmander_main2" in Profile.unlocked_mains("charmander"), "the TM unlocks it early")
+	var r := Profile.record_match({ "species": "charmander", "result": "victory", "kos": 4, "mvp": true, "arena": "pewter_gym", "difficulty": "normal", "raid": "" })
+	expect(int(r["xp"]) == (100 + 40 + 25) * 2, "XP: win + KOs + MVP, doubled for the first win of the day (%d)" % int(r["xp"]))
+	expect(int(r["money"]) == 60 + 20 and Profile.money() == 80, "Poké Dollars for winning")
+	expect((r["balls"] as Array).size() >= 2, "a ball for the win plus the first-win Great Ball (%s)" % str(r["balls"]))
+	expect(Profile.level_of("charmander") > 1, "levelled up (Lv %d)" % Profile.level_of("charmander"))
+	Profile._give("ultra_ball", 1)
+	var prizes := Profile.open_ball("ultra_ball")
+	expect(prizes.size() >= 3 and Profile.count("rare_candy") >= 2, "an Ultra Ball has ₽, candy and a vitamin (%d prizes)" % prizes.size())
+	Profile._give("protein", 12)
+	for i in 12:
+		Profile.give_vitamin("charmander", "protein")
+	expect(Profile.active_vitamin_total("charmander") == 10, "at most 10 vitamins active")
+	expect(is_equal_approx(float(Profile.vitamin_bonus("charmander")["attack"]), 0.03 * 5 + 0.015 * 5), "half value after 5 in one stat")
+	Profile._give("hm_fly", 1)
+	expect(Profile.teach_hm("charmander", "fly") and "fly" in Profile.learned_hms("charizard"), "HMs teach one line")
+	expect(not Profile.teach_hm("charmander", "surf"), "and only HMs that fit it")
+	Profile.data["money"] = 100000
+	var slots := Profile.store_slots()
+	expect(slots.size() == 6, "six store slots")
+	Profile.data["store"]["slots"] = [{ "item": "protein", "rarity": "common" }]
+	for i in 7:
+		Profile.buy("protein")
+	expect(Profile.bought_today("vitamin") == 5, "store caps vitamins at 5 a day")
+	var main := await _start_match("route_1", "duel", "charmander", [])
+	expect(main.player.attack > GameData.get_species("charmander").attack * 1.2, "vitamins boost stats in a match")
+	main.queue_free()
+	await get_tree().process_frame
+	for i in 60:
+		Profile._add_xp("charmander", 5000)
+	Profile.data["stats"]["arena_mvps"]["pewter_gym"] = 10
+	var found: Dictionary = Profile._check_unlocks()
+	expect("geodude" in found["pokemon"] and Profile.is_unlocked("spearow"), "challenges and total level unlock new lines")
+	Profile.data = saved
+	Profile.save()

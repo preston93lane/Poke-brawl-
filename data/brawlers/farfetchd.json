@@ -11,7 +11,7 @@
 	"gadget": "gadget_agility",
 	"moves": [
 		{"move": "farfetchd_main1", "level": 1},
-		{"move": "farfetchd_main2", "level": 2},
-		{"move": "farfetchd_main3", "level": 3}
+		{"move": "farfetchd_main2", "level": 30, "tm": "tm_air_slash"},
+		{"move": "farfetchd_main3", "level": 50, "tm": "tm_leaf_blade"}
 	]
 }

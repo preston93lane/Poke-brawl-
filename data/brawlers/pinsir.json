@@ -11,7 +11,7 @@
 	"gadget": "gadget_protect",
 	"moves": [
 		{"move": "pinsir_main1", "level": 1},
-		{"move": "pinsir_main2", "level": 2},
-		{"move": "pinsir_main3", "level": 3}
+		{"move": "pinsir_main2", "level": 20},
+		{"move": "pinsir_main3", "level": 28, "tm": "tm_x_scissor"}
 	]
 }

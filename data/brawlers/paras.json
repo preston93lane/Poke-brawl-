@@ -13,7 +13,7 @@
 	"evolves_to": "parasect",
 	"moves": [
 		{"move": "paras_main1", "level": 1},
-		{"move": "paras_main2", "level": 2},
-		{"move": "paras_main3", "level": 3}
+		{"move": "paras_main2", "level": 14},
+		{"move": "paras_main3", "level": 31, "tm": "tm_x_scissor"}
 	]
 }

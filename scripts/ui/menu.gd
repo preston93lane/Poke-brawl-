@@ -14,7 +14,6 @@ const MODES := {
 var _screen: Control
 var _mode := "duel"
 var _species: SpeciesData
-var _level := 1
 var _main := ""
 ## Branch for Eevee-style split lines ("" = random).
 var _evolution := ""
@@ -33,6 +32,10 @@ var _arena := ""
 var _difficulty := "normal"
 var _details: VBoxContainer
 var _details_scroll: ScrollContainer
+var _start_button: Button
+## Equipped TM super ("" = the line's own) and HM for the selected line.
+var _super := ""
+var _hm := ""
 
 
 func _ready() -> void:
@@ -52,7 +55,10 @@ func _ready() -> void:
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
 	_restore_last_choices()
-	show_home()
+	if Profile.needs_starter():
+		_set_screen(TrainerScreens.starter(self))
+	else:
+		show_home()
 
 
 # --- Screens ---------------------------------------------------------------
@@ -72,7 +78,8 @@ func show_home() -> void:
 		if GameData.species.has(id):
 			starters.add_child(UiKit.sprite(GameData.species[id].sprite, 96))
 	v.add_child(starters)
-	var count := UiKit.label("%d Pokémon · %d play styles" % [GameData.species_by_line().size(), GameData.styles.size()], 20, Color(0.8, 0.85, 1))
+	var count := UiKit.label("%d ₽   ·   Total level %d   ·   %d of %d Pokémon lines unlocked" % [Profile.money(), Profile.total_level(),
+			_unlocked_count(), GameData.base_species().size()], 22, Color(0.8, 0.85, 1))
 	count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(count)
 
@@ -89,6 +96,11 @@ func show_home() -> void:
 	dex.custom_minimum_size = Vector2(300, 64)
 	dex.add_theme_stylebox_override("normal", UiKit.box(Color(0.75, 0.3, 0.3)))
 	modes.add_child(dex)
+	for entry in [["BAG", show_bag.bind([] as Array[Dictionary]), Color(0.25, 0.55, 0.45)], ["POKé MART", show_store.bind(""), Color(0.3, 0.45, 0.8)]]:
+		var shop := UiKit.button(entry[0], entry[1], 24)
+		shop.custom_minimum_size = Vector2(300, 64)
+		shop.add_theme_stylebox_override("normal", UiKit.box(entry[2]))
+		modes.add_child(shop)
 	var extras: Array = [["MAP MAKER", show_map_editor], ["SETTINGS", show_settings]]
 	if Profile.is_dev():
 		extras.append(["DEV TOOLS", show_dev])
@@ -101,10 +113,30 @@ func show_home() -> void:
 	_set_screen(v)
 
 
+func show_bag(prizes: Array[Dictionary] = []) -> void:
+	_set_screen(TrainerScreens.bag(self, prizes))
+
+
+func show_store(message := "") -> void:
+	_set_screen(TrainerScreens.store(self, message))
+
+
+func _unlocked_count() -> int:
+	var n := 0
+	for s in GameData.base_species():
+		if Profile.is_unlocked(s.id):
+			n += 1
+	return n
+
+
 func show_select(mode: String) -> void:
 	_mode = mode
-	if _species == null:
+	if _species == null or not Profile.is_unlocked(_species.id):
 		_species = GameData.base_species()[0]
+		for s in GameData.base_species():
+			if Profile.is_unlocked(s.id):
+				_species = s
+				break
 	var arenas: Array[String] = GameData.arenas_for_mode(mode)
 	if _arena not in arenas:
 		_arena = arenas[0]
@@ -122,6 +154,7 @@ func show_select(mode: String) -> void:
 	title.custom_minimum_size.x = 80
 	top.add_child(title)
 	var start := UiKit.button("START ›", _start_match, 30)
+	_start_button = start
 	start.add_theme_stylebox_override("normal", UiKit.box(Color(0.25, 0.7, 0.35)))
 	start.add_theme_stylebox_override("hover", UiKit.box(Color(0.3, 0.78, 0.4)))
 	top.add_child(start)
@@ -237,6 +270,9 @@ func show_dev() -> void:
 	v.add_child(_trainer_level_box(picked))
 	v.add_child(_section("PROGRESS"))
 	var reset_row := HFlowContainer.new()
+	reset_row.add_child(UiKit.button("FILL BAG (₽, balls, candy, vitamins, HMs)", func() -> void:
+		Profile.dev_grant()
+		show_dev(), 20))
 	var reset := UiKit.button("RESET PROFILE", func() -> void:
 		Profile.reset()
 		show_dev(), 20)
@@ -265,6 +301,23 @@ func _trainer_level_box(s: SpeciesData) -> VBoxContainer:
 				else:
 					show_dev(), 18))
 	box.add_child(head)
+	if level < Profile.max_level():
+		var xp_row := HBoxContainer.new()
+		var bar := ProgressBar.new()
+		bar.max_value = Profile.xp_needed(level)
+		bar.value = Profile.xp_of(s.id)
+		bar.show_percentage = false
+		bar.custom_minimum_size = Vector2(220, 18)
+		bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		xp_row.add_child(bar)
+		xp_row.add_child(UiKit.label("  %d / %d XP to Lv %d  " % [Profile.xp_of(s.id), Profile.xp_needed(level), level + 1], 15, Color(0.8, 0.85, 0.95)))
+		var candy := UiKit.button("RARE CANDY (%d)" % Profile.count("rare_candy"), func() -> void:
+			Profile.use_rare_candy(s.id)
+			if is_instance_valid(_details) and _details.is_inside_tree():
+				_refresh_select_details(), 15)
+		candy.disabled = Profile.count("rare_candy") <= 0 or not Profile.is_unlocked(s.id)
+		xp_row.add_child(candy)
+		box.add_child(xp_row)
 	var fast := int(GameData.rule("trainer/fast_kills", 2))
 	var slow := int(GameData.rule("evolution/kills_to_evolve", 3))
 	var power_levels: Array = GameData.rule("trainer/power_up_levels", [20, 40])
@@ -439,29 +492,36 @@ func _refresh_select_details() -> void:
 		shiny_row.add_child(UiKit.label("  Play with shiny colours", 16, Color(0.75, 0.8, 0.9)))
 		_details.add_child(shiny_row)
 
-	_details.add_child(_section("LEVEL"))
-	var levels := HBoxContainer.new()
-	var level_group := ButtonGroup.new()
-	for level in range(1, int(GameData.rule("level/max", 3)) + 1):
-		var b := _toggle("Lv %d" % level, level_group, level == _level)
-		b.pressed.connect(func() -> void:
-			_level = level
-			_refresh_select_details())
-		levels.add_child(b)
-	levels.add_child(UiKit.label("  Each level unlocks another attack (+5% stats, +4% attack power)", 16, Color(0.75, 0.8, 0.9)))
-	_details.add_child(levels)
+	if not Profile.is_unlocked(s.id):
+		var lock := UiKit.label("LOCKED  ·  " + Profile.unlock_hint(s.id), 22, Color(1, 0.6, 0.45))
+		lock.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_details.add_child(lock)
+	if is_instance_valid(_start_button):
+		_start_button.disabled = not Profile.is_unlocked(s.id)
+	var loadout := Profile.loadout(s.id)
+	if _main == "" or not Profile.unlocked_mains(s.id).has(_main):
+		_main = str(loadout.get("main", ""))
+	_super = str(loadout.get("super", ""))
+	_hm = str(loadout.get("hm", ""))
 
 	_main = _valid_move("main", _main)
 	_details.add_child(_section("MAIN ATTACK  (right stick: drag to aim, tap to auto-aim)"))
 	var row := HFlowContainer.new()
 	var move_group := ButtonGroup.new()
-	for move in s.moves_for("main", 99):
-		var unlock := s.unlock_level(move)
-		var text := move.display_name if unlock <= _level else "%s (Lv%d)" % [move.display_name, unlock]
+	var unlocked := Profile.unlocked_mains(s.id)
+	for entry in s.learnset:
+		var move: MoveData = entry["move"]
+		if move.slot != "main":
+			continue
+		var text := move.display_name
+		if move.id not in unlocked:
+			var tm := str(entry["tm"])
+			text = "%s (Lv %d%s)" % [move.display_name, int(entry["level"]), " or its TM" if tm != "" else ""]
 		var b := _toggle(text, move_group, move.id == _main)
-		b.disabled = unlock > _level
+		b.disabled = move.id not in unlocked
 		b.pressed.connect(func() -> void:
 			_main = move.id
+			Profile.set_loadout(s.id, "main", move.id)
 			_refresh_select_details())
 		row.add_child(b)
 	_details.add_child(row)
@@ -471,6 +531,7 @@ func _refresh_select_details() -> void:
 		_details.add_child(_section("GADGET  (%d uses per match)" % int(GameData.rule("gadget/uses", 3))))
 		_details.add_child(UiKit.move_card(s.gadget_move))
 
+	_details.add_child(_super_picker(s))
 	_details.add_child(_section("SUPER  (charges as you deal damage; each stage has its own)"))
 	for stage in GameData.evolution_line(s.id):
 		var card := UiKit.move_card(stage.super_move)
@@ -480,6 +541,9 @@ func _refresh_select_details() -> void:
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		super_row.add_child(card)
 		_details.add_child(super_row)
+
+	_details.add_child(_hm_picker(s))
+	_details.add_child(_vitamin_box(s))
 
 	if s.evolutions.size() > 1:
 		_details.add_child(_section("EVOLVES INTO"))
@@ -557,11 +621,121 @@ func _team_picker(chosen: Array[String], max_count: int) -> HFlowContainer:
 	return row
 
 
-func _valid_move(slot: String, move_id: String) -> String:
-	for move in _species.moves_for(slot, _level):
-		if move.id == move_id:
-			return move_id
-	return _species.default_move(slot, _level).id
+func _valid_move(_slot: String, move_id: String) -> String:
+	var unlocked := Profile.unlocked_mains(_species.id)
+	if move_id in unlocked:
+		return move_id
+	return unlocked.back() if not unlocked.is_empty() else _species.default_move("main", 1).id
+
+
+## TM supers this line can use instead of its own (owned TMs only).
+func _super_picker(s: SpeciesData) -> Control:
+	var box := VBoxContainer.new()
+	var options := Profile.tm_super_options(s.id)
+	if options.is_empty():
+		return box
+	box.add_child(_section("TM SUPER  (replaces your super at every stage)"))
+	var row := HFlowContainer.new()
+	var group := ButtonGroup.new()
+	var own := _toggle("OWN SUPERS", group, _super == "")
+	own.pressed.connect(func() -> void:
+		Profile.set_loadout(s.id, "super", "")
+		_refresh_select_details())
+	row.add_child(own)
+	for super_id in options:
+		var move: MoveData = GameData.get_move(super_id)
+		if move == null:
+			continue
+		var owned := Profile.owns_tm_super(super_id)
+		var b := _toggle(move.display_name if owned else move.display_name + " (TM)", group, _super == super_id)
+		b.disabled = not owned
+		b.pressed.connect(func() -> void:
+			Profile.set_loadout(s.id, "super", super_id)
+			_refresh_select_details())
+		row.add_child(b)
+	box.add_child(row)
+	if _super != "" and GameData.get_move(_super):
+		box.add_child(UiKit.move_card(GameData.get_move(_super)))
+	return box
+
+
+const HM_INFO := {
+	"cut": "slash in front and clear the tall grass there",
+	"fly": "leap over walls and water",
+	"surf": "a wave that pushes enemies back, and swim for a few seconds",
+	"strength": "a heavy shove; pushes boulders",
+	"flash": "reveal and blind enemies around you",
+	"rock_smash": "break the wall or rock in front of you",
+}
+
+
+## HMs: one or two per line; teach with an HM item, then pick the one to bring.
+func _hm_picker(s: SpeciesData) -> Control:
+	var box := VBoxContainer.new()
+	box.add_child(_section("HM  (one at a time, recharges in 10 s)"))
+	var row := HFlowContainer.new()
+	var group := ButtonGroup.new()
+	var learned := Profile.learned_hms(s.id)
+	var none := _toggle("NONE", group, _hm == "")
+	none.pressed.connect(func() -> void:
+		Profile.set_loadout(s.id, "hm", "")
+		_refresh_select_details())
+	row.add_child(none)
+	for hm in Profile.hm_options(s.id):
+		var label := hm.replace("_", " ").to_upper()
+		if hm in learned:
+			var b := _toggle(label, group, _hm == hm)
+			b.tooltip_text = HM_INFO.get(hm, "")
+			b.pressed.connect(func() -> void:
+				Profile.set_loadout(s.id, "hm", hm)
+				_refresh_select_details())
+			row.add_child(b)
+		else:
+			var teach := UiKit.button("TEACH %s (%d in bag)" % [label, Profile.count("hm_" + hm)], func() -> void:
+				Profile.teach_hm(s.id, hm)
+				_refresh_select_details(), 16)
+			teach.disabled = Profile.count("hm_" + hm) <= 0 or not Profile.is_unlocked(s.id)
+			row.add_child(teach)
+	box.add_child(row)
+	var info := PackedStringArray()
+	for hm in Profile.hm_options(s.id):
+		info.append("%s: %s" % [hm.replace("_", " ").capitalize(), HM_INFO.get(hm, "")])
+	var info_label := UiKit.label(" · ".join(info), 15, Color(0.75, 0.8, 0.9))
+	info_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(info_label)
+	return box
+
+
+const VITAMIN_NAMES := { "hp": "HP Up", "attack": "Protein", "defense": "Iron", "speed": "Carbos" }
+
+
+## Vitamins: give them from the bag, switch up to 10 on.
+func _vitamin_box(s: SpeciesData) -> Control:
+	var box := VBoxContainer.new()
+	var max_active := int(Profile.econ("vitamins/max_active", 10))
+	box.add_child(_section("VITAMINS  %d / %d ON  (+3%% each, half after 5 in a stat)" % [Profile.active_vitamin_total(s.id), max_active]))
+	var bonus := Profile.vitamin_bonus(s.id)
+	var v := Profile.vitamins(s.id)
+	for stat in Profile.STATS:
+		var row := HBoxContainer.new()
+		var item: String = { "hp": "hp_up", "attack": "protein", "defense": "iron", "speed": "carbos" }[stat]
+		var label := UiKit.label("%s  %d on / %d given  (+%d%%)" % [VITAMIN_NAMES[stat], int(v["active"].get(stat, 0)), int(v["given"].get(stat, 0)),
+				roundi(float(bonus[stat]) * 100.0)], 17)
+		label.custom_minimum_size.x = 330
+		row.add_child(label)
+		row.add_child(UiKit.button("−", func() -> void:
+			Profile.change_active_vitamin(s.id, stat, -1)
+			_refresh_select_details(), 16))
+		row.add_child(UiKit.button("+", func() -> void:
+			Profile.change_active_vitamin(s.id, stat, 1)
+			_refresh_select_details(), 16))
+		var give := UiKit.button("GIVE (%d in bag)" % Profile.count(item), func() -> void:
+			Profile.give_vitamin(s.id, item)
+			_refresh_select_details(), 16)
+		give.disabled = Profile.count(item) <= 0 or not Profile.is_unlocked(s.id)
+		row.add_child(give)
+		box.add_child(row)
+	return box
 
 
 func _start_match() -> void:
@@ -569,13 +743,13 @@ func _start_match() -> void:
 		"mode": _mode,
 		"arena": _arena,
 		"species": _species.id,
-		"level": _level,
 		"main": _main,
+		"super": _super,
+		"hm": _hm,
 		"evolution": _evolution,
 		"shiny": _shiny,
 		"allies": _allies.duplicate(),
 		"enemies": _enemies.duplicate(),
-		"bot_level": _level,
 		"difficulty": _difficulty,
 	}
 	get_tree().change_scene_to_file(MAIN_SCENE)
@@ -587,7 +761,6 @@ func _restore_last_choices() -> void:
 		return
 	_mode = str(last.get("mode", _mode))
 	_species = GameData.species.get(str(last.get("species", "")))
-	_level = int(last.get("level", 1))
 	_main = str(last.get("main", ""))
 	_evolution = str(last.get("evolution", ""))
 	_shiny = bool(last.get("shiny", false))
@@ -725,6 +898,18 @@ func _species_button(s: SpeciesData, group: ButtonGroup, selected: bool) -> Butt
 		chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		chips.add_child(chip)
 	b.add_child(chips)
+	if not Profile.is_unlocked(s.id):
+		b.modulate = Color(0.45, 0.45, 0.5)
+		var lock := UiKit.label("LOCKED", 13, Color(1, 0.75, 0.5))
+		lock.set_anchors_preset(Control.PRESET_CENTER_TOP)
+		lock.position = Vector2(-24, 40)
+		lock.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		b.add_child(lock)
+	else:
+		var lvl := UiKit.label("Lv %d" % Profile.level_of(s.id), 13, Color(1, 0.9, 0.5))
+		lvl.position = Vector2(76, 22)
+		lvl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		b.add_child(lvl)
 	return b
 
 

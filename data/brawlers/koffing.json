@@ -13,7 +13,7 @@
 	"evolves_to": "weezing",
 	"moves": [
 		{"move": "koffing_main1", "level": 1},
-		{"move": "koffing_main2", "level": 2},
-		{"move": "koffing_main3", "level": 3}
+		{"move": "koffing_main2", "level": 9},
+		{"move": "koffing_main3", "level": 32}
 	]
 }

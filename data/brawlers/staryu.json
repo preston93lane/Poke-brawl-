@@ -13,7 +13,7 @@
 	"evolves_to": "starmie",
 	"moves": [
 		{"move": "staryu_main1", "level": 1},
-		{"move": "staryu_main2", "level": 2},
-		{"move": "staryu_main3", "level": 3}
+		{"move": "staryu_main2", "level": 14},
+		{"move": "staryu_main3", "level": 22, "tm": "tm_power_gem"}
 	]
 }

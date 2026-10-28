@@ -1,0 +1,483 @@
+{
+	"_comment": "Unlock order (Kanto catch order). Pick one starter; the free Pokémon come with it. Every other line unlocks from its challenge, or (no challenge) once your total level (all lines' levels added up) reaches total_level, or earlier from a Poké Ball drop (balls give the next locked line without a challenge, in this order). The starters you didn't pick unlock after 5, 15 and 30 wins.",
+	"starters": [
+		"bulbasaur",
+		"charmander",
+		"squirtle",
+		"pikachu"
+	],
+	"free": [
+		"pidgey",
+		"rattata"
+	],
+	"other_starters_after_wins": [
+		5,
+		15,
+		30
+	],
+	"order": [
+		{
+			"family": "spearow",
+			"area": "Route 1, Route 2 & Viridian Forest",
+			"total_level": 16
+		},
+		{
+			"family": "nidoran_f",
+			"area": "Route 1, Route 2 & Viridian Forest",
+			"total_level": 24
+		},
+		{
+			"family": "nidoran_m",
+			"area": "Route 1, Route 2 & Viridian Forest",
+			"total_level": 32
+		},
+		{
+			"family": "caterpie",
+			"area": "Route 1, Route 2 & Viridian Forest",
+			"total_level": 40
+		},
+		{
+			"family": "weedle",
+			"area": "Route 1, Route 2 & Viridian Forest",
+			"total_level": 48
+		},
+		{
+			"family": "mankey",
+			"area": "Route 1, Route 2 & Viridian Forest",
+			"total_level": 56
+		},
+		{
+			"family": "jigglypuff",
+			"area": "Pewter City & Mt. Moon",
+			"total_level": 64
+		},
+		{
+			"family": "zubat",
+			"area": "Pewter City & Mt. Moon",
+			"total_level": 72
+		},
+		{
+			"family": "paras",
+			"area": "Pewter City & Mt. Moon",
+			"total_level": 80
+		},
+		{
+			"family": "clefairy",
+			"area": "Pewter City & Mt. Moon",
+			"total_level": 88
+		},
+		{
+			"family": "ekans",
+			"area": "Pewter City & Mt. Moon",
+			"total_level": 96
+		},
+		{
+			"family": "sandshrew",
+			"area": "Pewter City & Mt. Moon",
+			"total_level": 104
+		},
+		{
+			"family": "geodude",
+			"area": "Pewter City & Mt. Moon",
+			"challenge": {
+				"type": "mvp",
+				"arena": "pewter_gym",
+				"count": 10,
+				"text": "Get MVP 10 times in Pewter Gym"
+			}
+		},
+		{
+			"family": "onix",
+			"area": "Pewter City & Mt. Moon",
+			"challenge": {
+				"type": "win",
+				"arena": "pewter_gym",
+				"count": 15,
+				"text": "Win 15 matches in Pewter Gym"
+			}
+		},
+		{
+			"family": "oddish",
+			"area": "Cerulean City",
+			"total_level": 112
+		},
+		{
+			"family": "bellsprout",
+			"area": "Cerulean City",
+			"total_level": 120
+		},
+		{
+			"family": "abra",
+			"area": "Cerulean City",
+			"total_level": 128
+		},
+		{
+			"family": "meowth",
+			"area": "Cerulean City",
+			"total_level": 136
+		},
+		{
+			"family": "psyduck",
+			"area": "Cerulean City",
+			"total_level": 144
+		},
+		{
+			"family": "goldeen",
+			"area": "Cerulean City",
+			"total_level": 152
+		},
+		{
+			"family": "krabby",
+			"area": "Cerulean City",
+			"total_level": 160
+		},
+		{
+			"family": "poliwag",
+			"area": "Cerulean City",
+			"total_level": 168
+		},
+		{
+			"family": "slowpoke",
+			"area": "Cerulean City",
+			"total_level": 176
+		},
+		{
+			"family": "horsea",
+			"area": "Cerulean City",
+			"total_level": 184
+		},
+		{
+			"family": "staryu",
+			"area": "Cerulean City",
+			"challenge": {
+				"type": "mvp",
+				"arena": "cerulean_gym",
+				"count": 10,
+				"text": "Get MVP 10 times in Cerulean Gym"
+			}
+		},
+		{
+			"family": "diglett",
+			"area": "Vermilion City & the S.S. Anne",
+			"total_level": 192
+		},
+		{
+			"family": "drowzee",
+			"area": "Vermilion City & the S.S. Anne",
+			"total_level": 200
+		},
+		{
+			"family": "farfetchd",
+			"area": "Vermilion City & the S.S. Anne",
+			"total_level": 208
+		},
+		{
+			"family": "tentacool",
+			"area": "Vermilion City & the S.S. Anne",
+			"total_level": 216
+		},
+		{
+			"family": "magikarp",
+			"area": "Vermilion City & the S.S. Anne",
+			"challenge": {
+				"type": "win",
+				"arena": "ss_anne",
+				"count": 5,
+				"text": "Win 5 matches on the S.S. Anne"
+			}
+		},
+		{
+			"family": "voltorb",
+			"area": "Vermilion City & the S.S. Anne",
+			"challenge": {
+				"type": "mvp",
+				"arena": "vermilion_gym",
+				"count": 10,
+				"text": "Get MVP 10 times in Vermilion Gym"
+			}
+		},
+		{
+			"family": "magnemite",
+			"area": "Vermilion City & the S.S. Anne",
+			"total_level": 224
+		},
+		{
+			"family": "machop",
+			"area": "Rock Tunnel & Lavender Town",
+			"total_level": 232
+		},
+		{
+			"family": "cubone",
+			"area": "Rock Tunnel & Lavender Town",
+			"total_level": 240
+		},
+		{
+			"family": "vulpix",
+			"area": "Rock Tunnel & Lavender Town",
+			"total_level": 248
+		},
+		{
+			"family": "growlithe",
+			"area": "Rock Tunnel & Lavender Town",
+			"challenge": {
+				"type": "raid",
+				"boss": "moltres",
+				"count": 3,
+				"text": "Win the Moltres raid 3 times"
+			}
+		},
+		{
+			"family": "ponyta",
+			"area": "Rock Tunnel & Lavender Town",
+			"total_level": 256
+		},
+		{
+			"family": "gastly",
+			"area": "Rock Tunnel & Lavender Town",
+			"challenge": {
+				"type": "win",
+				"arena": "lavender_graveyard",
+				"count": 10,
+				"text": "Win 10 matches in the Lavender graveyard"
+			}
+		},
+		{
+			"family": "venonat",
+			"area": "Celadon City",
+			"total_level": 264
+		},
+		{
+			"family": "exeggcute",
+			"area": "Celadon City",
+			"total_level": 272
+		},
+		{
+			"family": "tangela",
+			"area": "Celadon City",
+			"challenge": {
+				"type": "mvp",
+				"arena": "celadon_gym",
+				"count": 10,
+				"text": "Get MVP 10 times in Celadon Gym"
+			}
+		},
+		{
+			"family": "eevee",
+			"area": "Celadon City",
+			"challenge": {
+				"type": "wins",
+				"count": 50,
+				"text": "Win 50 matches"
+			}
+		},
+		{
+			"family": "porygon",
+			"area": "Celadon City",
+			"challenge": {
+				"type": "total_level",
+				"count": 300,
+				"text": "Reach a total level of 300"
+			}
+		},
+		{
+			"family": "hitmonlee",
+			"area": "Saffron City & Fuchsia City",
+			"challenge": {
+				"type": "win",
+				"arena": "bruno_dojo",
+				"count": 10,
+				"text": "Win 10 matches in Bruno's dojo"
+			}
+		},
+		{
+			"family": "hitmonchan",
+			"area": "Saffron City & Fuchsia City",
+			"challenge": {
+				"type": "mvp",
+				"arena": "bruno_dojo",
+				"count": 10,
+				"text": "Get MVP 10 times in Bruno's dojo"
+			}
+		},
+		{
+			"family": "mr_mime",
+			"area": "Saffron City & Fuchsia City",
+			"total_level": 280
+		},
+		{
+			"family": "doduo",
+			"area": "Saffron City & Fuchsia City",
+			"total_level": 288
+		},
+		{
+			"family": "koffing",
+			"area": "Saffron City & Fuchsia City",
+			"total_level": 296
+		},
+		{
+			"family": "grimer",
+			"area": "Saffron City & Fuchsia City",
+			"total_level": 304
+		},
+		{
+			"family": "rhyhorn",
+			"area": "Saffron City & Fuchsia City",
+			"total_level": 312
+		},
+		{
+			"family": "kangaskhan",
+			"area": "Saffron City & Fuchsia City",
+			"challenge": {
+				"type": "win",
+				"arena": "safari_zone",
+				"count": 10,
+				"text": "Win 10 matches in the Safari Zone"
+			}
+		},
+		{
+			"family": "scyther",
+			"area": "Saffron City & Fuchsia City",
+			"challenge": {
+				"type": "mvp",
+				"arena": "safari_zone",
+				"count": 10,
+				"text": "Get MVP 10 times in the Safari Zone"
+			}
+		},
+		{
+			"family": "pinsir",
+			"area": "Saffron City & Fuchsia City",
+			"total_level": 320
+		},
+		{
+			"family": "tauros",
+			"area": "Saffron City & Fuchsia City",
+			"total_level": 328
+		},
+		{
+			"family": "chansey",
+			"area": "Saffron City & Fuchsia City",
+			"challenge": {
+				"type": "win",
+				"arena": "safari_zone",
+				"count": 25,
+				"text": "Win 25 matches in the Safari Zone"
+			}
+		},
+		{
+			"family": "lapras",
+			"area": "Saffron City & Fuchsia City",
+			"challenge": {
+				"type": "raid",
+				"boss": "articuno",
+				"count": 3,
+				"text": "Win the Articuno raid 3 times"
+			}
+		},
+		{
+			"family": "dratini",
+			"area": "Saffron City & Fuchsia City",
+			"challenge": {
+				"type": "win",
+				"arena": "dragons_den",
+				"count": 15,
+				"text": "Win 15 matches in the Dragon's Den"
+			}
+		},
+		{
+			"family": "seel",
+			"area": "Seafoam, Cinnabar & Victory Road",
+			"total_level": 336
+		},
+		{
+			"family": "shellder",
+			"area": "Seafoam, Cinnabar & Victory Road",
+			"total_level": 344
+		},
+		{
+			"family": "jynx",
+			"area": "Seafoam, Cinnabar & Victory Road",
+			"total_level": 352
+		},
+		{
+			"family": "electabuzz",
+			"area": "Seafoam, Cinnabar & Victory Road",
+			"challenge": {
+				"type": "raid",
+				"boss": "zapdos",
+				"count": 3,
+				"text": "Win the Zapdos raid 3 times"
+			}
+		},
+		{
+			"family": "magmar",
+			"area": "Seafoam, Cinnabar & Victory Road",
+			"challenge": {
+				"type": "mvp",
+				"arena": "cinnabar_gym",
+				"count": 10,
+				"text": "Get MVP 10 times in Cinnabar Gym"
+			}
+		},
+		{
+			"family": "lickitung",
+			"area": "Seafoam, Cinnabar & Victory Road",
+			"total_level": 360
+		},
+		{
+			"family": "snorlax",
+			"area": "Seafoam, Cinnabar & Victory Road",
+			"challenge": {
+				"type": "wins",
+				"count": 150,
+				"text": "Win 150 matches"
+			}
+		},
+		{
+			"family": "omanyte",
+			"area": "Seafoam, Cinnabar & Victory Road",
+			"total_level": 368
+		},
+		{
+			"family": "kabuto",
+			"area": "Seafoam, Cinnabar & Victory Road",
+			"total_level": 376
+		},
+		{
+			"family": "aerodactyl",
+			"area": "Seafoam, Cinnabar & Victory Road",
+			"challenge": {
+				"type": "total_level",
+				"count": 600,
+				"text": "Reach a total level of 600"
+			}
+		},
+		{
+			"family": "ditto",
+			"area": "Seafoam, Cinnabar & Victory Road",
+			"challenge": {
+				"type": "total_level",
+				"count": 800,
+				"text": "Reach a total level of 800"
+			}
+		},
+		{
+			"family": "mewtwo",
+			"area": "Seafoam, Cinnabar & Victory Road",
+			"challenge": {
+				"type": "total_level",
+				"count": 1200,
+				"text": "Reach a total level of 1200"
+			}
+		},
+		{
+			"family": "mew",
+			"area": "Seafoam, Cinnabar & Victory Road",
+			"challenge": {
+				"type": "total_level",
+				"count": 1500,
+				"text": "Reach a total level of 1500"
+			}
+		}
+	]
+}

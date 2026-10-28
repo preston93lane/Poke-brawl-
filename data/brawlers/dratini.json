@@ -13,7 +13,7 @@
 	"evolves_to": "dragonair",
 	"moves": [
 		{"move": "dratini_main1", "level": 1},
-		{"move": "dratini_main2", "level": 2},
-		{"move": "dratini_main3", "level": 3}
+		{"move": "dratini_main2", "level": 15, "tm": "tm_dragon_tail"},
+		{"move": "dratini_main3", "level": 32}
 	]
 }

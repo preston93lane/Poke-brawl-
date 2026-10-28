@@ -13,7 +13,7 @@
 	"evolves_to": "rapidash",
 	"moves": [
 		{"move": "ponyta_main1", "level": 1},
-		{"move": "ponyta_main2", "level": 2},
-		{"move": "ponyta_main3", "level": 3}
+		{"move": "ponyta_main2", "level": 9},
+		{"move": "ponyta_main3", "level": 32}
 	]
 }

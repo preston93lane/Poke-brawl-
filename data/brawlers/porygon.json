@@ -11,7 +11,7 @@
 	"gadget": "gadget_teleport",
 	"moves": [
 		{"move": "porygon_main1", "level": 1},
-		{"move": "porygon_main2", "level": 2},
-		{"move": "porygon_main3", "level": 3}
+		{"move": "porygon_main2", "level": 14},
+		{"move": "porygon_main3", "level": 32}
 	]
 }

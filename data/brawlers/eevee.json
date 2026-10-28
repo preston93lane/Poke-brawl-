@@ -13,7 +13,7 @@
 	"evolves_to": ["vaporeon", "jolteon", "flareon"],
 	"moves": [
 		{"move": "eevee_main1", "level": 1},
-		{"move": "eevee_main2", "level": 2},
-		{"move": "eevee_main3", "level": 3}
+		{"move": "eevee_main2", "level": 14},
+		{"move": "eevee_main3", "level": 41}
 	]
 }

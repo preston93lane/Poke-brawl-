@@ -11,7 +11,7 @@
 	"gadget": "gadget_heal_pulse",
 	"moves": [
 		{"move": "mr_mime_main1", "level": 1},
-		{"move": "mr_mime_main2", "level": 2},
-		{"move": "mr_mime_main3", "level": 3}
+		{"move": "mr_mime_main2", "level": 19, "tm": "tm_light_screen"},
+		{"move": "mr_mime_main3", "level": 32}
 	]
 }

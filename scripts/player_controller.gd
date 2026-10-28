@@ -67,7 +67,7 @@ func _physics_process(delta: float) -> void:
 	gadget_button.set_cooldown(brawler.gadget_cooldown_ratio())
 	gadget_button.uses = brawler.gadget_uses
 	super_button.set_charge(brawler.super_charge)
-	super_button.label = brawler.species.super_move.display_name.to_upper()
+	super_button.label = brawler.current_super().display_name.to_upper()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -221,7 +221,7 @@ func _do_gadget() -> bool:
 func _do_super() -> bool:
 	var dir := brawler.facing
 	var distance := -1.0
-	var move := brawler.species.super_move
+	var move := brawler.current_super()
 	if aim_stick.output != Vector2.ZERO:
 		dir = _to_world(aim_stick.output)
 		distance = aim_stick.output.length() * move.reach

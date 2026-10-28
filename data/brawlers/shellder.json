@@ -13,7 +13,7 @@
 	"evolves_to": "cloyster",
 	"moves": [
 		{"move": "shellder_main1", "level": 1},
-		{"move": "shellder_main2", "level": 2},
-		{"move": "shellder_main3", "level": 3}
+		{"move": "shellder_main2", "level": 14},
+		{"move": "shellder_main3", "level": 22}
 	]
 }

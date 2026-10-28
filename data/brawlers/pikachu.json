@@ -13,7 +13,7 @@
 	"evolves_to": "raichu",
 	"moves": [
 		{"move": "pikachu_main1", "level": 1},
-		{"move": "pikachu_main2", "level": 2},
-		{"move": "pikachu_main3", "level": 3}
+		{"move": "pikachu_main2", "level": 9, "tm": "tm_thunderbolt"},
+		{"move": "pikachu_main3", "level": 20, "tm": "tm_thunder"}
 	]
 }

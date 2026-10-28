@@ -13,7 +13,7 @@
 	"evolves_to": "persian",
 	"moves": [
 		{"move": "meowth_main1", "level": 1},
-		{"move": "meowth_main2", "level": 2},
-		{"move": "meowth_main3", "level": 3}
+		{"move": "meowth_main2", "level": 14},
+		{"move": "meowth_main3", "level": 22, "tm": "tm_power_gem"}
 	]
 }

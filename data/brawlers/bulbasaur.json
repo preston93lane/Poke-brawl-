@@ -13,7 +13,7 @@
 	"evolves_to": "ivysaur",
 	"moves": [
 		{"move": "bulbasaur_main1", "level": 1},
-		{"move": "bulbasaur_main2", "level": 2},
-		{"move": "bulbasaur_main3", "level": 3}
+		{"move": "bulbasaur_main2", "level": 14, "tm": "tm_sludge_bomb"},
+		{"move": "bulbasaur_main3", "level": 22, "tm": "tm_petal_blizzard"}
 	]
 }

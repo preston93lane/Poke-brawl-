@@ -26,19 +26,25 @@ const MODE_TITLES := {
 
 @export_group("Player")
 @export var player_species := "charmander"
-@export_range(1, 3) var player_level := 1
+## Profile level of the line (0 = read it from the profile).
+@export_range(0, 60) var player_level := 0
 ## Optional main attack id; blank = newest unlocked variant.
 @export var player_main := ""
 ## Branch for lines that split (Eevee); blank = random.
 @export var player_evolution := ""
 @export var player_shiny := false
+## A TM super to use instead of the line's own (blank = the line's own).
+@export var player_super := ""
+## Active HM ("cut", "fly"... blank = none).
+@export var player_hm := ""
+## Award XP, Poké Dollars and Poké Balls when the match ends.
+@export var record_progress := true
 
 @export_group("Bots")
 ## Your bot teammates; missing slots are filled with random Pokémon.
 @export var ally_team: PackedStringArray = []
 ## The other team; missing slots are filled with random Pokémon.
 @export var enemy_team: PackedStringArray = ["bulbasaur"]
-@export_range(1, 3) var bot_level := 1
 @export_enum("easy", "normal", "hard") var bot_difficulty := "normal"
 
 var player: Brawler
@@ -54,6 +60,8 @@ var _spawn_index := {}
 ## Raid boss (Battle) and active legendary allies (both modes).
 var raid_boss: Brawler
 var _raid_done := false
+## Raid boss your team won this match ("" = none), for challenges and rewards.
+var raid_won := ""
 var legendaries: Array[Brawler] = []
 ## King of the hill shrine: seconds each team has held the zone alone, uninterrupted.
 var shrine_hold := [0.0, 0.0]
@@ -97,6 +105,8 @@ func _ready() -> void:
 		teams = {}
 		for i in int(mode_rules.get("players", 6)):
 			teams[i] = []
+	if player_level <= 0:
+		player_level = Profile.level_of(player_species)
 	player = _spawn(player_species, player_level, 0, true, player_main)
 	player.preferred_evolution = player_evolution
 	GameData.local_player = player
@@ -184,13 +194,14 @@ func _apply_match_settings() -> void:
 	mode = str(s.get("mode", mode))
 	arena_id = str(s.get("arena", arena_id))
 	player_species = str(s.get("species", player_species))
-	player_level = int(s.get("level", player_level))
+	player_level = int(s.get("level", 0))
+	player_super = str(s.get("super", ""))
+	player_hm = str(s.get("hm", ""))
 	player_main = str(s.get("main", ""))
 	player_evolution = str(s.get("evolution", ""))
 	player_shiny = bool(s.get("shiny", false))
 	ally_team = PackedStringArray(s.get("allies", []))
 	enemy_team = PackedStringArray(s.get("enemies", []))
-	bot_level = int(s.get("bot_level", player_level))
 	bot_difficulty = str(s.get("difficulty", bot_difficulty))
 
 
@@ -217,10 +228,17 @@ func _fill_team(chosen: PackedStringArray, count: int, taken: Array) -> Array[St
 
 
 func _spawn_bot(species_id: String, team: int) -> Brawler:
-	# Bots pick a random unlocked variant of their main attack.
-	var options := GameData.get_species(species_id).moves_for("main", bot_level)
+	# Bots play at your line's level, with a random unlocked main attack and as
+	# many vitamins as you have active (spread at random), so it stays fair.
+	var options := GameData.get_species(species_id).moves_for("main", player_level)
 	var main_id: String = options.pick_random().id if not options.is_empty() else ""
-	var brawler := _spawn(species_id, bot_level, team, false, main_id)
+	var brawler := _spawn(species_id, player_level, team, false, main_id)
+	var active := {}
+	for i in Profile.active_vitamin_total(player_species):
+		var stat: String = Profile.STATS.pick_random()
+		active[stat] = int(active.get(stat, 0)) + 1
+	brawler.vitamin_bonus = Profile.vitamin_bonus_from(active)
+	brawler.refresh_stats()
 	var bot := BotController.new()
 	bot.set_difficulty(bot_difficulty)
 	if mode == "king_of_the_hill":
@@ -235,9 +253,16 @@ func _spawn_bot(species_id: String, team: int) -> Brawler:
 
 func _spawn(species_id: String, level: int, team: int, is_player: bool, main_id := "") -> Brawler:
 	var brawler: Brawler = BRAWLER_SCENE.instantiate()
-	brawler.setup(species_id, level, team, is_player, arena, main_id)
-	# Bots match the profile level of the player's Pokémon, so fast evolving is fair.
-	brawler.trainer_level = Profile.level_of(species_id if is_player else player_species)
+	var unlocked: Array[String] = []
+	if is_player:
+		unlocked = Profile.unlocked_mains(species_id)
+	brawler.setup(species_id, level, team, is_player, arena, main_id, unlocked)
+	if is_player:
+		brawler.vitamin_bonus = Profile.vitamin_bonus(species_id)
+		if player_super != "" and player_super in Profile.tm_super_options(species_id) and Profile.owns_tm_super(player_super):
+			brawler.super_override = GameData.get_move(player_super)
+		if player_hm in Profile.learned_hms(species_id):
+			brawler.hm_id = player_hm
 	# The player picks shiny in the menu; bots are shiny once in a while.
 	brawler.shiny = player_shiny if is_player else randf() < float(GameData.rule("shiny_chance", 0.06))
 	_spawn_index[brawler] = teams[team].size()
@@ -413,6 +438,8 @@ func _on_raid_boss_defeated(killer: Brawler) -> void:
 	if is_equal_approx(dealt_0, dealt_1) and killer:
 		winner = clampi(killer.team, 0, 1)
 	var where := boss.global_position
+	if winner == player.team:
+		raid_won = boss.species.id
 	boss.queue_free()
 	summon_legendary(boss.species.id, winner, where)
 
@@ -480,7 +507,18 @@ func end_round(result_name: String, subtitle := "") -> void:
 		return
 	round_over = true
 	_update_status()
-	hud.show_result(result_name, summary_rows(), mode_logic.stat_name() if mode_logic else "", subtitle)
+	var rows := summary_rows()
+	var rewards := {}
+	if record_progress and player:
+		var mvp := false
+		for row in rows:
+			if row["is_player"]:
+				mvp = row["mvp"]
+		rewards = Profile.record_match({
+			"species": player_species, "result": result_name, "kos": player.kills, "mvp": mvp,
+			"arena": arena_id, "difficulty": bot_difficulty, "raid": raid_won,
+		})
+	hud.show_result(result_name, rows, mode_logic.stat_name() if mode_logic else "", subtitle, rewards)
 
 
 ## One row per Pokémon for the match summary, with an MVP picked by score.

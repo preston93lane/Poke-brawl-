@@ -13,7 +13,7 @@
 	"evolves_to": "seadra",
 	"moves": [
 		{"move": "horsea_main1", "level": 1},
-		{"move": "horsea_main2", "level": 2},
-		{"move": "horsea_main3", "level": 3}
+		{"move": "horsea_main2", "level": 14},
+		{"move": "horsea_main3", "level": 36, "tm": "tm_dragon_pulse"}
 	]
 }

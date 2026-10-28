@@ -1,0 +1,215 @@
+{
+	"_comment": "TM supers (tools/build_progression.py): any line that learns the move by TM in the games can equip it instead of its own super.",
+	"tmsuper_hyper_beam": {
+		"name": "Hyper Beam",
+		"type": "normal",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 2100,
+		"speed": 11.0,
+		"range": 9.0,
+		"radius": 0.9,
+		"pierce": true
+	},
+	"tmsuper_solar_beam": {
+		"name": "Solar Beam",
+		"type": "grass",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1900,
+		"speed": 12.0,
+		"range": 10.0,
+		"radius": 0.8,
+		"pierce": true
+	},
+	"tmsuper_fire_blast": {
+		"name": "Fire Blast",
+		"type": "fire",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1700,
+		"speed": 8.5,
+		"range": 7.5,
+		"radius": 0.8,
+		"explode_radius": 2.6,
+		"effect": {
+			"type": "burn",
+			"chance": 0.6,
+			"duration": 3.0,
+			"dps": 160
+		}
+	},
+	"tmsuper_scald": {
+		"name": "Scald",
+		"type": "water",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1300,
+		"speed": 10.0,
+		"range": 7.5,
+		"radius": 0.7,
+		"count": 3,
+		"spread": 18,
+		"effect": {
+			"type": "burn",
+			"chance": 0.5,
+			"duration": 3.0,
+			"dps": 120
+		}
+	},
+	"tmsuper_thunder": {
+		"name": "Thunder",
+		"type": "electric",
+		"slot": "super",
+		"kind": "area",
+		"power": 1700,
+		"range": 8.0,
+		"area_radius": 2.0,
+		"effect": {
+			"type": "slow",
+			"chance": 0.6,
+			"duration": 1.5,
+			"amount": 0.5
+		}
+	},
+	"tmsuper_blizzard": {
+		"name": "Blizzard",
+		"type": "ice",
+		"slot": "super",
+		"kind": "area",
+		"power": 900,
+		"range": 6.5,
+		"area_radius": 3.0,
+		"effect": {
+			"type": "slow",
+			"chance": 1.0,
+			"duration": 2.5,
+			"amount": 0.5
+		}
+	},
+	"tmsuper_earthquake": {
+		"name": "Earthquake",
+		"type": "ground",
+		"slot": "super",
+		"kind": "area",
+		"power": 1500,
+		"range": 0.0,
+		"area_radius": 3.6
+	},
+	"tmsuper_psychic": {
+		"name": "Psychic",
+		"type": "psychic",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1600,
+		"speed": 10.0,
+		"range": 8.5,
+		"radius": 0.9,
+		"knockback": 2.0
+	},
+	"tmsuper_rock_slide": {
+		"name": "Rock Slide",
+		"type": "rock",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 900,
+		"speed": 9.0,
+		"range": 7.0,
+		"radius": 0.7,
+		"count": 3,
+		"spread": 30
+	},
+	"tmsuper_sludge_bomb": {
+		"name": "Sludge Bomb",
+		"type": "poison",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1200,
+		"speed": 8.0,
+		"range": 7.5,
+		"radius": 0.7,
+		"explode_radius": 2.4,
+		"effect": {
+			"type": "poison",
+			"chance": 1.0,
+			"duration": 4.0,
+			"dps": 180
+		}
+	},
+	"tmsuper_shadow_ball": {
+		"name": "Shadow Ball",
+		"type": "ghost",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1600,
+		"speed": 9.0,
+		"range": 8.0,
+		"radius": 0.9,
+		"effect": {
+			"type": "blind",
+			"chance": 0.5,
+			"duration": 1.5
+		}
+	},
+	"tmsuper_sky_attack": {
+		"name": "Sky Attack",
+		"type": "flying",
+		"slot": "super",
+		"kind": "dash",
+		"power": 1800,
+		"dash_distance": 8.0,
+		"dash_speed": 20.0,
+		"dash_pierce": true
+	},
+	"tmsuper_focus_blast": {
+		"name": "Focus Blast",
+		"type": "fighting",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 2200,
+		"speed": 8.0,
+		"range": 7.5,
+		"radius": 0.9,
+		"knockback": 2.5
+	},
+	"tmsuper_bug_buzz": {
+		"name": "Bug Buzz",
+		"type": "bug",
+		"slot": "super",
+		"kind": "area",
+		"power": 1100,
+		"range": 0.0,
+		"area_radius": 3.2,
+		"effect": {
+			"type": "slow",
+			"chance": 0.5,
+			"duration": 1.5,
+			"amount": 0.4
+		}
+	},
+	"tmsuper_dragon_pulse": {
+		"name": "Dragon Pulse",
+		"type": "dragon",
+		"slot": "super",
+		"kind": "projectile",
+		"power": 1800,
+		"speed": 10.5,
+		"range": 9.0,
+		"radius": 1.0,
+		"pierce": true
+	},
+	"tmsuper_dazzling_gleam": {
+		"name": "Dazzling Gleam",
+		"type": "fairy",
+		"slot": "super",
+		"kind": "area",
+		"power": 1300,
+		"range": 0.0,
+		"area_radius": 3.4,
+		"effect": {
+			"type": "blind",
+			"chance": 0.6,
+			"duration": 1.2
+		}
+	}
+}

@@ -11,7 +11,7 @@
 	"gadget": "gadget_agility",
 	"moves": [
 		{"move": "scyther_main1", "level": 1},
-		{"move": "scyther_main2", "level": 2},
-		{"move": "scyther_main3", "level": 3}
+		{"move": "scyther_main2", "level": 14},
+		{"move": "scyther_main3", "level": 34, "tm": "tm_x_scissor"}
 	]
 }

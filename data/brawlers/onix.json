@@ -11,7 +11,7 @@
 	"gadget": "gadget_protect",
 	"moves": [
 		{"move": "onix_main1", "level": 1},
-		{"move": "onix_main2", "level": 2},
-		{"move": "onix_main3", "level": 3}
+		{"move": "onix_main2", "level": 14},
+		{"move": "onix_main3", "level": 32}
 	]
 }

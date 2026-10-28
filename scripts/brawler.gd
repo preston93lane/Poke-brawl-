@@ -85,6 +85,14 @@ var evolve_kills := 0
 ## Profile level of this evolution line (kept between matches). High enough and
 ## the next evolution or Power Up needs fewer KOs (see kills_needed()).
 var trainer_level := 1
+## Main attack ids unlocked by profile level or TM (empty = go by `level`).
+var unlocked_mains: Array[String] = []
+## Stat bonuses from active vitamins: { "hp", "attack", "defense", "speed" } fractions.
+var vitamin_bonus: Dictionary = {}
+## A TM super equipped instead of the line's own (null = each stage's own super).
+var super_override: MoveData
+## Equipped HM ("cut", "fly", "surf", "strength", "flash", "rock_smash"; "" = none).
+var hm_id := ""
 ## Branch to take when a line splits (Eevee); "" = random.
 var preferred_evolution := ""
 
@@ -161,10 +169,14 @@ var _stream_material: StandardMaterial3D
 @onready var melee_fx: MeshInstance3D = $MeleeFx
 
 
+## `p_level` is the line's profile level: it decides which main attacks are
+## unlocked (unless `unlocked` lists them, e.g. TM unlocks) and how fast it evolves.
 func setup(species_id: String, p_level: int, p_team: int, p_is_player: bool, p_arena: Arena,
-		main_id := "") -> void:
+		main_id := "", unlocked: Array[String] = []) -> void:
 	species = GameData.get_species(species_id)
-	level = clampi(p_level, 1, int(GameData.rule("level/max", 3)))
+	level = clampi(p_level, 1, int(GameData.rule("trainer/max_level", 60)))
+	trainer_level = level
+	unlocked_mains = unlocked
 	team = p_team
 	is_player = p_is_player
 	arena = p_arena
@@ -322,6 +334,13 @@ func heal(amount: float, source: Brawler = null) -> void:
 
 ## Moves the player can choose from for a slot at the current level.
 func available_moves(slot: String) -> Array[MoveData]:
+	if slot == "main" and not unlocked_mains.is_empty():
+		var result: Array[MoveData] = []
+		for move in species.moves_for(slot, 999):
+			if move.id in unlocked_mains:
+				result.append(move)
+		if not result.is_empty():
+			return result
 	return species.moves_for(slot, level)
 
 
@@ -331,7 +350,13 @@ func _pick_move(slot: String, move_id: String) -> MoveData:
 			if move.id == move_id:
 				return move
 		push_warning("%s can't use '%s' at level %d; using default" % [species.display_name, move_id, level])
-	return species.default_move(slot, level)
+	var options := available_moves(slot)
+	return options.back() if not options.is_empty() else species.default_move(slot, 999)
+
+
+## The super in use: an equipped TM super, or this stage's own.
+func current_super() -> MoveData:
+	return super_override if super_override else species.super_move
 
 
 ## Front-view icon in this brawler's colours (shiny or normal).
@@ -339,10 +364,9 @@ func portrait() -> Texture2D:
 	return species.shiny_sprite if shiny and species.shiny_sprite else species.sprite
 
 
-## Damage multiplier from level (attacks get a little stronger as you level up).
+## Damage multiplier from Showdown power cubes (levels unlock moves, they don't add power).
 func power_bonus() -> float:
-	return (1.0 + float(GameData.rule("level_power_bonus", 0.04)) * (level - 1)) \
-			* (1.0 + float(GameData.rule("modes/showdown/cube_damage", 0.1)) * power_cubes)
+	return 1.0 + float(GameData.rule("modes/showdown/cube_damage", 0.1)) * power_cubes
 
 
 ## Physics layers that stop this brawler walking (swimmers cross water).
@@ -368,16 +392,26 @@ func _refresh_main_move() -> void:
 		_apply_loadout_visuals()
 
 
+## Re-applies stats after changing vitamin_bonus (keeps the same share of health).
+func refresh_stats() -> void:
+	if not is_inside_tree():
+		return
+	var ratio := health / max_health if max_health > 0.0 else 1.0
+	_apply_species()
+	health = max_health * ratio
+
+
 func _apply_species() -> void:
 	var crosses := "fire" if arena != null and arena.liquid == "lava" else "water"
 	can_swim = flying or species.has_type(crosses) or species.has_type("flying")
 	collision_mask = walk_mask()
-	var bonus := 1.0 + float(GameData.rule("level/stat_bonus_per_level", 0.05)) * (level - 1)
 	var growth := 1.0 + float(GameData.rule("evolution/power_up_bonus", 0.12)) * power_ups
-	max_health = species.hp * bonus * growth * (1.0 + _hp_bonus + float(GameData.rule("modes/showdown/cube_hp", 0.1)) * power_cubes)
-	attack = species.attack * bonus * growth
-	defense = species.defense * bonus
-	move_speed = species.speed * float(GameData.rule("speed_to_meters", 0.05))
+	var vit := func(stat: String) -> float: return float(vitamin_bonus.get(stat, 0.0))
+	max_health = species.hp * growth * (1.0 + vit.call("hp")) * (1.0 + _hp_bonus + float(GameData.rule("modes/showdown/cube_hp", 0.1)) * power_cubes)
+	attack = species.attack * growth * (1.0 + vit.call("attack"))
+	defense = species.defense * (1.0 + vit.call("defense"))
+	move_speed = species.speed * float(GameData.rule("speed_to_meters", 0.05)) \
+			* (1.0 + vit.call("speed") * float(Profile.econ("vitamins/speed_factor", 0.5)))
 	# Sheets hold front / side / back views; the frame follows the way you're facing.
 	var sheet := species.shiny_sheet if shiny and species.shiny_sheet else species.sheet
 	sprite.texture = sheet if sheet else species.sprite
@@ -625,15 +659,15 @@ func super_ready() -> bool:
 
 
 func add_super_charge(damage_dealt: float) -> void:
-	if species.super_move:
-		super_charge = minf(1.0, super_charge + damage_dealt / species.super_move.charge_damage())
+	if current_super():
+		super_charge = minf(1.0, super_charge + damage_dealt / current_super().charge_damage())
 
 
 ## `distance` is where area and lobbed supers land (clamped to their range); < 0 = max range.
 func use_super(direction: Vector3, distance := -1.0) -> bool:
 	if not super_ready():
 		return false
-	var move := species.super_move
+	var move := current_super()
 	direction = _flat_direction(direction)
 	super_charge = 0.0
 	_on_attack(direction, move)
@@ -650,7 +684,7 @@ func use_super(direction: Vector3, distance := -1.0) -> bool:
 
 ## True if the super hits enemies (vs. pure heals / buffs), for the bot AI.
 func super_is_offensive() -> bool:
-	var move := species.super_move
+	var move := current_super()
 	return move != null and (move.kind != "self" or not move.blind.is_empty())
 
 

@@ -1,24 +1,33 @@
 extends Node
 ## Autoload "Profile": the player's progress, saved on this device in
-## user://profile.json (the browser's storage on the web build).
-## Cloud accounts will sync this same data later.
+## user://profile.json (the browser's storage on the web build) and synced to
+## the cloud account when signed in (see Cloud).
 ##
-## Levels are per evolution line, keyed by the base form's id (Charmander's
-## level covers Charmeleon and Charizard too).
+## Everything per Pokémon is per evolution line, keyed by the base form's id
+## (Charmander's level, vitamins and HMs cover Charmeleon and Charizard too).
+## Tuning lives in data/economy.json; the unlock order in data/unlocks.json.
 ##
-## Dev mode (all the testing tools) turns on with the dev code: open the game
-## with ?dev=<code> on the end of its address, or type it in Settings.
+## Dev mode (all the testing tools, everything unlocked) turns on with the dev
+## code: open the game with ?dev=<code> on the end of its address, type it in
+## Settings, or sign in with the dev account.
 
 const PATH := "user://profile.json"
 ## SHA-256 of the dev code, so the code itself isn't sitting in the game files.
 const DEV_HASH := "168914d29ce1d0347e9d2087362ba12c34b24b178917987cdea6716c043c705b"
+const VERSION := 2
+const BALLS := ["poke_ball", "great_ball", "ultra_ball", "master_ball"]
+const HM_IDS := ["cut", "fly", "surf", "strength", "flash", "rock_smash"]
+const STATS := ["hp", "attack", "defense", "speed"]
 
+## Emitted after every save (the cloud sync listens).
 signal changed
 
 var data: Dictionary = {}
+var rng := RandomNumberGenerator.new()
 
 
 func _ready() -> void:
+	rng.randomize()
 	load_profile()
 	if OS.has_feature("web"):
 		var query := str(JavaScriptBridge.eval("window.location.search", true))
@@ -27,15 +36,39 @@ func _ready() -> void:
 				try_dev_code(part.trim_prefix("dev=").uri_decode())
 
 
+static func blank() -> Dictionary:
+	return {
+		"version": VERSION, "levels": {}, "xp": {}, "dev": false, "money": 0, "unlocked": [], "starter": "",
+		"inventory": {}, "tms": [], "hms": {}, "vitamins": {}, "loadout": {},
+		"stats": { "matches": 0, "wins": 0, "arena_wins": {}, "arena_mvps": {}, "raid_wins": {} },
+		"milestones": [], "since_ultra": 0, "store": {}, "daily": {}, "updated": 0,
+	}
+
+
 func load_profile() -> void:
-	data = { "version": 1, "levels": {}, "dev": false }
+	data = blank()
 	if FileAccess.file_exists(PATH):
 		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(PATH))
 		if parsed is Dictionary:
-			data.merge(parsed, true)
+			replace_data(parsed, false)
+
+
+## Takes a saved profile (from disk or the cloud), filling in anything missing.
+func replace_data(saved: Dictionary, save_now := true) -> void:
+	var fresh := blank()
+	for key: String in saved:
+		fresh[key] = saved[key]
+	var stats: Dictionary = blank()["stats"]
+	stats.merge(fresh.get("stats", {}), true)
+	fresh["stats"] = stats
+	fresh["version"] = VERSION
+	data = fresh
+	if save_now:
+		save()
 
 
 func save() -> void:
+	data["updated"] = Time.get_unix_time_from_system()
 	var f := FileAccess.open(PATH, FileAccess.WRITE)
 	if f:
 		f.store_string(JSON.stringify(data, "\t"))
@@ -45,11 +78,141 @@ func save() -> void:
 
 func reset() -> void:
 	var dev := is_dev()
-	data = { "version": 1, "levels": {}, "dev": dev }
+	data = blank()
+	data["dev"] = dev
 	save()
 
 
-# --- Levels ----------------------------------------------------------------
+static func today() -> String:
+	var d := Time.get_date_dict_from_system()
+	return "%04d-%02d-%02d" % [d["year"], d["month"], d["day"]]
+
+
+static func econ(path: String, default_value: Variant) -> Variant:
+	var node: Variant = GameData.economy
+	for key in path.split("/"):
+		if not node is Dictionary or not (node as Dictionary).has(key):
+			return default_value
+		node = node[key]
+	return node
+
+
+func _dict(key: String) -> Dictionary:
+	if not data.get(key) is Dictionary:
+		data[key] = {}
+	return data[key]
+
+
+func _stat_dict(key: String) -> Dictionary:
+	var stats: Dictionary = data["stats"]
+	if not stats.get(key) is Dictionary:
+		stats[key] = {}
+	return stats[key]
+
+
+# --- Unlocks -----------------------------------------------------------------
+
+func needs_starter() -> bool:
+	return not is_dev() and (data.get("unlocked", []) as Array).is_empty()
+
+
+func choose_starter(family: String) -> void:
+	var list: Array = [family]
+	for id in GameData.unlocks.get("free", []):
+		if id not in list:
+			list.append(id)
+	data["unlocked"] = list
+	data["starter"] = family
+	save()
+
+
+func is_unlocked(species_id: String) -> bool:
+	return is_dev() or GameData.family_root(species_id) in (data.get("unlocked", []) as Array)
+
+
+func unlock(family: String) -> bool:
+	var list: Array = data.get("unlocked", [])
+	if family in list:
+		return false
+	list.append(family)
+	data["unlocked"] = list
+	return true
+
+
+## How to unlock a locked line, for the select screen.
+func unlock_hint(species_id: String) -> String:
+	var family := GameData.family_root(species_id)
+	if family in GameData.unlocks.get("starters", []):
+		return "Unlocks after more wins"
+	for entry: Dictionary in GameData.unlocks.get("order", []):
+		if entry["family"] == family:
+			if entry.has("challenge"):
+				var c: Dictionary = entry["challenge"]
+				return "%s (%d/%d)" % [c["text"], challenge_progress(c), int(c["count"])]
+			return "Total level %d, or find it in a Poké Ball" % int(entry.get("total_level", 0))
+	return ""
+
+
+func challenge_progress(c: Dictionary) -> int:
+	var stats: Dictionary = data["stats"]
+	match str(c.get("type", "")):
+		"mvp":
+			return int(_stat_dict("arena_mvps").get(c.get("arena", ""), 0))
+		"win":
+			return int(_stat_dict("arena_wins").get(c.get("arena", ""), 0))
+		"raid":
+			return int(_stat_dict("raid_wins").get(c.get("boss", ""), 0))
+		"wins":
+			return int(stats.get("wins", 0))
+		"total_level":
+			return total_level()
+	return 0
+
+
+## Unlocks every line whose requirement is met; returns { "pokemon": [...], "challenges": n }.
+func _check_unlocks() -> Dictionary:
+	var found: Array[String] = []
+	var challenges := 0
+	if needs_starter():
+		return { "pokemon": found, "challenges": 0 }
+	var wins := int(data["stats"].get("wins", 0))
+	var after: Array = GameData.unlocks.get("other_starters_after_wins", [5, 15, 30])
+	var waiting: Array[String] = []
+	for id: String in GameData.unlocks.get("starters", []):
+		if id not in (data["unlocked"] as Array):
+			waiting.append(id)
+	var earned := 0
+	for w in after:
+		if wins >= int(w):
+			earned += 1
+	var have := (GameData.unlocks.get("starters", []) as Array).size() - waiting.size() - 1
+	for i in clampi(earned - have, 0, waiting.size()):
+		if unlock(waiting[i]):
+			found.append(waiting[i])
+	var total := total_level()
+	for entry: Dictionary in GameData.unlocks.get("order", []):
+		var family: String = entry["family"]
+		if family in (data["unlocked"] as Array):
+			continue
+		if entry.has("challenge"):
+			var c: Dictionary = entry["challenge"]
+			if challenge_progress(c) >= int(c["count"]) and unlock(family):
+				found.append(family)
+				challenges += 1
+		elif total >= int(entry.get("total_level", 99999)) and unlock(family):
+			found.append(family)
+	return { "pokemon": found, "challenges": challenges }
+
+
+## Next locked line that a Poké Ball can give (no challenge attached), or "".
+func next_ball_pokemon() -> String:
+	for entry: Dictionary in GameData.unlocks.get("order", []):
+		if not entry.has("challenge") and entry["family"] not in (data["unlocked"] as Array):
+			return entry["family"]
+	return ""
+
+
+# --- Levels and XP -----------------------------------------------------------
 
 func max_level() -> int:
 	return int(GameData.rule("trainer/max_level", 60))
@@ -61,9 +224,9 @@ func level_of(species_id: String) -> int:
 
 
 func set_level(species_id: String, level: int) -> void:
-	var levels: Dictionary = data.get("levels", {})
+	var levels: Dictionary = _dict("levels")
 	levels[GameData.family_root(species_id)] = clampi(level, 1, max_level())
-	data["levels"] = levels
+	_dict("xp").erase(GameData.family_root(species_id))
 	save()
 
 
@@ -72,7 +235,471 @@ func set_all_levels(level: int) -> void:
 	for s in GameData.base_species():
 		levels[s.id] = clampi(level, 1, max_level())
 	data["levels"] = levels
+	data["xp"] = {}
 	save()
+
+
+func xp_of(species_id: String) -> int:
+	return int(_dict("xp").get(GameData.family_root(species_id), 0))
+
+
+## XP from `level` to the next one.
+func xp_needed(level: int) -> int:
+	return int(econ("xp/level_base", 50)) + int(econ("xp/level_step", 10)) * level
+
+
+## Adds XP to a line; returns how many levels it gained. Doesn't save.
+func _add_xp(family: String, amount: int) -> int:
+	var level := level_of(family)
+	var xp := xp_of(family) + amount
+	var gained := 0
+	while level < max_level() and xp >= xp_needed(level):
+		xp -= xp_needed(level)
+		level += 1
+		gained += 1
+	if level >= max_level():
+		xp = 0
+	_dict("levels")[family] = level
+	_dict("xp")[family] = xp
+	return gained
+
+
+## Sum of every unlocked line's level.
+func total_level() -> int:
+	var total := 0
+	for family in data.get("unlocked", []):
+		total += level_of(family)
+	return total
+
+
+# --- Money and items ---------------------------------------------------------
+
+func money() -> int:
+	return int(data.get("money", 0))
+
+
+func count(item: String) -> int:
+	return int(_dict("inventory").get(item, 0))
+
+
+func _give(item: String, amount := 1) -> void:
+	var inv := _dict("inventory")
+	inv[item] = int(inv.get(item, 0)) + amount
+	if int(inv[item]) <= 0:
+		inv.erase(item)
+
+
+func item_name(item: String) -> String:
+	if item.begins_with("tm_"):
+		return str(GameData.progression.get("tms", {}).get(item, {}).get("name", item))
+	return str(econ("items/%s/name" % item, item.capitalize()))
+
+
+func has_tm(tm_id: String) -> bool:
+	return is_dev() or tm_id in (data.get("tms", []) as Array)
+
+
+func _add_tm(tm_id: String) -> bool:
+	var tms: Array = data.get("tms", [])
+	if tm_id in tms:
+		return false
+	tms.append(tm_id)
+	data["tms"] = tms
+	return true
+
+
+func missing_tms() -> Array[String]:
+	var result: Array[String] = []
+	for tm_id: String in GameData.progression.get("tms", {}):
+		if tm_id not in (data.get("tms", []) as Array):
+			result.append(tm_id)
+	return result
+
+
+func use_rare_candy(species_id: String) -> bool:
+	var family := GameData.family_root(species_id)
+	if count("rare_candy") <= 0 or level_of(family) >= max_level():
+		return false
+	_give("rare_candy", -1)
+	_add_xp(family, xp_needed(level_of(family)) - xp_of(family))
+	_check_unlocks()
+	save()
+	return true
+
+
+# --- Moves, supers, HMs, vitamins --------------------------------------------
+
+## Main attack variants this line can use: levelled up to, or unlocked by a TM.
+func unlocked_mains(species_id: String) -> Array[String]:
+	var result: Array[String] = []
+	var s: SpeciesData = GameData.species.get(species_id)
+	if s == null:
+		return result
+	var level := level_of(species_id)
+	for entry in s.learnset:
+		var move: MoveData = entry["move"]
+		if move.slot == "main" and (is_dev() or int(entry["level"]) <= level or (str(entry["tm"]) != "" and has_tm(str(entry["tm"])))):
+			result.append(move.id)
+	return result
+
+
+## TM supers this line could learn (owned or not).
+func tm_super_options(species_id: String) -> Array[String]:
+	var result: Array[String] = []
+	for sid in GameData.progression.get("tm_supers", {}).get(GameData.family_root(species_id), []):
+		result.append("tmsuper_" + str(sid))
+	return result
+
+
+func owns_tm_super(super_id: String) -> bool:
+	return has_tm("tm_" + super_id.trim_prefix("tmsuper_"))
+
+
+func hm_options(species_id: String) -> Array[String]:
+	var result: Array[String] = []
+	for hm in GameData.progression.get("hms", {}).get(GameData.family_root(species_id), []):
+		result.append(str(hm))
+	return result
+
+
+func learned_hms(species_id: String) -> Array[String]:
+	if is_dev():
+		return hm_options(species_id)
+	var result: Array[String] = []
+	for hm in _dict("hms").get(GameData.family_root(species_id), []):
+		result.append(str(hm))
+	return result
+
+
+## Uses one HM item on a line (HMs teach one line each). Returns false if it can't learn it.
+func teach_hm(species_id: String, hm: String) -> bool:
+	var family := GameData.family_root(species_id)
+	if hm not in hm_options(family) or hm in learned_hms(family) or count("hm_" + hm) <= 0:
+		return false
+	_give("hm_" + hm, -1)
+	var list: Array = _dict("hms").get(family, [])
+	list.append(hm)
+	_dict("hms")[family] = list
+	if loadout(family).get("hm", "") == "":
+		set_loadout(family, "hm", hm)
+	save()
+	return true
+
+
+## Vitamins given to a line ("given") and how many of each are switched on ("active").
+func vitamins(species_id: String) -> Dictionary:
+	var family := GameData.family_root(species_id)
+	var v: Dictionary = _dict("vitamins").get(family, {})
+	if v.is_empty():
+		v = { "given": {}, "active": {} }
+		_dict("vitamins")[family] = v
+	return v
+
+
+func give_vitamin(species_id: String, item: String) -> bool:
+	var stat := str(econ("vitamins/items/" + item, ""))
+	if stat == "" or count(item) <= 0:
+		return false
+	_give(item, -1)
+	var v := vitamins(species_id)
+	var given: Dictionary = v["given"]
+	given[stat] = int(given.get(stat, 0)) + 1
+	if active_vitamin_total(species_id) < int(econ("vitamins/max_active", 10)):
+		var active: Dictionary = v["active"]
+		active[stat] = int(active.get(stat, 0)) + 1
+	save()
+	return true
+
+
+func active_vitamin_total(species_id: String) -> int:
+	var total := 0
+	for stat: String in vitamins(species_id)["active"]:
+		total += int(vitamins(species_id)["active"][stat])
+	return total
+
+
+## Switches one vitamin of `stat` on (+1) or off (-1), within what was given and the cap.
+func change_active_vitamin(species_id: String, stat: String, by: int) -> bool:
+	var v := vitamins(species_id)
+	var active: Dictionary = v["active"]
+	var now := int(active.get(stat, 0))
+	var target := now + by
+	if target < 0 or target > int(v["given"].get(stat, 0)):
+		return false
+	if by > 0 and active_vitamin_total(species_id) >= int(econ("vitamins/max_active", 10)):
+		return false
+	active[stat] = target
+	save()
+	return true
+
+
+## Stat bonuses from the active vitamins: { stat: fraction }.
+static func vitamin_bonus_from(active: Dictionary) -> Dictionary:
+	var per := float(econ("vitamins/per_vitamin", 0.03))
+	var full := int(econ("vitamins/full_value", 5))
+	var reduced := float(econ("vitamins/reduced", 0.015))
+	var bonus := {}
+	for stat in STATS:
+		var n := int(active.get(stat, 0))
+		bonus[stat] = per * mini(n, full) + reduced * maxi(0, n - full)
+	return bonus
+
+
+func vitamin_bonus(species_id: String) -> Dictionary:
+	return vitamin_bonus_from(vitamins(species_id)["active"])
+
+
+func loadout(species_id: String) -> Dictionary:
+	return _dict("loadout").get(GameData.family_root(species_id), {})
+
+
+func set_loadout(species_id: String, key: String, value: String) -> void:
+	var family := GameData.family_root(species_id)
+	var l: Dictionary = _dict("loadout").get(family, {})
+	l[key] = value
+	_dict("loadout")[family] = l
+	save()
+
+
+# --- Match rewards -------------------------------------------------------------
+
+## Called when a match ends. `info`: species, result ("victory"/"defeat"/"draw"),
+## kos, mvp, arena, difficulty, raid (boss id your team won, or "").
+## Returns what was earned, for the results screen.
+func record_match(info: Dictionary) -> Dictionary:
+	var family := GameData.family_root(str(info.get("species", "")))
+	var result := str(info.get("result", "draw"))
+	var won := result == "victory"
+	var kos := mini(int(info.get("kos", 0)), int(econ("xp/max_kos", 10)))
+	var mvp := bool(info.get("mvp", false))
+	var arena := str(info.get("arena", ""))
+	var stats: Dictionary = data["stats"]
+	stats["matches"] = int(stats.get("matches", 0)) + 1
+	var daily := _dict("daily")
+	if daily.get("day", "") != today():
+		daily.clear()
+		daily["day"] = today()
+	var first_win := won and not bool(daily.get("won", false))
+	if won:
+		daily["won"] = true
+		stats["wins"] = int(stats.get("wins", 0)) + 1
+		var aw := _stat_dict("arena_wins")
+		aw[arena] = int(aw.get(arena, 0)) + 1
+	if mvp:
+		var am := _stat_dict("arena_mvps")
+		am[arena] = int(am.get(arena, 0)) + 1
+	var raid := str(info.get("raid", ""))
+	if raid != "":
+		var rw := _stat_dict("raid_wins")
+		rw[raid] = int(rw.get(raid, 0)) + 1
+
+	var xp := int(econ("xp/" + ({ "victory": "win", "defeat": "loss" }.get(result, "draw") as String), 40))
+	xp += kos * int(econ("xp/per_ko", 10)) + (int(econ("xp/mvp", 25)) if mvp else 0)
+	if first_win:
+		xp *= int(econ("xp/first_win_multiplier", 2))
+	var levels_before := level_of(family)
+	var gained := _add_xp(family, xp)
+	var cash := int(econ("money/" + ({ "victory": "win", "defeat": "loss" }.get(result, "draw") as String), 15)) + kos * int(econ("money/per_ko", 5))
+	data["money"] = money() + cash
+
+	var balls: Array[String] = []
+	if won:
+		var roll := rng.randf()
+		balls.append("ultra_ball" if roll < float(econ("drops/ultra_on_win", 0.03)) else ("great_ball" if roll < float(econ("drops/ultra_on_win", 0.03)) + float(econ("drops/great_on_win", 0.2)) else "poke_ball"))
+	elif rng.randf() < float(econ("drops/loss_chance", 0.35)):
+		balls.append("poke_ball")
+	if first_win:
+		balls.append(str(econ("drops/first_win", "great_ball")))
+	if raid != "":
+		balls.append(str(econ("drops/raid", "ultra_ball")))
+	var unlocked := _check_unlocks()
+	for i in int(unlocked["challenges"]):
+		balls.append(str(econ("drops/challenge", "great_ball")))
+	var milestones := _check_milestones(arena if won and str(info.get("difficulty", "")) == "hard" else "")
+	for i in milestones.size():
+		balls.append("master_ball")
+	balls = _apply_ball_luck(balls)
+	for ball in balls:
+		_give(ball)
+	save()
+	return {
+		"xp": xp, "first_win": first_win, "levels": gained, "level": level_of(family), "level_before": levels_before,
+		"money": cash, "balls": balls, "pokemon": unlocked["pokemon"], "milestones": milestones,
+	}
+
+
+## Master Ball upgrades and the Ultra Ball pity timer.
+func _apply_ball_luck(balls: Array[String]) -> Array[String]:
+	var out: Array[String] = []
+	for ball in balls:
+		var b := ball
+		if b != "master_ball" and rng.randf() < float(econ("drops/master_upgrade", 0.003)):
+			b = "master_ball"
+		if b in ["ultra_ball", "master_ball"]:
+			data["since_ultra"] = 0
+		else:
+			data["since_ultra"] = int(data.get("since_ultra", 0)) + 1
+			if int(data["since_ultra"]) >= int(econ("drops/ultra_pity", 25)):
+				b = "ultra_ball"
+				data["since_ultra"] = 0
+		out.append(b)
+	return out
+
+
+## Total-level and gym milestones not reached before; returns their names.
+func _check_milestones(gym_won_on_hard: String) -> Array[String]:
+	var done: Array = data.get("milestones", [])
+	var new_ones: Array[String] = []
+	for lvl in econ("milestones/total_levels", []):
+		var key := "total_%d" % int(lvl)
+		if key not in done and total_level() >= int(lvl):
+			done.append(key)
+			new_ones.append("Total level %d" % int(lvl))
+	if gym_won_on_hard in econ("milestones/gyms", []):
+		var key := "gym_" + gym_won_on_hard
+		if key not in done:
+			done.append(key)
+			new_ones.append("Beat %s" % str(GameData.arenas.get(gym_won_on_hard, {}).get("name", gym_won_on_hard)))
+	data["milestones"] = done
+	return new_ones
+
+
+## Opens a ball from the bag; returns [{ "item", "count", "text" }] of what was inside.
+func open_ball(ball: String) -> Array[Dictionary]:
+	var prizes: Array[Dictionary] = []
+	if count(ball) <= 0:
+		return prizes
+	_give(ball, -1)
+	var spec: Dictionary = econ("balls/" + ball, {})
+	var cash_range: Array = spec.get("money", [0, 0])
+	var cash := rng.randi_range(int(cash_range[0]), int(cash_range[1]))
+	data["money"] = money() + cash
+	prizes.append({ "item": "money", "count": cash, "text": "%d ₽" % cash })
+	var candy: Array = spec.get("candy", [0, 0, 0])
+	if rng.randf() < float(candy[0]):
+		var n := rng.randi_range(int(candy[1]), int(candy[2]))
+		_give("rare_candy", n)
+		prizes.append({ "item": "rare_candy", "count": n, "text": "Rare Candy ×%d" % n })
+	var vit: Array = spec.get("vitamin", [0, 0])
+	var vitamin_count := int(vit[1]) if rng.randf() < float(vit[0]) else 0
+	if vitamin_count > 0 and rng.randf() < float(spec.get("extra_vitamin", 0.0)):
+		vitamin_count += 1
+	var vitamin_items: Array = (econ("vitamins/items", {}) as Dictionary).keys()
+	for i in vitamin_count:
+		var item: String = vitamin_items[rng.randi() % vitamin_items.size()]
+		_give(item)
+		prizes.append({ "item": item, "count": 1, "text": item_name(item) })
+	if rng.randf() < float(spec.get("hm", 0.0)):
+		var hm := "hm_" + str(HM_IDS[rng.randi() % HM_IDS.size()])
+		_give(hm)
+		prizes.append({ "item": hm, "count": 1, "text": item_name(hm) })
+	var tm_rolls := 1 if rng.randf() < float(spec.get("tm", 0.0)) else 0
+	if rng.randf() < float(spec.get("pokemon", 0.0)):
+		var family := next_ball_pokemon()
+		if family != "" and unlock(family):
+			prizes.append({ "item": "pokemon", "count": 1, "text": "NEW: " + GameData.species[family].display_name, "family": family })
+		else:
+			tm_rolls += 1  # Everything's unlocked: a TM instead.
+	for i in tm_rolls:
+		var missing := missing_tms()
+		if missing.is_empty():
+			data["money"] = money() + 1000
+			prizes.append({ "item": "money", "count": 1000, "text": "1000 ₽ (you have every TM)" })
+		else:
+			var tm_id: String = missing[rng.randi() % missing.size()]
+			_add_tm(tm_id)
+			prizes.append({ "item": tm_id, "count": 1, "text": item_name(tm_id) })
+	_check_unlocks()
+	save()
+	return prizes
+
+
+# --- Store ---------------------------------------------------------------------
+
+func item_price(item: String) -> int:
+	if item.begins_with("tm_"):
+		var kind := str(GameData.progression.get("tms", {}).get(item, {}).get("kind", "main"))
+		return int(econ("tm_prices/" + ("main" if kind == "main" else "super"), 2500))
+	return int(econ("items/%s/price" % item, 1000))
+
+
+func item_category(item: String) -> String:
+	if item.begins_with("tm_"):
+		return "tm"
+	return str(econ("items/%s/category" % item, item))
+
+
+## Today's six slots: [{ "item", "rarity" }], rolled once a day.
+func store_slots() -> Array:
+	var store := _dict("store")
+	if store.get("day", "") == today() and store.get("slots") is Array:
+		return store["slots"]
+	var roll := RandomNumberGenerator.new()
+	roll.seed = hash(today() + str(data.get("starter", "")))
+	var slots: Array = []
+	var missing := missing_tms()
+	for slot: Dictionary in econ("store/slots", []):
+		var pool: Dictionary = slot["pool"]
+		var total := 0.0
+		for key: String in pool:
+			total += float(pool[key])
+		var pick := roll.randf() * total
+		var item := ""
+		for key: String in pool:
+			pick -= float(pool[key])
+			if pick <= 0.0:
+				item = key
+				break
+		if item == "":
+			item = pool.keys()[0]
+		if item == "hm":
+			item = "hm_" + str(HM_IDS[roll.randi() % HM_IDS.size()])
+		elif item == "tm":
+			item = missing[roll.randi() % missing.size()] if not missing.is_empty() else "ultra_ball"
+		slots.append({ "item": item, "rarity": slot["rarity"] })
+	store.clear()
+	store["day"] = today()
+	store["slots"] = slots
+	store["bought"] = {}
+	save()
+	return slots
+
+
+func bought_today(category: String) -> int:
+	store_slots()
+	return int(_dict("store").get("bought", {}).get(category, 0))
+
+
+func daily_cap(category: String) -> int:
+	return int(econ("store/daily_caps/" + category, 99))
+
+
+## "" if it can be bought now, else why not.
+func cant_buy(item: String) -> String:
+	var category := item_category(item)
+	if item.begins_with("tm_") and has_tm(item):
+		return "Owned"
+	if bought_today(category) >= daily_cap(category):
+		return "Daily limit"
+	if money() < item_price(item):
+		return "Not enough ₽"
+	return ""
+
+
+func buy(item: String) -> bool:
+	if cant_buy(item) != "":
+		return false
+	data["money"] = money() - item_price(item)
+	var bought: Dictionary = _dict("store").get("bought", {})
+	var category := item_category(item)
+	bought[category] = int(bought.get(category, 0)) + 1
+	_dict("store")["bought"] = bought
+	if item.begins_with("tm_"):
+		_add_tm(item)
+	else:
+		_give(item)
+	save()
+	return true
 
 
 # --- Dev mode --------------------------------------------------------------
@@ -92,4 +719,17 @@ func try_dev_code(code: String) -> bool:
 
 func set_dev(on: bool) -> void:
 	data["dev"] = on
+	save()
+
+
+## Dev tools: fill the bag for testing.
+func dev_grant() -> void:
+	data["money"] = money() + 50000
+	for ball in BALLS:
+		_give(ball, 10)
+	_give("rare_candy", 50)
+	for item: String in econ("vitamins/items", {}):
+		_give(item, 20)
+	for hm in HM_IDS:
+		_give("hm_" + hm, 5)
 	save()

@@ -11,7 +11,7 @@
 	"gadget": "gadget_smokescreen",
 	"moves": [
 		{"move": "jynx_main1", "level": 1},
-		{"move": "jynx_main2", "level": 2},
-		{"move": "jynx_main3", "level": 3}
+		{"move": "jynx_main2", "level": 9},
+		{"move": "jynx_main3", "level": 32}
 	]
 }

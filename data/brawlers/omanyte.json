@@ -13,7 +13,7 @@
 	"evolves_to": "omastar",
 	"moves": [
 		{"move": "omanyte_main1", "level": 1},
-		{"move": "omanyte_main2", "level": 2},
-		{"move": "omanyte_main3", "level": 3}
+		{"move": "omanyte_main2", "level": 9},
+		{"move": "omanyte_main3", "level": 32}
 	]
 }

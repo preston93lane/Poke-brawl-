@@ -13,7 +13,7 @@
 	"evolves_to": "primeape",
 	"moves": [
 		{"move": "mankey_main1", "level": 1},
-		{"move": "mankey_main2", "level": 2},
-		{"move": "mankey_main3", "level": 3}
+		{"move": "mankey_main2", "level": 22},
+		{"move": "mankey_main3", "level": 33, "tm": "tm_close_combat"}
 	]
 }

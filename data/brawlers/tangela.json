@@ -11,7 +11,7 @@
 	"gadget": "gadget_agility",
 	"moves": [
 		{"move": "tangela_main1", "level": 1},
-		{"move": "tangela_main2", "level": 2},
-		{"move": "tangela_main3", "level": 3}
+		{"move": "tangela_main2", "level": 9},
+		{"move": "tangela_main3", "level": 48, "tm": "tm_power_whip"}
 	]
 }

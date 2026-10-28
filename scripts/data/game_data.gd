@@ -20,6 +20,11 @@ var items: Dictionary = {}
 var item_spawn: Dictionary = {}
 ## Play styles (data/styles.json): id -> { "label", "like", "desc" }.
 var styles: Dictionary = {}
+## Progression (data/economy.json, progression.json, unlocks.json): rewards and
+## prices; TMs, TM supers and HMs per line; the Kanto unlock order.
+var economy: Dictionary = {}
+var progression: Dictionary = {}
+var unlocks: Dictionary = {}
 var stab := 1.1
 ## Overall type multiplier limits (after dual types multiply).
 var type_range := Vector2(0.75, 1.3)
@@ -65,6 +70,9 @@ func load_all() -> void:
 	_load_types(_load_json(DATA_DIR + "/types.json"))
 
 	styles = _load_json(DATA_DIR + "/styles.json")
+	economy = _load_json(DATA_DIR + "/economy.json")
+	progression = _load_json(DATA_DIR + "/progression.json")
+	unlocks = _load_json(DATA_DIR + "/unlocks.json")
 	moves.clear()
 	for move_file in _json_files(DATA_DIR + "/moves"):
 		var move_defs := _load_json(DATA_DIR + "/moves/" + move_file)
@@ -398,7 +406,7 @@ func _link_species() -> void:
 			if not moves.has(move_id):
 				push_error("GameData: %s learns unknown move '%s'" % [source.id, move_id])
 				continue
-			s.learnset.append({ "move": moves[move_id], "level": int(entry.get("level", 1)) })
+			s.learnset.append({ "move": moves[move_id], "level": int(entry.get("level", 1)), "tm": str(entry.get("tm", "")) })
 		if s.default_move("main", 99) == null:
 			push_error("GameData: %s needs at least one main attack (slot \"main\")" % s.id)
 		var source_gadget := s

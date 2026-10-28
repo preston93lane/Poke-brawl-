@@ -209,7 +209,8 @@ func announce(text: String) -> void:
 
 ## result: "victory", "defeat" or "draw". `rows` (from main.summary_rows) fill the
 ## match summary; `stat_name` adds a mode column (GOALS, CANDIES, CUBES).
-func show_result(result_name: String, rows: Array[Dictionary] = [], stat_name := "", subtitle := "") -> void:
+## `rewards`: what Profile.record_match() gave (shown under the table).
+func show_result(result_name: String, rows: Array[Dictionary] = [], stat_name := "", subtitle := "", rewards := {}) -> void:
 	move_stick.set_enabled(false)
 	aim_stick.set_enabled(false)
 	gadget_button.set_enabled(false)
@@ -228,7 +229,7 @@ func show_result(result_name: String, rows: Array[Dictionary] = [], stat_name :=
 		result_hint.offset_top = 92
 		result_hint.offset_bottom = 132
 		result_hint.add_theme_font_size_override("font_size", 26)
-		_summary = _build_summary(rows, stat_name)
+		_summary = _build_summary(rows, stat_name, rewards)
 		result.add_child(_summary)
 	_result_buttons.visible = false
 	result.visible = true
@@ -237,7 +238,7 @@ func show_result(result_name: String, rows: Array[Dictionary] = [], stat_name :=
 	_result_buttons.visible = true
 
 
-func _build_summary(rows: Array[Dictionary], stat_name: String) -> Control:
+func _build_summary(rows: Array[Dictionary], stat_name: String, rewards := {}) -> Control:
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", UiKit.box(Color(0.06, 0.07, 0.13, 0.88), 16, 12))
 	panel.set_anchors_preset(Control.PRESET_CENTER)
@@ -275,8 +276,35 @@ func _build_summary(rows: Array[Dictionary], stat_name: String) -> Control:
 			grid.add_child(UiKit.label(str(row[key]), 19))
 		if stat_name != "":
 			grid.add_child(UiKit.label(str(row["stat"]), 19))
-	panel.add_child(grid)
+	var box := VBoxContainer.new()
+	box.add_child(grid)
+	if not rewards.is_empty():
+		box.add_child(_rewards_label(rewards))
+	panel.add_child(box)
 	# Centre it once its size is known.
 	panel.resized.connect(func() -> void:
 		panel.position = (get_viewport().get_visible_rect().size - panel.size) * Vector2(0.5, 0.5) + Vector2(0, -12))
 	return panel
+
+
+## One or two lines: XP, level ups, Poké Dollars, balls, new Pokémon, milestones.
+func _rewards_label(r: Dictionary) -> Label:
+	var parts: Array[String] = []
+	parts.append("+%d XP%s" % [int(r["xp"]), " (first win today ×2!)" if r.get("first_win", false) else ""])
+	if int(r.get("levels", 0)) > 0:
+		parts.append("LEVEL UP! Lv %d → %d" % [int(r["level_before"]), int(r["level"])])
+	parts.append("+%d ₽" % int(r["money"]))
+	var balls := {}
+	for ball: String in r.get("balls", []):
+		balls[ball] = int(balls.get(ball, 0)) + 1
+	for ball: String in balls:
+		parts.append("%s%s" % [Profile.item_name(ball), " ×%d" % balls[ball] if int(balls[ball]) > 1 else ""])
+	for family: String in r.get("pokemon", []):
+		parts.append("NEW: %s!" % GameData.species[family].display_name)
+	for m: String in r.get("milestones", []):
+		parts.append("Milestone: %s" % m)
+	var label := UiKit.label("   ·   ".join(PackedStringArray(parts)), 19, Color(1, 0.9, 0.45))
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.custom_minimum_size.x = 600
+	return label

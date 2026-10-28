@@ -11,7 +11,7 @@
 	"gadget": "gadget_protect",
 	"moves": [
 		{"move": "kangaskhan_main1", "level": 1},
-		{"move": "kangaskhan_main2", "level": 2},
-		{"move": "kangaskhan_main3", "level": 3}
+		{"move": "kangaskhan_main2", "level": 19, "tm": "tm_mega_punch"},
+		{"move": "kangaskhan_main3", "level": 27}
 	]
 }

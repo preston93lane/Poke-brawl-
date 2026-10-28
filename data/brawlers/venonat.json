@@ -13,7 +13,7 @@
 	"evolves_to": "venomoth",
 	"moves": [
 		{"move": "venonat_main1", "level": 1},
-		{"move": "venonat_main2", "level": 2},
-		{"move": "venonat_main3", "level": 3}
+		{"move": "venonat_main2", "level": 25},
+		{"move": "venonat_main3", "level": 33, "tm": "tm_bug_buzz"}
 	]
 }

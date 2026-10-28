@@ -1,0 +1,56 @@
+{
+	"_comment": "Progression and rewards. XP goes to the line you played; a level costs level_base + level_step x your current level. Ball contents: each prize is rolled on its own. Store: 6 slots a day, prices by item, daily caps by category.",
+	"xp": { "win": 100, "draw": 60, "loss": 40, "per_ko": 10, "max_kos": 10, "mvp": 25, "first_win_multiplier": 2, "level_base": 50, "level_step": 10 },
+	"money": { "win": 60, "draw": 30, "loss": 15, "per_ko": 5 },
+	"drops": {
+		"_comment": "After a match: win = always a ball (upgrade chances), otherwise loss_chance of a Poké Ball. Any ball may become a Master Ball. ultra_pity = guaranteed Ultra after this many balls without one.",
+		"great_on_win": 0.2, "ultra_on_win": 0.03, "loss_chance": 0.35, "master_upgrade": 0.003, "ultra_pity": 25,
+		"first_win": "great_ball", "challenge": "great_ball", "raid": "ultra_ball"
+	},
+	"balls": {
+		"poke_ball": { "name": "Poké Ball", "money": [50, 100], "candy": [0.25, 1, 1], "vitamin": [0.1, 1], "extra_vitamin": 0.0, "hm": 0.03, "tm": 0.01, "pokemon": 0.0 },
+		"great_ball": { "name": "Great Ball", "money": [150, 250], "candy": [1.0, 1, 2], "vitamin": [0.35, 1], "extra_vitamin": 0.0, "hm": 0.1, "tm": 0.1, "pokemon": 0.02 },
+		"ultra_ball": { "name": "Ultra Ball", "money": [400, 600], "candy": [1.0, 2, 4], "vitamin": [1.0, 1], "extra_vitamin": 0.3, "hm": 0.25, "tm": 0.3, "pokemon": 0.1 },
+		"master_ball": { "name": "Master Ball", "money": [1500, 1500], "candy": [1.0, 5, 5], "vitamin": [1.0, 3], "extra_vitamin": 0.0, "hm": 1.0, "tm": 1.0, "pokemon": 1.0 }
+	},
+	"milestones": {
+		"_comment": "Each gives a Master Ball once: a total level, or your first win against each gym (for now: a win on Hard on that gym's map, until Gym Leader battles exist).",
+		"total_levels": [250, 500, 1000],
+		"gyms": ["pewter_gym", "cerulean_gym", "vermilion_gym", "celadon_gym", "fuchsia_gym", "saffron_gym", "cinnabar_gym", "viridian_gym"]
+	},
+	"vitamins": {
+		"_comment": "Each active vitamin adds per_vitamin to its stat; past full_value in one stat they add reduced instead. Up to max_active per line. Carbos counts speed_factor as much for movement speed.",
+		"per_vitamin": 0.03, "full_value": 5, "reduced": 0.015, "max_active": 10, "speed_factor": 0.5,
+		"items": { "hp_up": "hp", "protein": "attack", "iron": "defense", "carbos": "speed" }
+	},
+	"items": {
+		"poke_ball": { "name": "Poké Ball", "category": "poke_ball", "price": 250 },
+		"great_ball": { "name": "Great Ball", "category": "great_ball", "price": 700 },
+		"ultra_ball": { "name": "Ultra Ball", "category": "ultra_ball", "price": 2000 },
+		"master_ball": { "name": "Master Ball", "category": "master_ball", "price": 12000 },
+		"rare_candy": { "name": "Rare Candy", "category": "rare_candy", "price": 300 },
+		"hp_up": { "name": "HP Up", "category": "vitamin", "price": 1000 },
+		"protein": { "name": "Protein", "category": "vitamin", "price": 1000 },
+		"iron": { "name": "Iron", "category": "vitamin", "price": 1000 },
+		"carbos": { "name": "Carbos", "category": "vitamin", "price": 1000 },
+		"hm_cut": { "name": "HM Cut", "category": "hm", "price": 800 },
+		"hm_fly": { "name": "HM Fly", "category": "hm", "price": 800 },
+		"hm_surf": { "name": "HM Surf", "category": "hm", "price": 800 },
+		"hm_strength": { "name": "HM Strength", "category": "hm", "price": 800 },
+		"hm_flash": { "name": "HM Flash", "category": "hm", "price": 800 },
+		"hm_rock_smash": { "name": "HM Rock Smash", "category": "hm", "price": 800 }
+	},
+	"tm_prices": { "main": 2500, "super": 4000 },
+	"store": {
+		"_comment": "Slot pools: each slot picks one entry by weight. 'tm' = a random TM you don't own yet.",
+		"slots": [
+			{ "rarity": "common", "pool": { "rare_candy": 3, "hp_up": 1, "protein": 1, "iron": 1, "carbos": 1 } },
+			{ "rarity": "common", "pool": { "rare_candy": 3, "hp_up": 1, "protein": 1, "iron": 1, "carbos": 1 } },
+			{ "rarity": "uncommon", "pool": { "hp_up": 1, "protein": 1, "iron": 1, "carbos": 1, "hm": 3 } },
+			{ "rarity": "uncommon", "pool": { "hp_up": 1, "protein": 1, "iron": 1, "carbos": 1, "hm": 3 } },
+			{ "rarity": "rare", "pool": { "tm": 3, "great_ball": 2, "ultra_ball": 1 } },
+			{ "rarity": "featured", "pool": { "poke_ball": 30, "great_ball": 30, "ultra_ball": 20, "tm": 17, "master_ball": 3 } }
+		],
+		"daily_caps": { "vitamin": 5, "tm": 2, "rare_candy": 10, "poke_ball": 3, "great_ball": 3, "ultra_ball": 3, "master_ball": 1, "hm": 3 }
+	}
+}

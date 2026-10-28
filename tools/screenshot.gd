@@ -1,6 +1,7 @@
 extends Node
 ## Renders a match and saves screenshots, for checking how a map looks:
 ##   godot --path . --rendering-driver opengl3 res://tools/screenshot.tscn -- <arena_id> <out_dir>
+## or, for a menu screen: -- menu:<select|store|bag|home> <out_dir>
 ## (on a server, run under xvfb-run). Bots are frozen so the shot is repeatable.
 
 const MAIN_SCENE := preload("res://scenes/main.tscn")
@@ -10,6 +11,9 @@ func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
 	var arena_id := args[0] if args.size() > 0 else "route_1"
 	var out_dir := args[1] if args.size() > 1 else "user://shots"
+	if arena_id.begins_with("menu:"):
+		await _menu_shot(arena_id.trim_prefix("menu:"), out_dir)
+		return
 	var main := MAIN_SCENE.instantiate()
 	main.show_intro = false
 	main.arena_id = arena_id
@@ -41,4 +45,24 @@ func _ready() -> void:
 		var img := get_viewport().get_texture().get_image()
 		img.save_png("%s/%s_%s.png" % [out_dir, arena_id, shot])
 		print("saved ", shot)
+	get_tree().quit()
+
+
+func _menu_shot(screen: String, out_dir: String) -> void:
+	var menu: Node = load("res://scenes/menu.tscn").instantiate()
+	add_child(menu)
+	await get_tree().process_frame
+	match screen:
+		"select":
+			menu.show_select("duel")
+		"store":
+			menu.show_store("")
+		"bag":
+			menu.show_bag()
+		_:
+			menu.show_home()
+	for i in 20:
+		await get_tree().process_frame
+	get_viewport().get_texture().get_image().save_png("%s/menu_%s.png" % [out_dir, screen])
+	print("saved ", screen)
 	get_tree().quit()

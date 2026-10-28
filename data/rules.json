@@ -10,8 +10,6 @@
 		"uses": 3,
 		"cooldown": 4.0
 	},
-	"level_power_bonus": 0.04,
-	"_level_comment": "Attack power gained per level above 1, on top of stat_bonus_per_level.",
 	"attack_delay": 0.45,
 	"melee_attack_delay": 0.35,
 	"super_charge_damage": 3200,
@@ -19,10 +17,6 @@
 	"crit_multiplier": 1.5,
 	"regen_delay": 3.0,
 	"regen_rate": 0.13,
-	"level": {
-		"max": 3,
-		"stat_bonus_per_level": 0.05
-	},
 	"evolution": {
 		"kills_to_evolve": 3,
 		"devolve_on_death": true,

@@ -403,7 +403,7 @@ func _try_gadget(dir: Vector3, dist: float) -> bool:
 
 
 func _try_super(dir: Vector3, dist: float, line_of_sight: bool) -> bool:
-	var move := brawler.species.super_move
+	var move := brawler.current_super()
 	if brawler.super_is_offensive():
 		var reach_ok := dist <= move.effective_reach() + 0.5
 		if reach_ok and (line_of_sight or move.lob or move.kind == "area"):
