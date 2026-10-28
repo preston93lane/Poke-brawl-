@@ -89,6 +89,13 @@ func _process(delta: float) -> void:
 func _physics_process(delta: float) -> void:
 	if _done:
 		return
+	# Shots fizzle out when whoever fired them faints.
+	if not is_instance_valid(shooter) or shooter.is_dead:
+		Vfx.burst(get_parent(), global_position, move.type, 6, 0.15, 2.0)
+		_detach_trail()
+		_done = true
+		queue_free()
+		return
 	if move.lob:
 		_fly_lob(delta)
 		return

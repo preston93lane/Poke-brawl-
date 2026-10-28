@@ -39,7 +39,7 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	_time_left -= delta
-	if _time_left <= 0.0 or not is_instance_valid(shooter):
+	if _time_left <= 0.0 or not is_instance_valid(shooter) or shooter.is_dead:
 		queue_free()
 		return
 	_material.albedo_color.a = 0.22 + 0.1 * sin(Time.get_ticks_msec() * 0.008) if _time_left > 0.5 else 0.3 * _time_left

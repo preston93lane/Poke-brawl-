@@ -45,6 +45,7 @@ func _ready() -> void:
 	await _check_hazards()
 	await _check_progression()
 	await _check_hms()
+	await _check_faint_stops_attacks()
 	Engine.time_scale = 1.0
 	Profile.data = real_profile
 	Profile.save()
@@ -1264,5 +1265,31 @@ func _check_hms() -> void:
 	for i in 40:
 		await get_tree().physics_frame
 	expect(p.global_position.distance_to(before) > 3.0 and not p._flying_hm, "Fly leaps several tiles (%.1f m)" % p.global_position.distance_to(before))
+	main.queue_free()
+	await get_tree().process_frame
+
+
+func _check_faint_stops_attacks() -> void:
+	print("Fainting stops attacks")
+	var main := await _start_match("route_1", "duel", "squirtle", [])
+	await _freeze_all(main)
+	var p: Brawler = main.player
+	p.position = main.arena.cell_center(Vector2i(18, 30))
+	await get_tree().physics_frame
+	p.use_main(Vector3(0, 0, -1))
+	await get_tree().physics_frame
+	var count_shots := func() -> int:
+		var n := 0
+		for node in main.arena.get_children():
+			if node is Projectile and not node.is_queued_for_deletion() and node.shooter == p:
+				n += 1
+		return n
+	var shots: int = count_shots.call()
+	p.take_damage(p.health + 10.0)
+	for i in 3:
+		await get_tree().physics_frame
+	var left: int = count_shots.call()
+	expect(shots > 0 and left == 0, "shots in flight fizzle when you faint (%d fired, %d left)" % [shots, left])
+	expect(not p.stream(Vector3.FORWARD), "can't stream while fainted")
 	main.queue_free()
 	await get_tree().process_frame

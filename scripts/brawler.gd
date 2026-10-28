@@ -569,6 +569,8 @@ func is_streaming() -> bool:
 ## Keep a stream attack firing toward `direction`. Call every physics frame
 ## while the trigger is held; it stops by itself when calls stop.
 func stream(direction: Vector3) -> bool:
+	if is_dead:
+		return false
 	direction.y = 0.0
 	if ball != null or main_move.kind != "stream" or direction.length_squared() < 0.0001 or not can_shoot():
 		return false
@@ -880,6 +882,9 @@ func _area_strike(move: MoveData, center: Vector3) -> void:
 	if move.area_delay > 0.0:
 		await get_tree().create_timer(move.area_delay, false, true).timeout
 	if not is_inside_tree() or not is_instance_valid(fx):
+		return
+	if is_dead:
+		fx.queue_free()  # Fainted before it landed: it fizzles.
 		return
 	for node in get_tree().get_nodes_in_group("brawlers"):
 		var other := node as Brawler
@@ -1260,6 +1265,10 @@ func _die() -> void:
 		ball.drop()
 	_stream_hold = 0.0
 	_invisible_time = 0.0
+	if _stream_fx:
+		_stream_fx.visible = false
+		_stream_particles.emitting = false
+	hide_super_aim()
 	Vfx.burst(get_parent(), global_position + Vector3(0, 0.6, 0), "normal", 30, 0.5, 3.5)
 	velocity = Vector3.ZERO
 	_dash_time = 0.0
