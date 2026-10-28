@@ -1035,6 +1035,7 @@ func _check_menu_fits() -> void:
 	screens.append(["bag", func() -> void: menu.show_bag()])
 	screens.append(["store", func() -> void: menu.show_store("")])
 	screens.append(["starter", func() -> void: menu._set_screen(TrainerScreens.starter(menu))])
+	screens.append(["account", func() -> void: menu.show_account("")])
 	for entry in screens:
 		entry[1].call()
 		for i in 3:

@@ -101,7 +101,7 @@ func show_home() -> void:
 		shop.custom_minimum_size = Vector2(300, 64)
 		shop.add_theme_stylebox_override("normal", UiKit.box(entry[2]))
 		modes.add_child(shop)
-	var extras: Array = [["MAP MAKER", show_map_editor], ["SETTINGS", show_settings]]
+	var extras: Array = [["ACCOUNT", show_account.bind("")], ["MAP MAKER", show_map_editor], ["SETTINGS", show_settings]]
 	if Profile.is_dev():
 		extras.append(["DEV TOOLS", show_dev])
 	for entry in extras:
@@ -115,6 +115,10 @@ func show_home() -> void:
 
 func show_bag(prizes: Array[Dictionary] = []) -> void:
 	_set_screen(TrainerScreens.bag(self, prizes))
+
+
+func show_account(message := "") -> void:
+	_set_screen(TrainerScreens.account(self, message))
 
 
 func show_store(message := "") -> void:

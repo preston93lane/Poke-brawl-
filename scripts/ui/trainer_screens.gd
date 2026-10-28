@@ -134,3 +134,64 @@ static func store(menu: Node, message := "") -> Control:
 		caps.append("%s %d" % [category.replace("_", " "), Profile.daily_cap(category)])
 	v.add_child(UiKit.label("Daily limits: " + ", ".join(caps), 16, Color(0.75, 0.8, 0.9)))
 	return UiKit.scroll(v)
+
+
+## Account: sign in with an emailed code (or the emailed link) to save progress
+## to the cloud; playing signed out keeps it on this device only.
+static func account(menu: Node, message := "") -> Control:
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 14)
+	v.add_child(_top(menu, "ACCOUNT"))
+	if Cloud.signed_in():
+		v.add_child(UiKit.label("Signed in as %s" % Cloud.email(), 26))
+		var status := UiKit.label(Cloud.status, 18, Color(0.75, 0.85, 1))
+		status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		v.add_child(status)
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 12)
+		row.add_child(UiKit.button("SYNC NOW", func() -> void:
+			await Cloud.pull()
+			menu.show_account(Cloud.status), 22))
+		row.add_child(UiKit.button("SIGN OUT", func() -> void:
+			await Cloud.sign_out()
+			menu.show_account(Cloud.status), 22))
+		v.add_child(row)
+		return UiKit.scroll(v)
+	var intro := UiKit.label("Sign in to save your progress online and play on any device. No password: we email you a 6-digit code (or tap the link in the email). You can keep playing without an account; progress then stays on this device.", 20, Color(0.85, 0.9, 1))
+	intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	v.add_child(intro)
+	var email := LineEdit.new()
+	email.placeholder_text = "you@example.com"
+	email.virtual_keyboard_type = LineEdit.KEYBOARD_TYPE_EMAIL_ADDRESS
+	email.add_theme_font_size_override("font_size", 24)
+	email.custom_minimum_size = Vector2(420, 56)
+	email.text = str(menu.get_meta("account_email", ""))
+	var code := LineEdit.new()
+	code.placeholder_text = "6-digit code"
+	code.virtual_keyboard_type = LineEdit.KEYBOARD_TYPE_NUMBER
+	code.add_theme_font_size_override("font_size", 24)
+	code.custom_minimum_size = Vector2(240, 56)
+	var feedback := UiKit.label(message, 20, Color(1, 0.85, 0.5))
+	feedback.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var row1 := HBoxContainer.new()
+	row1.add_theme_constant_override("separation", 12)
+	row1.add_child(email)
+	row1.add_child(UiKit.button("EMAIL ME A CODE", func() -> void:
+		menu.set_meta("account_email", email.text)
+		feedback.text = "Sending..."
+		var err: String = await Cloud.send_code(email.text)
+		feedback.text = err if err != "" else "Check your email for the code (and the spam folder).", 20))
+	v.add_child(row1)
+	var row2 := HBoxContainer.new()
+	row2.add_theme_constant_override("separation", 12)
+	row2.add_child(code)
+	row2.add_child(UiKit.button("SIGN IN", func() -> void:
+		feedback.text = "Signing in..."
+		var err: String = await Cloud.verify_code(email.text, code.text)
+		if err == "":
+			menu.show_account(Cloud.status)
+		else:
+			feedback.text = err, 22))
+	v.add_child(row2)
+	v.add_child(feedback)
+	return UiKit.scroll(v)
