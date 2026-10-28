@@ -79,7 +79,7 @@ func show_home() -> void:
 	v.add_child(starters)
 
 	# Trainer card: level, money, Pokémon unlocked; opens the challenges.
-	var card := UiKit.button("TRAINER LV %d   ·   %d ₽   ·   %d / %d POKéMON   ·   CHALLENGES ›" % [Profile.total_level(), Profile.money(),
+	var card := UiKit.button("TRAINER LV %d   ·   %d ₽   ·   %d / %d POKéMON" % [Profile.total_level(), Profile.money(),
 			_unlocked_count(), GameData.base_species().size()], show_challenges, 22)
 	card.add_theme_stylebox_override("normal", UiKit.box(Color(0.2, 0.25, 0.45)))
 	card.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
@@ -91,12 +91,20 @@ func show_home() -> void:
 	road.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	v.add_child(road)
 
+	var main_row := HBoxContainer.new()
+	main_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	main_row.add_theme_constant_override("separation", 16)
+	var challenges := UiKit.button("CHALLENGES", show_challenges, 36)
+	challenges.custom_minimum_size = Vector2(380, 104)
+	challenges.add_theme_stylebox_override("normal", UiKit.box(Color(0.45, 0.3, 0.75)))
+	challenges.add_theme_stylebox_override("hover", UiKit.box(Color(0.52, 0.36, 0.82)))
+	main_row.add_child(challenges)
 	var battle := UiKit.button("BATTLE", show_battle_modes, 48)
 	battle.custom_minimum_size = Vector2(560, 104)
-	battle.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	battle.add_theme_stylebox_override("normal", UiKit.box(Color(0.95, 0.6, 0.15)))
 	battle.add_theme_stylebox_override("hover", UiKit.box(Color(1.0, 0.68, 0.2)))
-	v.add_child(battle)
+	main_row.add_child(battle)
+	v.add_child(main_row)
 
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER

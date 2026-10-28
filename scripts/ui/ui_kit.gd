@@ -350,7 +350,7 @@ static func web_typable(edit: LineEdit, question: String, on_done := Callable())
 	if not OS.has_feature("web"):
 		return
 	edit.focus_entered.connect(func() -> void:
-		edit.release_focus()
+		edit.release_focus.call_deferred()
 		var answer: Variant = JavaScriptBridge.eval("window.prompt(%s, %s)" % [JSON.stringify(question), JSON.stringify(edit.text)], true)
 		if answer != null and str(answer) != "null":
 			edit.text = str(answer).strip_edges()

@@ -103,6 +103,11 @@ func _inside(screen_pos: Vector2) -> bool:
 
 ## Press the (enabled, visible) button under the finger, as if it had been clicked.
 func _tap(screen_pos: Vector2) -> void:
+	# Text boxes: focus them (on the web that opens the phone's text prompt).
+	var edit := _line_edit_at(self, screen_pos)
+	if edit:
+		edit.grab_focus()
+		return
 	var button := _button_at(self, screen_pos)
 	if button == null:
 		return
@@ -115,6 +120,18 @@ func _tap(screen_pos: Vector2) -> void:
 			button.pressed.emit()
 	else:
 		button.pressed.emit()
+
+
+func _line_edit_at(node: Node, screen_pos: Vector2) -> LineEdit:
+	for child in node.get_children():
+		if child is Control and not (child as Control).is_visible_in_tree():
+			continue
+		if child is LineEdit and (child as LineEdit).get_global_rect().has_point(screen_pos):
+			return child
+		var found := _line_edit_at(child, screen_pos)
+		if found:
+			return found
+	return null
 
 
 func _button_at(node: Node, screen_pos: Vector2) -> BaseButton:

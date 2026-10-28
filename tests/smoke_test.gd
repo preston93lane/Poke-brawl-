@@ -46,6 +46,7 @@ func _ready() -> void:
 	await _check_progression()
 	await _check_hms()
 	await _check_faint_stops_attacks()
+	await _check_text_boxes()
 	Engine.time_scale = 1.0
 	Profile.data = real_profile
 	Profile.save()
@@ -1298,4 +1299,29 @@ func _check_faint_stops_attacks() -> void:
 	expect(shots > 0 and left == 0, "shots in flight fizzle when you faint (%d fired, %d left)" % [shots, left])
 	expect(not p.stream(Vector3.FORWARD), "can't stream while fainted")
 	main.queue_free()
+	await get_tree().process_frame
+
+
+func _check_text_boxes() -> void:
+	print("Text boxes in scroll lists")
+	var menu := MENU_SCENE.instantiate()
+	add_child(menu)
+	await get_tree().process_frame
+	menu.show_account("")
+	for i in 3:
+		await get_tree().process_frame
+	var scroll: DragScroll = null
+	for node in menu.find_children("*", "DragScroll", true, false):
+		scroll = node
+	var first: LineEdit = null
+	for node in menu.find_children("*", "LineEdit", true, false):
+		first = node
+		break
+	expect(first != null, "the account screen has an email box")
+	expect(scroll != null, "the account screen scrolls")
+	if scroll and first:
+		var at := first.get_global_rect().get_center()
+		scroll._tap(at)
+		expect(first.has_focus(), "tapping the email box in a scroll list focuses it")
+	menu.queue_free()
 	await get_tree().process_frame
