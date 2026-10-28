@@ -76,7 +76,7 @@ func show_home() -> void:
 	starters.alignment = BoxContainer.ALIGNMENT_CENTER
 	for id in ["bulbasaur", "charmander", "squirtle", "pikachu", "eevee", "gastly", "dratini"]:
 		if GameData.species.has(id):
-			starters.add_child(UiKit.sprite(GameData.species[id].sprite, 88))
+			starters.add_child(UiKit.sprite(GameData.species[id].sprite, 72))
 	v.add_child(starters)
 
 	# Trainer card: level, money, Pokémon unlocked; opens the challenges.
@@ -86,6 +86,11 @@ func show_home() -> void:
 	card.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	card.custom_minimum_size = Vector2(760, 56)
 	v.add_child(card)
+	var road := TrainerRoad.new()
+	road.window = 7
+	road.custom_minimum_size.x = 760
+	road.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	v.add_child(road)
 
 	var battle := UiKit.button("BATTLE", show_battle_modes, 48)
 	battle.custom_minimum_size = Vector2(560, 104)

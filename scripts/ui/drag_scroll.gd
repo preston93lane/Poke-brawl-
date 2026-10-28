@@ -47,6 +47,10 @@ func _process(delta: float) -> void:
 func _input(event: InputEvent) -> void:
 	if not is_visible_in_tree():
 		return
+	# A popup on top (the Poké Ball opening) gets the touches instead.
+	if not get_tree().get_nodes_in_group("modal_overlay").is_empty():
+		_tracking = false
+		return
 	# Touches arrive twice: as touch events and as emulated mouse events. We act on the
 	# touch events and swallow the left-button mouse copies inside the list.
 	if event is InputEventMouseButton:

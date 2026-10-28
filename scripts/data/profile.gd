@@ -267,12 +267,43 @@ func _check_unlocks() -> Dictionary:
 	return { "pokemon": found, "challenges": challenges }
 
 
-## Next locked line that a Poké Ball can give (no challenge attached), or "".
-func next_ball_pokemon() -> String:
+## Lines that only come from Poké Balls and aren't unlocked yet.
+func ball_pokemon_left() -> Array[String]:
+	var result: Array[String] = []
 	for entry: Dictionary in GameData.unlocks.get("order", []):
 		if not entry.has("challenge") and not entry.has("trainer_level") and entry["family"] not in (data["unlocked"] as Array):
-			return entry["family"]
-	return ""
+			result.append(entry["family"])
+	return result
+
+
+## A random line a Poké Ball can give (no challenge or trainer level attached), or "".
+func next_ball_pokemon() -> String:
+	var left := ball_pokemon_left()
+	return left[rng.randi() % left.size()] if not left.is_empty() else ""
+
+
+## The trainer road in level order: [{ "level", "family" ("" = a starter not
+## known yet), "area", "unlocked" }] — the other starters, then one line per area.
+func road() -> Array[Dictionary]:
+	var unlocked: Array = data.get("unlocked", [])
+	var result: Array[Dictionary] = []
+	var levels: Array = GameData.unlocks.get("starter_levels", [20, 40, 60])
+	var waiting: Array[String] = []
+	for id: String in GameData.unlocks.get("starters", []):
+		if id not in unlocked:
+			waiting.append(id)
+	var given := levels.size() - waiting.size()
+	for i in levels.size():
+		var family := ""
+		if i >= given and i - given < waiting.size():
+			family = waiting[i - given]
+		result.append({ "level": int(levels[i]), "family": family, "area": "Starter", "unlocked": i < given })
+	for entry: Dictionary in GameData.unlocks.get("order", []):
+		if entry.has("trainer_level"):
+			result.append({ "level": int(entry["trainer_level"]), "family": entry["family"], "area": str(entry["area"]),
+					"unlocked": entry["family"] in unlocked })
+	result.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return int(a["level"]) < int(b["level"]))
+	return result
 
 
 # --- Levels and XP -----------------------------------------------------------

@@ -54,47 +54,102 @@ static func _top(menu: Node, title: String) -> HBoxContainer:
 	return top
 
 
-## Bag: Poké Balls to open, then everything else you're carrying.
+## Bag: Poké Balls to open on the left (with how many you have), everything
+## else you're carrying on the right.
 static func bag(menu: Node, last_prizes: Array[Dictionary] = []) -> Control:
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 12)
 	v.add_child(_top(menu, "BAG"))
-	if not last_prizes.is_empty():
-		var got := PackedStringArray()
-		for p in last_prizes:
-			got.append(str(p["text"]))
-		var panel := UiKit.panel(UiKit.label("You got:  " + "   ·   ".join(got), 22, Color(1, 0.9, 0.45)))
-		v.add_child(panel)
-	v.add_child(UiKit.label("POKé BALLS", 22, Color(0.8, 0.85, 1)))
-	var balls := HFlowContainer.new()
-	balls.add_theme_constant_override("h_separation", 10)
+	var cols := HBoxContainer.new()
+	cols.add_theme_constant_override("separation", 16)
+	cols.size_flags_vertical = Control.SIZE_EXPAND_FILL
+
+	var balls := VBoxContainer.new()
+	balls.add_theme_constant_override("separation", 10)
+	balls.add_child(_heading("POKé BALLS"))
 	for ball in Profile.BALLS:
 		var n := Profile.count(ball)
-		var b := UiKit.button("OPEN %s  (%d)" % [Profile.item_name(ball).to_upper(), n], func() -> void:
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 14)
+		var icon := BallIcon.new()
+		icon.kind = ball
+		icon.custom_minimum_size = Vector2(64, 64)
+		row.add_child(icon)
+		var info := VBoxContainer.new()
+		info.custom_minimum_size.x = 170
+		info.add_child(UiKit.label(Profile.item_name(ball), 24))
+		info.add_child(UiKit.label("%d to open" % n, 18, Color(1, 0.9, 0.5) if n > 0 else Color(0.7, 0.75, 0.85)))
+		row.add_child(info)
+		var open := UiKit.button("OPEN", func() -> void:
 			var prizes := Profile.open_ball(ball)
-			menu.play_ball_opening(ball, prizes), 20)
-		b.disabled = n <= 0
-		balls.add_child(b)
-	v.add_child(balls)
-	v.add_child(UiKit.label("ITEMS  (use Rare Candy, Vitamins and HMs on a Pokémon from its select screen)", 22, Color(0.8, 0.85, 1)))
-	var items := PackedStringArray()
+			menu.play_ball_opening(ball, prizes), 22)
+		open.disabled = n <= 0
+		open.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		row.add_child(open)
+		balls.add_child(row)
+	var left := UiKit.panel(balls)
+	left.custom_minimum_size.x = 420
+	cols.add_child(left)
+
+	var items := VBoxContainer.new()
+	items.add_theme_constant_override("separation", 10)
+	items.add_child(_heading("ITEMS"))
+	var hint := UiKit.label("Use Rare Candy, Vitamins and HMs from a Pokémon's select screen.", 16, Color(0.75, 0.8, 0.9))
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	items.add_child(hint)
+	var grid := GridContainer.new()
+	grid.columns = 3
+	grid.add_theme_constant_override("h_separation", 18)
+	grid.add_theme_constant_override("v_separation", 8)
+	var have: Array[String] = []
 	for item: String in Profile.data.get("inventory", {}):
 		if item not in Profile.BALLS and Profile.count(item) > 0:
-			items.append("%s ×%d" % [Profile.item_name(item), Profile.count(item)])
-	items.sort()
-	var item_label := UiKit.label("   ·   ".join(items) if not items.is_empty() else "Nothing yet. Win matches to earn Poké Balls!", 20)
-	item_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	v.add_child(item_label)
+			have.append(item)
+	have.sort_custom(func(a: String, b: String) -> bool: return _item_order(a) < _item_order(b))
+	for item in have:
+		var cell := HBoxContainer.new()
+		var icon := BallOpening.PrizeIcon.new()
+		icon.prize = { "item": item }
+		icon.custom_minimum_size = Vector2(36, 36)
+		cell.add_child(icon)
+		cell.add_child(UiKit.label("%s ×%d" % [Profile.item_name(item), Profile.count(item)], 18))
+		grid.add_child(cell)
+	if have.is_empty():
+		items.add_child(UiKit.label("Nothing yet. Win matches to earn Poké Balls!", 18))
+	items.add_child(grid)
 	var tms: Array = Profile.data.get("tms", [])
-	v.add_child(UiKit.label("TMs  (%d of %d; a TM teaches its move to every Pokémon that can learn it)" % [tms.size(), GameData.progression.get("tms", {}).size()], 22, Color(0.8, 0.85, 1)))
+	items.add_child(_heading("TMs  %d / %d" % [tms.size(), GameData.progression.get("tms", {}).size()]))
 	var tm_names := PackedStringArray()
 	for tm_id: String in tms:
 		tm_names.append(Profile.item_name(tm_id).trim_prefix("TM "))
 	tm_names.sort()
-	var tm_label := UiKit.label(", ".join(tm_names) if not tm_names.is_empty() else "None yet.", 18, Color(0.85, 0.9, 1))
+	var tm_label := UiKit.label(", ".join(tm_names) if not tm_names.is_empty() else "None yet. A TM teaches its move to every Pokémon that can learn it.", 17, Color(0.85, 0.9, 1))
 	tm_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	v.add_child(tm_label)
+	items.add_child(tm_label)
+	var right := UiKit.panel(items)
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	cols.add_child(right)
+	v.add_child(cols)
 	return UiKit.scroll(v)
+
+
+## Rare Candy, then vitamins, then HMs, then anything else.
+static func _item_order(item: String) -> String:
+	if item == "rare_candy":
+		return "0"
+	if item in ["hp_up", "protein", "iron", "carbos"]:
+		return "1" + item
+	if item.begins_with("hm_"):
+		return "2" + item
+	return "3" + item
+
+
+## A drawn Poké Ball for the bag.
+class BallIcon extends Control:
+	var kind := "poke_ball"
+
+	func _draw() -> void:
+		BallOpening.draw_ball(self, size * 0.5, minf(size.x, size.y) * 0.45, kind)
 
 
 ## Store: six slots that change every day, with daily limits per kind of item.
@@ -106,6 +161,7 @@ static func store(menu: Node, message := "") -> Control:
 		v.add_child(UiKit.label(message, 22, Color(0.6, 1, 0.6)))
 	var grid := GridContainer.new()
 	grid.columns = 3
+	grid.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	grid.add_theme_constant_override("h_separation", 12)
 	grid.add_theme_constant_override("v_separation", 12)
 	for slot: Dictionary in Profile.store_slots():
@@ -211,6 +267,9 @@ static func challenges(menu: Node) -> Control:
 	var unlocked: Array = Profile.data.get("unlocked", [])
 
 	v.add_child(_heading("TRAINER ROAD  (unlocked by trainer level)"))
+	var path := TrainerRoad.new()
+	path.custom_minimum_size.x = 1100
+	v.add_child(path)
 	var road: Array = []
 	var starter_levels: Array = GameData.unlocks.get("starter_levels", [20, 40, 60])
 	var waiting: Array[String] = []
@@ -285,12 +344,12 @@ static func challenges(menu: Node) -> Control:
 	m_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	v.add_child(m_label)
 
-	v.add_child(_heading("IN POKé BALLS  (the next one in Kanto order comes from a ball)"))
+	v.add_child(_heading("IN POKé BALLS  (a ball that gives a Pokémon picks one of these at random)"))
 	var left := PackedStringArray()
 	for entry: Dictionary in GameData.unlocks.get("order", []):
 		if not entry.has("challenge") and not entry.has("trainer_level") and entry["family"] not in unlocked:
 			left.append(GameData.species[entry["family"]].display_name)
-	var ball_label := UiKit.label(("Next: %s   ·   still to find: %s" % [left[0], ", ".join(left.slice(1))]) if not left.is_empty() else "You've found them all!", 17)
+	var ball_label := UiKit.label(("%d left: %s" % [left.size(), ", ".join(left)]) if not left.is_empty() else "You've found them all!", 17)
 	ball_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	v.add_child(ball_label)
 	return UiKit.scroll(v)

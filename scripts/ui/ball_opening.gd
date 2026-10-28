@@ -27,6 +27,7 @@ func setup(p_ball: String, p_prizes: Array[Dictionary]) -> void:
 
 
 func _ready() -> void:
+	add_to_group("modal_overlay")
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_fit()
 	get_viewport().size_changed.connect(_fit)
@@ -118,39 +119,46 @@ func _draw() -> void:
 		_draw_prize(pos, p, age)
 
 
-func _draw_ball(c: Vector2, r: float, color: Color, open: float) -> void:
+func _draw_ball(c: Vector2, r: float, _color: Color, open: float) -> void:
+	draw_ball(self, c, r, ball, open)
+
+
+## A Poké Ball of kind `kind` (poke/great/ultra/master), `open` 0..1 lifts the top.
+static func draw_ball(ci: CanvasItem, c: Vector2, r: float, kind: String, open := 0.0) -> void:
+	var color: Color = BALL_COLORS.get(kind, BALL_COLORS["poke_ball"])
+	var ball := kind
 	var top := c - Vector2(0, open * 70.0)
 	# Bottom (white) half-disc; whole while closed so there's no gap.
 	if open < 0.05:
-		draw_circle(c, r, Color(0.96, 0.96, 0.96))
+		ci.draw_circle(c, r, Color(0.96, 0.96, 0.96))
 	else:
 		var bottom := PackedVector2Array()
 		for i in 33:
 			var a := PI * i / 32.0
 			bottom.append(c + Vector2(cos(a), sin(a)) * r)
-		draw_colored_polygon(bottom, Color(0.96, 0.96, 0.96))
+		ci.draw_colored_polygon(bottom, Color(0.96, 0.96, 0.96))
 	# Top half: a half-disc in the ball colour.
 	var pts := PackedVector2Array()
 	for i in 33:
 		var a := PI + PI * i / 32.0
 		pts.append(top + Vector2(cos(a), sin(a)) * r)
-	draw_colored_polygon(pts, color)
+	ci.draw_colored_polygon(pts, color)
 	if ball == "master_ball":
-		draw_circle(top + Vector2(-r * 0.45, -r * 0.45), r * 0.16, Color(1, 0.45, 0.7))
-		draw_circle(top + Vector2(r * 0.45, -r * 0.45), r * 0.16, Color(1, 0.45, 0.7))
-		draw_string(ThemeDB.fallback_font, top + Vector2(-14, -r * 0.28), "M", HORIZONTAL_ALIGNMENT_LEFT, -1, 30, Color.WHITE)
+		ci.draw_circle(top + Vector2(-r * 0.45, -r * 0.45), r * 0.16, Color(1, 0.45, 0.7))
+		ci.draw_circle(top + Vector2(r * 0.45, -r * 0.45), r * 0.16, Color(1, 0.45, 0.7))
+		ci.draw_string(ThemeDB.fallback_font, top + Vector2(-14, -r * 0.28), "M", HORIZONTAL_ALIGNMENT_LEFT, -1, 30, Color.WHITE)
 	elif ball == "ultra_ball":
-		draw_rect(Rect2(top + Vector2(-r * 0.62, -r * 0.8), Vector2(r * 0.28, r * 0.6)), Color(1, 0.85, 0.2))
-		draw_rect(Rect2(top + Vector2(r * 0.34, -r * 0.8), Vector2(r * 0.28, r * 0.6)), Color(1, 0.85, 0.2))
+		ci.draw_rect(Rect2(top + Vector2(-r * 0.62, -r * 0.8), Vector2(r * 0.28, r * 0.6)), Color(1, 0.85, 0.2))
+		ci.draw_rect(Rect2(top + Vector2(r * 0.34, -r * 0.8), Vector2(r * 0.28, r * 0.6)), Color(1, 0.85, 0.2))
 	elif ball == "great_ball":
-		draw_circle(top + Vector2(-r * 0.5, -r * 0.45), r * 0.2, Color(0.95, 0.25, 0.25))
-		draw_circle(top + Vector2(r * 0.5, -r * 0.45), r * 0.2, Color(0.95, 0.25, 0.25))
-	draw_arc(top, r, PI, TAU, 32, Color.BLACK, 4.0, true)
-	draw_arc(c, r, 0, PI, 32, Color.BLACK, 4.0, true)
-	draw_line(c - Vector2(r, 0), c + Vector2(r, 0), Color.BLACK, 8.0)
+		ci.draw_circle(top + Vector2(-r * 0.5, -r * 0.45), r * 0.2, Color(0.95, 0.25, 0.25))
+		ci.draw_circle(top + Vector2(r * 0.5, -r * 0.45), r * 0.2, Color(0.95, 0.25, 0.25))
+	ci.draw_arc(top, r, PI, TAU, 32, Color.BLACK, 4.0, true)
+	ci.draw_arc(c, r, 0, PI, 32, Color.BLACK, 4.0, true)
+	ci.draw_line(c - Vector2(r, 0), c + Vector2(r, 0), Color.BLACK, 8.0)
 	if open < 0.05:
-		draw_circle(c, r * 0.24, Color.BLACK)
-		draw_circle(c, r * 0.16, Color.WHITE)
+		ci.draw_circle(c, r * 0.24, Color.BLACK)
+		ci.draw_circle(c, r * 0.16, Color.WHITE)
 
 
 func _draw_prize(pos: Vector2, p: Dictionary, alpha: float) -> void:
