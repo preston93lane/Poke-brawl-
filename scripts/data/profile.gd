@@ -445,6 +445,42 @@ func tm_super_options(species_id: String) -> Array[String]:
 	return result
 
 
+## Supers a stage can use: its own, any earlier stage's (Charizard can pick
+## Fire Spin or Flame Charge), and TM supers the line can learn that you own.
+func super_options(stage_id: String) -> Array[String]:
+	var result: Array[String] = []
+	var id := stage_id
+	for i in 8:
+		var s: SpeciesData = GameData.species.get(id)
+		if s == null:
+			break
+		if s.super_move and s.super_move.id not in result:
+			result.append(s.super_move.id)
+		if s.evolves_from == "":
+			break
+		id = s.evolves_from
+	for tm_super in tm_super_options(stage_id):
+		if owns_tm_super(tm_super) and GameData.moves.has(tm_super):
+			result.append(tm_super)
+	return result
+
+
+## The super picked for a stage ("" = its own).
+func chosen_super(stage_id: String) -> String:
+	var pick := str(loadout(stage_id).get("super_" + stage_id, ""))
+	return pick if pick in super_options(stage_id) else ""
+
+
+## { stage id: super id } for every stage of the line with a pick.
+func super_choices(species_id: String) -> Dictionary:
+	var result := {}
+	for stage in GameData.evolution_line(species_id):
+		var pick := chosen_super(stage.id)
+		if pick != "":
+			result[stage.id] = pick
+	return result
+
+
 func owns_tm_super(super_id: String) -> bool:
 	return has_tm("tm_" + super_id.trim_prefix("tmsuper_"))
 

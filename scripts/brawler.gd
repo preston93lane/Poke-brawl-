@@ -89,8 +89,8 @@ var trainer_level := 1
 var unlocked_mains: Array[String] = []
 ## Stat bonuses from active vitamins: { "hp", "attack", "defense", "speed" } fractions.
 var vitamin_bonus: Dictionary = {}
-## A TM super equipped instead of the line's own (null = each stage's own super).
-var super_override: MoveData
+## Super picked per stage: { stage id: move id }; stages without a pick use their own.
+var super_choices: Dictionary = {}
 ## Equipped HM ("cut", "fly", "surf", "strength", "flash", "rock_smash"; "" = none).
 var hm_id := ""
 var _hm_cooldown := 0.0
@@ -360,7 +360,9 @@ func _pick_move(slot: String, move_id: String) -> MoveData:
 
 ## The super in use: an equipped TM super, or this stage's own.
 func current_super() -> MoveData:
-	return super_override if super_override else species.super_move
+	var pick := str(super_choices.get(species.id, ""))
+	var move: MoveData = GameData.get_move(pick) if pick != "" else null
+	return move if move else species.super_move
 
 
 ## Front-view icon in this brawler's colours (shiny or normal).

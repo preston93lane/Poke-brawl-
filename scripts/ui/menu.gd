@@ -33,8 +33,7 @@ var _difficulty := "normal"
 var _details: VBoxContainer
 var _details_scroll: ScrollContainer
 var _start_button: Button
-## Equipped TM super ("" = the line's own) and HM for the selected line.
-var _super := ""
+## Equipped HM for the selected line.
 var _hm := ""
 
 
@@ -558,7 +557,6 @@ func _refresh_select_details() -> void:
 	var loadout := Profile.loadout(s.id)
 	if _main == "" or not Profile.unlocked_mains(s.id).has(_main):
 		_main = str(loadout.get("main", ""))
-	_super = str(loadout.get("super", ""))
 	_hm = str(loadout.get("hm", ""))
 
 	_main = _valid_move("main", _main)
@@ -588,16 +586,33 @@ func _refresh_select_details() -> void:
 		_details.add_child(_section("GADGET  (%d uses per match)" % int(GameData.rule("gadget/uses", 3))))
 		_details.add_child(UiKit.move_card(s.gadget_move))
 
-	_details.add_child(_super_picker(s))
-	_details.add_child(_section("SUPER  (charges as you deal damage; each stage has its own)"))
+	_details.add_child(_section("SUPER  (pick per stage: its own, an earlier one, or a TM super)"))
 	for stage in GameData.evolution_line(s.id):
-		var card := UiKit.move_card(stage.super_move)
-		card.tooltip_text = stage.display_name
 		var super_row := HBoxContainer.new()
 		super_row.add_child(UiKit.sprite(stage.sprite, 48))
-		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		super_row.add_child(card)
+		var choices := HFlowContainer.new()
+		choices.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var group := ButtonGroup.new()
+		var picked := Profile.chosen_super(stage.id)
+		for option in Profile.super_options(stage.id):
+			var move: MoveData = GameData.get_move(option)
+			var b := _toggle(move.display_name, group, option == picked or (picked == "" and option == stage.super_move.id))
+			b.pressed.connect(func() -> void:
+				Profile.set_loadout(stage.id, "super_" + stage.id, "" if option == stage.super_move.id else option)
+				_refresh_select_details())
+			choices.add_child(b)
+		super_row.add_child(choices)
 		_details.add_child(super_row)
+		var card := UiKit.move_card(GameData.get_move(picked) if picked != "" else stage.super_move)
+		_details.add_child(card)
+	var missing := PackedStringArray()
+	for tm_super in Profile.tm_super_options(s.id):
+		if not Profile.owns_tm_super(tm_super) and GameData.moves.has(tm_super):
+			missing.append(GameData.get_move(tm_super).display_name)
+	if not missing.is_empty():
+		var tm_hint := UiKit.label("TM supers it could learn: " + ", ".join(missing), 15, Color(0.75, 0.8, 0.9))
+		tm_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_details.add_child(tm_hint)
 
 	_details.add_child(_hm_picker(s))
 	_details.add_child(_vitamin_box(s))
@@ -679,37 +694,6 @@ func _valid_move(_slot: String, move_id: String) -> String:
 	if move_id in unlocked:
 		return move_id
 	return unlocked.back() if not unlocked.is_empty() else _species.default_move("main", 1).id
-
-
-## TM supers this line can use instead of its own (owned TMs only).
-func _super_picker(s: SpeciesData) -> Control:
-	var box := VBoxContainer.new()
-	var options := Profile.tm_super_options(s.id)
-	if options.is_empty():
-		return box
-	box.add_child(_section("TM SUPER  (replaces your super at every stage)"))
-	var row := HFlowContainer.new()
-	var group := ButtonGroup.new()
-	var own := _toggle("OWN SUPERS", group, _super == "")
-	own.pressed.connect(func() -> void:
-		Profile.set_loadout(s.id, "super", "")
-		_refresh_select_details())
-	row.add_child(own)
-	for super_id in options:
-		var move: MoveData = GameData.get_move(super_id)
-		if move == null:
-			continue
-		var owned := Profile.owns_tm_super(super_id)
-		var b := _toggle(move.display_name if owned else move.display_name + " (TM)", group, _super == super_id)
-		b.disabled = not owned
-		b.pressed.connect(func() -> void:
-			Profile.set_loadout(s.id, "super", super_id)
-			_refresh_select_details())
-		row.add_child(b)
-	box.add_child(row)
-	if _super != "" and GameData.get_move(_super):
-		box.add_child(UiKit.move_card(GameData.get_move(_super)))
-	return box
 
 
 const HM_INFO := {
@@ -798,7 +782,6 @@ func _start_match() -> void:
 		"arena_choice": _arena,
 		"species": _species.id,
 		"main": _main,
-		"super": _super,
 		"hm": _hm,
 		"evolution": _evolution,
 		"shiny": _shiny,

@@ -33,8 +33,6 @@ const MODE_TITLES := {
 ## Branch for lines that split (Eevee); blank = random.
 @export var player_evolution := ""
 @export var player_shiny := false
-## A TM super to use instead of the line's own (blank = the line's own).
-@export var player_super := ""
 ## Active HM ("cut", "fly"... blank = none).
 @export var player_hm := ""
 ## Award XP, Poké Dollars and Poké Balls when the match ends.
@@ -197,7 +195,6 @@ func _apply_match_settings() -> void:
 	arena_id = str(s.get("arena", arena_id))
 	player_species = str(s.get("species", player_species))
 	player_level = int(s.get("level", 0))
-	player_super = str(s.get("super", ""))
 	player_hm = str(s.get("hm", ""))
 	player_main = str(s.get("main", ""))
 	player_evolution = str(s.get("evolution", ""))
@@ -261,8 +258,7 @@ func _spawn(species_id: String, level: int, team: int, is_player: bool, main_id 
 	brawler.setup(species_id, level, team, is_player, arena, main_id, unlocked)
 	if is_player:
 		brawler.vitamin_bonus = Profile.vitamin_bonus(species_id)
-		if player_super != "" and player_super in Profile.tm_super_options(species_id) and Profile.owns_tm_super(player_super):
-			brawler.super_override = GameData.get_move(player_super)
+		brawler.super_choices = Profile.super_choices(species_id)
 		if player_hm in Profile.learned_hms(species_id):
 			brawler.hm_id = player_hm
 	# The player picks shiny in the menu; bots are shiny once in a while.

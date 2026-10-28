@@ -55,6 +55,9 @@ func _menu_shot(screen: String, out_dir: String) -> void:
 	match screen:
 		"select":
 			menu.show_select("duel")
+			for i in 5:
+				await get_tree().process_frame
+			menu._details_scroll.scroll_vertical = 900
 		"store":
 			menu.show_store("")
 		"bag":
