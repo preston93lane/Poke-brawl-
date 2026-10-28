@@ -75,6 +75,10 @@
 		"warp": { "cooldown": 2.5 },
 		"lightning": { "first_after": 6.0, "every_min": 4.0, "every_max": 7.0, "strikes": 2, "warning": 1.3, "radius": 1.5, "damage": 1300.0 }
 	},
+	"hm": {
+		"_comment": "HM ability: recharge seconds after each use; Fly distance; Surf swim time; Flash blind and reveal time.",
+		"cooldown": 10.0, "fly_distance": 6.0, "surf_time": 4.0, "flash_blind": 2.0, "flash_reveal": 4.0
+	},
 	"trainer": {
 		"_comment": "Profile levels (kept between matches, per evolution line). At the line's evolve_level (Charmander 16, Charmeleon 32) that evolution takes fast_kills KOs in a match instead of kills_to_evolve. Pokémon that power up instead use power_up_levels (first and second Power Up).",
 		"max_level": 60,

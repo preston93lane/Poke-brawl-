@@ -44,6 +44,7 @@ func _ready() -> void:
 	await _check_trainer_levels()
 	await _check_hazards()
 	await _check_progression()
+	await _check_hms()
 	Engine.time_scale = 1.0
 	Profile.data = real_profile
 	Profile.save()
@@ -1208,3 +1209,46 @@ func _check_progression() -> void:
 	expect("geodude" in found["pokemon"] and Profile.is_unlocked("spearow"), "challenges and total level unlock new lines")
 	Profile.data = saved
 	Profile.save()
+
+
+func _check_hms() -> void:
+	print("HMs")
+	var main := await _start_match("route_1", "duel", "charmander", [])
+	await _freeze_all(main)
+	var arena: Arena = main.arena
+	var p: Brawler = main.player
+	# Cut: stand next to tall grass and cut it down.
+	var grass_cell := Vector2i(-1, -1)
+	for i in arena._grass_order.size():
+		var c: Vector2i = arena._grass_order[i]
+		if arena.is_walkable(arena.cell_center(c + Vector2i(0, 1))) and arena._char_at(c + Vector2i(0, 1)) == ".":
+			grass_cell = c
+			break
+	p.position = arena.cell_center(grass_cell + Vector2i(0, 1))
+	await get_tree().physics_frame
+	p.hm_id = "cut"
+	expect(p.use_hm(Vector3(0, 0, -1)) and not arena.is_tall_grass(arena.cell_center(grass_cell)), "Cut clears tall grass")
+	expect(not p.use_hm(Vector3.FORWARD), "HMs recharge before they can be used again")
+	p._hm_cooldown = 0.0
+	# Rock Smash: breaks the wall in front.
+	var wall: Breakable = null
+	for node in get_tree().get_nodes_in_group("breakables"):
+		var b := node as Breakable
+		if b and arena.is_walkable(arena.cell_center(b.cell + Vector2i(0, 1))):
+			wall = b
+			break
+	p.position = arena.cell_center(wall.cell + Vector2i(0, 1))
+	await get_tree().physics_frame
+	p.hm_id = "rock_smash"
+	p.use_hm(Vector3(0, 0, -1))
+	expect(wall.is_broken, "Rock Smash breaks the wall in front")
+	p._hm_cooldown = 0.0
+	# Fly: leaps across.
+	p.hm_id = "fly"
+	var before := p.global_position
+	p.use_hm(Vector3(1, 0, 0))
+	for i in 40:
+		await get_tree().physics_frame
+	expect(p.global_position.distance_to(before) > 3.0 and not p._flying_hm, "Fly leaps several tiles (%.1f m)" % p.global_position.distance_to(before))
+	main.queue_free()
+	await get_tree().process_frame

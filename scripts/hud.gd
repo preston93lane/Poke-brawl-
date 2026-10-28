@@ -15,6 +15,8 @@ var _summary: Control
 @onready var aim_stick: VirtualJoystick = $AimStick
 @onready var gadget_button: TouchButton = $GadgetButton
 @onready var super_button: TouchButton = $SuperButton
+## HM ability button (made in code; hidden unless an HM is equipped).
+var hm_button: TouchButton
 @onready var matchup_label: Label = $Matchup
 @onready var status_label: Label = $Status
 @onready var announcement: Label = $Announcement
@@ -58,6 +60,13 @@ func _process(_delta: float) -> void:
 
 
 func _build_buttons() -> void:
+	hm_button = TouchButton.new()
+	hm_button.label = "HM"
+	hm_button.color = Color(0.6, 0.45, 0.9)
+	hm_button.icon_type = "normal"
+	hm_button.visible = false
+	add_child(hm_button)
+	move_child(hm_button, super_button.get_index() + 1)
 	var kit_theme := UiKit.make_theme()
 	var menu := UiKit.button("MENU", func() -> void: menu_requested.emit(), 16)
 	menu.theme = kit_theme
@@ -106,7 +115,7 @@ func apply_layout(layout: Dictionary) -> void:
 	var swapped := bool(layout.get("swapped", false))
 	_place_stick(move_stick, layout["move"], 0.5 if swapped else 0.0, scale)
 	_place_stick(aim_stick, layout["aim"], 0.0 if swapped else 0.5, scale)
-	for entry in [[gadget_button, layout["gadget"]], [super_button, layout["super"]]]:
+	for entry in [[gadget_button, layout["gadget"]], [super_button, layout["super"]], [hm_button, layout.get("hm", [0.93, 0.5])]]:
 		var button: TouchButton = entry[0]
 		var at: Array = entry[1]
 		var half := 55.0 * scale
@@ -163,6 +172,16 @@ func set_moves(main: MoveData, gadget: MoveData) -> void:
 	super_button.icon_type = "super"
 
 
+## Shows the HM button for the equipped HM (null hides it).
+func set_hm(move: MoveData) -> void:
+	hm_button.visible = move != null
+	if move:
+		hm_button.label = move.display_name.to_upper()
+		hm_button.icon_type = move.type
+		hm_button.color = GameData.type_color(move.type).lerp(Color(0.6, 0.45, 0.9), 0.5)
+		hm_button.queue_redraw()
+
+
 ## Brawl Ball: while you carry the ball the aim stick kicks it.
 func set_kick(carrying: bool, main: MoveData) -> void:
 	if carrying:
@@ -215,6 +234,7 @@ func show_result(result_name: String, rows: Array[Dictionary] = [], stat_name :=
 	aim_stick.set_enabled(false)
 	gadget_button.set_enabled(false)
 	super_button.set_enabled(false)
+	hm_button.set_enabled(false)
 	result_title.text = { "victory": "VICTORY!", "defeat": "DEFEAT", "draw": "DRAW" }.get(result_name, "DRAW")
 	result_title.modulate = { "victory": Color(1.0, 0.85, 0.2), "defeat": Color(1.0, 0.35, 0.3) }.get(result_name, Color(0.8, 0.85, 1.0))
 	result_hint.visible = subtitle != ""

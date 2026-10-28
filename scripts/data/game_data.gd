@@ -171,7 +171,7 @@ func set_setting(key: String, value: Variant) -> void:
 ## Where the on-screen controls sit, as fractions of the screen (x right, y down),
 ## plus a size multiplier. "swapped" puts the move stick on the right.
 const DEFAULT_LAYOUT := {
-	"move": [0.18, 0.74], "aim": [0.82, 0.74], "gadget": [0.69, 0.86], "super": [0.67, 0.6],
+	"move": [0.18, 0.74], "aim": [0.82, 0.74], "gadget": [0.69, 0.86], "super": [0.67, 0.6], "hm": [0.93, 0.5],
 	"scale": 1.0, "swapped": false,
 }
 

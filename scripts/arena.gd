@@ -47,6 +47,9 @@ var warp_cells: Array[Vector2i] = []
 var weather := ""
 ## Set by main.gd when the map has hazards (bots ask it what to avoid).
 var hazards: Hazards
+## Tall grass instances, in the same order as their cells (so Cut can remove them).
+var _grass_mm: MultiMeshInstance3D
+var _grass_order: Array[Vector2i] = []
 var _crate_mesh: BoxMesh
 var _crate_material: Material
 var _breakable_mesh: Mesh
@@ -172,6 +175,7 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 					var yaw := float(posmod(x * 31 + y * 17, 12)) * PI / 6.0
 					var bush_scale := 0.95 + float(posmod(x * 13 + y * 7, 5)) * 0.04
 					grass.append(Transform3D(Basis(Vector3.UP, yaw).scaled(Vector3.ONE * bush_scale), center))
+					_grass_order.append(cell)
 				"1":
 					spawns[0].append(center)
 				"2":
@@ -252,7 +256,7 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 		var clumps: Array[Transform3D] = []
 		for t: Transform3D in grass:
 			clumps.append(Transform3D(t.basis.scaled(Vector3(1.12, 1.0, 1.12)), t.origin))
-		_add_multimesh(ArenaArt.grass_mesh(), ArenaArt.grass_material(dark_map), clumps)
+		_grass_mm = _add_multimesh(ArenaArt.grass_mesh(), ArenaArt.grass_material(dark_map), clumps)
 		var tree_transforms: Array[Transform3D] = []
 		for cell in tree_cells:
 			var size := 0.95 + ArenaArt._hash(cell, 41) * 0.25
@@ -265,7 +269,7 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 		var grass_mat := ShaderMaterial.new()
 		grass_mat.shader = GRASS_SHADER
 		grass_mat.set_shader_parameter("blades", load(TILE_DIR + "tall_grass.png"))
-		_add_multimesh(_bush_mesh(), grass_mat, grass)
+		_grass_mm = _add_multimesh(_bush_mesh(), grass_mat, grass)
 		var tree_quad := QuadMesh.new()
 		tree_quad.size = TREE_SPRITE_SIZE
 		var tree_mat := _tile_material("tree", false, true)
@@ -360,6 +364,51 @@ func add_crate(cell: Vector2i) -> Breakable:
 	_swim_astar.set_point_solid(cell)
 	rows[cell.y] = rows[cell.y].substr(0, cell.x) + "P" + rows[cell.y].substr(cell.x + 1)
 	return _add_breakable(cell, "crate", _crate_material)
+
+
+## HM Cut: tall grass within `radius` of `center` is cut down for the rest of the match.
+func clear_grass(center: Vector3, radius: float) -> int:
+	var cut := 0
+	for i in _grass_order.size():
+		var cell := _grass_order[i]
+		if _char_at(cell) != "\"" or cell_center(cell).distance_to(Vector3(center.x, 0, center.z)) > radius:
+			continue
+		rows[cell.y] = rows[cell.y].substr(0, cell.x) + "." + rows[cell.y].substr(cell.x + 1)
+		if _grass_mm:
+			_grass_mm.multimesh.set_instance_transform(i, Transform3D(Basis().scaled(Vector3.ONE * 0.001), cell_center(cell)))
+		Vfx.burst(self, cell_center(cell) + Vector3(0, 0.4, 0), "grass", 8, 0.4, 2.5)
+		cut += 1
+	return cut
+
+
+## HM Strength: slides a boulder (or other breakable) one tile along `direction`
+## if the tile there is open. Returns whether it moved.
+func push_breakable(b: Breakable, direction: Vector3) -> bool:
+	var step := Vector2i(roundi(direction.x), roundi(direction.z))
+	if absf(direction.x) > absf(direction.z):
+		step = Vector2i(signi(roundi(direction.x * 2.0)), 0)
+	else:
+		step = Vector2i(0, signi(roundi(direction.z * 2.0)))
+	if step == Vector2i.ZERO:
+		return false
+	var to := b.cell + step
+	if to.x < 0 or to.y < 0 or to.x >= width or to.y >= height or _char_at(to) not in [".", ","] or not is_walkable(cell_center(to)):
+		return false
+	for node in get_tree().get_nodes_in_group("brawlers"):
+		if world_to_cell((node as Node3D).global_position) == to:
+			return false
+	var old := b.cell
+	var old_char := _char_at(old)
+	rows[old.y] = rows[old.y].substr(0, old.x) + "." + rows[old.y].substr(old.x + 1)
+	rows[to.y] = rows[to.y].substr(0, to.x) + old_char + rows[to.y].substr(to.x + 1)
+	_astar.set_point_solid(old, false)
+	_swim_astar.set_point_solid(old, false)
+	_astar.set_point_solid(to)
+	_swim_astar.set_point_solid(to)
+	b.cell = to
+	var tween := b.create_tween()
+	tween.tween_property(b, "position", cell_center(to), 0.25).set_trans(Tween.TRANS_QUAD)
+	return true
 
 
 ## A breakable tile was destroyed: the ground there is open now.
@@ -620,9 +669,9 @@ func _setup_grid(grid: AStarGrid2D, blocked: Dictionary) -> void:
 					break
 
 
-func _add_multimesh(mesh: Mesh, material: Material, transforms: Array, shadows := true) -> void:
+func _add_multimesh(mesh: Mesh, material: Material, transforms: Array, shadows := true) -> MultiMeshInstance3D:
 	if transforms.is_empty():
-		return
+		return null
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.mesh = mesh
@@ -635,6 +684,7 @@ func _add_multimesh(mesh: Mesh, material: Material, transforms: Array, shadows :
 	if not shadows:
 		instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(instance)
+	return instance
 
 
 ## Wall / block material: the tile texture projected from three sides, and

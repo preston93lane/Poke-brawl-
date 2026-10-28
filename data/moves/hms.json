@@ -1,0 +1,9 @@
+{
+	"_comment": "HM abilities (slot hm): used from the HM button, recharge after rules hm/cooldown seconds. Numbers are in the same scale as main attacks; the special parts (clearing grass, flying, swimming, pushing boulders, breaking walls) are in brawler.gd use_hm().",
+	"hm_cut": { "name": "Cut", "type": "normal", "slot": "hm", "kind": "melee", "power": 750, "reach": 2.2, "arc": 110 },
+	"hm_fly": { "name": "Fly", "type": "flying", "slot": "hm", "kind": "melee", "power": 500, "reach": 1.6, "arc": 360 },
+	"hm_surf": { "name": "Surf", "type": "water", "slot": "hm", "kind": "melee", "power": 650, "reach": 4.5, "arc": 70, "knockback": 2.5 },
+	"hm_strength": { "name": "Strength", "type": "normal", "slot": "hm", "kind": "melee", "power": 950, "reach": 1.9, "arc": 90, "knockback": 3.0 },
+	"hm_flash": { "name": "Flash", "type": "electric", "slot": "hm", "kind": "melee", "power": 0, "reach": 5.0, "arc": 360 },
+	"hm_rock_smash": { "name": "Rock Smash", "type": "fighting", "slot": "hm", "kind": "melee", "power": 600, "reach": 1.9, "arc": 90 }
+}

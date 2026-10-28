@@ -2,7 +2,7 @@ class_name PlayerController
 extends Node
 ## Drives the parent Brawler from the on-screen sticks and the gadget / super buttons.
 ## Keyboard fallback for desktop testing: WASD move, F attack (hold for streams),
-## Space gadget, E super.
+## Space gadget, E super, Q HM.
 
 ## How much of a target's movement auto-aim leads (1 = perfect prediction).
 const LEAD := 0.9
@@ -16,6 +16,7 @@ const AUTO_STREAM_TIME := 0.7
 var move_stick: VirtualJoystick
 var aim_stick: VirtualJoystick
 var gadget_button: TouchButton
+var hm_button: TouchButton
 var super_button: TouchButton
 
 var _buffered := ""
@@ -31,6 +32,8 @@ func _ready() -> void:
 	aim_stick.released.connect(_on_aim_released)
 	gadget_button.pressed.connect(func() -> void: _try("gadget"))
 	super_button.pressed.connect(func() -> void: _try("super"))
+	if hm_button:
+		hm_button.pressed.connect(func() -> void: _try("hm"))
 
 
 func _physics_process(delta: float) -> void:
@@ -68,6 +71,8 @@ func _physics_process(delta: float) -> void:
 	gadget_button.uses = brawler.gadget_uses
 	super_button.set_charge(brawler.super_charge)
 	super_button.label = brawler.current_super().display_name.to_upper()
+	if hm_button and hm_button.visible:
+		hm_button.set_cooldown(brawler.hm_cooldown_ratio())
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -82,6 +87,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			_try("gadget")
 		KEY_E:
 			_try("super")
+		KEY_Q:
+			_try("hm")
 
 
 ## Streams fire while held, except while carrying the Brawl Ball (then it's a kick).
@@ -123,6 +130,8 @@ func _perform(action: String) -> bool:
 			return _do_gadget()
 		"super":
 			return _do_super()
+		"hm":
+			return _do_hm()
 	return false
 
 
@@ -215,6 +224,19 @@ func _do_gadget() -> bool:
 		if threat:
 			dir = brawler.global_position - threat.global_position
 	return brawler.use_gadget(dir)
+
+
+## HMs aim with the right stick if it's held, else at the nearest enemy (Fly and
+## Flash: the way you're facing / around you).
+func _do_hm() -> bool:
+	var dir := brawler.facing
+	if aim_stick.output != Vector2.ZERO:
+		dir = _to_world(aim_stick.output)
+	elif brawler.hm_id not in ["fly", "flash"]:
+		var target := brawler.find_nearest_enemy(6.0)
+		if target:
+			dir = target.global_position - brawler.global_position
+	return brawler.use_hm(dir)
 
 
 ## Aimed with the right stick if it's held, otherwise at the best visible enemy.

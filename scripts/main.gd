@@ -115,6 +115,8 @@ func _ready() -> void:
 	player_controller.aim_stick = hud.aim_stick
 	player_controller.gadget_button = hud.gadget_button
 	player_controller.super_button = hud.super_button
+	player_controller.hm_button = hud.hm_button
+	hud.set_hm(player.hm_move())
 	player.add_child(player_controller)
 
 	if mode == "showdown":

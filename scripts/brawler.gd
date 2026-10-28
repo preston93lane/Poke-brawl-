@@ -93,6 +93,10 @@ var vitamin_bonus: Dictionary = {}
 var super_override: MoveData
 ## Equipped HM ("cut", "fly", "surf", "strength", "flash", "rock_smash"; "" = none).
 var hm_id := ""
+var _hm_cooldown := 0.0
+## Surf: seconds left swimming (kept going while still over water).
+var _surf_time := 0.0
+var _flying_hm := false
 ## Branch to take when a line splits (Eevee); "" = random.
 var preferred_evolution := ""
 
@@ -371,7 +375,7 @@ func power_bonus() -> float:
 
 ## Physics layers that stop this brawler walking (swimmers cross water).
 func walk_mask() -> int:
-	return WALL_MASK if can_swim else MOVE_BLOCK_MASK
+	return WALL_MASK if can_swim or _surf_time > 0.0 else MOVE_BLOCK_MASK
 
 
 ## Re-pick the main attack after changing species (each stage has its own version
@@ -701,6 +705,91 @@ func _melee_swing(move: MoveData, direction: Vector3) -> void:
 		other.take_hit(self, move)
 		other.knock_from(global_position, move.knockback)
 	Breakable.hit_cone(get_tree(), global_position, direction, move.reach, move.arc, self, move)
+
+
+# --- HMs ---------------------------------------------------------------------
+
+func hm_ready() -> bool:
+	return hm_id != "" and _hm_cooldown <= 0.0 and not is_dead and not is_stunned() and not _flying_hm
+
+
+func hm_cooldown_ratio() -> float:
+	return _hm_cooldown / maxf(0.1, float(GameData.rule("hm/cooldown", 10.0)))
+
+
+func hm_move() -> MoveData:
+	return GameData.get_move("hm_" + hm_id) if hm_id != "" else null
+
+
+## Uses the equipped HM toward `direction`. Returns false if it isn't ready.
+func use_hm(direction: Vector3) -> bool:
+	var move := hm_move()
+	if not hm_ready() or move == null:
+		return false
+	var dir := _flat_direction(direction)
+	_reveal_timer = float(GameData.rule("tall_grass/reveal_time_after_attack", 1.0))
+	match hm_id:
+		"cut":
+			for other in _enemies_in_cone(dir, move.reach, move.arc):
+				other.take_hit(self, move)
+			if arena:
+				arena.clear_grass(global_position + dir * 1.2, 1.4)
+			_show_melee_fx(dir, move)
+		"surf":
+			for other in _enemies_in_cone(dir, move.reach, move.arc):
+				other.take_hit(self, move)
+				other.knock_from(global_position, move.knockback)
+			_surf_time = float(GameData.rule("hm/surf_time", 4.0))
+			collision_mask = walk_mask()
+			Vfx.burst(get_parent(), global_position + dir * 1.5 + Vector3(0, 0.4, 0), "water", 40, 1.0, 4.0)
+		"strength":
+			for other in _enemies_in_cone(dir, move.reach, move.arc):
+				other.take_hit(self, move)
+				other.knock_from(global_position, move.knockback)
+			for b in Breakable.near(get_tree(), global_position + dir * 1.0, 0.8):
+				if arena:
+					arena.push_breakable(b, dir)
+			_show_melee_fx(dir, move)
+		"rock_smash":
+			for other in _enemies_in_cone(dir, move.reach, move.arc):
+				other.take_hit(self, move)
+			for b in Breakable.near(get_tree(), global_position + dir * 1.0, 0.7):
+				b.smash()
+			_show_melee_fx(dir, move)
+		"flash":
+			for other in enemies():
+				if other.global_position.distance_to(global_position) <= move.reach:
+					other.apply_blind(float(GameData.rule("hm/flash_blind", 2.0)))
+					other._reveal_timer = float(GameData.rule("hm/flash_reveal", 4.0))
+			_flash_fx(move.reach)
+		"fly":
+			_fly(dir, move)
+	_hm_cooldown = float(GameData.rule("hm/cooldown", 10.0))
+	return true
+
+
+## Fly: a leap over walls and water, landing on open ground with a small thump.
+func _fly(dir: Vector3, move: MoveData) -> void:
+	var target := global_position + dir * float(GameData.rule("hm/fly_distance", 6.0))
+	if arena:
+		target = arena.nearest_open(target)
+	target.y = global_position.y
+	_flying_hm = true
+	var was_invulnerable := invulnerable
+	invulnerable = true
+	collision_mask = 0
+	var tween := create_tween()
+	tween.tween_property(self, "global_position", target, 0.45).set_trans(Tween.TRANS_SINE)
+	tween.parallel().tween_property(sprite, "position:y", sprite.position.y + 1.6, 0.22).set_ease(Tween.EASE_OUT)
+	tween.chain().tween_property(sprite, "position:y", sprite.position.y, 0.2).set_ease(Tween.EASE_IN)
+	tween.finished.connect(func() -> void:
+		_flying_hm = false
+		invulnerable = was_invulnerable
+		collision_mask = walk_mask()
+		for other in enemies():
+			if other.global_position.distance_to(global_position) <= move.reach:
+				other.take_hit(self, move)
+		Vfx.ring(get_parent(), global_position, move.reach, "flying", 40))
 
 
 ## Push away from `origin` by `distance` metres (negative pulls toward it, stopping short).
@@ -1091,6 +1180,14 @@ func _tick_timers(delta: float) -> void:
 	_stun_time = maxf(0.0, _stun_time - delta)
 	_invisible_time = maxf(0.0, _invisible_time - delta)
 	_protect_time = maxf(0.0, _protect_time - delta)
+	_hm_cooldown = maxf(0.0, _hm_cooldown - delta)
+	if _surf_time > 0.0:
+		_surf_time -= delta
+		# Don't let it run out in the middle of the water.
+		if _surf_time <= 0.0 and arena and not arena.is_walkable(global_position):
+			_surf_time = 0.2
+		if _surf_time <= 0.0:
+			collision_mask = walk_mask()
 	for stat: String in _buffs:
 		_buffs[stat]["time"] = float(_buffs[stat]["time"]) - delta
 	if main_move.kind == "stream":
