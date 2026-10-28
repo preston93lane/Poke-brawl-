@@ -256,6 +256,14 @@ func spawn_position(b: Brawler) -> Vector3:
 	return arena.spawn_point(b.team, _spawn_index[b])
 
 
+## Tells the see-through shaders where your Pokémon is (xray.gdshaderinc).
+func _process(_delta: float) -> void:
+	var at := Vector3(0, -100, 0)
+	if player and not player.is_dead:
+		at = player.global_position + Vector3(0, 0.6, 0)
+	RenderingServer.global_shader_parameter_set("player_xray", at)
+
+
 func _physics_process(delta: float) -> void:
 	if round_over or player == null:
 		return

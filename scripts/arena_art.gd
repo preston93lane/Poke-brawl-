@@ -8,6 +8,7 @@ extends RefCounted
 
 const GROUND_SHADER := preload("res://assets/shaders/ground_lets_go.gdshader")
 const LEAFY_SHADER := preload("res://assets/shaders/leafy_grass.gdshader")
+const MODEL_SHADER := preload("res://assets/shaders/vertex_color_xray.gdshader")
 ## Splat texture pixels per tile (upscaled smoothly, so edges come out soft and round).
 const SPLAT_RES := 4
 
@@ -99,9 +100,12 @@ static func grass_mesh() -> ArrayMesh:
 	return st.commit()
 
 
-static func grass_material() -> ShaderMaterial:
+## `dark`: the gloomier grass of the graveyard and crypt.
+static func grass_material(dark := false) -> ShaderMaterial:
 	var mat := ShaderMaterial.new()
 	mat.shader = LEAFY_SHADER
+	if dark:
+		mat.set_shader_parameter("tint", Color(0.42, 0.5, 0.55))
 	return mat
 
 
@@ -168,7 +172,7 @@ static func _flower_mesh() -> ArrayMesh:
 
 ## A round, bushy tree: short trunk under a few lumpy canopy balls, darker
 ## underneath and sunlit on top.
-static func tree_mesh() -> ArrayMesh:
+static func tree_mesh(dark := false) -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	_add_cylinder(st, Vector3.ZERO, 0.13, 0.17, 0.75, Color(0.45, 0.3, 0.18))
@@ -177,7 +181,11 @@ static func tree_mesh() -> ArrayMesh:
 		[Vector3(0.05, 1.7, -0.02), 0.45], [Vector3(0.0, 1.05, 0.36), 0.42], [Vector3(0.05, 1.1, -0.34), 0.42],
 	]
 	for i in balls.size():
-		_add_blob(st, balls[i][0], balls[i][1], i, Color(0.2, 0.5, 0.18), Color(0.45, 0.75, 0.25))
+		# Gentle shading only: a strong top-to-bottom gradient made the sunlit side glare.
+		var low := Color(0.13, 0.33, 0.13) if not dark else Color(0.1, 0.2, 0.18)
+		var high := Color(0.26, 0.5, 0.2) if not dark else Color(0.2, 0.32, 0.27)
+		var shade := 0.92 + 0.08 * float(i % 3)
+		_add_blob(st, balls[i][0], balls[i][1], i, low * shade, high * shade)
 	return st.commit()
 
 
@@ -218,15 +226,15 @@ static func _add_blob(st: SurfaceTool, center: Vector3, radius: float, variant: 
 				var d: Vector3 = quad[k]
 				var world := center + d * radius
 				var light := clampf(d.y * 0.5 + 0.5, 0.0, 1.0)
-				st.set_color(low.lerp(high, light * light))
+				st.set_color(low.lerp(high, light))
 				st.set_normal(d.normalized())
 				st.add_vertex(world)
 
 
-static func vertex_color_material() -> StandardMaterial3D:
-	var mat := StandardMaterial3D.new()
-	mat.vertex_color_use_as_albedo = true
-	mat.roughness = 1.0
+## Matte, no shine, and see-through when it hides your Pokémon.
+static func vertex_color_material() -> ShaderMaterial:
+	var mat := ShaderMaterial.new()
+	mat.shader = MODEL_SHADER
 	return mat
 
 

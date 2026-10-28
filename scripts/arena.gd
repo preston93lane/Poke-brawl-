@@ -20,6 +20,7 @@ const GRASS_HEIGHT := 0.95
 const TREE_SPRITE_SIZE := Vector2(1.75, 2.2)
 const GRASS_SHADER := preload("res://assets/shaders/grass_sway.gdshader")
 const WATER_SHADER := preload("res://assets/shaders/water.gdshader")
+const WALL_SHADER := preload("res://assets/shaders/tile_xray.gdshader")
 const WORLD_LAYER := 1
 const WATER_LAYER := 8
 const TILE_DIR := "res://assets/tiles/"
@@ -47,7 +48,7 @@ var weather := ""
 ## Set by main.gd when the map has hazards (bots ask it what to avoid).
 var hazards: Hazards
 var _crate_mesh: BoxMesh
-var _crate_material: StandardMaterial3D
+var _crate_material: Material
 var _breakable_mesh: Mesh
 var _crate_mesh_box: BoxMesh
 ## Wall styles drawn as rounded, lumpy shapes (natural things); the rest stay as blocks.
@@ -79,7 +80,12 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 	liquid = str(def.get("liquid", "water"))
 	weather = str(def.get("weather", ""))
 	# "lets_go": the 3D Let's Go look (see arena_art.gd) instead of flat tiles and sprites.
-	var lets_go := str(def.get("art", "")) == "lets_go"
+	var lets_go := str(def.get("art", "lets_go")) == "lets_go"
+	# The blended Let's Go ground replaces grass floors; themed floors (gym tiles,
+	# wood, ice...) keep their textures but get the 3D grass, trees and rocks.
+	var art_ground := lets_go and floor_tile == "grass"
+	var dark_map := floor_tile == "dark"
+	var rocky := wall_tile in ["rock", "cracked"]
 	var art_cells := { "path": {}, "grass": {} }
 	var tree_cells: Array[Vector2i] = []
 	var open_cells: Array[Vector2i] = []
@@ -192,11 +198,13 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 	var floor_plane := PlaneMesh.new()
 	floor_plane.size = Vector2(TILE, TILE)
 	for floor_name: String in floors:
-		if lets_go and floor_name != "water":
+		if art_ground and floor_name != "water":
 			continue
 		var mat: Material = _water_material() if floor_name == "water" else _tile_material(floor_name)
 		_add_multimesh(floor_plane, mat, floors[floor_name])
-	if lets_go:
+	if lets_go and get_parent():
+		ArenaArt.apply_lighting(get_parent())
+	if art_ground:
 		var solid_art := solid_cells.duplicate()
 		solid_art.merge(breakable_cells)
 		art_cells["solid"] = solid_art
@@ -204,12 +212,10 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 		var ground := ArenaArt.build_ground(self, art_cells)
 		ground.position.y = 0.001
 		add_child(ground)
-		if get_parent():
-			ArenaArt.apply_lighting(get_parent())
 	else:
 		_add_multimesh(floor_plane, _edge_shadow_material(), _edge_shadows(solid_cells, water_cells), false)
 
-	if not path_blobs.is_empty() and not lets_go:
+	if not path_blobs.is_empty() and not art_ground:
 		var blob_mat := _tile_material("path_blob", false, false)
 		blob_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		_add_multimesh(floor_plane, blob_mat, path_blobs, false)
@@ -217,41 +223,44 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 	block.size = Vector3(TILE, WALL_HEIGHT, TILE)
 	_crate_mesh_box = block
 	var lump := lump_mesh(0.62, 0.1, 7)
+	# Let's Go maps: rock walls, cracked walls and boulders are Rock Smash rocks.
+	var rock_mesh: Mesh = ArenaArt.rock_mesh(0) if lets_go else null
 	var rock_mat: Material = ArenaArt.vertex_color_material() if lets_go else null
-	if lets_go:
-		lump = ArenaArt.rock_mesh(0)
-		_add_multimesh(lump, rock_mat, rocks)
-		_add_multimesh(lump, rock_mat, boulders)
+	if lets_go and rocky:
+		_add_multimesh(rock_mesh, rock_mat, rocks)
 	else:
-		_add_multimesh(lump if wall_tile in ORGANIC_WALLS else block, _tile_material(wall_tile, true), rocks)
-		_add_multimesh(block, _tile_material("boulder", true), boulders)
+		_add_multimesh(lump if wall_tile in ORGANIC_WALLS else block, _wall_material(wall_tile), rocks)
+	_add_multimesh(rock_mesh if lets_go else block, rock_mat if lets_go else _wall_material("boulder"), boulders)
 	_breakable_mesh = lump
 	var materials := {
-		"cracked": rock_mat if lets_go else _tile_material("cracked", true),
-		"boulder": rock_mat if lets_go else _tile_material("boulder", true),
-		"ice_block": _tile_material("ice_block", true),
-		"wall_style": rock_mat if lets_go else _tile_material(wall_tile, true),
-		"crate": _tile_material("crate", true),
+		"cracked": rock_mat if lets_go else _wall_material("cracked"),
+		"boulder": rock_mat if lets_go else _wall_material("boulder"),
+		"ice_block": _wall_material("ice_block"),
+		"wall_style": rock_mat if lets_go and rocky else _wall_material(wall_tile),
+		"crate": _wall_material("crate"),
 	}
 	_crate_material = materials["crate"]
 	for cell: Vector2i in breakable_cells:
 		var kind: String = breakable_cells[cell]
 		var b := _add_breakable(cell, "crate" if kind == "crate" else "wall", materials[kind])
-		if kind == "wall_style" and wall_tile not in ORGANIC_WALLS and not lets_go:
+		if lets_go and (kind in ["cracked", "boulder"] or (kind == "wall_style" and rocky)):
+			b.set_mesh(rock_mesh, _jitter(cell))
+		elif kind == "wall_style" and wall_tile not in ORGANIC_WALLS:
 			b.set_mesh(_crate_mesh_box, Basis())  # Brick / metal / wood walls stay blocky.
 
 	if lets_go:
 		var clumps: Array[Transform3D] = []
 		for t: Transform3D in grass:
 			clumps.append(Transform3D(t.basis.scaled(Vector3(1.12, 1.0, 1.12)), t.origin))
-		_add_multimesh(ArenaArt.grass_mesh(), ArenaArt.grass_material(), clumps)
+		_add_multimesh(ArenaArt.grass_mesh(), ArenaArt.grass_material(dark_map), clumps)
 		var tree_transforms: Array[Transform3D] = []
 		for cell in tree_cells:
 			var size := 0.95 + ArenaArt._hash(cell, 41) * 0.25
 			tree_transforms.append(Transform3D(Basis(Vector3.UP, ArenaArt._hash(cell, 42) * TAU).scaled(Vector3(size, size * (0.95 + ArenaArt._hash(cell, 43) * 0.15), size)), cell_center(cell)))
-		_add_multimesh(ArenaArt.tree_mesh(), ArenaArt.vertex_color_material(), tree_transforms)
-		for node in ArenaArt.decorations(self, open_cells):
-			add_child(node)
+		_add_multimesh(ArenaArt.tree_mesh(dark_map), ArenaArt.vertex_color_material(), tree_transforms)
+		if art_ground:
+			for node in ArenaArt.decorations(self, open_cells):
+				add_child(node)
 	else:
 		var grass_mat := ShaderMaterial.new()
 		grass_mat.shader = GRASS_SHADER
@@ -283,7 +292,7 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 
 	# Dark ground outside the map so the edge of the world isn't empty.
 	var outside_mat := _tile_material("grass_1")
-	outside_mat.albedo_color = Color(0.55, 0.62, 0.5) if not lets_go else Color(0.42, 0.6, 0.3)
+	outside_mat.albedo_color = Color(0.42, 0.6, 0.3) if art_ground else Color(0.55, 0.62, 0.5)
 	outside_mat.uv1_scale = Vector3(160, 160, 1)
 	var outside_plane := PlaneMesh.new()
 	outside_plane.size = Vector2(160, 160)
@@ -626,6 +635,15 @@ func _add_multimesh(mesh: Mesh, material: Material, transforms: Array, shadows :
 	if not shadows:
 		instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(instance)
+
+
+## Wall / block material: the tile texture projected from three sides, and
+## see-through when it hides your Pokémon.
+func _wall_material(tile_name: String) -> ShaderMaterial:
+	var mat := ShaderMaterial.new()
+	mat.shader = WALL_SHADER
+	mat.set_shader_parameter("albedo_tex", load(TILE_DIR + tile_name + ".png"))
+	return mat
 
 
 ## Tile material: one 64px texture per world unit, smooth filtering.

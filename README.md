@@ -55,6 +55,8 @@ The web build uses Godot's Compatibility renderer, so lighting is slightly simpl
   the poison cloud closes in. After every match a summary shows KOs, damage, healing and the MVP.
 - **Walls:** rock walls, trees and gravestones are permanent; cracked walls, boulders and ice blocks break when a
   super hits them. Lava (Cinnabar Gym) can only be crossed by Fire and Flying types.
+- **Art:** every map uses the Let's Go style (3D leafy grass, round trees, Rock Smash rocks; grass maps get a blended
+  ground with soft paths). Anything between the camera and your Pokémon turns see-through.
 - **Arenas:** Route 1, the S.S. Anne, Boulder Gym, Dragon's Den, Pallet Pitch, Viridian Forest, all eight Kanto gyms, the Elite Four,
   the Pokémon Tower graveyard and the Safari Zone.
 - **Map maker** (home screen): paint tiles, pick floor / wall / liquid, mirror top↔bottom or in quadrants, name and

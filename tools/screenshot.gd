@@ -24,6 +24,15 @@ func _ready() -> void:
 				child.queue_free()
 	var cam: FollowCamera = main.camera
 	var spots := { "spawn": main.player.global_position, "middle": Vector3(0, 0, 4) }
+	# Just behind (north of) an inner tree or wall, to check the see-through effect.
+	var arena: Arena = main.arena
+	for y in range(6, arena.height - 6):
+		for x in range(4, arena.width - 4):
+			if arena.rows[y][x] in ["T", "#"] and arena.rows[y - 1][x] == "." and arena.rows[y + 1][x] == ".":
+				spots["behind"] = arena.cell_center(Vector2i(x, y - 1))
+				break
+		if spots.has("behind"):
+			break
 	for shot: String in spots:
 		main.player.global_position = spots[shot]
 		cam.snap_to_target()
