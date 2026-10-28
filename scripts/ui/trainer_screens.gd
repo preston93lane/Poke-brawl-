@@ -266,6 +266,30 @@ static func challenges(menu: Node) -> Control:
 	v.add_child(hint)
 	var unlocked: Array = Profile.data.get("unlocked", [])
 
+	var h := Profile.hunt()
+	var left_s := Profile.week_seconds_left()
+	v.add_child(_heading("✦ WEEKLY SHINY HUNT  ·  %dd %dh left" % [floori(left_s / 86400.0), floori((left_s % 86400) / 3600.0)]))
+	if str(h["family"]) == "":
+		v.add_child(UiKit.label("You have every shiny for your unlocked Pokémon. Unlock more to hunt again!", 17))
+	else:
+		var hs: SpeciesData = GameData.species[str(h["family"])]
+		var hunt_row := HBoxContainer.new()
+		hunt_row.add_theme_constant_override("separation", 14)
+		hunt_row.add_child(UiKit.sprite(hs.shiny_sprite if hs.shiny_sprite else hs.sprite, 72))
+		var hv := VBoxContainer.new()
+		var need_k := int(Profile.econ("shiny/hunt_kos", 100))
+		var need_w := int(Profile.econ("shiny/hunt_wins", 15))
+		var goal := UiKit.label("Shiny %s: with %s this week, get %d KOs and %d wins." % [hs.display_name, hs.display_name, need_k, need_w] if not bool(h["done"]) else "Shiny %s unlocked this week!" % hs.display_name, 19)
+		goal.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		hv.add_child(goal)
+		var bars := HBoxContainer.new()
+		bars.add_child(UiKit.label("KOs ", 16))
+		bars.add_child(_progress(int(h["kos"]), need_k, int(h["kos"]) >= need_k))
+		bars.add_child(UiKit.label("   Wins ", 16))
+		bars.add_child(_progress(int(h["wins"]), need_w, int(h["wins"]) >= need_w))
+		hv.add_child(bars)
+		hunt_row.add_child(hv)
+		v.add_child(hunt_row)
 	v.add_child(_heading("TRAINER ROAD  (unlocked by trainer level)"))
 	var path := TrainerRoad.new()
 	path.custom_minimum_size.x = 1100

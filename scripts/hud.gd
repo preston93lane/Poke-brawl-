@@ -321,6 +321,8 @@ func _rewards_label(r: Dictionary) -> Label:
 		parts.append("%s%s" % [Profile.item_name(ball), " ×%d" % balls[ball] if int(balls[ball]) > 1 else ""])
 	for family: String in r.get("pokemon", []):
 		parts.append("NEW: %s!" % GameData.species[family].display_name)
+	if str(r.get("shiny", "")) != "":
+		parts.append("✦ SHINY %s UNLOCKED! ✦" % GameData.species[str(r["shiny"])].display_name.to_upper())
 	for m: String in r.get("milestones", []):
 		parts.append("Milestone: %s" % m)
 	var label := UiKit.label("   ·   ".join(PackedStringArray(parts)), 19, Color(1, 0.9, 0.45))

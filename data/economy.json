@@ -10,8 +10,8 @@
 	"balls": {
 		"poke_ball": { "name": "Poké Ball", "money": [50, 100], "candy": [0.25, 1, 1], "vitamin": [0.1, 1], "extra_vitamin": 0.0, "hm": 0.03, "tm": 0.01, "pokemon": 0.03 },
 		"great_ball": { "name": "Great Ball", "money": [150, 250], "candy": [1.0, 1, 2], "vitamin": [0.35, 1], "extra_vitamin": 0.0, "hm": 0.1, "tm": 0.1, "pokemon": 0.12 },
-		"ultra_ball": { "name": "Ultra Ball", "money": [400, 600], "candy": [1.0, 2, 4], "vitamin": [1.0, 1], "extra_vitamin": 0.3, "hm": 0.25, "tm": 0.3, "pokemon": 0.35 },
-		"master_ball": { "name": "Master Ball", "money": [1500, 1500], "candy": [1.0, 5, 5], "vitamin": [1.0, 3], "extra_vitamin": 0.0, "hm": 1.0, "tm": 1.0, "pokemon": 1.0 }
+		"ultra_ball": { "name": "Ultra Ball", "money": [400, 600], "candy": [1.0, 2, 4], "vitamin": [1.0, 1], "extra_vitamin": 0.3, "hm": 0.25, "tm": 0.3, "pokemon": 0.35, "shiny": 0.03 },
+		"master_ball": { "name": "Master Ball", "money": [1500, 1500], "candy": [1.0, 5, 5], "vitamin": [1.0, 3], "extra_vitamin": 0.0, "hm": 1.0, "tm": 1.0, "pokemon": 1.0, "shiny": 0.25 }
 	},
 	"milestones": {
 		"_comment": "Each gives a Master Ball once: a total level, or your first win against each gym (for now: a win on Hard on that gym's map, until Gym Leader battles exist).",
@@ -41,6 +41,10 @@
 		"hm_rock_smash": { "name": "HM Rock Smash", "category": "hm", "price": 800 }
 	},
 	"tm_prices": { "main": 2500, "super": 4000 },
+	"shiny": {
+		"_comment": "Shiny skins (a whole line, only for lines you've unlocked): from Ultra/Master Balls (balls/*/shiny), the Poké Mart's featured slot on about store_chance of days for price, or the weekly hunt: with that week's Pokémon get hunt_kos KOs and hunt_wins wins before the week ends.",
+		"store_chance": 0.1, "price": 15000, "hunt_kos": 100, "hunt_wins": 15
+	},
 	"store": {
 		"_comment": "Slot pools: each slot picks one entry by weight. 'tm' = a random TM you don't own yet.",
 		"slots": [
@@ -51,6 +55,6 @@
 			{ "rarity": "rare", "pool": { "tm": 3, "great_ball": 2, "ultra_ball": 1 } },
 			{ "rarity": "featured", "pool": { "poke_ball": 30, "great_ball": 30, "ultra_ball": 20, "tm": 17, "master_ball": 3 } }
 		],
-		"daily_caps": { "vitamin": 5, "tm": 2, "rare_candy": 10, "poke_ball": 3, "great_ball": 3, "ultra_ball": 3, "master_ball": 1, "hm": 3 }
+		"daily_caps": { "vitamin": 5, "tm": 2, "rare_candy": 10, "poke_ball": 3, "great_ball": 3, "ultra_ball": 3, "master_ball": 1, "hm": 3, "shiny": 1 }
 	}
 }

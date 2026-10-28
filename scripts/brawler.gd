@@ -1489,7 +1489,16 @@ func _apply_loadout_visuals() -> void:
 		aim_indicator.position = Vector3(0, 0.05, -r.reach * 0.5 - 0.6)
 
 
+var _sparkle := 0.0
+
+
 func _update_sprite(delta: float) -> void:
+	# Shiny Pokémon twinkle now and then.
+	if shiny and not is_dead and sprite.visible:
+		_sparkle -= delta
+		if _sparkle <= 0.0:
+			_sparkle = randf_range(0.8, 1.6)
+			Vfx.burst(get_parent(), global_position + Vector3(randf_range(-0.4, 0.4), randf_range(0.6, 1.4), 0), "fairy", 5, 0.15, 1.2)
 	var hidden := not visible_to_local_player()
 	sprite.visible = not hidden
 	# No ground shadow or team ring: they made it harder to see the Pokémon themselves.

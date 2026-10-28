@@ -262,7 +262,7 @@ func _spawn(species_id: String, level: int, team: int, is_player: bool, main_id 
 		if player_hm in Profile.learned_hms(species_id):
 			brawler.hm_id = player_hm
 	# The player picks shiny in the menu; bots are shiny once in a while.
-	brawler.shiny = player_shiny if is_player else randf() < float(GameData.rule("shiny_chance", 0.06))
+	brawler.shiny = (player_shiny and Profile.has_shiny(species_id)) if is_player else randf() < float(GameData.rule("shiny_chance", 0.06))
 	_spawn_index[brawler] = teams[team].size()
 	teams[team].append(brawler)
 	brawler.position = spawn_position(brawler)

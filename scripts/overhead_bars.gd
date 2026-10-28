@@ -45,7 +45,7 @@ func _draw() -> void:
 
 		_text(font, Vector2(bar.position.x, bar.position.y - 4), bar.size.x, str(ceili(brawler.health)), 18, Color.WHITE)
 		var name_color := Color(0.6, 0.85, 1.0) if friendly else Color(1.0, 0.7, 0.7)
-		var title := "%s Lv%d" % [brawler.species.display_name, brawler.level]
+		var title := "%s%s Lv%d" % ["✦ " if brawler.shiny else "", brawler.species.display_name, brawler.level]
 		_text(font, Vector2(bar.position.x - 60, bar.position.y - 24), bar.size.x + 120, title, 16, name_color)
 
 		# Type pips to the left of the bar.

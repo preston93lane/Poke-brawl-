@@ -166,8 +166,11 @@ func _draw_prize(pos: Vector2, p: Dictionary, alpha: float) -> void:
 	var s := 34.0
 	if item == "money":
 		draw_meowth_coin(self, pos, s, alpha)
-	elif item == "pokemon" and GameData.species.has(str(p.get("family", ""))):
-		var tex: Texture2D = GameData.species[str(p["family"])].sprite
+	elif item in ["pokemon", "shiny"] and GameData.species.has(str(p.get("family", ""))):
+		var sp: SpeciesData = GameData.species[str(p["family"])]
+		var tex: Texture2D = sp.shiny_sprite if item == "shiny" and sp.shiny_sprite else sp.sprite
+		if item == "shiny":
+			draw_circle(pos, s * 1.5, Color(1, 0.9, 0.4, 0.35 * alpha))
 		draw_texture_rect(tex, Rect2(pos - Vector2(s, s) * 1.4, Vector2(s, s) * 2.8), false, Color(1, 1, 1, alpha))
 	else:
 		var path := ICON_DIR + item + ".png"
@@ -242,8 +245,11 @@ class PrizeIcon extends Control:
 		var c := size * 0.5
 		if item == "money":
 			BallOpening.draw_meowth_coin(self, c, 17.0)
-		elif item == "pokemon" and GameData.species.has(str(prize.get("family", ""))):
-			draw_texture_rect(GameData.species[str(prize["family"])].sprite, Rect2(Vector2.ZERO, size), false)
+		elif item in ["pokemon", "shiny"] and GameData.species.has(str(prize.get("family", ""))):
+			var sp: SpeciesData = GameData.species[str(prize["family"])]
+			if item == "shiny":
+				draw_circle(c, size.x * 0.5, Color(1, 0.9, 0.4, 0.4))
+			draw_texture_rect(sp.shiny_sprite if item == "shiny" and sp.shiny_sprite else sp.sprite, Rect2(Vector2.ZERO, size), false)
 		elif ResourceLoader.exists("res://assets/items/" + item + ".png"):
 			draw_texture_rect(load("res://assets/items/" + item + ".png"), Rect2(Vector2.ZERO, size), false)
 		else:

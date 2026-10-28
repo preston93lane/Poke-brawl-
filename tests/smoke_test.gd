@@ -1204,7 +1204,23 @@ func _check_progression() -> void:
 	Profile._give("hm_fly", 1)
 	expect(Profile.teach_hm("charmander", "fly") and "fly" in Profile.learned_hms("charizard"), "HMs teach one line")
 	expect(not Profile.teach_hm("charmander", "surf"), "and only HMs that fit it")
+	expect(not Profile.has_shiny("charmander"), "shinies start locked")
+	var h := Profile.hunt()
+	expect(str(h["family"]) in Profile.data["unlocked"], "the weekly hunt targets one of your Pokémon (%s)" % h["family"])
+	var target := str(h["family"])
+	h["kos"] = 0
+	h["wins"] = 0
+	for i in 14:
+		Profile._track_hunt(target, 7, true)
+	expect(not Profile.has_shiny(target), "not a pushover: 98 KOs and 14 wins isn't enough")
+	Profile._track_hunt(target, 7, true)
+	expect(Profile.has_shiny(target), "100 KOs and 15 wins with it unlocks its shiny")
 	Profile.data["money"] = 100000
+	Profile.data["store"]["day"] = ""
+	Profile._give("master_ball", 40)
+	for i in 40:
+		Profile.open_ball("master_ball")
+	expect((Profile.data["shinies"] as Array).size() >= 2, "Master Balls can hold shinies (%d owned)" % (Profile.data["shinies"] as Array).size())
 	var slots := Profile.store_slots()
 	expect(slots.size() == 6, "six store slots")
 	Profile.data["store"]["slots"] = [{ "item": "protein", "rarity": "common" }]

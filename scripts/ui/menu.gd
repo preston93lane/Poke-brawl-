@@ -542,7 +542,12 @@ func _refresh_select_details() -> void:
 	_details.add_child(_style_box(s))
 	_details.add_child(_trainer_level_box(s))
 
-	if s.shiny_sheet:
+	if s.shiny_sheet and not Profile.has_shiny(s.id):
+		_shiny = false
+		var how := UiKit.label("✦ Shiny locked: win it in the weekly shiny hunt, find it in Ultra/Master Balls, or buy it when it's in the Poké Mart", 15, Color(0.75, 0.8, 0.9))
+		how.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_details.add_child(how)
+	elif s.shiny_sheet:
 		var shiny_row := HBoxContainer.new()
 		var shiny_button := Button.new()
 		shiny_button.text = "SHINY: ON" if _shiny else "SHINY: OFF"

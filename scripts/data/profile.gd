@@ -41,7 +41,7 @@ static func blank() -> Dictionary:
 		"version": VERSION, "levels": {}, "xp": {}, "dev": false, "money": 0, "unlocked": [], "starter": "",
 		"inventory": {}, "tms": [], "hms": {}, "vitamins": {}, "loadout": {},
 		"stats": { "matches": 0, "wins": 0, "arena_wins": {}, "arena_mvps": {}, "raid_wins": {}, "mode_wins": {} },
-		"milestones": [], "since_ultra": 0, "store": {}, "daily": {}, "updated": 0,
+		"milestones": [], "since_ultra": 0, "store": {}, "daily": {}, "updated": 0, "shinies": [], "hunt": {},
 	}
 
 
@@ -384,6 +384,8 @@ func _give(item: String, amount := 1) -> void:
 
 
 func item_name(item: String) -> String:
+	if item.begins_with("shiny_") and GameData.species.has(item.trim_prefix("shiny_")):
+		return "Shiny " + GameData.species[item.trim_prefix("shiny_")].display_name
 	if item.begins_with("tm_"):
 		return str(GameData.progression.get("tms", {}).get(item, {}).get("name", item))
 	return str(econ("items/%s/name" % item, item.capitalize()))
@@ -645,6 +647,7 @@ func record_match(info: Dictionary) -> Dictionary:
 		balls.append(str(econ("drops/first_win", "great_ball")))
 	if raid != "":
 		balls.append(str(econ("drops/raid", "ultra_ball")))
+	var shiny_won := _track_hunt(family, int(info.get("kos", 0)), won)
 	var unlocked := _check_unlocks()
 	for i in int(unlocked["challenges"]):
 		balls.append(str(econ("drops/challenge", "great_ball")))
@@ -657,7 +660,7 @@ func record_match(info: Dictionary) -> Dictionary:
 	save()
 	return {
 		"xp": xp, "first_win": first_win, "levels": gained, "level": level_of(family), "level_before": levels_before,
-		"money": cash, "balls": balls, "pokemon": unlocked["pokemon"], "milestones": milestones,
+		"money": cash, "balls": balls, "pokemon": unlocked["pokemon"], "milestones": milestones, "shiny": shiny_won,
 	}
 
 
@@ -726,6 +729,12 @@ func open_ball(ball: String) -> Array[Dictionary]:
 		var hm := "hm_" + str(HM_IDS[rng.randi() % HM_IDS.size()])
 		_give(hm)
 		prizes.append({ "item": hm, "count": 1, "text": item_name(hm) })
+	if rng.randf() < float(spec.get("shiny", 0.0)):
+		var options := shiny_candidates()
+		if not options.is_empty():
+			var family: String = options[rng.randi() % options.size()]
+			_give_shiny(family)
+			prizes.append({ "item": "shiny", "count": 1, "text": "SHINY %s!" % GameData.species[family].display_name, "family": family })
 	var tm_rolls := 1 if rng.randf() < float(spec.get("tm", 0.0)) else 0
 	if rng.randf() < float(spec.get("pokemon", 0.0)):
 		var family := next_ball_pokemon()
@@ -747,9 +756,86 @@ func open_ball(ball: String) -> Array[Dictionary]:
 	return prizes
 
 
+# --- Shinies -------------------------------------------------------------------
+
+func has_shiny(species_id: String) -> bool:
+	return is_dev() or GameData.family_root(species_id) in (data.get("shinies", []) as Array)
+
+
+func _give_shiny(family: String) -> bool:
+	var list: Array = data.get("shinies", [])
+	if family in list:
+		return false
+	list.append(family)
+	data["shinies"] = list
+	return true
+
+
+## Unlocked lines whose shiny you don't have yet.
+func shiny_candidates() -> Array[String]:
+	var result: Array[String] = []
+	for family in data.get("unlocked", []):
+		var s: SpeciesData = GameData.species.get(family)
+		if s and s.shiny_sheet and family not in (data.get("shinies", []) as Array):
+			result.append(str(family))
+	return result
+
+
+static func week_key() -> String:
+	# Weeks start on Monday.
+	var now := Time.get_unix_time_from_system()
+	var weekday := int(Time.get_datetime_dict_from_unix_time(int(now))["weekday"])  # 0 = Sunday
+	var monday := int(now) - ((weekday + 6) % 7) * 86400
+	return Time.get_date_string_from_unix_time(monday)
+
+
+## Seconds until the weekly hunt resets (next Monday, local midnight-ish).
+static func week_seconds_left() -> int:
+	var now := int(Time.get_unix_time_from_system())
+	var d := Time.get_datetime_dict_from_unix_time(now)
+	var weekday := int(d["weekday"])
+	var into_day := int(d["hour"]) * 3600 + int(d["minute"]) * 60 + int(d["second"])
+	var days_left := (8 - weekday) % 7
+	if days_left == 0:
+		days_left = 7
+	return days_left * 86400 - into_day
+
+
+## This week's shiny hunt: { "week", "family", "kos", "wins", "done" } ("" family = nothing to hunt).
+func hunt() -> Dictionary:
+	var h: Dictionary = _dict("hunt")
+	if h.get("week", "") != week_key():
+		h.clear()
+		h["week"] = week_key()
+		var options := shiny_candidates()
+		var roll := RandomNumberGenerator.new()
+		roll.seed = hash(week_key() + str(data.get("starter", "")))
+		h["family"] = options[roll.randi() % options.size()] if not options.is_empty() else ""
+		h["kos"] = 0
+		h["wins"] = 0
+		h["done"] = false
+	return h
+
+
+func _track_hunt(family: String, kos: int, won: bool) -> String:
+	var h := hunt()
+	if h["family"] != family or bool(h["done"]):
+		return ""
+	h["kos"] = int(h["kos"]) + kos
+	if won:
+		h["wins"] = int(h["wins"]) + 1
+	if int(h["kos"]) >= int(econ("shiny/hunt_kos", 100)) and int(h["wins"]) >= int(econ("shiny/hunt_wins", 15)):
+		h["done"] = true
+		if _give_shiny(family):
+			return family
+	return ""
+
+
 # --- Store ---------------------------------------------------------------------
 
 func item_price(item: String) -> int:
+	if item.begins_with("shiny_"):
+		return int(econ("shiny/price", 15000))
 	if item.begins_with("tm_"):
 		var kind := str(GameData.progression.get("tms", {}).get(item, {}).get("kind", "main"))
 		return int(econ("tm_prices/" + ("main" if kind == "main" else "super"), 2500))
@@ -757,6 +843,8 @@ func item_price(item: String) -> int:
 
 
 func item_category(item: String) -> String:
+	if item.begins_with("shiny_"):
+		return "shiny"
 	if item.begins_with("tm_"):
 		return "tm"
 	return str(econ("items/%s/category" % item, item))
@@ -789,6 +877,10 @@ func store_slots() -> Array:
 			item = "hm_" + str(HM_IDS[roll.randi() % HM_IDS.size()])
 		elif item == "tm":
 			item = missing[roll.randi() % missing.size()] if not missing.is_empty() else "ultra_ball"
+		if str(slot["rarity"]) == "featured" and roll.randf() < float(econ("shiny/store_chance", 0.1)):
+			var options := shiny_candidates()
+			if not options.is_empty():
+				item = "shiny_" + options[roll.randi() % options.size()]
 		slots.append({ "item": item, "rarity": slot["rarity"] })
 	store.clear()
 	store["day"] = today()
@@ -812,6 +904,8 @@ func cant_buy(item: String) -> String:
 	var category := item_category(item)
 	if item.begins_with("tm_") and has_tm(item):
 		return "Owned"
+	if item.begins_with("shiny_") and has_shiny(item.trim_prefix("shiny_")):
+		return "Owned"
 	if bought_today(category) >= daily_cap(category):
 		return "Daily limit"
 	if money() < item_price(item):
@@ -829,6 +923,8 @@ func buy(item: String) -> bool:
 	_dict("store")["bought"] = bought
 	if item.begins_with("tm_"):
 		_add_tm(item)
+	elif item.begins_with("shiny_"):
+		_give_shiny(item.trim_prefix("shiny_"))
 	else:
 		_give(item)
 	save()
