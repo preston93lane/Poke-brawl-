@@ -32,6 +32,8 @@ func _ready() -> void:
 	aim_stick.released.connect(_on_aim_released)
 	gadget_button.pressed.connect(func() -> void: _try("gadget"))
 	super_button.pressed.connect(func() -> void: _try("super"))
+	super_button.aimable = true
+	super_button.aim_released.connect(_on_super_aimed)
 	if hm_button:
 		hm_button.pressed.connect(func() -> void: _try("hm"))
 
@@ -70,6 +72,11 @@ func _physics_process(delta: float) -> void:
 	gadget_button.set_cooldown(brawler.gadget_cooldown_ratio())
 	gadget_button.uses = brawler.gadget_uses
 	super_button.set_charge(brawler.super_charge)
+	# Dragging the super button previews where it will land.
+	if super_button.aim_output != Vector2.ZERO and brawler.current_super().kind != "self":
+		brawler.show_super_aim(_to_world(super_button.aim_output), super_button.aim_output.length())
+	else:
+		brawler.hide_super_aim()
 	super_button.label = brawler.current_super().display_name.to_upper()
 	if hm_button and hm_button.visible:
 		hm_button.set_cooldown(brawler.hm_cooldown_ratio())
@@ -237,6 +244,17 @@ func _do_hm() -> bool:
 		if target:
 			dir = target.global_position - brawler.global_position
 	return brawler.use_hm(dir)
+
+
+## Released after dragging the super button: fire it that way, that far.
+func _on_super_aimed(output: Vector2) -> void:
+	var move := brawler.current_super()
+	if move.kind == "self":
+		_try("super")
+		return
+	var reach := move.dash_distance if move.kind == "dash" else move.reach
+	brawler.use_super(_to_world(output), output.length() * reach)
+	brawler.hide_super_aim()
 
 
 ## Aimed with the right stick if it's held, otherwise at the best visible enemy.

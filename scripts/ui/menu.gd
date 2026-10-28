@@ -188,7 +188,7 @@ func show_select(mode: String) -> void:
 				break
 	var arenas: Array[String] = GameData.arenas_for_mode(mode)
 	if _arena not in arenas:
-		_arena = arenas[0]
+		_arena = "random"
 
 	var root := VBoxContainer.new()
 	root.add_theme_constant_override("separation", 12)
@@ -614,16 +614,9 @@ func _refresh_select_details() -> void:
 			branches.add_child(b)
 		_details.add_child(branches)
 
-	var team_size := int(GameData.rule("team_size", 3))
-	if _mode == "showdown":
-		var rivals := int(GameData.rule("modes/showdown/players", 6)) - 1
-		_details.add_child(_section("OPPONENTS  (pick up to %d, the rest are random)" % rivals))
-		_details.add_child(_team_picker(_enemies, rivals))
-	else:
-		_details.add_child(_section("TEAMMATES  (pick up to %d, the rest are random)" % (team_size - 1)))
-		_details.add_child(_team_picker(_allies, team_size - 1))
-		_details.add_child(_section("OPPONENTS  (pick up to %d, the rest are random)" % team_size))
-		_details.add_child(_team_picker(_enemies, team_size))
+	# Teammates and opponents are always random.
+	_allies.clear()
+	_enemies.clear()
 
 	_details.add_child(_section("BOT DIFFICULTY"))
 	var difficulty_row := HBoxContainer.new()
@@ -634,9 +627,12 @@ func _refresh_select_details() -> void:
 		difficulty_row.add_child(b)
 	_details.add_child(difficulty_row)
 
-	_details.add_child(_section("ARENA"))
+	_details.add_child(_section("ARENA  (random by default; pick one to play a challenge's map)"))
 	var arenas := HFlowContainer.new()
 	var arena_group := ButtonGroup.new()
+	var random_arena := _toggle("RANDOM", arena_group, _arena == "random")
+	random_arena.pressed.connect(func() -> void: _arena = "random")
+	arenas.add_child(random_arena)
 	for arena_id in GameData.arenas_for_mode(_mode):
 		var b := _toggle(str(GameData.arenas[arena_id].get("name", arena_id)), arena_group, arena_id == _arena)
 		b.pressed.connect(func() -> void: _arena = arena_id)
@@ -793,7 +789,8 @@ func _vitamin_box(s: SpeciesData) -> Control:
 func _start_match() -> void:
 	GameData.match_settings = {
 		"mode": _mode,
-		"arena": _arena,
+		"arena": GameData.arenas_for_mode(_mode).pick_random() if _arena == "random" else _arena,
+		"arena_choice": _arena,
 		"species": _species.id,
 		"main": _main,
 		"super": _super,
@@ -820,7 +817,7 @@ func _restore_last_choices() -> void:
 		_allies.append(str(id))
 	for id in last.get("enemies", []):
 		_enemies.append(str(id))
-	_arena = str(last.get("arena", ""))
+	_arena = str(last.get("arena_choice", "random"))
 	_difficulty = str(last.get("difficulty", "normal"))
 
 

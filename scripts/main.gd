@@ -339,6 +339,14 @@ func _on_brawler_died(victim: Brawler, killer: Brawler) -> void:
 	if killer and killer != victim:
 		killer.register_kill()
 	hud.add_kill(killer, victim)
+	if victim in legendaries:
+		# A fainted legendary ally leaves for good (it counts as a KO in Battle).
+		if mode == "duel" and killer and killer.team in [0, 1]:
+			scores[killer.team] += 1
+			_update_status()
+		hud.announce("%s fainted!" % victim.species.display_name.to_upper())
+		get_tree().create_timer(1.0, false).timeout.connect(_dismiss_legendary.bind(victim))
+		return
 	if mode_logic and mode_logic.on_died(victim, killer):
 		_update_status()
 		return  # Showdown: no respawns.
@@ -452,11 +460,20 @@ func summon_legendary(species_id: String, team: int, at: Vector3) -> Brawler:
 	var ally: Brawler = BRAWLER_SCENE.instantiate()
 	ally.setup(species_id, 3, team, false, arena)
 	ally.is_legendary = true
-	ally.invulnerable = true
 	ally.flying = true
 	ally.collision_mask = 0
 	ally.position = at
 	arena.add_child(ally)
+	# Beefy but beatable: about twice a normal Pokémon's health.
+	var total := 0.0
+	var count := 0
+	for t: int in teams:
+		for node in teams[t]:
+			if is_instance_valid(node):
+				total += (node as Brawler).max_health
+				count += 1
+	ally.max_health = (total / maxi(1, count)) * float(GameData.rule("legendary/ally_hp_multiplier", 2.0))
+	ally.health = ally.max_health
 	ally.died.connect(_on_brawler_died)
 	ally.evolved.connect(_on_brawler_evolved)
 	var bot := BotController.new()

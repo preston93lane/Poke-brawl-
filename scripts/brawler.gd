@@ -866,6 +866,8 @@ func _spawn_projectile(move: MoveData, direction: Vector3, distance := -1.0) -> 
 		return
 	var projectile: Projectile = PROJECTILE_SCENE.instantiate()
 	projectile.setup(self, move, direction, distance)
+	# Placed before entering the tree, so its trail doesn't start at the map's centre.
+	projectile.position = (get_parent() as Node3D).to_local(spawn)
 	get_parent().add_child(projectile)
 	projectile.global_position = spawn
 
@@ -1341,6 +1343,54 @@ func _aim_length() -> float:
 		"melee":
 			return main_move.reach + BODY_RADIUS
 	return main_move.reach
+
+
+var _super_aim: MeshInstance3D
+
+
+## Super preview while dragging the super button: a circle where area and
+## exploding supers land, or a strip showing how far shots and dashes go.
+func show_super_aim(direction: Vector3, amount: float) -> void:
+	var move := current_super()
+	if is_dead or move == null or direction.length_squared() < 0.0001:
+		hide_super_aim()
+		return
+	if _super_aim == null:
+		_super_aim = MeshInstance3D.new()
+		_super_aim.top_level = true
+		var mat := StandardMaterial3D.new()
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		mat.albedo_color = Color(1, 0.85, 0.2, 0.4)
+		_super_aim.material_override = mat
+		_super_aim.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(_super_aim)
+	var dir := Vector3(direction.x, 0, direction.z).normalized()
+	var radius := move.area_radius if move.kind == "area" else move.explode_radius
+	if radius > 0.0:
+		var disc := _super_aim.mesh as CylinderMesh
+		if disc == null:
+			disc = CylinderMesh.new()
+			disc.height = 0.03
+			_super_aim.mesh = disc
+		disc.top_radius = radius
+		disc.bottom_radius = radius
+		var dist := clampf(amount, 0.0, 1.0) * move.reach
+		_super_aim.global_transform = Transform3D(Basis(), global_position + dir * dist + Vector3(0, 0.06, 0))
+	else:
+		var strip := _super_aim.mesh as BoxMesh
+		if strip == null:
+			strip = BoxMesh.new()
+			_super_aim.mesh = strip
+		var length := move.dash_distance if move.kind == "dash" else move.reach
+		strip.size = Vector3(maxf(0.4, move.radius * 2.0), 0.03, length)
+		_super_aim.global_transform = Transform3D(Basis(Vector3.UP, atan2(dir.x, dir.z)), global_position + dir * length * 0.5 + Vector3(0, 0.06, 0))
+	_super_aim.visible = true
+
+
+func hide_super_aim() -> void:
+	if _super_aim:
+		_super_aim.visible = false
 
 
 func hide_aim() -> void:

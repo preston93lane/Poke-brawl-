@@ -4,6 +4,8 @@ extends Control
 ## cooldown sweep or charge fill, and the move name in a pill underneath.
 
 signal pressed
+## Aimable buttons (supers): released after a drag, with the drag as a stick output.
+signal aim_released(output: Vector2)
 
 @export var label := "GADGET"
 @export var color := Color(1.0, 0.55, 0.15)
@@ -19,6 +21,12 @@ var uses := -1:
 			uses = value
 			queue_redraw()
 var enabled := true
+## Drag from the button to aim, like the attack stick; a tap still emits `pressed`.
+var aimable := false
+var aim_radius := 110.0
+## Current drag while held (length 0..1), zero when not aiming.
+var aim_output := Vector2.ZERO
+var _origin := Vector2.ZERO
 var _touch_index := -1
 var _cooldown := 0.0
 var _charge := 0.0
@@ -42,6 +50,7 @@ func set_enabled(value: bool) -> void:
 	enabled = value
 	visible = value
 	_touch_index = -1
+	aim_output = Vector2.ZERO
 
 
 ## ratio: 1 = just used, 0 = ready.
@@ -69,16 +78,33 @@ func contains_screen_point(screen_pos: Vector2) -> bool:
 
 
 func _input(event: InputEvent) -> void:
-	if not enabled or not event is InputEventScreenTouch:
+	if not enabled:
+		return
+	var drag := event as InputEventScreenDrag
+	if drag and aimable and drag.index == _touch_index:
+		aim_output = ((drag.position - _origin) / aim_radius).limit_length(1.0)
+		get_viewport().set_input_as_handled()
+		return
+	if not event is InputEventScreenTouch:
 		return
 	var touch := event as InputEventScreenTouch
 	if touch.pressed and _touch_index == -1 and contains_screen_point(touch.position):
 		_touch_index = touch.index
-		pressed.emit()
+		_origin = touch.position
+		aim_output = Vector2.ZERO
+		if not aimable:
+			pressed.emit()
 		queue_redraw()
 		get_viewport().set_input_as_handled()
 	elif not touch.pressed and touch.index == _touch_index:
 		_touch_index = -1
+		if aimable:
+			# A real drag aims; a short tap auto-aims.
+			if aim_output.length() > 0.25:
+				aim_released.emit(aim_output)
+			else:
+				pressed.emit()
+		aim_output = Vector2.ZERO
 		queue_redraw()
 
 

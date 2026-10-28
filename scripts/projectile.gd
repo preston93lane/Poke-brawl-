@@ -19,6 +19,8 @@ var team := 0
 var direction := Vector3.FORWARD
 ## Lobbed shots land this far away (clamped to the move's range).
 var lob_distance := -1.0
+## Exploding shots aimed at a spot (Fire Blast) burst there instead of flying full range.
+var aimed_distance := -1.0
 
 var _travelled := 0.0
 var _hit: Array[Brawler] = []
@@ -45,6 +47,8 @@ func setup(p_shooter: Brawler, p_move: MoveData, dir: Vector3, distance := -1.0)
 	team = p_shooter.team
 	direction = dir
 	lob_distance = move.reach if distance < 0.0 else clampf(distance, 1.0, move.reach)
+	if distance >= 0.0 and move.explode_radius > 0.0 and not move.lob:
+		aimed_distance = clampf(distance, 1.0, move.reach)
 	_bounces_left = move.bounces
 
 
@@ -93,6 +97,8 @@ func _physics_process(delta: float) -> void:
 	if _returning:
 		_steer_home()
 	var limit := move.reach * (2.5 if move.returns else 1.0)
+	if aimed_distance > 0.0:
+		limit = aimed_distance
 	var remaining := minf(move.speed * delta, limit - _travelled)
 	var space := get_world_3d().direct_space_state
 	var sub_step := maxf(0.1, move.radius)
@@ -300,6 +306,7 @@ func _detach_trail() -> void:
 		return
 	var at := _trail.global_position
 	remove_child(_trail)
+	_trail.position = (get_parent() as Node3D).to_local(at)
 	get_parent().add_child(_trail)
 	_trail.global_position = at
 	_trail.emitting = false

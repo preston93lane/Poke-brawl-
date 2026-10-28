@@ -216,8 +216,14 @@ static func _base(type_name: String, amount: int, lifetime: float) -> CPUParticl
 
 
 static func _spawn_one_shot(parent: Node, p: CPUParticles3D, pos: Vector3) -> void:
+	# Particles emit as soon as they enter the tree: place them first, or the
+	# first burst pops out at the middle of the map.
+	p.emitting = false
+	if parent is Node3D and (parent as Node3D).is_inside_tree():
+		p.position = (parent as Node3D).to_local(pos)
 	parent.add_child(p)
 	p.global_position = pos
+	p.restart()
 	p.emitting = true
 	parent.get_tree().create_timer(p.lifetime + 0.4, false).timeout.connect(p.queue_free)
 

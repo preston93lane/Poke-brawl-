@@ -324,7 +324,7 @@ func _check_menu() -> void:
 	for mode_id in ["brawl_ball", "candy_rush", "showdown"]:
 		menu.show_select(mode_id)
 		await get_tree().process_frame
-	expect(menu._arena in GameData.arenas_for_mode("king_of_the_hill"), "king of the hill only offers arenas with a zone")
+	expect(menu._arena == "random" or menu._arena in GameData.arenas_for_mode("king_of_the_hill"), "king of the hill only offers arenas with a zone (or random)")
 	menu.show_select("duel")
 	menu._type_filter = "fire"
 	menu._fill_species_grid()
@@ -481,8 +481,10 @@ func _check_legendaries_and_items() -> void:
 		if main.legendaries.size() > 0:
 			var ally: Brawler = main.legendaries[0]
 			var ally_hp := ally.health
+			expect(ally.max_health < player.max_health * 3.0 and ally.max_health > player.max_health * 1.3,
+					"the legendary ally has about twice normal health (%d vs %d)" % [ally.max_health, player.max_health])
 			ally.take_damage(800.0, enemy)
-			expect(is_equal_approx(ally.health, ally_hp) and ally.flying, "the legendary ally can't be hurt and flies")
+			expect(ally.health < ally_hp and ally.flying, "the legendary ally can be hurt, and flies")
 			main._dismiss_legendary(ally)
 			expect(main.legendaries.is_empty(), "the legendary leaves after its time")
 	main.queue_free()
