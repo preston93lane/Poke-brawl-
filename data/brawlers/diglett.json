@@ -9,6 +9,7 @@
 	"stats": {"hp": 2400, "attack": 103, "defense": 81, "speed": 113},
 	"super": "diglett_super",
 	"gadget": "gadget_agility",
+	"evolve_level": 26,
 	"evolves_to": "dugtrio",
 	"moves": [
 		{"move": "diglett_main1", "level": 1},

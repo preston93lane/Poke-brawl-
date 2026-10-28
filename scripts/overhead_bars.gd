@@ -73,9 +73,11 @@ func _draw() -> void:
 			_text(font, at + Vector2(-4, 44), 34, counter, 18, counter_color)
 		if brawler.ball != null:
 			_text(font, Vector2(bar.position.x - 30, bar.position.y - 44), bar.size.x + 60, "HAS THE BALL", 16, Color(1, 1, 1))
-		# One pip per KO toward the next evolution.
-		for i in brawler.evolve_kills:
-			draw_circle(Vector2(bar.end.x + 8 + i * 10, bar.position.y - 4), 3.5, Color(1, 0.85, 0.2))
+		# One pip per KO toward the next evolution, with dim pips for the ones still needed.
+		if brawler.species.evolves_to != "" or brawler.power_ups < brawler.max_power_ups():
+			for i in brawler.kills_needed():
+				var pip := Vector2(bar.end.x + 8 + i * 10, bar.position.y - 4)
+				draw_circle(pip, 3.5, Color(1, 0.85, 0.2) if i < brawler.evolve_kills else Color(0, 0, 0, 0.45))
 
 		if brawler.is_player:
 			_draw_ammo(brawler, Vector2(bar.position.x, bar.end.y + 4))

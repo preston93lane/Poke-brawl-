@@ -10,5 +10,6 @@
 	"super": "kakuna_super",
 	"gadget": "gadget_agility",
 	"evolves_from": "weedle",
+	"evolve_level": 10,
 	"evolves_to": "beedrill"
 }

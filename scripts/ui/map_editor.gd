@@ -24,10 +24,14 @@ const PALETTE := [
 	["G", "GOAL", Color(1, 0.95, 0.4)],
 	["S", "SHOWDOWN SPAWN", Color(0.8, 0.4, 1.0)],
 	["P", "CRATE", Color(0.55, 0.8, 0.3)],
+	["F", "FIRE VENT", Color(1.0, 0.45, 0.1)],
+	["O", "WARP PAD", Color(0.75, 0.35, 0.95)],
 ]
 const FLOORS := ["grass", "gym_floor", "sand", "wood", "metal", "pool", "ice", "dark", "psychic", "volcanic", "path"]
 const WALLS := ["rock", "metal_wall", "brick", "hedge", "ice_block", "wood_wall", "cracked"]
 const LIQUIDS := ["water", "lava"]
+## Map-wide hazards (warp pads and fire vents are tiles instead).
+const WEATHER := ["none", "lightning"]
 const MIRRORS := [["off", "OFF"], ["vertical", "TOP ↔ BOTTOM"], ["quad", "QUADRANTS"]]
 const TEST_MODES := [["duel", "BATTLE"], ["king_of_the_hill", "KING OF THE HILL"], ["brawl_ball", "BRAWL BALL"],
 		["candy_rush", "CANDY RUSH"], ["showdown", "SHOWDOWN"]]
@@ -129,7 +133,7 @@ func load_map(id: String) -> void:
 	wall_tile = str(def.get("wall", "rock"))
 	liquid = str(def.get("liquid", "water"))
 	extra = {}
-	for key in ["raid_boss", "guardian", "modes"]:
+	for key in ["raid_boss", "guardian", "modes", "weather"]:
 		if def.has(key):
 			extra[key] = def[key]
 	rows.clear()
@@ -264,6 +268,13 @@ func _show_tools() -> void:
 	_panel.add_child(_cycler(WALLS, func() -> String: return wall_tile, func(v: String) -> void: wall_tile = v))
 	_panel.add_child(_section("LIQUID  (water: Water/Flying cross it · lava: Fire/Flying)"))
 	_panel.add_child(_cycler(LIQUIDS, func() -> String: return liquid, func(v: String) -> void: liquid = v))
+	_panel.add_child(_section("WEATHER  (lightning strikes; Electric/Ground are immune)"))
+	_panel.add_child(_cycler(WEATHER, func() -> String: return str(extra.get("weather", "none")),
+			func(v: String) -> void:
+				if v == "none":
+					extra.erase("weather")
+				else:
+					extra["weather"] = v))
 	_panel.add_child(_section("TEST IN"))
 	_panel.add_child(_choice_row(TEST_MODES, test_mode, func(v: String) -> void: test_mode = v))
 	if arena_id != "" and GameData.is_custom_arena(arena_id):

@@ -9,6 +9,7 @@
 	"stats": {"hp": 2850, "attack": 115, "defense": 84, "speed": 105},
 	"super": "doduo_super",
 	"gadget": "gadget_teleport",
+	"evolve_level": 31,
 	"evolves_to": "dodrio",
 	"moves": [
 		{"move": "doduo_main1", "level": 1},

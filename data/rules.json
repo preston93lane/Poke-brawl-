@@ -75,6 +75,18 @@
 		}
 	},
 	"spawn_protection": 2.0,
+	"hazards": {
+		"_comment": "Fire vents (F tiles; Fire types immune), warp pads (O tiles) and lightning (map weather; Electric and Ground immune).",
+		"vents": { "period": 5.0, "warning": 1.2, "erupt": 1.4, "dps": 1400.0 },
+		"warp": { "cooldown": 2.5 },
+		"lightning": { "first_after": 6.0, "every_min": 4.0, "every_max": 7.0, "strikes": 2, "warning": 1.3, "radius": 1.5, "damage": 1300.0 }
+	},
+	"trainer": {
+		"_comment": "Profile levels (kept between matches, per evolution line). At the line's evolve_level (Charmander 16, Charmeleon 32) that evolution takes fast_kills KOs in a match instead of kills_to_evolve. Pokémon that power up instead use power_up_levels (first and second Power Up).",
+		"max_level": 60,
+		"fast_kills": 2,
+		"power_up_levels": [20, 40]
+	},
 	"legendary": {
 		"_comment": "Battle: a raid boss appears when raid_time_left seconds remain; the team that dealt the most damage to it gets it as an ally. King of the Hill: hold the zone alone for shrine_hold seconds straight to awaken the arena's guardian.",
 		"raid_time_left": 90.0,

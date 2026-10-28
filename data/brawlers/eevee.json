@@ -9,6 +9,7 @@
 	"stats": {"hp": 3850, "attack": 99, "defense": 94, "speed": 97},
 	"super": "eevee_super",
 	"gadget": "gadget_protect",
+	"evolve_level": 25,
 	"evolves_to": ["vaporeon", "jolteon", "flareon"],
 	"moves": [
 		{"move": "eevee_main1", "level": 1},

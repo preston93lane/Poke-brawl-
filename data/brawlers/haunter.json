@@ -10,5 +10,6 @@
 	"super": "phantom_force",
 	"gadget": "gadget_smokescreen",
 	"evolves_from": "gastly",
+	"evolve_level": 40,
 	"evolves_to": "gengar"
 }

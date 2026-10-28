@@ -9,6 +9,7 @@
 	"stats": {"hp": 3200, "attack": 99, "defense": 82, "speed": 97},
 	"super": "pidgey_super",
 	"gadget": "gadget_teleport",
+	"evolve_level": 18,
 	"evolves_to": "pidgeotto",
 	"moves": [
 		{"move": "pidgey_main1", "level": 1},

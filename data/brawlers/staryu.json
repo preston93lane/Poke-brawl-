@@ -9,6 +9,7 @@
 	"stats": {"hp": 2700, "attack": 105, "defense": 93, "speed": 109},
 	"super": "staryu_super",
 	"gadget": "gadget_teleport",
+	"evolve_level": 25,
 	"evolves_to": "starmie",
 	"moves": [
 		{"move": "staryu_main1", "level": 1},

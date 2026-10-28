@@ -10,5 +10,6 @@
 	"super": "aqua_ring",
 	"gadget": "gadget_teleport",
 	"evolves_from": "squirtle",
+	"evolve_level": 36,
 	"evolves_to": "blastoise"
 }

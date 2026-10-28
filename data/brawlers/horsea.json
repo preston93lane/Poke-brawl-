@@ -9,6 +9,7 @@
 	"stats": {"hp": 2500, "attack": 110, "defense": 88, "speed": 99},
 	"super": "horsea_super",
 	"gadget": "gadget_teleport",
+	"evolve_level": 32,
 	"evolves_to": "seadra",
 	"moves": [
 		{"move": "horsea_main1", "level": 1},

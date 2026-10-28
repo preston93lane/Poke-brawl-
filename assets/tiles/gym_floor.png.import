@@ -2,18 +2,33 @@
 
 importer="texture"
 type="CompressedTexture2D"
+uid="uid://cb8528uvyi5pk"
+path="res://.godot/imported/gym_floor.png-85b1f59ba973fd429bc8d77306b320a5.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
 source_file="res://assets/tiles/gym_floor.png"
+dest_files=["res://.godot/imported/gym_floor.png-85b1f59ba973fd429bc8d77306b320a5.ctex"]
 
 [params]
 
 compress/mode=0
 compress/high_quality=false
 compress/lossy_quality=0.7
+compress/hdr_compression=1
+compress/normal_map=0
+compress/channel_pack=0
 mipmaps/generate=true
 mipmaps/limit=-1
-detect_3d/compress_to=0
+roughness/mode=0
+roughness/src_normal=""
 process/fix_alpha_border=true
 process/premult_alpha=false
+process/normal_map_invert_y=false
+process/hdr_as_srgb=false
+process/hdr_clamp_exposure=false
+process/size_limit=0
+detect_3d/compress_to=0

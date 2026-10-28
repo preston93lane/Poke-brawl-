@@ -35,6 +35,8 @@ func _ready() -> void:
 	await _check_intro()
 	await _check_menu_fits()
 	await _check_power_ups()
+	await _check_trainer_levels()
+	await _check_hazards()
 	Engine.time_scale = 1.0
 	print("SMOKE TEST: %s" % ("PASS" if failures == 0 else "FAIL (%d)" % failures))
 	get_tree().quit(1 if failures > 0 else 0)
@@ -1047,3 +1049,102 @@ func _check_power_ups() -> void:
 	expect(tauros.power_ups == 0, "fainting loses them")
 	main.queue_free()
 	await get_tree().process_frame
+
+
+func _check_trainer_levels() -> void:
+	print("Trainer levels and fast evolving")
+	expect(GameData.get_species("charmander").evolve_level == 16 and GameData.get_species("charmeleon").evolve_level == 36, "main-series evolve levels loaded")
+	expect(GameData.family_root("charizard") == "charmander", "Charizard's line is Charmander's")
+	var main := await _start_match("route_1", "duel", "charmander", [])
+	var p: Brawler = main.player
+	expect(p.trainer_level == Profile.level_of("charmander"), "the player gets their profile level")
+	p.trainer_level = 1
+	expect(p.kills_needed() == 3, "a low level evolves after 3 KOs")
+	p.trainer_level = 16
+	expect(p.kills_needed() == 2, "level 16 Charmander evolves after 2 KOs")
+	p.register_kill()
+	p.register_kill()
+	expect(p.species.id == "charmeleon", "evolved after 2 KOs (%s)" % p.species.id)
+	expect(p.kills_needed() == 3, "Charmeleon still needs 3 below level 36")
+	p.trainer_level = 36
+	p.register_kill()
+	p.register_kill()
+	expect(p.species.id == "charizard", "level 36 evolves Charmeleon after 2 KOs")
+	main.queue_free()
+	await get_tree().process_frame
+	main = await _start_match("route_1", "duel", "tauros", [])
+	var t: Brawler = main.player
+	t.trainer_level = 20
+	expect(t.kills_needed() == 2, "first Power Up is fast at level 20")
+	t.register_kill()
+	t.register_kill()
+	expect(t.power_ups == 1 and t.kills_needed() == 3, "second Power Up needs level 40")
+	main.queue_free()
+	await get_tree().process_frame
+	var saved: Dictionary = Profile.data.duplicate(true)
+	Profile.set_level("charizard", 30)
+	expect(Profile.level_of("charmander") == 30, "levels are stored per evolution line")
+	expect(not Profile.try_dev_code("wrong"), "a wrong dev code is refused")
+	Profile.data["dev"] = true
+	var menu := MENU_SCENE.instantiate()
+	add_child(menu)
+	await get_tree().process_frame
+	menu.show_dev()
+	await get_tree().process_frame
+	menu.show_select("duel")
+	await get_tree().process_frame
+	expect(menu._details.get_child_count() > 3, "dev tools and the trainer level panel open")
+	menu.queue_free()
+	Profile.data = saved
+	Profile.save()
+
+
+func _check_hazards() -> void:
+	print("Hazards")
+	var main := await _start_match("cinnabar_gym", "duel", "squirtle", [])
+	await _freeze_all(main)
+	var hazards: Hazards = main.arena.hazards
+	expect(hazards != null and not main.arena.vent_cells.is_empty(), "Cinnabar has fire vents")
+	var vent: Vector3 = main.arena.cell_center(main.arena.vent_cells[0])
+	var p: Brawler = main.player
+	p.position = vent
+	p.invulnerable = false
+	p.health = p.max_health
+	var hp := p.health
+	for i in 360:
+		p.position = vent
+		await get_tree().physics_frame
+	expect(p.health < hp, "standing on a vent burns (%d -> %d)" % [hp, p.health])
+	main.queue_free()
+	await get_tree().process_frame
+
+	main = await _start_match("saffron_gym", "duel", "squirtle", [])
+	await _freeze_all(main)
+	var pads: Array[Vector2i] = main.arena.warp_cells
+	expect(pads.size() >= 2, "Saffron has warp pads (%d)" % pads.size())
+	p = main.player
+	var start: Vector3 = main.arena.cell_center(pads[0])
+	p.position = start
+	for i in 3:
+		await get_tree().physics_frame
+	expect(p.global_position.distance_to(start) > 5.0, "a warp pad sends you across the map")
+	main.queue_free()
+	await get_tree().process_frame
+
+	main = await _start_match("vermilion_gym", "duel", "squirtle", [])
+	await _freeze_all(main)
+	expect(main.arena.weather == "lightning", "Vermilion has lightning")
+	p = main.player
+	p.health = p.max_health
+	hp = p.health
+	hazards = main.arena.hazards
+	hazards._strike_timer = 0.0
+	await get_tree().physics_frame
+	expect(not hazards._strikes.is_empty(), "lightning warning circles appear")
+	hazards._warn_strike(p.global_position)
+	for i in 120:
+		await get_tree().physics_frame
+	expect(p.health < hp, "standing in a lightning circle gets you struck (%d -> %d)" % [hp, p.health])
+	main.queue_free()
+	await get_tree().process_frame
+	expect(GameData.arenas.has("ss_anne"), "the S.S. Anne is a map")

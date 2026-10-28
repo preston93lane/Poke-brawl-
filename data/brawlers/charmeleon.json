@@ -10,5 +10,6 @@
 	"super": "flame_charge",
 	"gadget": "gadget_sitrus",
 	"evolves_from": "charmander",
+	"evolve_level": 36,
 	"evolves_to": "charizard"
 }

@@ -9,6 +9,7 @@
 	"stats": {"hp": 3150, "attack": 107, "defense": 102, "speed": 89},
 	"super": "koffing_super",
 	"gadget": "gadget_smokescreen",
+	"evolve_level": 35,
 	"evolves_to": "weezing",
 	"moves": [
 		{"move": "koffing_main1", "level": 1},

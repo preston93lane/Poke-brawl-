@@ -10,5 +10,6 @@
 	"super": "nidorina_super",
 	"gadget": "gadget_protect",
 	"evolves_from": "nidoran_f",
+	"evolve_level": 40,
 	"evolves_to": "nidoqueen"
 }

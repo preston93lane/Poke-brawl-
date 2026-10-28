@@ -9,6 +9,7 @@
 	"stats": {"hp": 3100, "attack": 107, "defense": 88, "speed": 99},
 	"super": "growlithe_super",
 	"gadget": "gadget_agility",
+	"evolve_level": 25,
 	"evolves_to": "arcanine",
 	"moves": [
 		{"move": "growlithe_main1", "level": 1},

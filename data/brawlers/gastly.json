@@ -9,6 +9,7 @@
 	"stats": {"hp": 2600, "attack": 123, "defense": 80, "speed": 107},
 	"super": "hypnosis",
 	"gadget": "gadget_smokescreen",
+	"evolve_level": 25,
 	"evolves_to": "haunter",
 	"moves": [
 		{"move": "gastly_main1", "level": 1},

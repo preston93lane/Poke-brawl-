@@ -9,6 +9,7 @@
 	"stats": {"hp": 3950, "attack": 111, "defense": 94, "speed": 91},
 	"super": "sandshrew_super",
 	"gadget": "gadget_agility",
+	"evolve_level": 22,
 	"evolves_to": "sandslash",
 	"moves": [
 		{"move": "sandshrew_main1", "level": 1},

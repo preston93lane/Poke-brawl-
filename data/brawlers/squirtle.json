@@ -9,6 +9,7 @@
 	"stats": {"hp": 3300, "attack": 99, "defense": 99, "speed": 92},
 	"super": "withdraw",
 	"gadget": "gadget_teleport",
+	"evolve_level": 16,
 	"evolves_to": "wartortle",
 	"moves": [
 		{"move": "squirtle_main1", "level": 1},

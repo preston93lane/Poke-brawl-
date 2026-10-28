@@ -9,6 +9,7 @@
 	"stats": {"hp": 3300, "attack": 113, "defense": 96, "speed": 87},
 	"super": "oddish_super",
 	"gadget": "gadget_smokescreen",
+	"evolve_level": 21,
 	"evolves_to": "gloom",
 	"moves": [
 		{"move": "oddish_main1", "level": 1},

@@ -9,6 +9,7 @@
 	"stats": {"hp": 4250, "attack": 113, "defense": 98, "speed": 85},
 	"super": "rhyhorn_super",
 	"gadget": "gadget_protect",
+	"evolve_level": 42,
 	"evolves_to": "rhydon",
 	"moves": [
 		{"move": "rhyhorn_main1", "level": 1},

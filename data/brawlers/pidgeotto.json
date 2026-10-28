@@ -10,5 +10,6 @@
 	"super": "pidgeotto_super",
 	"gadget": "gadget_teleport",
 	"evolves_from": "pidgey",
+	"evolve_level": 36,
 	"evolves_to": "pidgeot"
 }

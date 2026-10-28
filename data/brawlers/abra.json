@@ -9,6 +9,7 @@
 	"stats": {"hp": 2200, "attack": 123, "defense": 81, "speed": 111},
 	"super": "teleport",
 	"gadget": "gadget_teleport",
+	"evolve_level": 16,
 	"evolves_to": "kadabra",
 	"moves": [
 		{"move": "abra_main1", "level": 1},

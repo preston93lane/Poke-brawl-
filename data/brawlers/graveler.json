@@ -10,5 +10,6 @@
 	"super": "earthquake",
 	"gadget": "gadget_smokescreen",
 	"evolves_from": "geodude",
+	"evolve_level": 40,
 	"evolves_to": "golem"
 }

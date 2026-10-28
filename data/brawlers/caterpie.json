@@ -9,6 +9,7 @@
 	"stats": {"hp": 3800, "attack": 94, "defense": 76, "speed": 93},
 	"super": "caterpie_super",
 	"gadget": "gadget_smokescreen",
+	"evolve_level": 7,
 	"evolves_to": "metapod",
 	"moves": [
 		{"move": "caterpie_main1", "level": 1},

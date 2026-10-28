@@ -9,6 +9,7 @@
 	"stats": {"hp": 3600, "attack": 126, "defense": 94, "speed": 95},
 	"super": "krabby_super",
 	"gadget": "gadget_protect",
+	"evolve_level": 28,
 	"evolves_to": "kingler",
 	"moves": [
 		{"move": "krabby_main1", "level": 1},

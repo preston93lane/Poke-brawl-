@@ -9,6 +9,7 @@
 	"stats": {"hp": 2900, "attack": 104, "defense": 81, "speed": 104},
 	"super": "rattata_super",
 	"gadget": "gadget_agility",
+	"evolve_level": 20,
 	"evolves_to": "raticate",
 	"moves": [
 		{"move": "rattata_main1", "level": 1},

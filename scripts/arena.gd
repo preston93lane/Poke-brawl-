@@ -8,6 +8,8 @@ extends Node3D
 ##         ~ water (blocks walking except for Water/Flying types, not shots)   1/2 team spawns
 ##         (one tile per teammate)   Z king-of-the-hill zone   G Brawl Ball goal
 ##         S Showdown spawn   P Showdown power-cube crate
+##         F fire vent (erupts every few seconds)   O warp pad (sends you to its mirror pad)
+##         Map-wide "weather": "lightning" adds lightning strikes (see hazards.gd).
 ##
 ## Also builds an AStarGrid2D so bots can path around walls (find_path).
 
@@ -37,6 +39,13 @@ const GRAVE_SPRITE_SIZE := Vector2(1.0, 1.25)
 var goal_cells := { 0: {}, 1: {} }
 ## Showdown spawn points (S tiles).
 var showdown_spawns: Array[Vector3] = []
+## Hazard tiles (built by hazards.gd): fire vents and warp pads.
+var vent_cells: Array[Vector2i] = []
+var warp_cells: Array[Vector2i] = []
+## Map-wide hazard from the map's "weather" ("" or "lightning").
+var weather := ""
+## Set by main.gd when the map has hazards (bots ask it what to avoid).
+var hazards: Hazards
 var _crate_mesh: BoxMesh
 var _crate_material: StandardMaterial3D
 var _breakable_mesh: Mesh
@@ -68,6 +77,7 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 	var wall_tile := str(def.get("wall", "rock"))
 	var breakable_walls := bool(def.get("breakable_walls", true))
 	liquid = str(def.get("liquid", "water"))
+	weather = str(def.get("weather", ""))
 	var graves: Array[Transform3D] = []
 	var path_blobs: Array[Transform3D] = []
 
@@ -136,6 +146,10 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 					zone.append(Transform3D(Basis(), center + Vector3(0, 0.02, 0)))
 				"S":
 					showdown_spawns.append(center)
+				"F":
+					vent_cells.append(cell)
+				"O":
+					warp_cells.append(cell)
 				"~":
 					water_cells[cell] = true
 				"\"":

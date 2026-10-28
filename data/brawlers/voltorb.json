@@ -9,6 +9,7 @@
 	"stats": {"hp": 3350, "attack": 95, "defense": 92, "speed": 115},
 	"super": "voltorb_super",
 	"gadget": "gadget_agility",
+	"evolve_level": 30,
 	"evolves_to": "electrode",
 	"moves": [
 		{"move": "voltorb_main1", "level": 1},

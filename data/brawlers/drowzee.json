@@ -9,6 +9,7 @@
 	"stats": {"hp": 3500, "attack": 96, "defense": 100, "speed": 92},
 	"super": "drowzee_super",
 	"gadget": "gadget_teleport",
+	"evolve_level": 26,
 	"evolves_to": "hypno",
 	"moves": [
 		{"move": "drowzee_main1", "level": 1},

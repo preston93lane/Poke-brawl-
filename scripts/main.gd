@@ -80,6 +80,12 @@ func _ready() -> void:
 		push_warning("Arena '%s' has no Z tiles; switching to battle" % arena_id)
 		mode = "duel"
 		mode_rules = GameData.rule("modes/duel", {})
+	var hazards := Hazards.new()
+	hazards.name = "Hazards"
+	arena.add_child(hazards)
+	hazards.setup(self, arena)
+	if hazards.is_active():
+		arena.hazards = hazards
 
 	if MODE_SCRIPTS.has(mode):
 		mode_logic = MODE_SCRIPTS[mode].new()
@@ -133,8 +139,27 @@ func _ready() -> void:
 	hud.restart_requested.connect(func() -> void: get_tree().reload_current_scene())
 	hud.menu_requested.connect(func() -> void: get_tree().change_scene_to_file(MENU_SCENE))
 	_update_status()
+	if Profile.is_dev():
+		_add_dev_buttons()
 	if show_intro:
 		await _play_intro()
+
+
+## Dev mode: shortcuts for testing (top left, under the scoreboard's edge).
+func _add_dev_buttons() -> void:
+	var row := HBoxContainer.new()
+	row.position = Vector2(8, 8)
+	row.add_theme_constant_override("separation", 6)
+	var raid := UiKit.button("RAID NOW", func() -> void:
+		if raid_boss == null and not _raid_done:
+			var _boss := spawn_raid_boss(), 16)
+	var win := UiKit.button("WIN", func() -> void:
+		if not round_over:
+			end_round("victory", "Dev win"), 16)
+	for b: Button in [raid, win]:
+		b.modulate.a = 0.8
+		row.add_child(b)
+	hud.add_child(row)
 
 
 ## Pause everything while the team banners play.
@@ -211,6 +236,8 @@ func _spawn_bot(species_id: String, team: int) -> Brawler:
 func _spawn(species_id: String, level: int, team: int, is_player: bool, main_id := "") -> Brawler:
 	var brawler: Brawler = BRAWLER_SCENE.instantiate()
 	brawler.setup(species_id, level, team, is_player, arena, main_id)
+	# Bots match the profile level of the player's Pokémon, so fast evolving is fair.
+	brawler.trainer_level = Profile.level_of(species_id if is_player else player_species)
 	# The player picks shiny in the menu; bots are shiny once in a while.
 	brawler.shiny = player_shiny if is_player else randf() < float(GameData.rule("shiny_chance", 0.06))
 	_spawn_index[brawler] = teams[team].size()

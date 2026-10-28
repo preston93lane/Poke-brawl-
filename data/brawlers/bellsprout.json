@@ -9,6 +9,7 @@
 	"stats": {"hp": 3700, "attack": 115, "defense": 80, "speed": 91},
 	"super": "sleep_powder",
 	"gadget": "gadget_agility",
+	"evolve_level": 21,
 	"evolves_to": "weepinbell",
 	"moves": [
 		{"move": "bellsprout_main1", "level": 1},

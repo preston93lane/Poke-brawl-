@@ -9,6 +9,7 @@
 	"stats": {"hp": 3100, "attack": 104, "defense": 88, "speed": 101},
 	"super": "fire_spin",
 	"gadget": "gadget_sitrus",
+	"evolve_level": 16,
 	"evolves_to": "charmeleon",
 	"moves": [
 		{"move": "charmander_main1", "level": 1},

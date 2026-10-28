@@ -9,6 +9,7 @@
 	"stats": {"hp": 3850, "attack": 112, "defense": 90, "speed": 85},
 	"super": "grimer_super",
 	"gadget": "gadget_smokescreen",
+	"evolve_level": 38,
 	"evolves_to": "muk",
 	"moves": [
 		{"move": "grimer_main1", "level": 1},

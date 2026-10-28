@@ -10,5 +10,6 @@
 	"super": "reflect",
 	"gadget": "gadget_teleport",
 	"evolves_from": "abra",
+	"evolve_level": 40,
 	"evolves_to": "alakazam"
 }

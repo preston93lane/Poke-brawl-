@@ -1,10 +1,11 @@
 {
-	"_comment": "Generated from a mirrored design; edit it in the map maker. Lt. Surge's gym: a grid of breakable trash-can walls that supers blast open; goals for Brawl Ball.",
+	"_comment": "Generated from a mirrored design; edit it in the map maker. Lt. Surge's gym: a grid of breakable trash-can walls that supers blast open; goals for Brawl Ball. Lightning strikes land near Pokémon after a warning circle; Electric and Ground types are immune.",
 	"name": "Vermilion Gym",
 	"floor": "metal",
 	"wall": "metal_wall",
 	"raid_boss": "zapdos",
 	"guardian": "regirock",
+	"weather": "lightning",
 	"map": [
 		"####################################",
 		"#............#GGGGGGGG#............#",

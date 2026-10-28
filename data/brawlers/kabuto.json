@@ -9,6 +9,7 @@
 	"stats": {"hp": 2650, "attack": 113, "defense": 100, "speed": 97},
 	"super": "kabuto_super",
 	"gadget": "gadget_agility",
+	"evolve_level": 40,
 	"evolves_to": "kabutops",
 	"moves": [
 		{"move": "kabuto_main1", "level": 1},

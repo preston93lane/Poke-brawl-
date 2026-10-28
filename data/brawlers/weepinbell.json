@@ -10,5 +10,6 @@
 	"super": "stun_spore",
 	"gadget": "gadget_agility",
 	"evolves_from": "bellsprout",
+	"evolve_level": 40,
 	"evolves_to": "victreebel"
 }

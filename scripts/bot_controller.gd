@@ -87,6 +87,12 @@ func _physics_process(delta: float) -> void:
 		brawler.move_input = _unstick_dir
 		return
 
+	if brawler.arena and brawler.arena.hazards:
+		var away := brawler.arena.hazards.escape_from(brawler.global_position, brawler)
+		if away != Vector3.ZERO:
+			brawler.move_input = Vector2(away.x, away.z)
+			return
+
 	if leash_radius > 0.0 and _flat_distance(brawler.global_position, leash_center) > leash_radius:
 		_go_to(leash_center, delta)
 		return

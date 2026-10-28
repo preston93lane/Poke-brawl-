@@ -9,6 +9,7 @@
 	"stats": {"hp": 3200, "attack": 99, "defense": 82, "speed": 97},
 	"super": "zubat_super",
 	"gadget": "gadget_agility",
+	"evolve_level": 22,
 	"evolves_to": "golbat",
 	"moves": [
 		{"move": "zubat_main1", "level": 1},

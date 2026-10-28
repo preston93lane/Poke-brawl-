@@ -9,6 +9,7 @@
 	"stats": {"hp": 3200, "attack": 105, "defense": 78, "speed": 103},
 	"super": "spearow_super",
 	"gadget": "gadget_teleport",
+	"evolve_level": 20,
 	"evolves_to": "fearow",
 	"moves": [
 		{"move": "spearow_main1", "level": 1},

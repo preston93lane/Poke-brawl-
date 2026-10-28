@@ -9,6 +9,7 @@
 	"stats": {"hp": 2900, "attack": 107, "defense": 94, "speed": 93},
 	"super": "leech_seed",
 	"gadget": "gadget_smokescreen",
+	"evolve_level": 16,
 	"evolves_to": "ivysaur",
 	"moves": [
 		{"move": "bulbasaur_main1", "level": 1},

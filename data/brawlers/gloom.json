@@ -10,5 +10,6 @@
 	"super": "gloom_super",
 	"gadget": "gadget_smokescreen",
 	"evolves_from": "oddish",
+	"evolve_level": 40,
 	"evolves_to": "vileplume"
 }

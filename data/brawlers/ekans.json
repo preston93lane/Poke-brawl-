@@ -9,6 +9,7 @@
 	"stats": {"hp": 3250, "attack": 105, "defense": 89, "speed": 97},
 	"super": "ekans_super",
 	"gadget": "gadget_agility",
+	"evolve_level": 22,
 	"evolves_to": "arbok",
 	"moves": [
 		{"move": "ekans_main1", "level": 1},

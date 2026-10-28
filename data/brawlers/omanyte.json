@@ -9,6 +9,7 @@
 	"stats": {"hp": 2900, "attack": 118, "defense": 106, "speed": 89},
 	"super": "omanyte_super",
 	"gadget": "gadget_teleport",
+	"evolve_level": 40,
 	"evolves_to": "omastar",
 	"moves": [
 		{"move": "omanyte_main1", "level": 1},

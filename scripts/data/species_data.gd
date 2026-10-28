@@ -29,6 +29,9 @@ var speed := 100.0
 var evolves_to := ""
 var evolutions: Array[String] = []
 var evolves_from := ""
+## Main-series level this stage evolves at (Charmander 16); 0 if it doesn't evolve.
+## With a profile level this high, the evolution takes two KOs instead of three.
+var evolve_level := 0
 ## Play style id from data/styles.json ("brawler", "sniper"...): which Brawl Stars
 ## archetype the attacks are modelled on.
 var style := ""
@@ -68,6 +71,7 @@ static func from_dict(species_id: String, d: Dictionary) -> SpeciesData:
 	elif str(next) != "":
 		s.evolutions.append(str(next))
 	s.evolves_to = s.evolutions[0] if not s.evolutions.is_empty() else ""
+	s.evolve_level = int(d.get("evolve_level", 0))
 	s.style = str(d.get("style", ""))
 	s.raw_gadget = str(d.get("gadget", ""))
 	s.evolves_from = str(d.get("evolves_from", ""))

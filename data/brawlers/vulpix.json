@@ -9,6 +9,7 @@
 	"stats": {"hp": 2950, "attack": 99, "defense": 92, "speed": 101},
 	"super": "vulpix_super",
 	"gadget": "gadget_smokescreen",
+	"evolve_level": 25,
 	"evolves_to": "ninetales",
 	"moves": [
 		{"move": "vulpix_main1", "level": 1},

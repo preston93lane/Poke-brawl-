@@ -89,7 +89,10 @@ func show_home() -> void:
 	dex.custom_minimum_size = Vector2(300, 64)
 	dex.add_theme_stylebox_override("normal", UiKit.box(Color(0.75, 0.3, 0.3)))
 	modes.add_child(dex)
-	for entry in [["MAP MAKER", show_map_editor], ["SETTINGS", show_settings]]:
+	var extras: Array = [["MAP MAKER", show_map_editor], ["SETTINGS", show_settings]]
+	if Profile.is_dev():
+		extras.append(["DEV TOOLS", show_dev])
+	for entry in extras:
 		var extra := UiKit.button(entry[0], entry[1], 24)
 		extra.custom_minimum_size = Vector2(300, 64)
 		extra.add_theme_stylebox_override("normal", UiKit.box(Color(0.35, 0.38, 0.5)))
@@ -194,11 +197,94 @@ func show_settings() -> void:
 		GameData.set_setting("aim_assist", on)
 		assist.text = "AIM ASSIST: ON" if on else "AIM ASSIST: OFF")
 	top.add_child(assist)
+	if not Profile.is_dev():
+		var code := LineEdit.new()
+		code.placeholder_text = "Dev code"
+		code.secret = true
+		code.custom_minimum_size.x = 160
+		code.add_theme_font_size_override("font_size", 20)
+		code.text_submitted.connect(func(text: String) -> void:
+			if Profile.try_dev_code(text):
+				show_dev()
+			else:
+				code.text = ""
+				code.placeholder_text = "Wrong code")
+		top.add_child(code)
 	root.add_child(top)
 	editor.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.add_child(editor)
 	_set_screen(root)
 	update_size.call()
+
+
+## Dev tools (dev mode only): set profile levels to test fast evolving, reset progress.
+func show_dev() -> void:
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 12)
+	var top := HBoxContainer.new()
+	top.add_child(UiKit.button("‹ BACK", show_home))
+	top.add_child(UiKit.label("  DEV TOOLS", 30, Color(1, 0.85, 0.25)))
+	v.add_child(top)
+	v.add_child(_section("SET EVERY POKéMON'S LEVEL"))
+	var all_row := HFlowContainer.new()
+	for level in [1, 16, 25, 32, 40, Profile.max_level()]:
+		all_row.add_child(UiKit.button("ALL Lv %d" % level, func() -> void:
+			Profile.set_all_levels(level)
+			show_dev(), 20))
+	v.add_child(all_row)
+	var picked := _species if _species else GameData.base_species()[0]
+	v.add_child(_section("SELECTED: %s  (pick another on any mode's select screen)" % picked.display_name.to_upper()))
+	v.add_child(_trainer_level_box(picked))
+	v.add_child(_section("PROGRESS"))
+	var reset_row := HFlowContainer.new()
+	var reset := UiKit.button("RESET PROFILE", func() -> void:
+		Profile.reset()
+		show_dev(), 20)
+	reset.add_theme_stylebox_override("normal", UiKit.box(Color(0.7, 0.25, 0.25)))
+	reset_row.add_child(reset)
+	reset_row.add_child(UiKit.button("TURN DEV MODE OFF", func() -> void:
+		Profile.set_dev(false)
+		show_home(), 20))
+	v.add_child(reset_row)
+	v.add_child(UiKit.label("In a match, dev mode adds RAID NOW and WIN buttons at the top left.", 18, Color(0.75, 0.8, 0.9)))
+	_set_screen(UiKit.scroll(v))
+
+
+## Profile level of the line and how many KOs each growth takes in a match.
+func _trainer_level_box(s: SpeciesData) -> VBoxContainer:
+	var box := VBoxContainer.new()
+	var level := Profile.level_of(s.id)
+	var head := HBoxContainer.new()
+	head.add_child(UiKit.label("TRAINER LEVEL %d" % level, 22, Color(1, 0.85, 0.25)))
+	if Profile.is_dev():
+		for step in [-10, -1, 1, 10]:
+			head.add_child(UiKit.button("%+d" % step, func() -> void:
+				Profile.set_level(s.id, Profile.level_of(s.id) + step)
+				if is_instance_valid(_details) and _details.is_inside_tree():
+					_refresh_select_details()
+				else:
+					show_dev(), 18))
+	box.add_child(head)
+	var fast := int(GameData.rule("trainer/fast_kills", 2))
+	var slow := int(GameData.rule("evolution/kills_to_evolve", 3))
+	var power_levels: Array = GameData.rule("trainer/power_up_levels", [20, 40])
+	var steps: Array[String] = []
+	for stage in GameData.evolution_line(s.id):
+		if stage.evolutions.is_empty():
+			continue
+		var need := stage.evolve_level if stage.evolve_level > 0 else 25
+		var next: SpeciesData = GameData.species[stage.evolves_to]
+		steps.append("%s → %s: %d KOs%s" % [stage.display_name, next.display_name if stage.evolutions.size() == 1 else "evolution",
+				fast if level >= need else slow, " ✓" if level >= need else "  (%d at Lv %d)" % [fast, need]])
+	var final_stage := GameData.evolution_line(s.id).back() as SpeciesData
+	if final_stage and final_stage.evolutions.is_empty():
+		for i in maxi(0, 3 - final_stage.stage):
+			var need := int(power_levels[clampi(final_stage.stage - 1 + i, 0, power_levels.size() - 1)])
+			steps.append("Power Up %d: %d KOs%s" % [i + 1, fast if level >= need else slow, " ✓" if level >= need else "  (%d at Lv %d)" % [fast, need]])
+	var text := UiKit.label("\n".join(PackedStringArray(steps)), 16, Color(0.8, 0.85, 0.95))
+	text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(text)
+	return box
 
 
 func show_map_editor() -> void:
@@ -337,6 +423,7 @@ func _refresh_select_details() -> void:
 		_details.add_child(UiKit.stat_bar(stat, _stat(s, stat)))
 
 	_details.add_child(_style_box(s))
+	_details.add_child(_trainer_level_box(s))
 
 	if s.shiny_sheet:
 		var shiny_row := HBoxContainer.new()

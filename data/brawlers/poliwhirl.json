@@ -10,5 +10,6 @@
 	"super": "poliwhirl_super",
 	"gadget": "gadget_protect",
 	"evolves_from": "poliwag",
+	"evolve_level": 40,
 	"evolves_to": "poliwrath"
 }

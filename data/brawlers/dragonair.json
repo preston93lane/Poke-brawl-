@@ -10,5 +10,6 @@
 	"super": "dragon_dance",
 	"gadget": "gadget_agility",
 	"evolves_from": "dratini",
+	"evolve_level": 55,
 	"evolves_to": "dragonite"
 }

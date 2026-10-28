@@ -9,6 +9,7 @@
 	"stats": {"hp": 4450, "attack": 104, "defense": 84, "speed": 95},
 	"super": "nidoran_m_super",
 	"gadget": "gadget_protect",
+	"evolve_level": 16,
 	"evolves_to": "nidorino",
 	"moves": [
 		{"move": "nidoran_m_main1", "level": 1},

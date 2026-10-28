@@ -9,6 +9,7 @@
 	"stats": {"hp": 3100, "attack": 105, "defense": 89, "speed": 97},
 	"super": "psyduck_super",
 	"gadget": "gadget_smokescreen",
+	"evolve_level": 33,
 	"evolves_to": "golduck",
 	"moves": [
 		{"move": "psyduck_main1", "level": 1},

@@ -82,6 +82,9 @@ var _pop := 1.0
 var _dead_time := 0.0
 ## KOs toward the next evolution. Kept when fainting, reset when evolving.
 var evolve_kills := 0
+## Profile level of this evolution line (kept between matches). High enough and
+## the next evolution or Power Up needs fewer KOs (see kills_needed()).
+var trainer_level := 1
 ## Branch to take when a line splits (Eevee); "" = random.
 var preferred_evolution := ""
 
@@ -422,11 +425,27 @@ func register_kill() -> void:
 	if species.evolves_to == "" and power_ups >= max_power_ups():
 		return
 	evolve_kills += 1
-	if evolve_kills >= int(GameData.rule("evolution/kills_to_evolve", 3)):
+	if evolve_kills >= kills_needed():
 		if species.evolves_to != "":
 			evolve()
 		else:
 			power_up()
+
+
+## KOs for the next evolution or Power Up: fast_kills (2) once the profile level
+## reaches the evolution's main-series level (or the Power Up's level), else 3.
+func kills_needed() -> int:
+	var slow := int(GameData.rule("evolution/kills_to_evolve", 3))
+	return int(GameData.rule("trainer/fast_kills", 2)) if trainer_level >= fast_level() else slow
+
+
+## Profile level that makes the next growth fast (0 = none left).
+func fast_level() -> int:
+	if species.evolves_to != "":
+		return species.evolve_level if species.evolve_level > 0 else 25
+	var levels: Array = GameData.rule("trainer/power_up_levels", [20, 40])
+	var step := clampi(species.stage - 1 + power_ups, 0, levels.size() - 1)
+	return int(levels[step])
 
 
 ## Every Pokémon grows twice per life: by evolving, or (once it can't evolve any

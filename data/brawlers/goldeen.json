@@ -9,6 +9,7 @@
 	"stats": {"hp": 2950, "attack": 105, "defense": 93, "speed": 100},
 	"super": "goldeen_super",
 	"gadget": "gadget_agility",
+	"evolve_level": 33,
 	"evolves_to": "seaking",
 	"moves": [
 		{"move": "goldeen_main1", "level": 1},

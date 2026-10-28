@@ -9,6 +9,7 @@
 	"stats": {"hp": 3350, "attack": 101, "defense": 92, "speed": 93},
 	"super": "venonat_super",
 	"gadget": "gadget_smokescreen",
+	"evolve_level": 31,
 	"evolves_to": "venomoth",
 	"moves": [
 		{"move": "venonat_main1", "level": 1},

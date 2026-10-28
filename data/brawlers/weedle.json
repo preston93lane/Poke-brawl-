@@ -9,6 +9,7 @@
 	"stats": {"hp": 3450, "attack": 97, "defense": 75, "speed": 95},
 	"super": "weedle_super",
 	"gadget": "gadget_agility",
+	"evolve_level": 7,
 	"evolves_to": "kakuna",
 	"moves": [
 		{"move": "weedle_main1", "level": 1},

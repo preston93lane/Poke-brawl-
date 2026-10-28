@@ -9,6 +9,7 @@
 	"stats": {"hp": 3400, "attack": 99, "defense": 104, "speed": 89},
 	"super": "cubone_super",
 	"gadget": "gadget_teleport",
+	"evolve_level": 28,
 	"evolves_to": "marowak",
 	"moves": [
 		{"move": "cubone_main1", "level": 1},

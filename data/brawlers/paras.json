@@ -9,6 +9,7 @@
 	"stats": {"hp": 4200, "attack": 113, "defense": 93, "speed": 85},
 	"super": "paras_super",
 	"gadget": "gadget_protect",
+	"evolve_level": 24,
 	"evolves_to": "parasect",
 	"moves": [
 		{"move": "paras_main1", "level": 1},

@@ -43,13 +43,19 @@ The web build uses Godot's Compatibility renderer, so lighting is slightly simpl
 - Every Pokémon *stage* has its own **super**: big attacks, area poison, team heals, shields, teleports, blinding Flash…
 - **Types matter:** STAB, an 18-type chart and coverage moves. Super-effective hits pop up orange with "!".
 - **Evolve** every 3 KOs (yellow pips next to your health bar; fainting doesn't reset them). Faint and you drop back a stage.
+- **Trainer levels** are saved per evolution line. Once a line reaches the main-series evolve level (Charmander 16,
+  Charmeleon 36), that evolution takes 2 KOs instead of 3. Pokémon that power up instead get it at levels 20 and 40.
+- **Hazards:** fire vents in Cinnabar Gym (Fire types immune), lightning in Vermilion Gym (Electric/Ground immune),
+  warp pads in Saffron Gym. The map maker can place vents (F) and pads (O) and turn on lightning.
+- **Dev mode:** open the game with `?dev=<code>` or type the code in Settings to get DEV TOOLS (set levels, reset
+  progress) and in-match RAID NOW / WIN buttons.
 - **Brawl Ball:** touch the Poké Ball to pick it up; your attack kicks it. First to 2 goals.
   **Rare Candy Rush:** candies pop out of the mine; hold 10 as a team with the lead for 10 s. Fainting drops yours.
   **Showdown:** 6 Pokémon, everyone for themselves, no respawns. Smash crates for power cubes (+HP, +damage);
   the poison cloud closes in. After every match a summary shows KOs, damage, healing and the MVP.
 - **Walls:** rock walls, trees and gravestones are permanent; cracked walls, boulders and ice blocks break when a
   super hits them. Lava (Cinnabar Gym) can only be crossed by Fire and Flying types.
-- **Arenas:** Route 1, Boulder Gym, Dragon's Den, Pallet Pitch, Viridian Forest, all eight Kanto gyms, the Elite Four,
+- **Arenas:** Route 1, the S.S. Anne, Boulder Gym, Dragon's Den, Pallet Pitch, Viridian Forest, all eight Kanto gyms, the Elite Four,
   the Pokémon Tower graveyard and the Safari Zone.
 - **Map maker** (home screen): paint tiles, pick floor / wall / liquid, mirror top↔bottom or in quadrants, name and
   save, edit or revert the built-in maps, and test straight away. Maps are saved on your device.

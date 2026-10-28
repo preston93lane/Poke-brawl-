@@ -9,6 +9,7 @@
 	"stats": {"hp": 3150, "attack": 96, "defense": 100, "speed": 103},
 	"super": "tentacool_super",
 	"gadget": "gadget_agility",
+	"evolve_level": 30,
 	"evolves_to": "tentacruel",
 	"moves": [
 		{"move": "tentacool_main1", "level": 1},

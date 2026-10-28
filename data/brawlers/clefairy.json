@@ -9,6 +9,7 @@
 	"stats": {"hp": 3500, "attack": 103, "defense": 94, "speed": 89},
 	"super": "clefairy_super",
 	"gadget": "gadget_heal_pulse",
+	"evolve_level": 25,
 	"evolves_to": "clefable",
 	"moves": [
 		{"move": "clefairy_main1", "level": 1},

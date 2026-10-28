@@ -9,6 +9,7 @@
 	"stats": {"hp": 3500, "attack": 109, "defense": 98, "speed": 91},
 	"super": "shellder_super",
 	"gadget": "gadget_protect",
+	"evolve_level": 25,
 	"evolves_to": "cloyster",
 	"moves": [
 		{"move": "shellder_main1", "level": 1},

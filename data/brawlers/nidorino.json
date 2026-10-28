@@ -10,5 +10,6 @@
 	"super": "nidorino_super",
 	"gadget": "gadget_protect",
 	"evolves_from": "nidoran_m",
+	"evolve_level": 40,
 	"evolves_to": "nidoking"
 }

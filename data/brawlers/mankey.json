@@ -9,6 +9,7 @@
 	"stats": {"hp": 3900, "attack": 113, "defense": 84, "speed": 103},
 	"super": "bulk_up",
 	"gadget": "gadget_protect",
+	"evolve_level": 28,
 	"evolves_to": "primeape",
 	"moves": [
 		{"move": "mankey_main1", "level": 1},

@@ -9,6 +9,7 @@
 	"stats": {"hp": 3450, "attack": 94, "defense": 98, "speed": 93},
 	"super": "seel_super",
 	"gadget": "gadget_teleport",
+	"evolve_level": 34,
 	"evolves_to": "dewgong",
 	"moves": [
 		{"move": "seel_main1", "level": 1},

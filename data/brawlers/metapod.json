@@ -10,5 +10,6 @@
 	"super": "metapod_super",
 	"gadget": "gadget_smokescreen",
 	"evolves_from": "caterpie",
+	"evolve_level": 10,
 	"evolves_to": "butterfree"
 }

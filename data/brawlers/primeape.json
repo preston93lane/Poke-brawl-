@@ -10,5 +10,6 @@
 	"super": "rampage",
 	"gadget": "gadget_protect",
 	"evolves_from": "mankey",
+	"evolve_level": 40,
 	"evolves_to": "annihilape"
 }

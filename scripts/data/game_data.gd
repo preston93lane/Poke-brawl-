@@ -229,6 +229,17 @@ func base_species(alphabetical := false) -> Array[SpeciesData]:
 	return result
 
 
+## Base form of `species_id`'s evolution line (Charizard → Charmander).
+func family_root(species_id: String) -> String:
+	var id := species_id
+	for i in 8:
+		var s: SpeciesData = species.get(id)
+		if s == null or s.evolves_from == "" or not species.has(s.evolves_from):
+			break
+		id = s.evolves_from
+	return id
+
+
 ## Every species ordered by evolution line (base form, then its evolutions), legendaries last.
 func species_by_line() -> Array[SpeciesData]:
 	var result: Array[SpeciesData] = []
