@@ -357,3 +357,21 @@ static func web_typable(edit: LineEdit, question: String, on_done := Callable())
 			edit.text_changed.emit(edit.text)
 			if on_done.is_valid():
 				on_done.call(edit.text))
+
+
+static var _icons: Dictionary = {}
+
+## Item icon (assets/items/<item>.png) as a fresh texture built from the image
+## data, cached; null if there's no icon. (The imported Rare Candy texture drew
+## as a white square in custom-drawn menus.)
+static func item_icon(item: String) -> Texture2D:
+	if _icons.has(item):
+		return _icons[item]
+	var path := "res://assets/items/%s.png" % item
+	var tex: Texture2D = null
+	if ResourceLoader.exists(path):
+		var imported: Texture2D = load(path)
+		var img := imported.get_image() if imported else null
+		tex = ImageTexture.create_from_image(img) if img else imported
+	_icons[item] = tex
+	return tex

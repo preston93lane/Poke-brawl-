@@ -69,7 +69,7 @@ func _draw() -> void:
 		if counter != "":
 			var icon_path := "res://assets/items/rare_candy.png" if brawler.candies > 0 else "res://assets/items/power_cube.png"
 			var at := Vector2(bar.position.x - 52, bar.position.y - 46)
-			draw_texture_rect(load(icon_path), Rect2(at, Vector2(26, 26)), false)
+			draw_texture_rect(UiKit.item_icon(icon_path.get_file().get_basename()), Rect2(at, Vector2(26, 26)), false)
 			_text(font, at + Vector2(-4, 44), 34, counter, 18, counter_color)
 		if brawler.ball != null:
 			_text(font, Vector2(bar.position.x - 30, bar.position.y - 44), bar.size.x + 60, "HAS THE BALL", 16, Color(1, 1, 1))

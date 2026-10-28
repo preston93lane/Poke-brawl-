@@ -339,7 +339,14 @@ func xp_of(species_id: String) -> int:
 
 ## XP from `level` to the next one.
 func xp_needed(level: int) -> int:
-	return int(econ("xp/level_base", 50)) + int(econ("xp/level_step", 10)) * level
+	var tiers: Array = econ("xp/level_tiers", [])
+	var pick: Dictionary = {}
+	for tier: Dictionary in tiers:
+		if level >= int(tier["from"]):
+			pick = tier
+	if pick.is_empty():
+		return int(econ("xp/level_base", 50)) + int(econ("xp/level_step", 10)) * level
+	return int(pick["base"]) + int(pick["step"]) * (level - int(pick["from"]))
 
 
 ## Adds XP to a line; returns how many levels it gained. Doesn't save.

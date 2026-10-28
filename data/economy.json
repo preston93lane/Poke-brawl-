@@ -1,6 +1,8 @@
 {
 	"_comment": "Progression and rewards. XP goes to the line you played; a level costs level_base + level_step x your current level. Ball contents: each prize is rolled on its own. Store: 6 slots a day, prices by item, daily caps by category.",
-	"xp": { "win": 100, "draw": 60, "loss": 40, "per_ko": 10, "max_kos": 10, "mvp": 25, "first_win_multiplier": 2, "level_base": 50, "level_step": 10 },
+	"xp": { "win": 100, "draw": 60, "loss": 40, "per_ko": 10, "max_kos": 10, "mvp": 25, "first_win_multiplier": 2, "level_base": 50, "level_step": 10,
+		"_levels": "XP to go from level L to L+1: the last tier with from <= L gives base + step x (L - from). Quick to 10, steeper to 30, steeper again after.",
+		"level_tiers": [ { "from": 1, "base": 60, "step": 15 }, { "from": 10, "base": 250, "step": 25 }, { "from": 30, "base": 900, "step": 40 } ] },
 	"money": { "win": 60, "draw": 30, "loss": 15, "per_ko": 5 },
 	"drops": {
 		"_comment": "After a match: win = always a ball (upgrade chances), otherwise loss_chance of a Poké Ball. Any ball may become a Master Ball. ultra_pity = guaranteed Ultra after this many balls without one.",

@@ -173,9 +173,9 @@ func _draw_prize(pos: Vector2, p: Dictionary, alpha: float) -> void:
 			draw_circle(pos, s * 1.5, Color(1, 0.9, 0.4, 0.35 * alpha))
 		draw_texture_rect(tex, Rect2(pos - Vector2(s, s) * 1.4, Vector2(s, s) * 2.8), false, Color(1, 1, 1, alpha))
 	else:
-		var path := ICON_DIR + item + ".png"
-		if ResourceLoader.exists(path):
-			draw_texture_rect(load(path), Rect2(pos - Vector2(s, s), Vector2(s, s) * 2), false, Color(1, 1, 1, alpha))
+		var icon := UiKit.item_icon(item)
+		if icon:
+			draw_texture_rect(icon, Rect2(pos - Vector2(s, s), Vector2(s, s) * 2), false, Color(1, 1, 1, alpha))
 		else:
 			# TMs and HMs: a little disc.
 			var disc := Color(0.55, 0.6, 1.0) if item.begins_with("tm_") else Color(0.75, 0.6, 1.0)
@@ -250,8 +250,8 @@ class PrizeIcon extends Control:
 			if item == "shiny":
 				draw_circle(c, size.x * 0.5, Color(1, 0.9, 0.4, 0.4))
 			draw_texture_rect(sp.shiny_sprite if item == "shiny" and sp.shiny_sprite else sp.sprite, Rect2(Vector2.ZERO, size), false)
-		elif ResourceLoader.exists("res://assets/items/" + item + ".png"):
-			draw_texture_rect(load("res://assets/items/" + item + ".png"), Rect2(Vector2.ZERO, size), false)
+		elif UiKit.item_icon(item):
+			draw_texture_rect(UiKit.item_icon(item), Rect2(Vector2.ZERO, size), false)
 		else:
 			draw_circle(c, 16, Color(0.55, 0.6, 1.0) if item.begins_with("tm_") else Color(0.75, 0.6, 1.0))
 			draw_circle(c, 5, Color(0.15, 0.15, 0.2))
