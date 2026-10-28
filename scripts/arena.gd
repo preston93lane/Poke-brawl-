@@ -78,6 +78,11 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 	var breakable_walls := bool(def.get("breakable_walls", true))
 	liquid = str(def.get("liquid", "water"))
 	weather = str(def.get("weather", ""))
+	# "lets_go": the 3D Let's Go look (see arena_art.gd) instead of flat tiles and sprites.
+	var lets_go := str(def.get("art", "")) == "lets_go"
+	var art_cells := { "path": {}, "grass": {} }
+	var tree_cells: Array[Vector2i] = []
+	var open_cells: Array[Vector2i] = []
 	var graves: Array[Transform3D] = []
 	var path_blobs: Array[Transform3D] = []
 
@@ -106,7 +111,10 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 			var floor_name := floor_tile
 			if floor_tile == "grass":
 				floor_name = "grass_%d" % posmod(x * 7 + y * 13 + (x * y) % 5, 3)  # Mix of variants.
+			if c == ".":
+				open_cells.append(cell)
 			if c == ",":
+				art_cells["path"][cell] = true
 				# Paths are soft round patches over the floor rather than square tiles.
 				var turn := float(posmod(x * 37 + y * 11, 12)) * PI / 6.0
 				var spread := 1.35 + float(posmod(x * 5 + y * 3, 4)) * 0.06
@@ -123,6 +131,7 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 			match c:
 				"T":
 					solid_cells[cell] = true
+					tree_cells.append(cell)
 					# Upright sprite tilted to face the fixed camera; base sits at the tile's front edge.
 					var base := center + Vector3(0, 0, TILE * 0.35)
 					trees.append(Transform3D(tilt, base + tilt.y * TREE_SPRITE_SIZE.y * 0.5))
@@ -153,6 +162,7 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 				"~":
 					water_cells[cell] = true
 				"\"":
+					art_cells["grass"][cell] = true
 					var yaw := float(posmod(x * 31 + y * 17, 12)) * PI / 6.0
 					var bush_scale := 0.95 + float(posmod(x * 13 + y * 7, 5)) * 0.04
 					grass.append(Transform3D(Basis(Vector3.UP, yaw).scaled(Vector3.ONE * bush_scale), center))
@@ -182,11 +192,24 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 	var floor_plane := PlaneMesh.new()
 	floor_plane.size = Vector2(TILE, TILE)
 	for floor_name: String in floors:
+		if lets_go and floor_name != "water":
+			continue
 		var mat: Material = _water_material() if floor_name == "water" else _tile_material(floor_name)
 		_add_multimesh(floor_plane, mat, floors[floor_name])
-	_add_multimesh(floor_plane, _edge_shadow_material(), _edge_shadows(solid_cells, water_cells), false)
+	if lets_go:
+		var solid_art := solid_cells.duplicate()
+		solid_art.merge(breakable_cells)
+		art_cells["solid"] = solid_art
+		art_cells["water"] = water_cells
+		var ground := ArenaArt.build_ground(self, art_cells)
+		ground.position.y = 0.001
+		add_child(ground)
+		if get_parent():
+			ArenaArt.apply_lighting(get_parent())
+	else:
+		_add_multimesh(floor_plane, _edge_shadow_material(), _edge_shadows(solid_cells, water_cells), false)
 
-	if not path_blobs.is_empty():
+	if not path_blobs.is_empty() and not lets_go:
 		var blob_mat := _tile_material("path_blob", false, false)
 		blob_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		_add_multimesh(floor_plane, blob_mat, path_blobs, false)
@@ -194,33 +217,51 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 	block.size = Vector3(TILE, WALL_HEIGHT, TILE)
 	_crate_mesh_box = block
 	var lump := lump_mesh(0.62, 0.1, 7)
-	_add_multimesh(lump if wall_tile in ORGANIC_WALLS else block, _tile_material(wall_tile, true), rocks)
-	_add_multimesh(block, _tile_material("boulder", true), boulders)
+	var rock_mat: Material = ArenaArt.vertex_color_material() if lets_go else null
+	if lets_go:
+		lump = ArenaArt.rock_mesh(0)
+		_add_multimesh(lump, rock_mat, rocks)
+		_add_multimesh(lump, rock_mat, boulders)
+	else:
+		_add_multimesh(lump if wall_tile in ORGANIC_WALLS else block, _tile_material(wall_tile, true), rocks)
+		_add_multimesh(block, _tile_material("boulder", true), boulders)
 	_breakable_mesh = lump
 	var materials := {
-		"cracked": _tile_material("cracked", true),
-		"boulder": _tile_material("boulder", true),
+		"cracked": rock_mat if lets_go else _tile_material("cracked", true),
+		"boulder": rock_mat if lets_go else _tile_material("boulder", true),
 		"ice_block": _tile_material("ice_block", true),
-		"wall_style": _tile_material(wall_tile, true),
+		"wall_style": rock_mat if lets_go else _tile_material(wall_tile, true),
 		"crate": _tile_material("crate", true),
 	}
 	_crate_material = materials["crate"]
 	for cell: Vector2i in breakable_cells:
 		var kind: String = breakable_cells[cell]
 		var b := _add_breakable(cell, "crate" if kind == "crate" else "wall", materials[kind])
-		if kind == "wall_style" and wall_tile not in ORGANIC_WALLS:
+		if kind == "wall_style" and wall_tile not in ORGANIC_WALLS and not lets_go:
 			b.set_mesh(_crate_mesh_box, Basis())  # Brick / metal / wood walls stay blocky.
 
-	var grass_mat := ShaderMaterial.new()
-	grass_mat.shader = GRASS_SHADER
-	grass_mat.set_shader_parameter("blades", load(TILE_DIR + "tall_grass.png"))
-	_add_multimesh(_bush_mesh(), grass_mat, grass)
-
-	var tree_quad := QuadMesh.new()
-	tree_quad.size = TREE_SPRITE_SIZE
-	var tree_mat := _tile_material("tree", false, true)
-	tree_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	_add_multimesh(tree_quad, tree_mat, trees, false)
+	if lets_go:
+		var clumps: Array[Transform3D] = []
+		for t: Transform3D in grass:
+			clumps.append(Transform3D(t.basis.scaled(Vector3(1.12, 1.0, 1.12)), t.origin))
+		_add_multimesh(ArenaArt.grass_mesh(), ArenaArt.grass_material(), clumps)
+		var tree_transforms: Array[Transform3D] = []
+		for cell in tree_cells:
+			var size := 0.95 + ArenaArt._hash(cell, 41) * 0.25
+			tree_transforms.append(Transform3D(Basis(Vector3.UP, ArenaArt._hash(cell, 42) * TAU).scaled(Vector3(size, size * (0.95 + ArenaArt._hash(cell, 43) * 0.15), size)), cell_center(cell)))
+		_add_multimesh(ArenaArt.tree_mesh(), ArenaArt.vertex_color_material(), tree_transforms)
+		for node in ArenaArt.decorations(self, open_cells):
+			add_child(node)
+	else:
+		var grass_mat := ShaderMaterial.new()
+		grass_mat.shader = GRASS_SHADER
+		grass_mat.set_shader_parameter("blades", load(TILE_DIR + "tall_grass.png"))
+		_add_multimesh(_bush_mesh(), grass_mat, grass)
+		var tree_quad := QuadMesh.new()
+		tree_quad.size = TREE_SPRITE_SIZE
+		var tree_mat := _tile_material("tree", false, true)
+		tree_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		_add_multimesh(tree_quad, tree_mat, trees, false)
 	var grave_quad := QuadMesh.new()
 	grave_quad.size = GRAVE_SPRITE_SIZE
 	var grave_mat := _tile_material("gravestone", false, true)
@@ -242,7 +283,7 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 
 	# Dark ground outside the map so the edge of the world isn't empty.
 	var outside_mat := _tile_material("grass_1")
-	outside_mat.albedo_color = Color(0.55, 0.62, 0.5)
+	outside_mat.albedo_color = Color(0.55, 0.62, 0.5) if not lets_go else Color(0.42, 0.6, 0.3)
 	outside_mat.uv1_scale = Vector3(160, 160, 1)
 	var outside_plane := PlaneMesh.new()
 	outside_plane.size = Vector2(160, 160)
