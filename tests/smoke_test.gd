@@ -1220,7 +1220,7 @@ func _check_progression() -> void:
 		for prize: Dictionary in Profile.open_ball("poke_ball"):
 			if prize["item"] == "rare_candy":
 				candies += 1
-	expect(candies > 5 and candies < 45, "Poké Balls give a Rare Candy about 1 time in 10 (%d of 200)" % candies)
+	expect(candies == 0, "Poké Balls never give Rare Candies (%d of 200)" % candies)
 	var before := Profile.count("rare_candy")
 	Profile._give("ultra_ball", 1)
 	Profile.open_ball("ultra_ball")
