@@ -21,7 +21,7 @@ func _draw() -> void:
 		var head := HEAD_HEIGHT * brawler.species.sprite_scale
 		if brawler.species.sprite_height > 0:
 			# Well clear of the sprite so the bar never covers the Pokémon.
-			head = brawler.species.sprite_height * Brawler.SHEET_PIXEL_SIZE * brawler.species.sprite_scale * brawler.size_scale * Brawler.VISUAL_SCALE + 0.55
+			head = brawler.visual_height() + 0.55
 		# Billboarded sprites lean toward the camera, so measure "up" along the camera's up.
 		var world_pos := brawler.global_position + camera.global_basis.y * (head + (0.9 if brawler.flying else 0.0))
 		if camera.is_position_behind(world_pos):

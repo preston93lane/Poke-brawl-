@@ -137,6 +137,11 @@ var _knock_time := 0.0
 var _attack_lock := 0.0
 ## Seconds left planting for a telegraphed melee super (see MoveData.windup).
 var _windup_time := 0.0
+## Animated sprite state (species.pmd): current anim, time into it, and how long
+## a one-shot (attack, hurt) holds before going back to walking or idling.
+var _anim := ""
+var _anim_time := 0.0
+var _anim_hold := 0.0
 var _windup_dir := Vector3.FORWARD
 var _windup_move: MoveData
 var _regen_timer := 0.0
@@ -456,6 +461,8 @@ func _apply_species() -> void:
 	sprite.hframes = 3 if species.sheet else 1
 	sprite.frame = 0
 	sprite.pixel_size = (SHEET_PIXEL_SIZE if species.sheet else PIXEL_SIZE) * species.sprite_scale * size_scale * VISUAL_SCALE
+	if not species.pmd.is_empty():
+		_set_anim("idle")
 
 
 ## Evolve to the next stage (after enough KOs). Returns false at final stage.
@@ -1086,6 +1093,11 @@ func _on_attack(direction: Vector3, move: MoveData) -> void:
 	_regen_timer = 0.0
 	_reveal_timer = float(GameData.rule("tall_grass/reveal_time_after_attack", 1.0))
 	facing = direction
+	if not species.pmd.is_empty():
+		var anim := "attack" if move.kind in ["melee", "dash"] else "shoot"
+		if move.slot == "super":
+			anim = "special"
+		_play_anim(anim, 0.7)
 
 
 ## Alive brawlers on other teams.
@@ -1191,6 +1203,8 @@ func take_damage(amount: float, source: Brawler = null, effectiveness := 1.0, cr
 	_regen_timer = 0.0
 	_reveal_timer = float(GameData.rule("tall_grass/reveal_time_after_attack", 1.0))
 	_flash_timer = 0.12
+	if not species.pmd.is_empty() and _anim_hold <= 0.0 and amount > max_health * 0.04:
+		_play_anim("hurt", 0.3)
 	_spawn_damage_number(amount, effectiveness, crit)
 	if is_player:
 		var camera := get_viewport().get_camera_3d()
@@ -1629,6 +1643,9 @@ func _animate(delta: float) -> void:
 		sx *= 1.0 + t * 0.4
 		sy *= maxf(0.05, 1.0 - t)
 
+	if not species.pmd.is_empty():
+		_animate_pmd(delta, moving, tilt, lift)
+		return
 	# Pick the view that matches where we're facing.
 	if species.sheet:
 		if absf(facing.x) > absf(facing.z) * 0.9:
@@ -1644,6 +1661,84 @@ func _animate(delta: float) -> void:
 	sprite.offset = Vector2(0, sprite.texture.get_height() * 0.5) if sprite.texture else Vector2.ZERO
 	sprite.position = Vector3(0, 0.05 + lift, 0)
 	sprite.basis = Basis(Vector3.RIGHT, tilt) * Basis(Vector3.BACK, roll) * Basis.from_scale(Vector3(sx, sy, 1.0))
+
+
+## Animated sprites: plays walk / idle / attack / shoot / special / hurt / faint
+## from the PMD sheets, picking the row (of 8) that faces where we're facing.
+func _animate_pmd(delta: float, moving: bool, tilt: float, lift: float) -> void:
+	_anim_hold = maxf(0.0, _anim_hold - delta)
+	var want := _anim
+	if is_dead:
+		want = "faint"
+	elif _anim_hold <= 0.0:
+		want = "walk" if moving else "idle"
+	if want != _anim:
+		_set_anim(want)
+	var a: Dictionary = species.pmd.get(_anim, species.pmd["walk"])
+	var durations: Array = a["durations"]
+	var total := 0.0
+	for d in durations:
+		total += float(d)
+	_anim_time += delta * (1.0 + (velocity.length() * 0.08 if _anim == "walk" else 0.0))
+	var t := _anim_time
+	if _anim in ["faint", "hurt", "attack", "shoot", "special"]:
+		t = minf(t, total - 0.001)  # One-shots hold their last frame.
+	else:
+		t = fmod(t, maxf(total, 0.01))
+	var col := 0
+	var acc := 0.0
+	for i in durations.size():
+		acc += float(durations[i])
+		if t < acc:
+			col = i
+			break
+	# Facing → one of 8 rows: down, down-right, right, up-right, up, up-left, left, down-left.
+	var row := posmod(roundi(rad_to_deg(atan2(facing.x, facing.z)) / 45.0), 8)
+	row = mini(row, int(a["rows"]) - 1)
+	sprite.frame = row * int(a["cols"]) + mini(col, int(a["cols"]) - 1)
+	sprite.flip_h = false
+	_pop = move_toward(_pop, 1.0, delta * 3.5)
+	sprite.billboard = BaseMaterial3D.BILLBOARD_DISABLED
+	sprite.offset = Vector2(0, float(a["fh"]) * 0.5 - float(a["ground"]))
+	sprite.position = Vector3(0, 0.05 + lift, 0)
+	sprite.basis = Basis(Vector3.RIGHT, tilt) * Basis.from_scale(Vector3(_pop, _pop, 1.0))
+
+
+func _play_anim(anim: String, max_hold: float) -> void:
+	if species.pmd.is_empty() or not species.pmd.has(anim):
+		return
+	var total := 0.0
+	for d in species.pmd[anim]["durations"]:
+		total += float(d)
+	_set_anim(anim)
+	_anim_hold = minf(total, max_hold)
+
+
+func _set_anim(anim: String) -> void:
+	if not species.pmd.has(anim):
+		anim = "walk"
+	_anim = anim
+	_anim_time = 0.0
+	var a: Dictionary = species.pmd[anim]
+	sprite.texture = species.pmd_texture(anim, shiny)
+	sprite.hframes = int(a["cols"])
+	sprite.vframes = int(a["rows"])
+	sprite.frame = 0
+	sprite.pixel_size = pmd_pixel_size()
+
+
+## World size of one sprite pixel, so the Pokémon stands as tall as with the old sprites.
+func pmd_pixel_size() -> float:
+	var walk: Dictionary = species.pmd["walk"]
+	var old_height := (species.sprite_height * SHEET_PIXEL_SIZE if species.sprite_height > 0 else 1.6) * species.sprite_scale
+	return old_height / maxf(8.0, float(walk["height"])) * size_scale * VISUAL_SCALE
+
+
+## How tall the Pokémon is drawn, in metres (health bars sit above this).
+func visual_height() -> float:
+	if not species.pmd.is_empty():
+		return float(species.pmd["walk"]["height"]) * pmd_pixel_size()
+	return species.sprite_height * SHEET_PIXEL_SIZE * species.sprite_scale * size_scale * VISUAL_SCALE
 
 
 ## Bubble shown during spawn protection; it flickers just before it ends.

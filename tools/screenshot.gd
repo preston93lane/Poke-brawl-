@@ -14,6 +14,9 @@ func _ready() -> void:
 	if arena_id.begins_with("menu:"):
 		await _menu_shot(arena_id.trim_prefix("menu:"), out_dir)
 		return
+	if arena_id.begins_with("record:"):
+		await _record(arena_id.trim_prefix("record:"), out_dir)
+		return
 	if arena_id.begins_with("gym:"):
 		await _gym_shot(arena_id.trim_prefix("gym:"), out_dir)
 		return
@@ -51,6 +54,34 @@ func _ready() -> void:
 		var img := get_viewport().get_texture().get_image()
 		img.save_png("%s/%s_%s.png" % [out_dir, arena_id, shot])
 		print("saved ", shot)
+	get_tree().quit()
+
+
+## A live bot match, every other frame saved as frame_0000.png... (turn into a clip with ffmpeg).
+## Arg: <arena>[,player,ally,ally,enemy,enemy,enemy][,frames]
+func _record(spec: String, out_dir: String) -> void:
+	var parts := spec.split(",")
+	var team: Array = parts.slice(1, 7) if parts.size() >= 7 else ["pikachu", "charmander", "squirtle", "onix", "geodude", "pidgeotto"]
+	var frames := int(parts[7]) if parts.size() > 7 else 240
+	GameData.match_settings = { "mode": "duel", "arena": parts[0], "species": team[0], "level": 20,
+			"allies": [team[1], team[2]], "enemies": [team[3], team[4], team[5]], "difficulty": "normal" }
+	var main := MAIN_SCENE.instantiate()
+	main.show_intro = false
+	main.record_progress = false
+	add_child(main)
+	await get_tree().physics_frame
+	for c in main.player.get_children():
+		if c is PlayerController:
+			c.queue_free()
+	main.player.add_child(BotController.new())
+	main._raid_done = true
+	for i in 90:
+		await get_tree().process_frame
+	for i in frames:
+		await get_tree().process_frame
+		if i % 2 == 0:
+			get_viewport().get_texture().get_image().save_png("%s/frame_%04d.png" % [out_dir, i / 2])
+	print("saved record")
 	get_tree().quit()
 
 

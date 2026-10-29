@@ -196,6 +196,7 @@
 		]
 	},
 	"no_bots": ["mewtwo", "mew"],
+	"animated_sprites": false,
 	"mvp": {
 		"_comment": "MVP score: each part is a share of the best in the match (1.0 = best), times its weight. kd = KOs / faints. Damage includes 80% of healing. with_stat is for modes with a stat column (Brawl Ball goals, Rare Candy Rush candies, Showdown cubes).",
 		"default": { "kills": 0.35, "kd": 0.25, "damage": 0.4 },

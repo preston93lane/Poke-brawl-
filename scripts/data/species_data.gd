@@ -18,6 +18,10 @@ var sprite_height := 0
 ## the PNG is a single image.
 var sheet: Texture2D
 var sprite_scale := 1.0
+## Animated PMD SpriteCollab sprites (assets/pmd/<id>/, tools/import_pmd_sprites.py):
+## anim name -> { "fw", "fh", "cols", "rows", "durations", "hit", "ground", "height" }.
+## Empty when this Pokémon has none (or rules.json "animated_sprites" is off).
+var pmd: Dictionary = {}
 ## Legendaries can't be picked; they show up as raid bosses and shrine guardians.
 var legendary := false
 var hp := 3000.0
@@ -92,7 +96,20 @@ static func from_dict(species_id: String, d: Dictionary) -> SpeciesData:
 	if sprite_path != "" and s.sheet and ResourceLoader.exists(shiny_path):
 		s.shiny_sheet = load(shiny_path)
 		s.shiny_sprite = s._front_icon(s.shiny_sheet)
+	var pmd_path := "res://assets/pmd/%s/anims.json" % species_id
+	if bool(GameData.rule("animated_sprites", false)) and FileAccess.file_exists(pmd_path):
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(pmd_path))
+		if parsed is Dictionary and (parsed as Dictionary).has("walk"):
+			s.pmd = parsed
 	return s
+
+
+## The sheet for one animation ("walk", "attack"...), shiny colours if asked and available.
+func pmd_texture(anim: String, shiny_colours: bool) -> Texture2D:
+	var base := "res://assets/pmd/%s/" % id
+	if shiny_colours and ResourceLoader.exists(base + "shiny/" + anim + ".png"):
+		return load(base + "shiny/" + anim + ".png")
+	return load(base + anim + ".png")
 
 
 ## Front view cropped to a square around the Pokémon (feet at the bottom), so
