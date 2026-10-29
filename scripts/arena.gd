@@ -50,6 +50,8 @@ var hazards: Hazards
 ## Tall grass instances, in the same order as their cells (so Cut can remove them).
 var _grass_mm: MultiMeshInstance3D
 var _grass_order: Array[Vector2i] = []
+var _rock_mesh: Mesh
+var _rock_material: Material
 var _crate_mesh: BoxMesh
 var _crate_material: Material
 var _breakable_mesh: Mesh
@@ -230,6 +232,8 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 	# Let's Go maps: rock walls, cracked walls and boulders are Rock Smash rocks.
 	var rock_mesh: Mesh = ArenaArt.rock_mesh(0) if lets_go else null
 	var rock_mat: Material = ArenaArt.vertex_color_material() if lets_go else null
+	_rock_mesh = rock_mesh
+	_rock_material = rock_mat
 	if lets_go and rocky:
 		_add_multimesh(rock_mesh, rock_mat, rocks)
 	else:
@@ -409,6 +413,44 @@ func push_breakable(b: Breakable, direction: Vector3) -> bool:
 	var tween := b.create_tween()
 	tween.tween_property(b, "position", cell_center(to), 0.25).set_trans(Tween.TRANS_QUAD)
 	return true
+
+
+## Brawl Ball: rocks narrow each goal mouth like in Brawl Stars. On the front
+## row of a goal 6+ tiles wide, the outer two tiles each side become breakable
+## rocks, so the opening is 4 wide until physical supers smash them.
+func block_goal_sides() -> void:
+	var mid := height >> 1
+	for team: int in goal_cells:
+		var cells: Dictionary = goal_cells[team]
+		if cells.size() < 6:
+			continue
+		var min_x := 9999
+		var max_x := -9999
+		var ys := {}
+		for cell: Vector2i in cells:
+			min_x = mini(min_x, cell.x)
+			max_x = maxi(max_x, cell.x)
+			ys[cell.y] = true
+		if max_x - min_x + 1 < 6:
+			continue
+		# The goal row closest to the middle of the map, then one step toward it.
+		var front := 0
+		var best := 9999
+		for y: int in ys:
+			if absi(y - mid) < best:
+				best = absi(y - mid)
+				front = y
+		for x in [min_x, min_x + 1, max_x - 1, max_x]:
+			var cell := Vector2i(x, front)
+			if _char_at(cell) != "G" or _astar.is_point_solid(cell):
+				continue
+			cells.erase(cell)
+			var b := _add_breakable(cell, "wall", _rock_material if _rock_material else _wall_material("boulder"))
+			if _rock_mesh:
+				b.set_mesh(_rock_mesh, _jitter(cell))
+			rows[cell.y] = rows[cell.y].substr(0, cell.x) + "B" + rows[cell.y].substr(cell.x + 1)
+			_astar.set_point_solid(cell)
+			_swim_astar.set_point_solid(cell)
 
 
 ## A breakable tile was destroyed: the ground there is open now.

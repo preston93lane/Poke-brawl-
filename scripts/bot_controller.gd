@@ -283,9 +283,31 @@ func _fight(delta: float, dir: Vector3, dist: float) -> void:
 		desired = dir + strafe * 0.4
 	else:
 		desired = strafe + dir * 0.15
+	# Water or a wall in the way: walk around it on a path instead of pushing into it.
+	if desired.length() > 0.1 and _blocked(desired):
+		if dist > preferred * 0.8 and target:
+			_go_to(target.global_position, delta)
+			return
+		_strafe_sign = -_strafe_sign
+		desired = Vector3(-dir.z, 0, dir.x) * _strafe_sign
+		if _blocked(desired):
+			desired = -dir
 	_path.clear()
 	# Not normalized: gentle strafing means slower sidesteps.
 	brawler.move_input = Vector2(desired.x, desired.z).limit_length(1.0)
+
+
+## True if walking `direction` for about a body length would bump into water
+## (for non-swimmers), a wall or a rock.
+func _blocked(direction: Vector3) -> bool:
+	var d := Vector3(direction.x, 0, direction.z)
+	if d.length() < 0.01:
+		return false
+	var space := brawler.get_world_3d().direct_space_state
+	var from := brawler.global_position + Vector3.UP * 0.5
+	var query := PhysicsRayQueryParameters3D.create(from, from + d.normalized() * 1.1, brawler.walk_mask())
+	query.exclude = [brawler.get_rid()]
+	return not space.intersect_ray(query).is_empty()
 
 
 ## Follow a grid path to `goal`, skipping waypoints we can walk straight past.
@@ -296,6 +318,9 @@ func _go_to(goal: Vector3, delta: float) -> void:
 	if _path.is_empty() or _repath_timer <= 0.0 or _flat_distance(goal, _path_goal) > 1.5:
 		_repath_timer = 0.5
 		_path = brawler.arena.find_path(brawler.global_position, goal, brawler.can_swim)
+		if _path.is_empty() and not brawler.can_swim:
+			# The spot is in water (or a wall): head for the nearest dry ground by it.
+			_path = brawler.arena.find_path(brawler.global_position, brawler.arena.nearest_open(goal), false)
 		_path_goal = goal
 	var pos := brawler.global_position
 	while not _path.is_empty() and _flat_distance(pos, _path[0]) < 0.35:

@@ -67,7 +67,7 @@ func take_attack(attacker: Brawler, move: MoveData, multiplier := 1.0) -> bool:
 	if is_broken:
 		return true
 	if kind != "crate":
-		if move.slot == "super":
+		if move.slot == "super" and move.breaks_walls:
 			smash()
 			return true
 		_shake = 0.12

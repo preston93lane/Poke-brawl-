@@ -10,6 +10,7 @@ var _reset_pause := 0.0
 
 
 func start() -> void:
+	main.arena.block_goal_sides()
 	ball = Ball.new()
 	main.arena.add_child(ball)
 	ball.reset(main.arena.center_point())
@@ -55,32 +56,129 @@ func on_died(victim: Brawler, _killer: Brawler) -> bool:
 	return false
 
 
+## Bots play roles instead of all chasing the ball:
+## - Carrier: pushes toward their goal, steering away from enemies in the way;
+##   shoots when there's a clear shot; low on health with an enemy close, it
+##   passes ahead to a teammate (or clears the ball forward) instead of dying.
+## - Carrier's teammates: guard the carrier, attacking the nearest threat, or
+##   run ahead on either flank (one left, one right) to open space.
+## - Enemy has the ball: the nearest chaser attacks the carrier, one falls back
+##   to defend the goal, the other harasses from range.
+## - Loose ball: only the nearest teammate goes for it; one gets ready on a
+##   flank toward their goal, the other covers their own goal.
 func plan_for(b: Brawler) -> Dictionary:
 	var arena: Arena = main.arena
 	var their_goal := arena.goal_center(other_team(b.team))
 	var my_goal := arena.goal_center(b.team)
-	if ball.carrier == b:
-		var to_goal := their_goal - b.global_position
-		to_goal.y = 0.0
-		if to_goal.length() < SHOOT_RANGE and Brawler.clear_between(b, b.global_position, their_goal):
-			return { "kick": to_goal, "hold": true }
-		return { "go": their_goal, "hold": true }
+	var mates := _teammates(b)
 	var carrier := ball.carrier
-	if carrier and is_instance_valid(carrier):
-		if carrier.team != b.team:
-			return { "target": carrier, "go": carrier.global_position }
-		# A teammate has it: run ahead of them toward the goal to cover them.
-		var ahead := carrier.global_position + (their_goal - carrier.global_position).normalized() * 3.0
-		return { "go": ahead }
-	# Loose ball: the closest Pokémon on each team goes for it, the rest guard the goal side.
-	var closest := true
-	var mine := b.global_position.distance_to(ball.global_position)
-	for mate: Brawler in main.teams[b.team]:
-		if mate != b and not mate.is_dead and mate.global_position.distance_to(ball.global_position) < mine - 0.5:
-			closest = false
-	if closest or mine < 5.0:
+	if carrier == b:
+		return _carry(b, their_goal, mates)
+	if carrier and is_instance_valid(carrier) and not carrier.is_dead:
+		if carrier.team == b.team:
+			return _support(b, carrier, their_goal, mates)
+		return _defend(b, carrier, my_goal, mates)
+	# Loose ball.
+	var rank := _rank_by_distance(b, mates, ball.global_position)
+	if rank == 0 or b.global_position.distance_to(ball.global_position) < 2.5:
 		return { "go": ball.global_position }
-	return { "go": ball.global_position.lerp(my_goal, 0.4) }
+	if rank == 1:
+		var flank := _side(b, mates) * 3.5
+		var spot := ball.global_position.lerp(their_goal, 0.35) + _across(ball.global_position, their_goal) * flank
+		return { "go": arena.nearest_open(spot) }
+	return { "go": arena.nearest_open(ball.global_position.lerp(my_goal, 0.55)) }
+
+
+func _carry(b: Brawler, their_goal: Vector3, mates: Array[Brawler]) -> Dictionary:
+	var to_goal := their_goal - b.global_position
+	to_goal.y = 0.0
+	if to_goal.length() < SHOOT_RANGE and Brawler.clear_between(b, b.global_position, their_goal):
+		return { "kick": to_goal, "hold": true }
+	var threat := b.find_nearest_enemy(4.5)
+	if threat and b.health < b.max_health * 0.35:
+		# About to go down: pass to a teammate nearer the goal, or clear it forward.
+		for mate in mates:
+			if mate.global_position.distance_to(their_goal) < b.global_position.distance_to(their_goal) - 1.0 \
+					and Brawler.clear_between(b, b.global_position, mate.global_position):
+				var to_mate := mate.global_position - b.global_position
+				to_mate.y = 0.0
+				return { "kick": to_mate, "hold": true }
+		return { "kick": to_goal, "hold": true }
+	var go := their_goal
+	threat = b.find_nearest_enemy(6.0)
+	if threat:
+		# Swerve around the defender instead of running into it.
+		var to_threat := threat.global_position - b.global_position
+		to_threat.y = 0.0
+		if to_threat.dot(to_goal.normalized()) > 0.0:
+			var side := Vector3(-to_goal.z, 0, to_goal.x).normalized()
+			if side.dot(to_threat) > 0.0:
+				side = -side
+			go = b.global_position + to_goal.normalized() * 3.0 + side * 3.0
+	return { "go": main.arena.nearest_open(go), "hold": true }
+
+
+func _support(b: Brawler, carrier: Brawler, their_goal: Vector3, mates: Array[Brawler]) -> Dictionary:
+	var threat := carrier.find_nearest_enemy(7.0)
+	if threat:
+		# Stand between the carrier and the threat, and shoot it.
+		var spot := carrier.global_position.lerp(threat.global_position, 0.5)
+		return { "target": threat, "go": main.arena.nearest_open(spot) }
+	var forward := (their_goal - carrier.global_position)
+	forward.y = 0.0
+	forward = forward.normalized()
+	var ahead := carrier.global_position + forward * 3.5 + Vector3(-forward.z, 0, forward.x) * _side(b, mates) * 3.0
+	return { "go": main.arena.nearest_open(ahead) }
+
+
+func _defend(b: Brawler, carrier: Brawler, my_goal: Vector3, mates: Array[Brawler]) -> Dictionary:
+	var rank := _rank_by_distance(b, mates, carrier.global_position)
+	if rank == 0:
+		return { "target": carrier, "go": carrier.global_position }
+	if rank == 1:
+		var guard := my_goal + (carrier.global_position - my_goal).normalized() * 3.0
+		return { "target": carrier, "go": main.arena.nearest_open(guard) }
+	# Harass from range: keep the carrier at shooting distance.
+	var away := (b.global_position - carrier.global_position)
+	away.y = 0.0
+	var keep := carrier.global_position + away.normalized() * maxf(3.0, b.main_move.effective_reach() * 0.7)
+	return { "target": carrier, "go": main.arena.nearest_open(keep) }
+
+
+func _teammates(b: Brawler) -> Array[Brawler]:
+	var result: Array[Brawler] = []
+	for node in main.teams.get(b.team, []):
+		var mate := node as Brawler
+		if mate and mate != b and not mate.is_dead:
+			result.append(mate)
+	return result
+
+
+## 0 = this Pokémon is its team's closest to `point`, 1 = second closest...
+func _rank_by_distance(b: Brawler, mates: Array[Brawler], point: Vector3) -> int:
+	var mine := b.global_position.distance_to(point)
+	var rank := 0
+	for mate in mates:
+		var theirs := mate.global_position.distance_to(point)
+		if theirs < mine or (is_equal_approx(theirs, mine) and mate.get_instance_id() < b.get_instance_id()):
+			rank += 1
+	return rank
+
+
+## Splits teammates onto the left (-1) and right (+1) so they spread out.
+func _side(b: Brawler, mates: Array[Brawler]) -> float:
+	var smaller := 0
+	for mate in mates:
+		if mate.get_instance_id() < b.get_instance_id():
+			smaller += 1
+	return -1.0 if smaller % 2 == 0 else 1.0
+
+
+## Unit vector across the line from `a` to `b` (for flanking).
+static func _across(a: Vector3, b: Vector3) -> Vector3:
+	var d := b - a
+	d.y = 0.0
+	return Vector3(-d.z, 0, d.x).normalized()
 
 
 func scoreboard_info() -> Dictionary:

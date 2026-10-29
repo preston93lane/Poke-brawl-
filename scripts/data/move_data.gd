@@ -51,6 +51,11 @@ var area_delay := 0.0
 var drain := 0.0
 ## Fraction of max HP healed on use (self), and for allies within support_radius.
 var heal := 0.0
+## Supers only: smashes breakable walls and rocks. Like Brawl Stars, it's the
+## physical ones (charges, slams, big explosions; Rock, Ground, Fighting,
+## Normal, Steel, Dragon hits) — not streams, heals or status moves. JSON
+## "breaks_walls" overrides the rule.
+var breaks_walls := false
 var team_heal := 0.0
 var support_radius := 0.0
 ## { "attack"/"defense"/"speed": bonus fraction, "duration": s, "allies": bool }
@@ -128,6 +133,10 @@ static func from_dict(move_id: String, d: Dictionary) -> MoveData:
 	m.area_delay = float(d.get("area_delay", m.area_delay))
 	m.drain = float(d.get("drain", m.drain))
 	m.heal = float(d.get("heal", m.heal))
+	var physical := m.type in ["normal", "fighting", "rock", "ground", "steel", "dragon"]
+	var default_breaks := m.heal <= 0.0 and m.power > 0.0 and (m.kind in ["dash", "melee"] \
+			or (m.kind in ["projectile", "area"] and (physical or m.explode_radius >= 2.5)))
+	m.breaks_walls = bool(d.get("breaks_walls", default_breaks))
 	m.team_heal = float(d.get("team_heal", m.team_heal))
 	m.support_radius = float(d.get("support_radius", m.support_radius))
 	var buff_value: Variant = d.get("buff", {})

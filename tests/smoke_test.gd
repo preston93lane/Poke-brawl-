@@ -48,6 +48,7 @@ func _ready() -> void:
 	await _check_faint_stops_attacks()
 	await _check_text_boxes()
 	await _check_tm_super_shapes()
+	await _check_ball_goals_and_walls()
 	Engine.time_scale = 1.0
 	Profile.data = real_profile
 	Profile.save()
@@ -787,7 +788,8 @@ func _check_breakable_walls() -> void:
 	var player: Brawler = main.player
 	expect(not wall.take_attack(player, player.main_move), "main attacks don't break walls")
 	var cell := wall.cell
-	expect(wall.take_attack(player, player.species.super_move), "supers smash breakable walls")
+	expect(not wall.take_attack(player, player.species.super_move), "self-buff supers (Defense Curl) don't break walls")
+	expect(wall.take_attack(player, GameData.get_move("flame_charge")), "physical supers smash breakable walls")
 	await get_tree().physics_frame
 	expect(arena.is_walkable(arena.cell_center(cell)), "the smashed tile can be walked on")
 	main.end_round("victory")
@@ -1361,5 +1363,21 @@ func _check_tm_super_shapes() -> void:
 	p.super_choices = { "charmander": "tmsuper_fire_blast" }
 	var m := p.current_super()
 	expect(m.kind == "area" and m.power < 1000.0, "a stream Pokémon's Fire Blast is a close burst, weaker on a base form (%s, %d)" % [m.kind, m.power])
+	main.queue_free()
+	await get_tree().process_frame
+
+
+func _check_ball_goals_and_walls() -> void:
+	print("Brawl Ball goals and wall-breaking supers")
+	expect(not GameData.get_move("fire_spin").breaks_walls and not GameData.get_move("aqua_ring").breaks_walls, "Fire Spin and Aqua Ring can't break walls")
+	expect(GameData.get_move("flame_charge").breaks_walls and GameData.get_move("blast_burn").breaks_walls, "charges and big explosions can")
+	var main := await _start_match("vermilion_gym", "brawl_ball", "machop", [])
+	var arena: Arena = main.arena
+	var blockers := 0
+	for y in range(1, arena.height - 1):
+		for x in range(1, arena.width - 1):
+			if arena.rows[y][x] == "B" and "G" in [arena.rows[y - 1][x], arena.rows[y + 1][x], arena.rows[y][x - 1], arena.rows[y][x + 1]]:
+				blockers += 1
+	expect(blockers == 8, "rocks narrow both goals (2 each side, %d found)" % blockers)
 	main.queue_free()
 	await get_tree().process_frame
