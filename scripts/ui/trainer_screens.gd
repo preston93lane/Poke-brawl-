@@ -320,7 +320,7 @@ static func challenges(menu: Node) -> Control:
 		grid.add_child(UiKit.label("LV %d" % int(r[0]), 18, color))
 		grid.add_child(UiKit.label(str(r[1]), 18, color))
 		grid.add_child(UiKit.label(str(r[3]), 16, Color(0.75, 0.8, 0.9)))
-		grid.add_child(UiKit.label("✓ UNLOCKED" if done else "%d to go" % maxi(0, int(r[0]) - Profile.total_level()), 16, color))
+		grid.add_child(UiKit.label("UNLOCKED" if done else "%d to go" % maxi(0, int(r[0]) - Profile.total_level()), 16, color))
 	v.add_child(grid)
 
 	v.add_child(_heading("CHALLENGES  (each unlocks a Pokémon and gives a Great Ball)"))
@@ -361,9 +361,9 @@ static func challenges(menu: Node) -> Control:
 	var done_list: Array = Profile.data.get("milestones", [])
 	var milestones := PackedStringArray()
 	for lvl in Profile.econ("milestones/total_levels", []):
-		milestones.append(("✓ " if "total_%d" % int(lvl) in done_list else "") + "Trainer level %d" % int(lvl))
+		milestones.append(("DONE · " if "total_%d" % int(lvl) in done_list else "") + "Trainer level %d" % int(lvl))
 	for gym: String in Profile.econ("milestones/gyms", []):
-		milestones.append(("✓ " if "gym_" + gym in done_list else "") + "Win on Hard: %s" % str(GameData.arenas.get(gym, {}).get("name", gym)))
+		milestones.append(("DONE · " if "gym_" + gym in done_list else "") + "Win on Hard: %s" % str(GameData.arenas.get(gym, {}).get("name", gym)))
 	var m_label := UiKit.label("   ·   ".join(milestones), 17)
 	m_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	v.add_child(m_label)
@@ -427,7 +427,7 @@ static func _progress(value: int, goal: int, done: bool) -> Control:
 	bar.custom_minimum_size = Vector2(150, 16)
 	bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	box.add_child(bar)
-	var label := UiKit.label(" ✓ DONE" if done else " %d / %d" % [mini(value, goal), goal], 16, Color(0.6, 1, 0.6) if done else Color.WHITE)
+	var label := UiKit.label(" DONE" if done else " %d / %d" % [mini(value, goal), goal], 16, Color(0.6, 1, 0.6) if done else Color.WHITE)
 	label.custom_minimum_size.x = 90
 	box.add_child(label)
 	return box

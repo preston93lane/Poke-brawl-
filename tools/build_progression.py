@@ -50,10 +50,10 @@ TM_SUPERS = {
 ## Each TM super takes the shape that fits the user's play style (a stream
 ## Pokémon's Fire Blast is a burst of flame up close; a sniper's is a long beam; "shot" is a mid-range blast).
 SHAPES = {
-    "burst": {"kind": "area", "power": 1000, "range": 3.5, "area_radius": 2.4},
-    "lob": {"kind": "projectile", "power": 950, "lob": True, "speed": 9.0, "range": 7.5, "radius": 0.7, "explode_radius": 2.4},
-    "beam": {"kind": "projectile", "power": 1150, "speed": 15.0, "range": 10.0, "radius": 0.7, "pierce": True},
-    "shot": {"kind": "projectile", "power": 1000, "speed": 10.0, "range": 8.0, "radius": 0.8, "explode_radius": 2.0},
+    "burst": {"kind": "area", "power": 1400, "range": 3.5, "area_radius": 2.4},
+    "lob": {"kind": "projectile", "power": 1350, "lob": True, "speed": 9.0, "range": 7.5, "radius": 0.7, "explode_radius": 2.4},
+    "beam": {"kind": "projectile", "power": 1600, "speed": 15.0, "range": 10.0, "radius": 0.7, "pierce": True},
+    "shot": {"kind": "projectile", "power": 1400, "speed": 10.0, "range": 8.0, "radius": 0.8, "explode_radius": 2.0},
 }
 ## Status effect each type adds to its TM supers.
 TYPE_EFFECTS = {
@@ -65,7 +65,10 @@ TYPE_EFFECTS = {
     "fairy": {"type": "blind", "chance": 0.4, "duration": 1.2},
     "psychic": {"type": "slow", "chance": 0.3, "duration": 1.0, "amount": 0.3},
     "grass": {"type": "leech", "chance": 0.5, "duration": 3.0, "dps": 120},
+    "water": {"type": "slow", "chance": 0.7, "duration": 1.5, "amount": 0.4},
 }
+## Types with no status effect hit 10% harder instead.
+NO_EFFECT_BONUS = 1.1
 
 
 HMS = {"cut": "cut", "fly": "fly", "surf": "surf", "strength": "strength", "flash": "flash", "rock_smash": "rock-smash"}
@@ -180,6 +183,8 @@ def main(src):
             d.update(stats)
             if mtype in TYPE_EFFECTS:
                 d["effect"] = TYPE_EFFECTS[mtype]
+            else:
+                d["power"] = int(round(d["power"] * NO_EFFECT_BONUS / 10) * 10)
             super_defs["tmsuper_" + sid + ("_" + shape if shape else "")] = d
     json.dump(super_defs, open(os.path.join(DATA, "moves", "tm_supers.json"), "w"), indent="\t")
 

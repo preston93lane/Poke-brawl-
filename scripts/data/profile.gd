@@ -908,7 +908,7 @@ func _daily_progress(progress: Dictionary) -> Dictionary:
 		if int(t["progress"]) >= int(t["goal"]):
 			t["done"] = true
 			rewards.append(t["reward"])
-			texts.append("Daily ✓ %s (%s)" % [t["text"], reward_text(t["reward"])])
+			texts.append("Daily done: %s (%s)" % [t["text"], reward_text(t["reward"])])
 	var d := _dict("dailies")
 	var all_done := not tasks.is_empty()
 	for t: Dictionary in tasks:

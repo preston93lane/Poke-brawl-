@@ -1401,7 +1401,7 @@ func _check_tm_super_shapes() -> void:
 	Profile._add_tm("tm_fire_blast")
 	p.super_choices = { "charmander": "tmsuper_fire_blast" }
 	var m := p.current_super()
-	expect(m.kind == "area" and m.power < 1000.0, "a stream Pokémon's Fire Blast is a close burst, weaker on a base form (%s, %d)" % [m.kind, m.power])
+	expect(m.kind == "area" and m.power < float(GameData.get_move("tmsuper_fire_blast_burst").power), "a stream Pokémon's Fire Blast is a close burst, weaker on a base form (%s, %d)" % [m.kind, m.power])
 	main.queue_free()
 	await get_tree().process_frame
 

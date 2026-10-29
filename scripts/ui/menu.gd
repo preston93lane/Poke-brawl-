@@ -313,7 +313,7 @@ func show_gym(id: String) -> void:
 		var c: Dictionary = entry.get("challenge", {})
 		if str(c.get("type", "")) == "gym_clear" and str(c.get("gym", "")) == id:
 			var have := Profile.is_unlocked(str(entry["family"]))
-			v.add_child(UiKit.label("%s Challenge: %s → unlocks %s" % ["✓" if have else "★", str(c["text"]), GameData.species[str(entry["family"])].display_name], 17, Color(0.6, 1, 0.6) if have else Color(1, 0.85, 0.4)))
+			v.add_child(UiKit.label("%s Challenge: %s → unlocks %s" % ["DONE ·" if have else "★", str(c["text"]), GameData.species[str(entry["family"])].display_name], 17, Color(0.6, 1, 0.6) if have else Color(1, 0.85, 0.4)))
 	_set_screen(UiKit.scroll(v))
 
 
@@ -629,12 +629,12 @@ func _trainer_level_box(s: SpeciesData) -> VBoxContainer:
 		var need := stage.evolve_level if stage.evolve_level > 0 else 25
 		var next: SpeciesData = GameData.species[stage.evolves_to]
 		steps.append("%s → %s: %d KOs%s" % [stage.display_name, next.display_name if stage.evolutions.size() == 1 else "evolution",
-				fast if level >= need else slow, " ✓" if level >= need else "  (%d at Lv %d)" % [fast, need]])
+				fast if level >= need else slow, " (fast)" if level >= need else "  (%d at Lv %d)" % [fast, need]])
 	var final_stage := GameData.evolution_line(s.id).back() as SpeciesData
 	if final_stage and final_stage.evolutions.is_empty():
 		for i in maxi(0, 3 - final_stage.stage):
 			var need := int(power_levels[clampi(final_stage.stage - 1 + i, 0, power_levels.size() - 1)])
-			steps.append("Power Up %d: %d KOs%s" % [i + 1, fast if level >= need else slow, " ✓" if level >= need else "  (%d at Lv %d)" % [fast, need]])
+			steps.append("Power Up %d: %d KOs%s" % [i + 1, fast if level >= need else slow, " (fast)" if level >= need else "  (%d at Lv %d)" % [fast, need]])
 	var text := UiKit.label("\n".join(PackedStringArray(steps)), 16, Color(0.8, 0.85, 0.95))
 	text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	box.add_child(text)
@@ -1157,7 +1157,7 @@ func _show_dex_entry(s: SpeciesData, keep_scroll := false) -> void:
 	_details.add_child(_dex_line(s, true))
 	_dex_matchups(s)
 
-	if _dex_tab == "mine" and not s.legendary:
+	if not s.legendary:
 		# Your build, edited here the same way as on the battle screen; it carries into battle.
 		var base: SpeciesData = GameData.species[GameData.family_root(s.id)]
 		var heading := UiKit.label("YOUR BUILD  (saved, and used when you pick %s for battle)" % base.display_name, 22, Color(0.6, 1, 0.6))
@@ -1179,7 +1179,7 @@ func _show_dex_entry(s: SpeciesData, keep_scroll := false) -> void:
 	for entry in s.learnset:
 		var move: MoveData = entry["move"]
 		var tm := str(entry.get("tm", ""))
-		var state := "✓ UNLOCKED" if move.id in have else ("Lv %d%s" % [int(entry["level"]), (" or " + Profile.item_name(tm)) if tm != "" else ""])
+		var state := "UNLOCKED" if move.id in have else ("Lv %d%s" % [int(entry["level"]), (" or " + Profile.item_name(tm)) if tm != "" else ""])
 		_details.add_child(UiKit.label(state, 15, Color(0.6, 1, 0.6) if move.id in have else Color(1, 0.85, 0.5)))
 		_details.add_child(UiKit.move_card(move, int(entry["level"])))
 	if not s.legendary:
