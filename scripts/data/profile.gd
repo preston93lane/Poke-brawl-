@@ -126,7 +126,32 @@ func choose_starter(family: String) -> void:
 			list.append(id)
 	data["unlocked"] = list
 	data["starter"] = family
+	data.erase("starter_order")
+	starter_order()
 	save()
+
+
+## Which starter each starter level gives: rolled once. Pikachu comes last (level 60)
+## unless it was your pick; the others are in random order. Ones you already have stay first.
+func starter_order() -> Array:
+	var levels: Array = GameData.unlocks.get("starter_levels", [20, 40, 60])
+	var order: Array = data.get("starter_order", [])
+	if order.size() == levels.size() or needs_starter():
+		return order
+	var others: Array = []
+	for id: String in GameData.unlocks.get("starters", []):
+		if id != str(data.get("starter", "")):
+			others.append(id)
+	var have: Array = others.filter(func(id: String) -> bool: return id in (data.get("unlocked", []) as Array))
+	var rest: Array = others.filter(func(id: String) -> bool: return id not in have)
+	rest.shuffle()
+	if "pikachu" in rest:
+		rest.erase("pikachu")
+		rest.append("pikachu")
+	order = have + rest
+	order.resize(mini(order.size(), levels.size()))
+	data["starter_order"] = order
+	return order
 
 
 func is_unlocked(species_id: String) -> bool:
@@ -148,7 +173,10 @@ func unlock_hint(species_id: String) -> String:
 	var family := GameData.family_root(species_id)
 	var starters: Array = GameData.unlocks.get("starters", [])
 	if family in starters:
-		return "Reach trainer level %d" % next_starter_level()
+		var levels: Array = GameData.unlocks.get("starter_levels", [20, 40, 60])
+		if family == "pikachu" and starter_order().find(family) == levels.size() - 1:
+			return "Reach trainer level %d" % int(levels[-1])
+		return "A random starter at trainer level %s" % " / ".join(PackedStringArray(levels.map(func(l: Variant) -> String: return str(int(l)))))
 	var entry := unlock_entry(family)
 	if entry.has("challenge"):
 		var c: Dictionary = entry["challenge"]
@@ -242,16 +270,12 @@ func _check_unlocks() -> Dictionary:
 	if needs_starter():
 		return { "pokemon": found, "challenges": 0 }
 	var total := total_level()
-	# The starters you didn't pick, one at each starter level.
-	var waiting: Array[String] = []
-	for id: String in GameData.unlocks.get("starters", []):
-		if id not in (data["unlocked"] as Array):
-			waiting.append(id)
+	# The starters you didn't pick, one at each starter level (see starter_order).
 	var levels: Array = GameData.unlocks.get("starter_levels", [20, 40, 60])
-	var given := levels.size() - waiting.size()
-	for i in range(maxi(0, given), levels.size()):
-		if total >= int(levels[i]) and not waiting.is_empty() and unlock(waiting[0]):
-			found.append(waiting.pop_front())
+	var order := starter_order()
+	for i in mini(levels.size(), order.size()):
+		if total >= int(levels[i]) and unlock(str(order[i])):
+			found.append(str(order[i]))
 	# Repeat: unlocking one can complete "unlock everything" challenges (Mewtwo, Mew).
 	var again := true
 	while again:
@@ -294,16 +318,13 @@ func road() -> Array[Dictionary]:
 	var unlocked: Array = data.get("unlocked", [])
 	var result: Array[Dictionary] = []
 	var levels: Array = GameData.unlocks.get("starter_levels", [20, 40, 60])
-	var waiting: Array[String] = []
-	for id: String in GameData.unlocks.get("starters", []):
-		if id not in unlocked:
-			waiting.append(id)
-	var given := levels.size() - waiting.size()
+	var order := starter_order()
 	for i in levels.size():
-		var family := ""
-		if i >= given and i - given < waiting.size():
-			family = waiting[i - given]
-		result.append({ "level": int(levels[i]), "family": family, "area": "Starter", "unlocked": i < given })
+		var family := str(order[i]) if i < order.size() else ""
+		var have := family != "" and family in unlocked
+		# Random starters stay a surprise ("?") until unlocked; Pikachu at the end is known.
+		var shown := family if have or family == "pikachu" else ""
+		result.append({ "level": int(levels[i]), "family": shown, "area": "Starter", "unlocked": have })
 	for entry: Dictionary in GameData.unlocks.get("order", []):
 		if entry.has("trainer_level"):
 			result.append({ "level": int(entry["trainer_level"]), "family": entry["family"], "area": str(entry["area"]),

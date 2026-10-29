@@ -52,6 +52,7 @@ func _ready() -> void:
 	await _check_boss_raid()
 	_check_dailies()
 	await _check_gyms()
+	_check_starter_order()
 	Engine.time_scale = 1.0
 	Profile.data = real_profile
 	Profile.save()
@@ -1544,3 +1545,23 @@ func _check_gyms() -> void:
 	var second := Profile.record_match({ "species": "charmander", "result": "victory", "boss": "moltres", "mode": "boss_raid" })
 	expect("great_ball" in first["balls"], "first Master win of the day: a Great Ball")
 	expect(int(second["money"]) < int(first["money"]), "later Master wins that day skip the boss bonus")
+
+
+func _check_starter_order() -> void:
+	print("Starter unlock order")
+	var saved: Dictionary = Profile.data.duplicate(true)
+	Profile.data = Profile.blank()
+	Profile.choose_starter("charmander")
+	var order := Profile.starter_order()
+	expect(order.size() == 3 and order[2] == "pikachu" and "bulbasaur" in order and "squirtle" in order, "Pikachu at 60, the others random (%s)" % ", ".join(PackedStringArray(order)))
+	var road := Profile.road().filter(func(st: Dictionary) -> bool: return st["area"] == "Starter")
+	expect(str(road[0]["family"]) == "" and str(road[2]["family"]) == "pikachu", "random starters stay a surprise on the road")
+	Profile._add_xp("charmander", 999999)
+	Profile.data["levels"]["pidgey"] = 10
+	Profile._check_unlocks()
+	expect(Profile.is_unlocked(str(order[0])) and str(Profile.road().filter(func(st: Dictionary) -> bool: return st["area"] == "Starter")[0]["family"]) == str(order[0]), "the level 20 starter shows once unlocked")
+	Profile.data = Profile.blank()
+	Profile.choose_starter("pikachu")
+	order = Profile.starter_order()
+	expect(order.size() == 3 and "pikachu" not in order, "picked Pikachu: all three starters random")
+	Profile.data = saved

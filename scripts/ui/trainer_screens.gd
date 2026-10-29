@@ -296,17 +296,10 @@ static func challenges(menu: Node) -> Control:
 	path.custom_minimum_size.x = 1100
 	v.add_child(path)
 	var road: Array = []
-	var starter_levels: Array = GameData.unlocks.get("starter_levels", [20, 40, 60])
-	var waiting: Array[String] = []
-	for id: String in GameData.unlocks.get("starters", []):
-		if id not in unlocked:
-			waiting.append(id)
-	var given := starter_levels.size() - waiting.size()
-	for i in starter_levels.size():
-		var label := "One of the starters you didn't pick"
-		if i >= given and i - given < waiting.size():
-			label = "Starter: " + GameData.species[waiting[i - given]].display_name
-		road.append([int(starter_levels[i]), label, i < given, ""])
+	for stop: Dictionary in Profile.road():
+		if str(stop["area"]) == "Starter":
+			var who := str(stop["family"])
+			road.append([int(stop["level"]), ("Starter: " + GameData.species[who].display_name) if who != "" else "Random starter (one you didn't pick)", stop["unlocked"], ""])
 	for entry: Dictionary in GameData.unlocks.get("order", []):
 		if entry.has("trainer_level"):
 			var family: String = entry["family"]

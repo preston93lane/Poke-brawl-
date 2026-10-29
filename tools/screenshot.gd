@@ -131,6 +131,14 @@ func _menu_shot(screen: String, out_dir: String) -> void:
 			for i in 5:
 				await get_tree().process_frame
 			menu._details_scroll.scroll_vertical = 700
+		"dex_mine", "dex_all":
+			Profile.data["dev"] = false
+			Profile.data["unlocked"] = ["charmander", "pidgey", "rattata", "geodude"]
+			menu.show_pokedex("charmander", "mine" if screen == "dex_mine" else "all")
+			if screen == "dex_all":
+				for i in 3:
+					await get_tree().process_frame
+				menu._show_dex_entry(GameData.species["scyther"])
 		"gyms":
 			menu.show_gyms()
 		"gym":

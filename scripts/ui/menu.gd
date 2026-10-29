@@ -33,6 +33,9 @@ var _enemies: Array[String] = []
 var _arena := ""
 ## Boss Raid: the boss picked on the boss screen.
 var _boss := ""
+## Pokédex tab: "mine" (default) or "all"; silhouettes cache for locked Pokémon.
+var _dex_tab := "mine"
+var _silhouettes := {}
 ## Gym gauntlet choices (gym screen).
 var _gym := ""
 var _gym_difficulty := "normal"
@@ -128,7 +131,7 @@ func show_home() -> void:
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 12)
-	for entry in [["POKéDEX", show_pokedex.bind(""), Color(0.75, 0.3, 0.3)], ["BAG", show_bag.bind([] as Array[Dictionary]), Color(0.25, 0.55, 0.45)],
+	for entry in [["POKéDEX", show_pokedex.bind("", "mine"), Color(0.75, 0.3, 0.3)], ["BAG", show_bag.bind([] as Array[Dictionary]), Color(0.25, 0.55, 0.45)],
 			["POKé MART", show_store.bind(""), Color(0.3, 0.45, 0.8)], ["ACCOUNT", show_account.bind(""), Color(0.35, 0.38, 0.5)],
 			["SETTINGS", show_settings, Color(0.35, 0.38, 0.5)]]:
 		var b := UiKit.button(entry[0], entry[1], 22)
@@ -642,28 +645,51 @@ func show_map_editor() -> void:
 	_set_screen(editor)
 
 
-func show_pokedex(selected_id: String) -> void:
+## Two tabs: MY POKéMON (default: only lines you've unlocked, with your levels,
+## shinies, TMs, HMs and vitamins) and FULL POKéDEX (every Pokémon; ones you
+## haven't unlocked are silhouettes with their stats and move details hidden).
+func show_pokedex(selected_id: String, tab := "") -> void:
+	if tab != "":
+		_dex_tab = tab
+	var mine := _dex_tab == "mine"
 	var root := VBoxContainer.new()
 	root.add_theme_constant_override("separation", 12)
 	var top := HBoxContainer.new()
+	top.add_theme_constant_override("separation", 10)
 	top.add_child(UiKit.button("‹ BACK", show_home))
-	var title := UiKit.label("POKéDEX", 34)
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	top.add_child(title)
+	var tabs := ButtonGroup.new()
+	var mine_tab := _toggle("MY POKéMON", tabs, mine)
+	mine_tab.pressed.connect(show_pokedex.bind(selected_id, "mine"))
+	top.add_child(mine_tab)
+	var all_tab := _toggle("FULL POKéDEX", tabs, not mine)
+	all_tab.pressed.connect(show_pokedex.bind(selected_id, "all"))
+	top.add_child(all_tab)
+	var have := 0
+	for base in GameData.base_species():
+		if Profile.is_unlocked(base.id):
+			have += 1
+	var count := UiKit.label("   %d / %d lines  ·  %d shinies" % [have, GameData.base_species().size(), (Profile.data.get("shinies", []) as Array).size()], 20, Color(1, 0.85, 0.4))
+	count.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top.add_child(count)
 	root.add_child(top)
 
-	var all: Array[SpeciesData] = GameData.species_by_line()
-	var selected: SpeciesData = GameData.species.get(selected_id, all[0])
+	var shown: Array[SpeciesData] = []
+	for s in GameData.species_by_line():
+		if not mine or Profile.is_unlocked(s.id):
+			shown.append(s)
+	var selected: SpeciesData = GameData.species.get(selected_id)
+	if selected == null or selected not in shown:
+		selected = shown[0] if not shown.is_empty() else null
 	var body := HBoxContainer.new()
 	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	body.add_theme_constant_override("separation", 12)
 	var list := VBoxContainer.new()
 	var group := ButtonGroup.new()
-	for s in all:
+	for s in shown:
+		var known := Profile.is_unlocked(s.id)
 		var b := Button.new()
-		b.text = "#%03d  %s" % [s.dex, s.display_name]
-		b.icon = s.sprite
+		b.text = "#%03d  %s%s" % [s.dex, s.display_name, "  ✦" if known and Profile.has_shiny(s.id) and s.shiny_sprite else ""]
+		b.icon = s.sprite if known else _silhouette(s.sprite)
 		b.expand_icon = true
 		b.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
@@ -672,10 +698,12 @@ func show_pokedex(selected_id: String) -> void:
 		b.button_group = group
 		b.button_pressed = s == selected
 		b.add_theme_constant_override("icon_max_width", 48)
+		if not known:
+			b.add_theme_color_override("font_color", Color(1, 1, 1, 0.55))
 		b.pressed.connect(_show_dex_entry.bind(s))
 		list.add_child(b)
 	var left := UiKit.panel(UiKit.scroll(list))
-	left.custom_minimum_size.x = 320
+	left.custom_minimum_size.x = 340
 	body.add_child(left)
 
 	_details = VBoxContainer.new()
@@ -686,7 +714,29 @@ func show_pokedex(selected_id: String) -> void:
 	body.add_child(right)
 	root.add_child(body)
 	_set_screen(root)
-	_show_dex_entry(selected)
+	if selected:
+		_show_dex_entry(selected)
+
+
+## A black silhouette of a sprite (cached), for Pokémon you haven't unlocked.
+func _silhouette(tex: Texture2D) -> Texture2D:
+	if tex == null:
+		return null
+	if _silhouettes.has(tex):
+		return _silhouettes[tex]
+	var img := tex.get_image()
+	if img == null:
+		return tex
+	img = img.duplicate()
+	img.decompress()
+	img.convert(Image.FORMAT_RGBA8)
+	for y in img.get_height():
+		for x in img.get_width():
+			var a := img.get_pixel(x, y).a
+			img.set_pixel(x, y, Color(0.06, 0.07, 0.12, a))
+	var out := ImageTexture.create_from_image(img)
+	_silhouettes[tex] = out
+	return out
 
 
 # --- Species list & filters ------------------------------------------------
@@ -1071,12 +1121,81 @@ func _restore_last_choices() -> void:
 
 func _show_dex_entry(s: SpeciesData) -> void:
 	_clear(_details)
+	if not Profile.is_unlocked(s.id):
+		_show_locked_dex_entry(s)
+		return
 	_details.add_child(_species_header(s, 144, true))
+	if not s.legendary:
+		_details.add_child(_dex_progress(s))
 	for stat in ["hp", "attack", "defense", "speed"]:
 		_details.add_child(UiKit.stat_bar(stat, _stat(s, stat)))
 	_details.add_child(_style_box(s))
 
 	_details.add_child(_section("EVOLUTION  (every 3 KOs in a match; fainting drops one stage)"))
+	_details.add_child(_dex_line(s, true))
+	_dex_matchups(s)
+
+	_details.add_child(_section("SUPER  (this stage's own)"))
+	_details.add_child(UiKit.move_card(s.super_move))
+	if s.gadget_move:
+		_details.add_child(_section("GADGET"))
+		_details.add_child(UiKit.move_card(s.gadget_move))
+	_details.add_child(_section("MAIN ATTACKS"))
+	var have := Profile.unlocked_mains(s.id)
+	for entry in s.learnset:
+		var move: MoveData = entry["move"]
+		var tm := str(entry.get("tm", ""))
+		var state := "✓ UNLOCKED" if move.id in have else ("Lv %d%s" % [int(entry["level"]), (" or " + Profile.item_name(tm)) if tm != "" else ""])
+		_details.add_child(UiKit.label(state, 15, Color(0.6, 1, 0.6) if move.id in have else Color(1, 0.85, 0.5)))
+		_details.add_child(UiKit.move_card(move, int(entry["level"])))
+	if not s.legendary:
+		_dex_gear(s)
+	_details_scroll.scroll_vertical = 0
+
+
+## Level, XP and shiny for a line you own.
+func _dex_progress(s: SpeciesData) -> Control:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 14)
+	var level := Profile.level_of(s.id)
+	row.add_child(UiKit.label("LV %d" % level, 26, Color(1, 0.85, 0.3)))
+	if level < Profile.max_level():
+		var bar := ProgressBar.new()
+		bar.max_value = maxi(1, Profile.xp_needed(level))
+		bar.value = Profile.xp_of(s.id)
+		bar.show_percentage = false
+		bar.custom_minimum_size = Vector2(220, 16)
+		bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		row.add_child(bar)
+		row.add_child(UiKit.label("%d / %d XP" % [Profile.xp_of(s.id), Profile.xp_needed(level)], 16))
+	if s.shiny_sprite:
+		row.add_child(UiKit.label("✦ Shiny unlocked" if Profile.has_shiny(s.id) else "Shiny: not yet", 16, Color(1, 0.9, 0.5) if Profile.has_shiny(s.id) else Color(1, 1, 1, 0.5)))
+	return row
+
+
+## TMs, HMs and vitamins this line has.
+func _dex_gear(s: SpeciesData) -> void:
+	_details.add_child(_section("YOUR TMs, HMs & VITAMINS"))
+	var tm_supers: Array[String] = []
+	for id in Profile.tm_super_options(s.id):
+		if Profile.owns_tm_super(id) and GameData.moves.has(id):
+			tm_supers.append(GameData.get_move(id).display_name)
+	_details.add_child(UiKit.label("TM supers: " + (", ".join(tm_supers) if not tm_supers.is_empty() else "none yet (Poké Mart or Poké Balls)"), 17))
+	var hms: Array[String] = []
+	for hm in Profile.learned_hms(s.id):
+		hms.append(Profile.item_name("hm_" + hm))
+	_details.add_child(UiKit.label("HMs learned: " + (", ".join(hms) if not hms.is_empty() else "none (it can learn %s)" % ", ".join(Profile.hm_options(s.id))), 17))
+	var v: Dictionary = Profile.vitamins(s.id)
+	var parts: Array[String] = []
+	for stat in Profile.STATS:
+		var n := int((v["active"] as Dictionary).get(stat, 0))
+		if n > 0:
+			parts.append("%s ×%d" % [str(VITAMIN_NAMES[stat]), n])
+	_details.add_child(UiKit.label("Vitamins active: " + (", ".join(parts) if not parts.is_empty() else "none"), 17))
+
+
+## The evolution line as buttons; `reveal` false shows unknown stages as silhouettes.
+func _dex_line(s: SpeciesData, reveal: bool) -> HFlowContainer:
 	var line := HFlowContainer.new()
 	var chain: Array[SpeciesData] = GameData.evolution_line(s.id)
 	for i in chain.size():
@@ -1085,15 +1204,17 @@ func _show_dex_entry(s: SpeciesData) -> void:
 		var stage := chain[i]
 		var b := Button.new()
 		b.text = stage.display_name
-		b.icon = stage.sprite
+		b.icon = stage.sprite if reveal else _silhouette(stage.sprite)
 		b.expand_icon = true
 		b.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		b.add_theme_constant_override("icon_max_width", 40)
 		b.disabled = stage == s
 		b.pressed.connect(show_pokedex.bind(stage.id))
 		line.add_child(b)
-	_details.add_child(line)
+	return line
 
+
+func _dex_matchups(s: SpeciesData) -> void:
 	var weak := HFlowContainer.new()
 	var resist := HFlowContainer.new()
 	for t in GameData.all_types():
@@ -1107,14 +1228,48 @@ func _show_dex_entry(s: SpeciesData) -> void:
 	_details.add_child(_section("RESISTS"))
 	_details.add_child(resist if resist.get_child_count() > 0 else UiKit.label("Nothing", 18))
 
-	_details.add_child(_section("SUPER  (this stage's own)"))
-	_details.add_child(UiKit.move_card(s.super_move))
+
+## Full Pokédex entry for a line you haven't unlocked: silhouette, name, types,
+## play style, how to get it and its move names; stats and move details stay hidden.
+func _show_locked_dex_entry(s: SpeciesData) -> void:
+	var header := HBoxContainer.new()
+	header.add_theme_constant_override("separation", 16)
+	header.add_child(UiKit.sprite(_silhouette(s.sprite), 144))
+	var info := VBoxContainer.new()
+	info.alignment = BoxContainer.ALIGNMENT_CENTER
+	info.add_child(UiKit.label("#%03d  %s" % [s.dex, s.display_name], 40))
+	info.add_child(UiKit.type_row(s.types))
+	var how := UiKit.label("LEGENDARY  ·  raid boss and shrine guardian" if s.legendary else "NOT UNLOCKED  ·  " + Profile.unlock_hint(s.id), 18, Color(1, 0.6, 0.45))
+	how.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	info.add_child(how)
+	header.add_child(info)
+	_details.add_child(header)
+	_details.add_child(_style_box(s))
+	_details.add_child(_section("EVOLUTION"))
+	_details.add_child(_dex_line(s, false))
+	_dex_matchups(s)
+	_details.add_child(_section("MOVES  (details revealed when you unlock it)"))
+	var moves := VBoxContainer.new()
+	var rows: Array = [["SUPER", s.super_move]]
 	if s.gadget_move:
-		_details.add_child(_section("GADGET"))
-		_details.add_child(UiKit.move_card(s.gadget_move))
-	_details.add_child(_section("MAIN ATTACKS  (one more unlocks at each level)"))
+		rows.append(["GADGET", s.gadget_move])
 	for entry in s.learnset:
-		_details.add_child(UiKit.move_card(entry["move"], int(entry["level"])))
+		rows.append(["MAIN", entry["move"]])
+	for r: Array in rows:
+		var move: MoveData = r[1]
+		if move == null:
+			continue
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 10)
+		var slot := UiKit.label(str(r[0]), 15, Color(1, 1, 1, 0.6))
+		slot.custom_minimum_size.x = 80
+		row.add_child(slot)
+		row.add_child(UiKit.label(move.display_name, 19))
+		row.add_child(UiKit.type_chip(move.type, 14))
+		row.add_child(UiKit.label("Power ???  ·  Range ???", 15, Color(1, 1, 1, 0.45)))
+		moves.add_child(row)
+	_details.add_child(moves)
+	_details.add_child(UiKit.label("Base stats: ???", 17, Color(1, 1, 1, 0.5)))
 	_details_scroll.scroll_vertical = 0
 
 
@@ -1165,7 +1320,7 @@ func _species_header(s: SpeciesData, sprite_size: float, both_colours := false) 
 	header.add_theme_constant_override("separation", 16)
 	var shown := s.shiny_sprite if _shiny and s.shiny_sprite and not both_colours else s.sprite
 	header.add_child(UiKit.sprite(shown, sprite_size))
-	if both_colours and s.shiny_sprite:
+	if both_colours and s.shiny_sprite and Profile.has_shiny(s.id):
 		header.add_child(UiKit.sprite(s.shiny_sprite, sprite_size * 0.7))
 	var info := VBoxContainer.new()
 	info.alignment = BoxContainer.ALIGNMENT_CENTER
