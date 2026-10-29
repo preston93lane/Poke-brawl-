@@ -56,7 +56,7 @@
 				100
 			],
 			"candy": [
-				0.25,
+				0.1,
 				1,
 				1
 			],
@@ -76,9 +76,9 @@
 				250
 			],
 			"candy": [
-				1.0,
+				0.4,
 				1,
-				2
+				1
 			],
 			"vitamin": [
 				0.35,
@@ -96,9 +96,9 @@
 				600
 			],
 			"candy": [
-				1.0,
-				2,
-				4
+				0.75,
+				1,
+				2
 			],
 			"vitamin": [
 				1.0,
@@ -118,8 +118,8 @@
 			],
 			"candy": [
 				1.0,
-				5,
-				5
+				2,
+				3
 			],
 			"vitamin": [
 				1.0,
@@ -188,7 +188,7 @@
 		"rare_candy": {
 			"name": "Rare Candy",
 			"category": "rare_candy",
-			"price": 300
+			"price": 800
 		},
 		"hp_up": {
 			"name": "HP Up",
@@ -258,7 +258,7 @@
 			{
 				"rarity": "common",
 				"pool": {
-					"rare_candy": 3,
+					"rare_candy": 1,
 					"hp_up": 1,
 					"protein": 1,
 					"iron": 1,
@@ -268,7 +268,7 @@
 			{
 				"rarity": "common",
 				"pool": {
-					"rare_candy": 3,
+					"rare_candy": 1,
 					"hp_up": 1,
 					"protein": 1,
 					"iron": 1,
@@ -317,7 +317,7 @@
 		"daily_caps": {
 			"vitamin": 5,
 			"tm": 2,
-			"rare_candy": 10,
+			"rare_candy": 3,
 			"poke_ball": 3,
 			"great_ball": 3,
 			"ultra_ball": 3,
