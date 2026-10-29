@@ -614,12 +614,21 @@ func _check_attack_mechanics() -> void:
 	var boomerang_damage := target.max_health - target.health
 	expect(boomerang_damage > one_hit * 1.5, "boomerangs hit on the way out and back (%d vs one hit %d)" % [boomerang_damage, one_hit])
 
-	# Homing: aimed 30° off, Shadow Orbs curve into the target.
-	_reset_target(target, base + forward * 5.0)
-	await get_tree().physics_frame
-	shooter._perform(GameData.get_move("gastly_main1"), forward.rotated(Vector3.UP, deg_to_rad(30)), -1.0)
-	await get_tree().create_timer(1.0, false, true).timeout
-	expect(target.health < target.max_health, "homing shots curve into targets")
+	# No homing: shots aimed 30° off miss.
+	var homing_moves := 0
+	for id: String in GameData.moves:
+		if (GameData.moves[id] as MoveData).homing > 0.0:
+			homing_moves += 1
+	expect(homing_moves == 0, "no attack homes in on targets")
+	# Multi-shot attacks can't do much more at point blank than a normal attack.
+	var worst := 0.0
+	for id: String in GameData.moves:
+		var m: MoveData = GameData.moves[id]
+		if m.slot == "main" and m.kind == "projectile" and (m.count > 1 or m.burst_count > 1):
+			worst = maxf(worst, m.power * m.count * m.burst_count)
+	expect(worst <= 1300.0, "multi-shot mains top out at 1300 if every shot hits (%d)" % worst)
+	var snorlax_super: MoveData = GameData.get_move("snorlax_super")
+	expect(snorlax_super.kind == "melee" and is_equal_approx(snorlax_super.arc, 90.0), "Snorlax's super is an aimed 90° slam")
 
 	# Linger: String Shot leaves a zone that keeps hurting.
 	_reset_target(target, base + forward * 3.0)

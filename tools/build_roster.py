@@ -86,14 +86,14 @@ STYLES = {
         dict(kind="projectile", lob=True, range=7.0, speed=9, ammo=3, reload=2.2, linger=3.0, linger_radius=1.7),
         dict(kind="projectile", lob=True, range=7.0, speed=9, ammo=3, reload=2.5, linger=3.0, linger_radius=2.2, effect={"type": "slow", "chance": 0.25, "duration": 1.0, "amount": 0.3}),
         dict(kind="projectile", lob=True, range=7.0, speed=9, ammo=3, reload=2.5, linger=4.0, linger_radius=1.8, effect={"type": "poison", "chance": 0.25, "duration": 3.0, "dps": 90})]),
-    "homing": dict(label="Homing", like="Gene / Willow", desc="Orbs curve toward the nearest enemy.", hp=0.95, dps=360, gadget="gadget_smokescreen", variants=[
-        dict(kind="projectile", count=2, spread=24, homing=3.0, range=7.0, speed=10, ammo=3, reload=1.7),
-        dict(kind="projectile", count=3, spread=36, homing=3.0, range=6.5, speed=10, ammo=3, reload=2.0, effect_from_type=True),
-        dict(kind="projectile", radius=0.5, homing=2.0, explode_radius=1.3, range=7.5, speed=9, ammo=3, reload=2.2)]),
-    "tank_wave": dict(label="Tank", like="Frank", desc="Slow, wide shockwaves; huge health.", hp=1.35, dps=560, gadget="gadget_protect", variants=[
+    "homing": dict(label="Orbs", like="Gene / Willow", desc="Fans of slow orbs that cover an area (no homing).", hp=0.95, dps=360, gadget="gadget_smokescreen", variants=[
+        dict(kind="projectile", count=2, spread=24, range=7.0, speed=10, ammo=3, reload=1.7),
+        dict(kind="projectile", count=3, spread=36, range=6.5, speed=10, ammo=3, reload=2.0, effect_from_type=True),
+        dict(kind="projectile", radius=0.5, explode_radius=1.3, range=7.5, speed=9, ammo=3, reload=2.2)]),
+    "tank_wave": dict(label="Tank", like="Frank", desc="Slow, wide shockwaves; huge health.", hp=1.35, dps=480, gadget="gadget_protect", variants=[
         dict(kind="projectile", pierce=True, radius=0.9, range=4.5, speed=8, ammo=3, reload=1.6),
         dict(kind="melee", range=2.8, arc=360, ammo=3, reload=1.9),
-        dict(kind="projectile", pierce=True, radius=1.1, range=4.0, speed=7, ammo=3, reload=2.0, effect={"type": "stun", "chance": 0.35, "duration": 0.6})]),
+        dict(kind="projectile", pierce=True, radius=1.1, range=4.0, speed=7, ammo=3, reload=2.0, effect={"type": "stun", "chance": 0.2, "duration": 0.6})]),
     "piercer": dict(label="Piercer", like="Colt / Belle beams", desc="Beams that go straight through every enemy in line.", hp=0.95, dps=400, gadget="gadget_teleport", variants=[
         dict(kind="projectile", pierce=True, range=8.0, speed=18, radius=0.35, ammo=3, reload=1.7),
         dict(kind="projectile", count=2, spread=12, pierce=True, range=7.5, speed=18, radius=0.35, ammo=3, reload=1.9),
@@ -106,8 +106,8 @@ def super_template(style, f, type_):
     t = {
         "shotgun": dict(kind="dash", power=1200 * f, dash_distance=6.0, dash_speed=18, dash_pierce=True, knockback=3.0),
         "sniper": dict(kind="projectile", power=1600 * f, range=10.0, speed=20, radius=0.6, pierce=True),
-        "gunner": dict(kind="projectile", power=220 * f, burst_count=10, burst_interval=0.06, range=8.0, speed=16, pierce=True),
-        "bouncer": dict(kind="projectile", power=450 * f, count=5, spread=50, bounces=2, range=7.0, speed=12, radius=0.4),
+        "gunner": dict(kind="projectile", power=150 * f, burst_count=10, burst_interval=0.06, range=8.0, speed=16, pierce=True),
+        "bouncer": dict(kind="projectile", power=300 * f, count=5, spread=50, bounces=2, range=7.0, speed=12, radius=0.4),
         "thrower": dict(kind="projectile", power=1500 * f, lob=True, range=7.5, speed=9, explode_radius=3.0),
         "brawler": dict(kind="dash", power=1100 * f, dash_distance=6.0, dash_speed=16, explode_radius=2.2),
         "assassin": dict(kind="dash", power=1300 * f, dash_distance=8.0, dash_speed=22, dash_pierce=True, drain=0.5),
@@ -115,11 +115,12 @@ def super_template(style, f, type_):
         "lasher": dict(kind="melee", power=900 * f, range=6.0, arc=50, knockback=-5.0, effect={"type": "stun", "chance": 1.0, "duration": 0.6}),
         "stream": dict(kind="area", power=1300 * f, range=4.0, area_radius=3.0, effect=eff),
         "healer": dict(kind="self", heal=0.35, team_heal=0.45, support_radius=6.5, cleanse=True),
-        "boomerang": dict(kind="projectile", power=700 * f, count=3, spread=40, returns=True, range=7.0, speed=11, radius=0.45),
+        "boomerang": dict(kind="projectile", power=450 * f, count=3, spread=40, returns=True, range=7.0, speed=11, radius=0.45),
         "chain": dict(kind="area", power=1200 * f, range=6.0, area_radius=3.0, effect={"type": "stun", "chance": 1.0, "duration": 0.8}),
         "zone": dict(kind="projectile", power=350 * f, lob=True, range=7.5, speed=9, linger=5.0, linger_radius=3.2),
-        "homing": dict(kind="projectile", power=420 * f, count=6, spread=120, homing=4.0, range=7.0, speed=10, radius=0.4),
-        "tank_wave": dict(kind="area", power=1200 * f, range=0.0, area_radius=4.5, effect={"type": "stun", "chance": 1.0, "duration": 1.0}),
+        "homing": dict(kind="projectile", power=260 * f, count=6, spread=120, range=7.0, speed=10, radius=0.4),
+        # Frank-style: an aimed 90-degree slam in front, not a full circle.
+        "tank_wave": dict(kind="melee", power=1200 * f, range=4.5, arc=90, effect={"type": "stun", "chance": 1.0, "duration": 1.0}),
         "piercer": dict(kind="projectile", power=1700 * f, range=10.0, speed=20, radius=0.9, pierce=True),
     }[style]
     return {k: (round(v) if k == "power" else v) for k, v in t.items() if v is not None}
@@ -157,10 +158,9 @@ def main_attack(style_name, level, name, type_):
         move["power"] = round(target * (v["tank"] + v["reload"]) / v["tank"] / 10) * 10
     else:
         if style_name not in ("sniper",):
-            target *= math.sqrt(6.5 / v["range"])
+            target *= min(1.15, math.sqrt(6.5 / v["range"]))
+        # Multi-shot: power is split as if every pellet hits, so point blank isn't overpowered.
         hits = v.get("count", 1) * v.get("burst_count", 1)
-        if v.get("count", 1) > 1:
-            hits *= 0.75 if v.get("spread", 0) <= 15 else 0.55
         if v.get("explode_radius"): target *= 0.85
         if v.get("pierce"): target *= 0.9
         if v.get("returns"): target *= 0.7

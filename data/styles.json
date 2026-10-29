@@ -70,9 +70,9 @@
 		"desc": "Lobs clouds that keep hurting anyone standing in them."
 	},
 	"homing": {
-		"label": "Homing",
+		"label": "Orbs",
 		"like": "Gene / Willow",
-		"desc": "Orbs curve toward the nearest enemy."
+		"desc": "Fans of slow orbs that cover an area (no homing)."
 	},
 	"tank_wave": {
 		"label": "Tank",
