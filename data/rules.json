@@ -200,7 +200,8 @@
 		"raid_time_left": 90.0,
 		"boss_hp_multiplier": 3.5,
 		"ally_hp_multiplier": 2.0,
-		"ally_duration": 25.0,
+		"ally_duration": 20.0,
+		"ally_ko_points": 3,
 		"shrine_hold": 20.0,
 		"shrine_cooldown": 30.0
 	}

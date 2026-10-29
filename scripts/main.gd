@@ -347,11 +347,13 @@ func _on_brawler_died(victim: Brawler, killer: Brawler) -> void:
 		killer.register_kill()
 	hud.add_kill(killer, victim)
 	if victim in legendaries:
-		# A fainted legendary ally leaves for good (it counts as a KO in Battle).
+		# A fainted legendary ally leaves for good (it counts as legendary/ally_ko_points KOs in Battle).
 		if mode == "duel" and killer and killer.team in [0, 1]:
-			scores[killer.team] += 1
+			scores[killer.team] += float(GameData.rule("legendary/ally_ko_points", 3))
 			_update_status()
-		hud.announce("%s fainted!" % victim.species.display_name.to_upper())
+			if scores[killer.team] >= float(mode_rules.get("kills_to_win", 10)):
+				end_round("victory" if killer.team == player.team else "defeat")
+		hud.announce("%s fainted! +%d KOs" % [victim.species.display_name.to_upper(), int(GameData.rule("legendary/ally_ko_points", 3))] if mode == "duel" else "%s fainted!" % victim.species.display_name.to_upper())
 		get_tree().create_timer(1.0, false).timeout.connect(_dismiss_legendary.bind(victim))
 		return
 	if mode_logic and mode_logic.on_died(victim, killer):
@@ -429,6 +431,7 @@ func spawn_raid_boss() -> Brawler:
 	var boss: Brawler = BRAWLER_SCENE.instantiate()
 	boss.setup(boss_id, 3, NEUTRAL_TEAM, false, arena)
 	boss.is_legendary = true
+	boss.regenerates = false
 	boss.position = arena.center_point()
 	arena.add_child(boss)
 	boss.max_health *= float(GameData.rule("legendary/boss_hp_multiplier", 3.5))
@@ -467,6 +470,7 @@ func summon_legendary(species_id: String, team: int, at: Vector3) -> Brawler:
 	var ally: Brawler = BRAWLER_SCENE.instantiate()
 	ally.setup(species_id, 3, team, false, arena)
 	ally.is_legendary = true
+	ally.regenerates = false
 	ally.flying = true
 	ally.collision_mask = 0
 	ally.position = at
