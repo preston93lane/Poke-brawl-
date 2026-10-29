@@ -139,6 +139,18 @@ def import_one(sid, dex):
     return names
 
 
+def credit_name_table():
+    """Artist IDs (e.g. Discord mentions) -> the names they go by, from SpriteCollab's credit_names.txt."""
+    table = {}
+    raw = fetch("credit_names.txt")
+    for line in (raw or b"").decode("utf-8", "replace").splitlines()[1:]:
+        parts = line.split("\t")
+        if len(parts) >= 2 and parts[0].strip():
+            table[parts[1].strip()] = parts[0].strip()
+            table[parts[0].strip()] = parts[0].strip()
+    return table
+
+
 def main(ids):
     os.makedirs(OUT, exist_ok=True)
     brawlers = os.path.join(ROOT, "data", "brawlers")
@@ -151,6 +163,8 @@ def main(ids):
         names = import_one(sid, dex)
         if names is not None:
             credits[sid] = names
+    names = credit_name_table()
+    credits = {k: sorted({names.get(n, n) for n in v}) for k, v in credits.items()}
     json.dump(dict(sorted(credits.items())), open(credits_path, "w"), indent="\t")
 
 

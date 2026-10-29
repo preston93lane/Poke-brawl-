@@ -112,10 +112,11 @@ godot --headless --path . res://tests/smoke_test.tscn
 ## Credits
 
 - **Made with:** Godot Engine 4 (MIT license).
-- **Pokémon sprites:** Pokémon Black/White sprites from the PokeAPI sprites collection (© Nintendo / Creatures Inc. / GAME FREAK inc.).
+- **Battle sprites:** animated Pokémon Mystery Dungeon sprites from [PMD SpriteCollab](https://sprites.pmdcollab.org/) ([GitHub](https://github.com/PMDCollab/SpriteCollab)), CC BY-NC 4.0. Original sprites © Spike Chunsoft; each Pokémon's artists are listed in `assets/pmd/credits.json` and in the game under Settings → About & Legal. Downloaded by `tools/import_pmd_sprites.py`.
+- **Menu pictures:** Pokémon Black/White sprites from the PokeAPI sprites collection (© Nintendo / Creatures Inc. / GAME FREAK inc.).
 - **Fonts:** Lilita One by Juan Montoreano, SIL Open Font License 1.1.
 - **Everything else:** Maps, 3D models, effects, item icons and sounds are made for this game (procedurally generated).
 
 ## Legal
 
-Pokémon and all related names, characters, sprites, music and other assets are © Nintendo, Creatures Inc. and GAME FREAK inc. Poké Brawl is a free, non-commercial fan project. It is not affiliated with or endorsed by Nintendo, Creatures Inc., GAME FREAK inc. or The Pokémon Company. It is not for sale, no money is made from it, and it contains no ads or purchases with real money. If you are a rights holder and want something removed, open an issue on the GitHub repository and it will be taken down.
+Pokémon and all related names, characters, sprites, music and other assets are © Nintendo, Creatures Inc. and GAME FREAK inc. Pokémon Mystery Dungeon © Spike Chunsoft. Poké Brawl is a free, non-commercial fan project. It is not affiliated with or endorsed by Nintendo, Creatures Inc., GAME FREAK inc., The Pokémon Company or Spike Chunsoft. It is not for sale, no money is made from it, and it contains no ads or purchases with real money. If you are a rights holder and want something removed, open an issue on the GitHub repository and it will be taken down.

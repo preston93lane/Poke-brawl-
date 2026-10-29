@@ -498,11 +498,12 @@ const MAP_EDITOR := preload("res://scripts/ui/map_editor.gd")
 ## Settings → About & Legal: credits and the fan-project notice (also in README.md).
 const CREDITS := [
 	["Made with", "Godot Engine 4 (MIT license)."],
-	["Pokémon sprites", "Pokémon Black/White sprites from the PokeAPI sprites collection (© Nintendo / Creatures Inc. / GAME FREAK inc.)."],
+	["Battle sprites", "Animated Pokémon Mystery Dungeon sprites from PMD SpriteCollab (sprites.pmdcollab.org), CC BY-NC 4.0. Original sprites © Spike Chunsoft; artists listed below."],
+	["Menu pictures", "Pokémon Black/White sprites from the PokeAPI sprites collection (© Nintendo / Creatures Inc. / GAME FREAK inc.)."],
 	["Fonts", "Lilita One by Juan Montoreano, SIL Open Font License 1.1."],
 	["Everything else", "Maps, 3D models, effects, item icons and sounds are made for this game (procedurally generated)."]
 ]
-const LEGAL := "Pokémon and all related names, characters, sprites, music and other assets are © Nintendo, Creatures Inc. and GAME FREAK inc. Poké Brawl is a free, non-commercial fan project. It is not affiliated with or endorsed by Nintendo, Creatures Inc., GAME FREAK inc. or The Pokémon Company. It is not for sale, no money is made from it, and it contains no ads or purchases with real money. If you are a rights holder and want something removed, open an issue on the GitHub repository and it will be taken down."
+const LEGAL := "Pokémon and all related names, characters, sprites, music and other assets are © Nintendo, Creatures Inc. and GAME FREAK inc. Pokémon Mystery Dungeon © Spike Chunsoft. Poké Brawl is a free, non-commercial fan project. It is not affiliated with or endorsed by Nintendo, Creatures Inc., GAME FREAK inc., The Pokémon Company or Spike Chunsoft. It is not for sale, no money is made from it, and it contains no ads or purchases with real money. If you are a rights holder and want something removed, open an issue on the GitHub repository and it will be taken down."
 
 
 func show_about() -> void:
@@ -517,6 +518,19 @@ func show_about() -> void:
 		var l := UiKit.label("%s: %s" % [c[0], c[1]], 18)
 		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		v.add_child(l)
+	var artists := {}
+	if FileAccess.file_exists("res://assets/pmd/credits.json"):
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://assets/pmd/credits.json"))
+		if parsed is Dictionary:
+			for names in (parsed as Dictionary).values():
+				for n in names:
+					artists[str(n)] = true
+	if not artists.is_empty():
+		var list: Array = artists.keys()
+		list.sort_custom(func(a: String, b: String) -> bool: return a.to_lower() < b.to_lower())
+		var who := UiKit.label("Sprite artists: " + ", ".join(PackedStringArray(list)), 16, Color(0.8, 0.85, 1))
+		who.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		v.add_child(who)
 	v.add_child(_section("LEGAL"))
 	var legal := UiKit.label(LEGAL, 18, Color(0.85, 0.9, 1))
 	legal.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

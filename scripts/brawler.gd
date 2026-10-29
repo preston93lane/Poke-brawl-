@@ -1739,11 +1739,17 @@ func _set_anim(anim: String) -> void:
 	shadow.material_override = _flat_material(Color(0, 0, 0, 0.28))
 
 
-## World size of one sprite pixel, so the Pokémon stands as tall as with the old sprites.
+## World size of one sprite pixel. Heights follow the old sprites' relative sizes,
+## compressed toward the smallest (rules.json sprite_size: Snorlax stays bigger than
+## Weedle, but not by much), and a pixel never gets bigger than max_pixel so big
+## Pokémon stay crisp.
 func pmd_pixel_size() -> float:
 	var walk: Dictionary = species.pmd["walk"]
-	var old_height := (species.sprite_height * SHEET_PIXEL_SIZE if species.sprite_height > 0 else 1.6) * species.sprite_scale
-	return old_height / maxf(8.0, float(walk["height"])) * size_scale * VISUAL_SCALE
+	var old_height := (species.sprite_height * SHEET_PIXEL_SIZE if species.sprite_height > 0 else 1.6) * species.sprite_scale * VISUAL_SCALE
+	var smallest := float(GameData.rule("sprite_size/smallest", 1.56))
+	var target := smallest * pow(maxf(old_height, smallest) / smallest, float(GameData.rule("sprite_size/compress", 0.5)))
+	var px := minf(target / maxf(8.0, float(walk["height"])), float(GameData.rule("sprite_size/max_pixel", 0.07)))
+	return px * size_scale
 
 
 ## How tall the Pokémon is drawn, in metres (health bars sit above this).
