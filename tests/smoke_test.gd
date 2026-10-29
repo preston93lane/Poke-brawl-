@@ -53,6 +53,7 @@ func _ready() -> void:
 	_check_dailies()
 	await _check_gyms()
 	_check_starter_order()
+	_check_no_mew_bots()
 	Engine.time_scale = 1.0
 	Profile.data = real_profile
 	Profile.save()
@@ -1565,3 +1566,16 @@ func _check_starter_order() -> void:
 	order = Profile.starter_order()
 	expect(order.size() == 3 and "pikachu" not in order, "picked Pikachu: all three starters random")
 	Profile.data = saved
+
+
+func _check_no_mew_bots() -> void:
+	print("Mewtwo and Mew are never random bots")
+	var main := MAIN_SCENE.instantiate()
+	var seen := false
+	for i in 200:
+		for id in main._fill_team(PackedStringArray(), 5, []):
+			if GameData.family_root(id) in ["mewtwo", "mew"]:
+				seen = true
+	main.free()
+	expect(not seen, "no Mewtwo or Mew in 1000 random bots")
+	expect(not GameData.bot_allowed("mew") and GameData.bot_allowed("pikachu"), "bot_allowed")

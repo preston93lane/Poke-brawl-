@@ -129,7 +129,7 @@ func _land_strike(disc: Node3D, at: Vector3, radius: float) -> void:
 func _call_minions(p: int) -> void:
 	var pool: Array[String] = []
 	for s in GameData.base_species():
-		if not s.legendary and s.evolves_to != "" and s.has_type(boss.species.types[0]):
+		if not s.legendary and GameData.bot_allowed(s.id) and s.evolves_to != "" and s.has_type(boss.species.types[0]):
 			pool.append(s.id)
 	if pool.is_empty():
 		return

@@ -195,6 +195,7 @@
 			40
 		]
 	},
+	"no_bots": ["mewtwo", "mew"],
 	"legendary": {
 		"_comment": "Battle: a raid boss appears when raid_time_left seconds remain; the team that dealt the most damage to it gets it as an ally. King of the Hill: hold the zone alone for shrine_hold seconds straight to awaken the arena's guardian.",
 		"raid_time_left": 90.0,

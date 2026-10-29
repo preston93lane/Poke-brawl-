@@ -817,6 +817,8 @@ func _refresh_select_details() -> void:
 	var keep_scroll := _details_scroll.scroll_vertical
 	_clear(_details)
 	var s := _species
+	if not Profile.has_shiny(s.id):
+		_shiny = false  # The toggle from another Pokémon doesn't carry over.
 	_details.add_child(_species_header(s, 112))
 	for stat in ["hp", "attack", "defense", "speed"]:
 		_details.add_child(UiKit.stat_bar(stat, _stat(s, stat)))
@@ -1318,7 +1320,7 @@ func _play_reveals() -> void:
 func _species_header(s: SpeciesData, sprite_size: float, both_colours := false) -> HBoxContainer:
 	var header := HBoxContainer.new()
 	header.add_theme_constant_override("separation", 16)
-	var shown := s.shiny_sprite if _shiny and s.shiny_sprite and not both_colours else s.sprite
+	var shown := s.shiny_sprite if _shiny and s.shiny_sprite and Profile.has_shiny(s.id) and not both_colours else s.sprite
 	header.add_child(UiKit.sprite(shown, sprite_size))
 	if both_colours and s.shiny_sprite and Profile.has_shiny(s.id):
 		header.add_child(UiKit.sprite(s.shiny_sprite, sprite_size * 0.7))

@@ -48,7 +48,7 @@ static func team_of_type(type_name: String, player_species: String) -> Array:
 	var pool: Array[String] = []
 	var extra: Array[String] = []
 	for s: SpeciesData in GameData.species.values():
-		if s.legendary or not s.has_type(type_name) or GameData.family_root(s.id) == GameData.family_root(player_species):
+		if s.legendary or not GameData.bot_allowed(s.id) or not s.has_type(type_name) or GameData.family_root(s.id) == GameData.family_root(player_species):
 			continue
 		if s.evolves_from == "":
 			pool.append(s.id)

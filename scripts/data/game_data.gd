@@ -383,6 +383,11 @@ func effectiveness(attack_type: String, defender_types: Array[String]) -> float:
 	return clampf(result, type_range.x, type_range.y)
 
 
+## False for lines too strong to be random bots (Mewtwo, Mew): rules.json no_bots.
+func bot_allowed(species_id: String) -> bool:
+	return family_root(species_id) not in (rule("no_bots", ["mewtwo", "mew"]) as Array)
+
+
 ## Raw chart multiplier of one type attacking another (2, 1, 0.5 or 0).
 func type_matchup(attack_type: String, defender_type: String) -> float:
 	return float((_chart.get(attack_type, {}) as Dictionary).get(defender_type, 1.0))

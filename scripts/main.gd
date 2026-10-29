@@ -225,13 +225,16 @@ func _fill_team(chosen: PackedStringArray, count: int, taken: Array) -> Array[St
 			used.append(id)
 	var pool: Array[String] = []
 	for s in GameData.base_species():
-		if s.id not in used:
+		if s.id not in used and GameData.bot_allowed(s.id):
 			pool.append(s.id)
 	pool.shuffle()
 	while result.size() < count:
 		if pool.is_empty():
-			var all: Array[SpeciesData] = GameData.base_species()
-			result.append(all[randi() % all.size()].id)
+			var all: Array[String] = []
+			for sp in GameData.base_species():
+				if GameData.bot_allowed(sp.id):
+					all.append(sp.id)
+			result.append(all[randi() % all.size()])
 		else:
 			result.append(pool.pop_back())
 	return result
