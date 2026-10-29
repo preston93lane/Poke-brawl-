@@ -166,6 +166,8 @@ func _draw_prize(pos: Vector2, p: Dictionary, alpha: float) -> void:
 	var s := 34.0
 	if item == "money":
 		draw_meowth_coin(self, pos, s, alpha)
+	elif item == "pokemon" and not p.has("family"):
+		draw_mystery(self, pos, s, alpha)
 	elif item in ["pokemon", "shiny"] and GameData.species.has(str(p.get("family", ""))):
 		var sp: SpeciesData = GameData.species[str(p["family"])]
 		var tex: Texture2D = sp.shiny_sprite if item == "shiny" and sp.shiny_sprite else sp.sprite
@@ -185,6 +187,14 @@ func _draw_prize(pos: Vector2, p: Dictionary, alpha: float) -> void:
 					HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(1, 1, 1, alpha))
 	var text := str(p.get("text", ""))
 	draw_string(ThemeDB.fallback_font, pos + Vector2(-90, s + 26), text, HORIZONTAL_ALIGNMENT_CENTER, 180, 18, Color(1, 1, 1, alpha))
+
+
+## A new Pokémon from a ball: a glowing "?" (the unlock reveal shows which one after the ball).
+static func draw_mystery(ci: CanvasItem, pos: Vector2, r: float, alpha := 1.0) -> void:
+	ci.draw_circle(pos, r * 1.25, Color(1, 0.85, 0.3, 0.35 * alpha))
+	ci.draw_circle(pos, r, Color(0.12, 0.12, 0.2, alpha))
+	ci.draw_arc(pos, r, 0, TAU, 40, Color(1, 0.85, 0.3, alpha), 3.0, true)
+	ci.draw_string(ThemeDB.fallback_font, pos + Vector2(-r, r * 0.45), "?", HORIZONTAL_ALIGNMENT_CENTER, r * 2.0, int(r * 1.4), Color(1, 0.9, 0.4, alpha))
 
 
 ## Meowth's Pay Day coin: gold, a raised rim, and the oval charm in the middle.
@@ -246,6 +256,8 @@ class PrizeIcon extends Control:
 		var c := size * 0.5
 		if item == "money":
 			BallOpening.draw_meowth_coin(self, c, 17.0)
+		elif item == "pokemon" and not prize.has("family"):
+			BallOpening.draw_mystery(self, c, 15.0)
 		elif item in ["pokemon", "shiny"] and GameData.species.has(str(prize.get("family", ""))):
 			var sp: SpeciesData = GameData.species[str(prize["family"])]
 			if item == "shiny":

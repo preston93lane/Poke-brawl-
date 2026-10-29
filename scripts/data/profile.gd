@@ -828,7 +828,8 @@ func open_ball(ball: String) -> Array[Dictionary]:
 	if rng.randf() < float(spec.get("pokemon", 0.0)):
 		var family := next_ball_pokemon()
 		if family != "" and unlock(family):
-			prizes.append({ "item": "pokemon", "count": 1, "text": "NEW: " + GameData.species[family].display_name, "family": family })
+			# No "family": which one it is stays a surprise until the unlock reveal after the ball.
+			prizes.append({ "item": "pokemon", "count": 1, "text": "A new Pokémon?!" })
 		else:
 			tm_rolls += 1  # Everything's unlocked: a TM instead.
 	for i in tm_rolls:

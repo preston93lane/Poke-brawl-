@@ -115,7 +115,7 @@ func _menu_shot(screen: String, out_dir: String) -> void:
 		"ball":
 			var prizes: Array[Dictionary] = [{ "item": "money", "text": "512 ₽" }, { "item": "rare_candy", "text": "Rare Candy ×3" },
 					{ "item": "protein", "text": "Protein" }, { "item": "tm_flamethrower", "text": "TM Flamethrower" },
-					{ "item": "pokemon", "family": "geodude", "text": "NEW: Geodude" }]
+					{ "item": "pokemon", "text": "A new Pokémon?!" }]
 			menu.show_bag()
 			menu.play_ball_opening("ultra_ball", prizes)
 			for t in [40, 110, 170, 140]:
