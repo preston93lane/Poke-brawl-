@@ -14,8 +14,8 @@ func _ready() -> void:
 	if arena_id.begins_with("menu:"):
 		await _menu_shot(arena_id.trim_prefix("menu:"), out_dir)
 		return
-	if arena_id == "showcase":
-		await _showcase(out_dir)
+	if arena_id.begins_with("showcase"):
+		await _showcase(out_dir, arena_id.trim_prefix("showcase").trim_prefix(":").split(",", false))
 		return
 	if arena_id.begins_with("record:"):
 		await _record(arena_id.trim_prefix("record:"), out_dir)
@@ -62,9 +62,12 @@ func _ready() -> void:
 
 ## Close-up of the animated sprites: a row of Pokémon walking in a circle, then
 ## attacking, shooting, using a special and getting hurt (frames for a clip).
-func _showcase(out_dir: String) -> void:
-	GameData.match_settings = { "mode": "duel", "arena": "pallet_pitch", "species": "pikachu", "level": 20,
-			"allies": ["charmander", "squirtle"], "enemies": ["onix", "charizard", "snorlax"], "difficulty": "normal" }
+## showcase:a,b,c,d,e,f picks the six Pokémon (your team first).
+func _showcase(out_dir: String, ids: PackedStringArray) -> void:
+	if ids.size() != 6:
+		ids = PackedStringArray(["pikachu", "charmander", "squirtle", "onix", "charizard", "snorlax"])
+	GameData.match_settings = { "mode": "duel", "arena": "pallet_pitch", "species": ids[0], "level": 20,
+			"allies": [ids[1], ids[2]], "enemies": [ids[3], ids[4], ids[5]], "difficulty": "normal" }
 	var main := MAIN_SCENE.instantiate()
 	main.show_intro = false
 	main.record_progress = false

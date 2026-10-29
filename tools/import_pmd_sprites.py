@@ -87,6 +87,20 @@ def feet(png, fw, fh):
     return bottom - fh / 2.0
 
 
+def frame_bottoms(png, fw, fh):
+    """Per direction row, per frame: how far the lowest drawn pixel is below the frame's
+    centre (lunges toward the camera dip below the feet; the game lifts them back up)."""
+    im = Image.open(io.BytesIO(png)).convert("RGBA")
+    rows = []
+    for r in range(im.height // fh):
+        row = []
+        for c in range(im.width // fw):
+            box = im.crop((c * fw, r * fh, (c + 1) * fw, (r + 1) * fh)).getchannel("A").getbbox()
+            row.append(box[3] - fh // 2 if box else 0)
+        rows.append(row)
+    return rows
+
+
 def body_height(png, fw, fh, gy):
     """How tall the Pokémon is above its ground point, in pixels (first frame, facing down)."""
     im = Image.open(io.BytesIO(png)).convert("RGBA").crop((0, 0, fw, fh))
@@ -126,6 +140,7 @@ def import_one(sid, dex):
             "durations": [round(d * FRAME_SECONDS, 4) for d in a["durations"]],
             "hit": a["hit"], "ground": gy,
             "height": body_height(png, a["fw"], a["fh"], gy),
+            "bottoms": frame_bottoms(png, a["fw"], a["fh"]),
         }
     if "walk" in meta:
         walk = anims[meta["walk"]["source"]]
@@ -151,6 +166,11 @@ def credit_name_table():
     return table
 
 
+def anonymous(name):
+    """Artists with no public name are listed by their Discord ID; show them as anonymous."""
+    return "Anonymous artist" if name.startswith("<@") else name
+
+
 def main(ids):
     os.makedirs(OUT, exist_ok=True)
     brawlers = os.path.join(ROOT, "data", "brawlers")
@@ -164,7 +184,7 @@ def main(ids):
         if names is not None:
             credits[sid] = names
     names = credit_name_table()
-    credits = {k: sorted({names.get(n, n) for n in v}) for k, v in credits.items()}
+    credits = {k: sorted({anonymous(names.get(n, n)) for n in v}) for k, v in credits.items()}
     json.dump(dict(sorted(credits.items())), open(credits_path, "w"), indent="\t")
 
 

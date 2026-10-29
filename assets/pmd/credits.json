@@ -1,36 +1,508 @@
 {
+	"abra": [
+		"CHUNSOFT",
+		"Emmuffin"
+	],
+	"aerodactyl": [
+		"CHUNSOFT"
+	],
+	"alakazam": [
+		"CHUNSOFT"
+	],
+	"annihilape": [
+		"Top_Kec"
+	],
+	"arbok": [
+		"CHUNSOFT"
+	],
+	"arcanine": [
+		"CHUNSOFT"
+	],
+	"articuno": [
+		"CHUNSOFT"
+	],
+	"beedrill": [
+		"CHUNSOFT"
+	],
+	"bellsprout": [
+		"CHUNSOFT"
+	],
+	"blastoise": [
+		"CHUNSOFT"
+	],
 	"bulbasaur": [
 		"CHUNSOFT"
 	],
-	"charizard": [
-		"<@!237286997645983744>",
+	"butterfree": [
 		"CHUNSOFT"
+	],
+	"caterpie": [
+		"CHUNSOFT"
+	],
+	"celebi": [
+		"CHUNSOFT",
+		"Emmuffin",
+		"Smalusion"
+	],
+	"chansey": [
+		"CHUNSOFT"
+	],
+	"charizard": [
+		"CHUNSOFT",
+		"Emboarger"
 	],
 	"charmander": [
 		"CHUNSOFT"
 	],
 	"charmeleon": [
-		"<@!193530896211509248>",
-		"<@!199989579682414592>",
-		"<@!217653022094786560>",
+		"Anonymous artist",
+		"CHUNSOFT",
+		"Grimlin",
+		"bwappi"
+	],
+	"clefable": [
 		"CHUNSOFT"
 	],
+	"clefairy": [
+		"CHUNSOFT"
+	],
+	"cloyster": [
+		"CHUNSOFT"
+	],
+	"cubone": [
+		"CHUNSOFT",
+		"Emmuffin",
+		"Sceptile",
+		"Some_Shinx"
+	],
+	"dewgong": [
+		"CHUNSOFT"
+	],
+	"diglett": [
+		"Audino",
+		"CHUNSOFT"
+	],
+	"ditto": [
+		"CHUNSOFT",
+		"Caitemis"
+	],
+	"dodrio": [
+		"CHUNSOFT"
+	],
+	"doduo": [
+		"CHUNSOFT"
+	],
+	"dragonair": [
+		"CHUNSOFT"
+	],
+	"dragonite": [
+		"CHUNSOFT",
+		"Deeshura",
+		"SethY"
+	],
+	"dratini": [
+		"CHUNSOFT",
+		"JFain"
+	],
+	"drowzee": [
+		"CHUNSOFT"
+	],
+	"dugtrio": [
+		"Audino",
+		"CHUNSOFT"
+	],
+	"eevee": [
+		"CHUNSOFT"
+	],
+	"ekans": [
+		"CHUNSOFT",
+		"Emmuffin"
+	],
+	"electabuzz": [
+		"CHUNSOFT"
+	],
+	"electrode": [
+		"CHUNSOFT"
+	],
+	"exeggcute": [
+		"CHUNSOFT"
+	],
+	"exeggutor": [
+		"CHUNSOFT"
+	],
+	"farfetchd": [
+		"CHUNSOFT"
+	],
+	"fearow": [
+		"CHUNSOFT"
+	],
+	"flareon": [
+		"CHUNSOFT",
+		"Ginnie",
+		"JFain"
+	],
+	"gastly": [
+		"CHUNSOFT"
+	],
+	"gengar": [
+		"CHUNSOFT",
+		"Emboarger"
+	],
 	"geodude": [
+		"CHUNSOFT"
+	],
+	"gloom": [
+		"CHUNSOFT"
+	],
+	"golbat": [
+		"CHUNSOFT"
+	],
+	"goldeen": [
+		"CHUNSOFT"
+	],
+	"golduck": [
+		"CHUNSOFT"
+	],
+	"golem": [
+		"CHUNSOFT",
+		"Emmuffin"
+	],
+	"graveler": [
+		"CHUNSOFT",
+		"Emmuffin"
+	],
+	"grimer": [
+		"CHUNSOFT"
+	],
+	"growlithe": [
+		"CHUNSOFT",
+		"Emmuffin",
+		"JustAGunk"
+	],
+	"gyarados": [
+		"CHUNSOFT"
+	],
+	"haunter": [
+		"CHUNSOFT"
+	],
+	"hitmonchan": [
+		"CHUNSOFT"
+	],
+	"hitmonlee": [
+		"CHUNSOFT"
+	],
+	"horsea": [
+		"CHUNSOFT"
+	],
+	"hypno": [
+		"CHUNSOFT"
+	],
+	"ivysaur": [
+		"CHUNSOFT"
+	],
+	"jigglypuff": [
+		"CHUNSOFT",
+		"JFain"
+	],
+	"jolteon": [
+		"CHUNSOFT",
+		"dmDash"
+	],
+	"jynx": [
+		"CHUNSOFT"
+	],
+	"kabuto": [
+		"CHUNSOFT",
+		"anomalocaris"
+	],
+	"kabutops": [
+		"CHUNSOFT"
+	],
+	"kadabra": [
+		"CHUNSOFT"
+	],
+	"kakuna": [
+		"CHUNSOFT"
+	],
+	"kangaskhan": [
+		"CHUNSOFT"
+	],
+	"kingler": [
+		"CHUNSOFT"
+	],
+	"koffing": [
+		"CHUNSOFT"
+	],
+	"krabby": [
+		"CHUNSOFT"
+	],
+	"lapras": [
+		"CHUNSOFT"
+	],
+	"lickitung": [
+		"CHUNSOFT"
+	],
+	"machamp": [
+		"CHUNSOFT"
+	],
+	"machoke": [
+		"CHUNSOFT"
+	],
+	"machop": [
+		"CHUNSOFT",
+		"Emboarger"
+	],
+	"magikarp": [
+		"CHUNSOFT"
+	],
+	"magmar": [
+		"CHUNSOFT"
+	],
+	"magnemite": [
+		"CHUNSOFT"
+	],
+	"magneton": [
+		"CHUNSOFT"
+	],
+	"mankey": [
+		"CHUNSOFT"
+	],
+	"marowak": [
+		"CHUNSOFT"
+	],
+	"meowth": [
+		"CHUNSOFT"
+	],
+	"metapod": [
+		"CHUNSOFT"
+	],
+	"mew": [
+		"CHUNSOFT",
+		"JFain"
+	],
+	"mewtwo": [
+		"CHUNSOFT",
+		"JFain"
+	],
+	"moltres": [
+		"CHUNSOFT"
+	],
+	"mr_mime": [
+		"CHUNSOFT"
+	],
+	"muk": [
+		"CHUNSOFT"
+	],
+	"nidoking": [
+		"CHUNSOFT"
+	],
+	"nidoqueen": [
+		"CHUNSOFT"
+	],
+	"nidoran_f": [
+		"CHUNSOFT"
+	],
+	"nidoran_m": [
+		"CHUNSOFT"
+	],
+	"nidorina": [
+		"CHUNSOFT"
+	],
+	"nidorino": [
+		"CHUNSOFT"
+	],
+	"ninetales": [
+		"CHUNSOFT",
+		"baronessfaron"
+	],
+	"oddish": [
+		"CHUNSOFT"
+	],
+	"omanyte": [
+		"CHUNSOFT"
+	],
+	"omastar": [
 		"CHUNSOFT"
 	],
 	"onix": [
 		"CHUNSOFT"
 	],
+	"paras": [
+		"CHUNSOFT"
+	],
+	"parasect": [
+		"CHUNSOFT"
+	],
+	"persian": [
+		"CHUNSOFT"
+	],
+	"pidgeot": [
+		"CHUNSOFT"
+	],
 	"pidgeotto": [
 		"CHUNSOFT"
 	],
+	"pidgey": [
+		"CHUNSOFT",
+		"JFain"
+	],
 	"pikachu": [
+		"CHUNSOFT"
+	],
+	"pinsir": [
+		"CHUNSOFT"
+	],
+	"poliwag": [
+		"CHUNSOFT"
+	],
+	"poliwhirl": [
+		"CHUNSOFT"
+	],
+	"poliwrath": [
+		"CHUNSOFT"
+	],
+	"ponyta": [
+		"CHUNSOFT",
+		"JFain"
+	],
+	"porygon": [
+		"CHUNSOFT"
+	],
+	"primeape": [
+		"CHUNSOFT"
+	],
+	"psyduck": [
+		"CHUNSOFT"
+	],
+	"raichu": [
+		"CHUNSOFT",
+		"Grimlin",
+		"Top_Kec"
+	],
+	"rapidash": [
+		"CHUNSOFT"
+	],
+	"raticate": [
+		"CHUNSOFT"
+	],
+	"rattata": [
+		"CHUNSOFT"
+	],
+	"rayquaza": [
+		"CHUNSOFT"
+	],
+	"regirock": [
+		"CHUNSOFT"
+	],
+	"rhydon": [
+		"CHUNSOFT"
+	],
+	"rhyhorn": [
+		"CHUNSOFT"
+	],
+	"sandshrew": [
+		"3P1C",
+		"CHUNSOFT",
+		"Emboarger"
+	],
+	"sandslash": [
+		"CHUNSOFT",
+		"Emmuffin",
+		"XModxGodX"
+	],
+	"scyther": [
+		"CHUNSOFT"
+	],
+	"seadra": [
+		"CHUNSOFT"
+	],
+	"seaking": [
+		"CHUNSOFT"
+	],
+	"seel": [
+		"CHUNSOFT"
+	],
+	"shellder": [
+		"CHUNSOFT"
+	],
+	"slowbro": [
+		"CHUNSOFT"
+	],
+	"slowpoke": [
 		"CHUNSOFT"
 	],
 	"snorlax": [
 		"CHUNSOFT"
 	],
+	"spearow": [
+		"CHUNSOFT"
+	],
 	"squirtle": [
+		"CHUNSOFT"
+	],
+	"starmie": [
+		"CHUNSOFT"
+	],
+	"staryu": [
+		"CHUNSOFT"
+	],
+	"tangela": [
+		"CHUNSOFT"
+	],
+	"tauros": [
+		"CHUNSOFT"
+	],
+	"tentacool": [
+		"CHUNSOFT"
+	],
+	"tentacruel": [
+		"CHUNSOFT"
+	],
+	"vaporeon": [
+		"CHUNSOFT"
+	],
+	"venomoth": [
+		"CHUNSOFT"
+	],
+	"venonat": [
+		"CHUNSOFT",
+		"anomalocaris"
+	],
+	"venusaur": [
+		"CHUNSOFT"
+	],
+	"victreebel": [
+		"CHUNSOFT"
+	],
+	"vileplume": [
+		"CHUNSOFT"
+	],
+	"voltorb": [
+		"CHUNSOFT",
+		"Emboarger"
+	],
+	"vulpix": [
+		"CHUNSOFT"
+	],
+	"wartortle": [
+		"CHUNSOFT"
+	],
+	"weedle": [
+		"CHUNSOFT"
+	],
+	"weepinbell": [
+		"CHUNSOFT"
+	],
+	"weezing": [
+		"CHUNSOFT"
+	],
+	"wigglytuff": [
+		"CHUNSOFT"
+	],
+	"zapdos": [
+		"CHUNSOFT"
+	],
+	"zubat": [
 		"CHUNSOFT"
 	]
 }

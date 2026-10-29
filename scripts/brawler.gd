@@ -1700,8 +1700,15 @@ func _animate_pmd(delta: float, moving: bool, tilt: float, lift: float) -> void:
 	_pop = move_toward(_pop, 1.0, delta * 3.5)
 	sprite.billboard = BaseMaterial3D.BILLBOARD_DISABLED
 	# All SpriteCollab animations share the frame centre; lift it so the feet touch the ground.
-	sprite.offset = Vector2(0, float(species.pmd["walk"].get("feet", float(a["fh"]) * 0.5 - float(a["ground"]))))
-	sprite.position = Vector3(0, 0.05 + lift, 0)
+	var feet := float(species.pmd["walk"].get("feet", float(a["fh"]) * 0.5 - float(a["ground"])))
+	# A lunge toward the camera dips below the feet and would sink into the ground:
+	# lift the frame back up and slide it toward the camera instead.
+	var dip := 0.0
+	var bottoms: Array = a.get("bottoms", [])
+	if row < bottoms.size() and col < (bottoms[row] as Array).size():
+		dip = maxf(0.0, float(bottoms[row][col]) - feet)
+	sprite.offset = Vector2(0, feet + dip)
+	sprite.position = Vector3(0, 0.05 + lift, dip * sprite.pixel_size)
 	sprite.basis = Basis(Vector3.RIGHT, tilt) * Basis.from_scale(Vector3(_pop, _pop, 1.0))
 
 

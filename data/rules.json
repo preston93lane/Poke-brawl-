@@ -196,7 +196,7 @@
 		]
 	},
 	"no_bots": ["mewtwo", "mew"],
-	"animated_sprites": false,
+	"animated_sprites": true,
 	"sprite_size": {
 		"_comment": "Animated sprites: height = smallest * (old height / smallest) ^ compress (0.5 = square root: big Pokémon shrink, the spread narrows), and one sprite pixel is at most max_pixel metres so big Pokémon stay crisp.",
 		"smallest": 1.56,

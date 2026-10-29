@@ -452,16 +452,23 @@ func _check_legendaries_and_items() -> void:
 		if s.sheet == null or s.shiny_sheet == null or s.sheet.get_height() != 96 or s.sprite_height <= 0:
 			missing_shiny.append(s.id)
 	expect(missing_shiny.is_empty(), "every Pokémon has 96px normal + shiny sheets (missing: %s)" % ", ".join(missing_shiny))
+	var no_anims: Array[String] = []
+	for s: SpeciesData in GameData.species.values():
+		if not (s.pmd.has("walk") and s.pmd.has("idle") and ResourceLoader.exists("res://assets/pmd/%s/walk.png" % s.id)):
+			no_anims.append(s.id)
+	expect(no_anims.is_empty(), "every Pokémon has animated walk + idle sprites (missing: %s)" % ", ".join(no_anims))
 	var shiny_bot: Brawler = main._spawn("charizard", 1, 1, false)
 	shiny_bot.shiny = true
 	shiny_bot._apply_species()
-	expect(shiny_bot.sprite.texture == shiny_bot.species.shiny_sheet, "shiny Pokémon use the shiny sheet")
+	await get_tree().process_frame
+	expect(shiny_bot.sprite.texture.resource_path.contains("/shiny/"), "shiny Pokémon use the shiny animations")
 	shiny_bot.queue_free()
-	for case: Array in [[Vector3(1, 0, 0), 1, false], [Vector3(-1, 0, 0), 1, true], [Vector3(0, 0, -1), 2, false], [Vector3(0, 0, 1), 0, false]]:
+	# Facing picks one of the 8 direction rows: down, down-right, right, up-right, up, up-left, left, down-left.
+	for case: Array in [[Vector3(1, 0, 0), 2], [Vector3(-1, 0, 0), 6], [Vector3(0, 0, -1), 4], [Vector3(0, 0, 1), 0]]:
 		player.facing = case[0]
 		await get_tree().process_frame
 		await get_tree().process_frame
-		expect(player.sprite.frame == case[1] and player.sprite.flip_h == case[2], "facing %s shows view %d (flipped=%s)" % case)
+		expect(floori(float(player.sprite.frame) / player.sprite.hframes) == case[1], "facing %s shows direction row %d" % case)
 
 	var base_attack := player.get_attack()
 	var base_ammo := player.max_ammo()
