@@ -55,9 +55,9 @@ STYLES = {
         dict(kind="melee", range=2.1, arc=140, ammo=3, reload=1.3, effect_from_type=True),
         dict(kind="melee", range=2.3, arc=90, ammo=3, reload=1.4, knockback=2.5)]),
     "assassin": dict(label="Assassin", like="Mortis / Edgar", desc="Dashes in to strike, then gets out.", hp=0.95, dps=520, gadget="gadget_agility", variants=[
-        dict(kind="dash", dash_distance=4.0, dash_speed=18, ammo=3, reload=1.4),
-        dict(kind="dash", dash_distance=5.5, dash_speed=20, ammo=3, reload=1.7, dash_pierce=True),
-        dict(kind="dash", dash_distance=4.5, dash_speed=18, ammo=3, reload=1.6, drain=0.35)]),
+        dict(kind="dash", dash_distance=3.2, dash_speed=18, ammo=3, reload=1.8),
+        dict(kind="dash", dash_distance=4.4, dash_speed=20, ammo=3, reload=2.2, dash_pierce=True),
+        dict(kind="dash", dash_distance=3.6, dash_speed=18, ammo=3, reload=2.0, drain=0.35)]),
     "spinner": dict(label="Spinner", like="Bibi (all-around swing)", desc="Hits everything around it at once.", hp=1.2, dps=560, gadget="gadget_agility", variants=[
         dict(kind="melee", range=2.0, arc=360, ammo=3, reload=1.3),
         dict(kind="melee", range=2.6, arc=360, ammo=3, reload=1.6, effect_from_type=True),
@@ -103,7 +103,7 @@ STYLES = {
 # Tuning from bot balance sims (tools/sim_balance.gd): (damage multiplier, health
 # multiplier) per style, pulling close-range styles down and ranged ones up.
 STYLE_TUNE = {
-    "tank_wave": (0.8, 0.88), "assassin": (0.9, 0.95), "spinner": (0.95, 1.0), "brawler": (0.93, 1.0),
+    "tank_wave": (0.8, 0.88), "assassin": (0.7, 0.95), "spinner": (0.95, 1.0), "brawler": (0.93, 1.0),
     "boomerang": (0.95, 1.0), "shotgun": (0.95, 1.0), "chain": (1.05, 1.0), "lasher": (1.08, 1.0),
     "sniper": (1.1, 1.05), "thrower": (1.15, 1.05), "stream": (1.15, 1.05), "gunner": (1.15, 1.05),
     "bouncer": (1.2, 1.05), "homing": (1.4, 1.05), "zone": (1.5, 1.08),
@@ -117,7 +117,7 @@ FAMILY_GOAL = {
     "snorlax": -16.0, "pinsir": -5.0, "kangaskhan": -6.0, "farfetchd": -4.0, "hitmonlee": -4.0, "scyther": -3.0,
     "venonat": 6.0, "venomoth": 6.0, "spearow": 5.0, "fearow": 5.0, "charmander": 5.0, "charmeleon": 5.0, "charizard": 5.0,
     "vulpix": 4.0, "ninetales": 4.0, "paras": 5.0, "parasect": 5.0, "bellsprout": 4.0, "weepinbell": 4.0, "victreebel": 4.0,
-    "magikarp": 4.0, "gyarados": 2.0, "staryu": 4.0, "starmie": 4.0, "koffing": 5.0, "weezing": 5.0, "psyduck": 4.0, "golduck": 4.0,
+    "magikarp": 4.0, "gyarados": 2.0, "goldeen": 5.0, "seaking": 5.0, "staryu": 4.0, "starmie": 4.0, "koffing": 5.0, "weezing": 5.0, "psyduck": 4.0, "golduck": 4.0,
     "pikachu": 5.0, "raichu": 5.0, "meowth": 5.0, "persian": 5.0, "abra": 4.0, "kadabra": 4.0, "alakazam": 4.0,
 }
 
@@ -132,7 +132,7 @@ def super_template(style, f, type_):
         "bouncer": dict(kind="projectile", power=300 * f, count=5, spread=50, bounces=2, range=7.0, speed=12, radius=0.4),
         "thrower": dict(kind="projectile", power=1500 * f, lob=True, range=7.5, speed=9, explode_radius=3.0),
         "brawler": dict(kind="dash", power=1100 * f, dash_distance=6.0, dash_speed=16, explode_radius=2.2),
-        "assassin": dict(kind="dash", power=1300 * f, dash_distance=8.0, dash_speed=22, dash_pierce=True, drain=0.5),
+        "assassin": dict(kind="dash", power=1300 * f, dash_distance=6.0, dash_speed=22, dash_pierce=True, drain=0.5, charge_hits=4),
         "spinner": dict(kind="area", power=1300 * f, range=0.0, area_radius=3.8, effect={"type": "slow", "chance": 1.0, "duration": 1.5, "amount": 0.5}),
         "lasher": dict(kind="melee", power=900 * f, range=6.0, arc=50, knockback=-5.0, effect={"type": "stun", "chance": 1.0, "duration": 0.6}),
         "stream": dict(kind="area", power=1300 * f, range=4.0, area_radius=3.0, effect=eff),

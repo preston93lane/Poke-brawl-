@@ -697,8 +697,13 @@ func super_ready() -> bool:
 
 
 func add_super_charge(damage_dealt: float) -> void:
-	if current_super():
-		super_charge = minf(1.0, super_charge + damage_dealt / current_super().charge_damage())
+	var sup := current_super()
+	if sup == null or damage_dealt <= 0.0:
+		return
+	if sup.charge_hits > 0:
+		super_charge = minf(1.0, super_charge + 1.0 / sup.charge_hits)  # Counted in hits (Assassins).
+	else:
+		super_charge = minf(1.0, super_charge + damage_dealt / sup.charge_damage())
 
 
 ## `distance` is where area and lobbed supers land (clamped to their range); < 0 = max range.

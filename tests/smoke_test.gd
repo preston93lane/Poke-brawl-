@@ -57,6 +57,7 @@ func _ready() -> void:
 	await _check_mvp()
 	await _check_boss_no_heal()
 	await _check_slam_windup()
+	_check_assassin_charge()
 	Engine.time_scale = 1.0
 	Profile.data = real_profile
 	Profile.save()
@@ -1700,3 +1701,19 @@ func _check_slam_windup() -> void:
 	expect(target.health < target.max_health, "then it lands")
 	main.queue_free()
 	await get_tree().process_frame
+
+
+func _check_assassin_charge() -> void:
+	print("Assassin super charge")
+	var main := MAIN_SCENE.instantiate()
+	var b: Brawler = preload("res://scenes/brawler.tscn").instantiate()
+	b.setup("scyther", 20, 0, false, null)
+	b.super_charge = 0.0
+	for i in 3:
+		b.add_super_charge(800.0)
+	var after_three := b.super_charge
+	b.add_super_charge(800.0)
+	expect(after_three < 1.0 and b.super_charge >= 1.0, "Scyther's super takes 4 hits (%.2f after 3)" % after_three)
+	expect(GameData.get_move("scyther_main1").dash_distance <= 3.3, "shorter Assassin jumps")
+	b.free()
+	main.free()
