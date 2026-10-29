@@ -168,12 +168,12 @@
 		"poke_ball": {
 			"name": "Poké Ball",
 			"category": "poke_ball",
-			"price": 250
+			"price": 150
 		},
 		"great_ball": {
 			"name": "Great Ball",
 			"category": "great_ball",
-			"price": 700
+			"price": 400
 		},
 		"ultra_ball": {
 			"name": "Ultra Ball",
