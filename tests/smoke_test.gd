@@ -1213,7 +1213,14 @@ func _check_progression() -> void:
 	expect(Profile.level_of("charmander") > 1, "levelled up (Lv %d)" % Profile.level_of("charmander"))
 	Profile._give("ultra_ball", 1)
 	var prizes := Profile.open_ball("ultra_ball")
-	expect(prizes.size() >= 3 and Profile.count("rare_candy") >= 2, "an Ultra Ball has ₽, candy and a vitamin (%d prizes)" % prizes.size())
+	expect(prizes.size() >= 2 and prizes[0]["item"] == "money", "an Ultra Ball has ₽ plus more (%d prizes)" % prizes.size())
+	var candies := 0
+	for i in 200:
+		Profile._give("poke_ball", 1)
+		for prize: Dictionary in Profile.open_ball("poke_ball"):
+			if prize["item"] == "rare_candy":
+				candies += 1
+	expect(candies > 5 and candies < 45, "Poké Balls give a Rare Candy about 1 time in 10 (%d of 200)" % candies)
 	Profile._give("protein", 12)
 	for i in 12:
 		Profile.give_vitamin("charmander", "protein")
