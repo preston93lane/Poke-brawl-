@@ -54,6 +54,7 @@ func _ready() -> void:
 	await _check_gyms()
 	_check_starter_order()
 	_check_no_mew_bots()
+	await _check_mvp()
 	Engine.time_scale = 1.0
 	Profile.data = real_profile
 	Profile.save()
@@ -1579,3 +1580,46 @@ func _check_no_mew_bots() -> void:
 	main.free()
 	expect(not seen, "no Mewtwo or Mew in 1000 random bots")
 	expect(not GameData.bot_allowed("mew") and GameData.bot_allowed("pikachu"), "bot_allowed")
+
+
+func _check_mvp() -> void:
+	print("MVP")
+	var main := await _start_match("route_1", "duel", "charmander", [])
+	var all: Array[Brawler] = []
+	for t: int in main.teams:
+		for b: Brawler in main.teams[t]:
+			b.kills = 1
+			b.deaths = 3
+			b.damage_dealt = 8000.0
+			all.append(b)
+	all[0].kills = 8
+	all[0].deaths = 2
+	all[0].damage_dealt = 20000.0
+	all[1].kills = 2
+	all[1].deaths = 5
+	all[1].damage_dealt = 32000.0
+	var rows: Array[Dictionary] = main.summary_rows()
+	var mvp: Brawler = null
+	for r in rows:
+		if r["mvp"]:
+			mvp = r["brawler"]
+	expect(mvp == all[0], "KOs and KO ratio beat raw damage for MVP")
+	main.queue_free()
+	await get_tree().process_frame
+	main = await _start_match("pallet_pitch", "brawl_ball", "charmander", [])
+	all.clear()
+	for t: int in main.teams:
+		for b: Brawler in main.teams[t]:
+			b.kills = 3
+			b.deaths = 3
+			b.damage_dealt = 15000.0
+			all.append(b)
+	all[2].goals = 2
+	all[2].kills = 2
+	rows = main.summary_rows()
+	for r in rows:
+		if r["mvp"]:
+			mvp = r["brawler"]
+	expect(mvp == all[2], "Brawl Ball goals count for MVP")
+	main.queue_free()
+	await get_tree().process_frame

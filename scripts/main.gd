@@ -568,6 +568,9 @@ func end_round(result_name: String, subtitle := "") -> void:
 
 
 ## One row per Pokémon for the match summary, with an MVP picked by score.
+## The score mixes KOs, KO/faint ratio and damage (healing counts as damage), each
+## as a share of the best in the match; modes with a stat (Brawl Ball goals,
+## candies, cubes) weigh that in too. Weights: rules.json mvp.
 func summary_rows() -> Array[Dictionary]:
 	var rows: Array[Dictionary] = []
 	for team: int in teams:
@@ -576,24 +579,39 @@ func summary_rows() -> Array[Dictionary]:
 				continue
 			var b: Brawler = node
 			var stat := mode_logic.stat_value(b) if mode_logic else 0
-			var score := b.damage_dealt + b.healing_done * 0.8 + b.kills * 1200.0 + stat * 900.0 - b.deaths * 300.0
 			rows.append({
 				"brawler": b, "team": team, "is_player": b.is_player, "name": b.species.display_name,
 				"sprite": b.portrait(), "kills": b.kills, "deaths": b.deaths, "damage": roundi(b.damage_dealt),
-				"healing": roundi(b.healing_done), "stat": stat, "score": score, "placement": b.placement, "mvp": false,
+				"healing": roundi(b.healing_done), "stat": stat, "score": 0.0, "placement": b.placement, "mvp": false,
 			})
+	var best := { "kills": 0.0, "kd": 0.0, "damage": 0.0, "stat": 0.0 }
+	for row in rows:
+		row["kd"] = float(row["kills"]) / maxf(1.0, float(row["deaths"]))
+		row["dmg"] = float(row["damage"]) + float(row["healing"]) * 0.8
+		best["kills"] = maxf(best["kills"], float(row["kills"]))
+		best["kd"] = maxf(best["kd"], float(row["kd"]))
+		best["damage"] = maxf(best["damage"], float(row["dmg"]))
+		best["stat"] = maxf(best["stat"], float(row["stat"]))
+	var with_stat := mode_logic != null and mode_logic.stat_name() != ""
+	var w: Dictionary = GameData.rule("mvp/" + ("with_stat" if with_stat else "default"), {})
+	for row in rows:
+		var share := func(value: float, top: float) -> float: return value / top if top > 0.0 else 0.0
+		row["score"] = float(w.get("kills", 0.35)) * share.call(float(row["kills"]), best["kills"]) \
+				+ float(w.get("kd", 0.25)) * share.call(float(row["kd"]), best["kd"]) \
+				+ float(w.get("damage", 0.4)) * share.call(float(row["dmg"]), best["damage"]) \
+				+ float(w.get("stat", 0.0)) * share.call(float(row["stat"]), best["stat"])
 	if mode == "showdown":
 		var place := 1
 		for row in rows:
 			if int(row["placement"]) == 0:
 				row["placement"] = place  # Still standing at the end.
 		rows.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return int(a["placement"]) < int(b["placement"]))
-	var best := -1
+	var top := -1
 	for i in rows.size():
-		if best < 0 or float(rows[i]["score"]) > float(rows[best]["score"]):
-			best = i
-	if best >= 0:
-		rows[best]["mvp"] = true
+		if top < 0 or float(rows[i]["score"]) > float(rows[top]["score"]):
+			top = i
+	if top >= 0:
+		rows[top]["mvp"] = true
 	return rows
 
 
