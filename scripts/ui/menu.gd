@@ -826,18 +826,23 @@ func _refresh_select_details() -> void:
 				Profile.set_loadout(stage.id, "super_" + stage.id, "" if option == stage.super_move.id else option)
 				_refresh_select_details())
 			choices.add_child(b)
+		# TM supers this stage could use but you don't own yet: shown locked.
+		for tm_super in Profile.stage_tm_supers(stage.id):
+			if Profile.owns_tm_super(tm_super) or not GameData.moves.has(tm_super):
+				continue
+			var locked := Button.new()
+			locked.text = "TM %s" % GameData.get_move(tm_super).display_name
+			locked.disabled = true
+			locked.tooltip_text = "Buy this TM in the Poké Mart or find it in a Poké Ball to use it."
+			locked.add_theme_font_size_override("font_size", 18)
+			choices.add_child(locked)
 		super_row.add_child(choices)
 		_details.add_child(super_row)
 		var card := UiKit.move_card(GameData.get_move(picked) if picked != "" else stage.super_move)
 		_details.add_child(card)
-	var missing := PackedStringArray()
-	for tm_super in Profile.tm_super_options(s.id):
-		if not Profile.owns_tm_super(tm_super) and GameData.moves.has(tm_super):
-			missing.append(GameData.get_move(tm_super).display_name)
-	if not missing.is_empty():
-		var tm_hint := UiKit.label("TM supers it could learn: " + ", ".join(missing), 15, Color(0.75, 0.8, 0.9))
-		tm_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		_details.add_child(tm_hint)
+	var tm_note := UiKit.label("Greyed-out TM supers: buy the TM in the Poké Mart or find it in a Poké Ball. Each type's TMs work for Pokémon of that type (per stage).", 15, Color(0.75, 0.8, 0.9))
+	tm_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_details.add_child(tm_note)
 
 	_details.add_child(_hm_picker(s))
 	_details.add_child(_vitamin_box(s))

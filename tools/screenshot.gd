@@ -124,6 +124,13 @@ func _menu_shot(screen: String, out_dir: String) -> void:
 				get_viewport().get_texture().get_image().save_png("%s/menu_ball_%d.png" % [out_dir, t])
 		"bosses":
 			menu.show_bosses()
+		"select_locked":
+			Profile.data["dev"] = false
+			menu._species = GameData.species["charmander"]
+			menu.show_select("duel")
+			for i in 5:
+				await get_tree().process_frame
+			menu._details_scroll.scroll_vertical = 700
 		"gyms":
 			menu.show_gyms()
 		"gym":
