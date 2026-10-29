@@ -44,11 +44,18 @@ func _ready() -> void:
 	var arena: Arena = main.arena
 	for y in range(6, arena.height - 6):
 		for x in range(4, arena.width - 4):
-			if arena.rows[y][x] in ["T", "#"] and arena.rows[y - 1][x] == "." and arena.rows[y + 1][x] == ".":
+			if arena.rows[y][x] in ["T", "#"] and arena.rows[y - 1][x] == ".":
 				spots["behind"] = arena.cell_center(Vector2i(x, y - 1))
 				break
 		if spots.has("behind"):
 			break
+	# Right beside a wall and just in front of (south of) one: neither should fade.
+	for y in range(6, arena.height - 6):
+		for x in range(4, arena.width - 4):
+			if not spots.has("beside") and arena.rows[y][x] == "." and arena.rows[y][x - 1] == "#" and arena.rows[y - 1][x] == "." and arena.rows[y + 1][x] == ".":
+				spots["beside"] = arena.cell_center(Vector2i(x, y))
+			if not spots.has("front") and arena.rows[y][x] == "." and arena.rows[y - 1][x] in ["T", "#"] and arena.rows[y + 1][x] == ".":
+				spots["front"] = arena.cell_center(Vector2i(x, y))
 	for shot: String in spots:
 		main.player.global_position = spots[shot]
 		cam.snap_to_target()

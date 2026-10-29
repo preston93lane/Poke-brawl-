@@ -47,3 +47,7 @@ player_xray={
 "type": "vec3",
 "value": Vector3(0, -100, 0)
 }
+player_xray_size={
+"type": "vec2",
+"value": Vector2(0, 0)
+}

@@ -297,9 +297,13 @@ func spawn_position(b: Brawler) -> Vector3:
 ## Tells the see-through shaders where your Pokémon is (xray.gdshaderinc).
 func _process(_delta: float) -> void:
 	var at := Vector3(0, -100, 0)
+	var size := Vector2.ZERO
 	if player and not player.is_dead:
-		at = player.global_position + Vector3(0, 0.6, 0)
+		at = player.sprite.global_position
+		var h := player.visual_height()
+		size = Vector2(maxf(0.35, h * 0.45), h + 0.1)
 	RenderingServer.global_shader_parameter_set("player_xray", at)
+	RenderingServer.global_shader_parameter_set("player_xray_size", size)
 
 
 func _physics_process(delta: float) -> void:

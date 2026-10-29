@@ -3,12 +3,12 @@ extends Camera3D
 ## Brawl Stars style camera: fixed tilt, never rotates, smoothly follows the target.
 
 @export_range(20.0, 85.0) var pitch_degrees := 60.0
-@export var distance := 20.0
+@export var distance := 23.0
 @export var follow_speed := 6.0
 ## Look this far ahead of the target (toward the enemy side, up the screen), so you
 ## stand in the bottom quarter of the screen and see more of what's in front.
-## 4.9 m puts the target 25% from the bottom with the default pitch, fov and distance.
-@export var lead := 3.8
+## Kept modest so you can still see a bit behind you.
+@export var lead := 3.0
 ## Half the arena's length (set by the match). Past the halfway line the lead swings
 ## the other way, so in the enemy half you sit higher on screen and can see behind you.
 var field_half := 22.0
@@ -47,7 +47,7 @@ func snap_to_target() -> void:
 func _desired_position() -> Vector3:
 	# Own half: look ahead. Enemy half (negative z): ease the look back toward your side.
 	var into_enemy := clampf(-target.global_position.z / maxf(1.0, field_half), 0.0, 1.0)
-	var look := lerpf(lead, -lead * 0.6, smoothstep(0.0, 1.0, into_enemy))
+	var look := lerpf(lead, -lead, smoothstep(0.0, 1.0, into_enemy))
 	var focus := target.global_position + Vector3(0, 0, -look)
 	focus.x = clampf(focus.x, follow_limits.position.x, follow_limits.end.x)
 	focus.z = clampf(focus.z, follow_limits.position.y, follow_limits.end.y)
