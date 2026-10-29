@@ -562,9 +562,9 @@ func _check_attack_mechanics() -> void:
 	var arena: Arena = main.arena
 	var forward := Vector3.FORWARD
 
-	# Lob: Seed Bomb arcs over the rock wall (row 8) and lands on the target behind it.
-	shooter.position = arena.cell_center(Vector2i(17, 10))
-	_reset_target(target, arena.cell_center(Vector2i(17, 6)))
+	# Lob: Seed Bomb arcs over the rock wall (row 14) and lands on the target behind it.
+	shooter.position = arena.cell_center(Vector2i(17, 16))
+	_reset_target(target, arena.cell_center(Vector2i(17, 12)))
 	await get_tree().physics_frame
 	shooter._perform(GameData.get_move("bulbasaur_main1"), forward, 4.0)
 	await get_tree().create_timer(1.0, false, true).timeout
@@ -642,7 +642,7 @@ func _check_attack_mechanics() -> void:
 	expect(pulled < 3.0, "pull attacks drag the target in (%.2f m)" % pulled)
 
 	# Bounce: Pay Day ricochets off a wall instead of disappearing.
-	shooter.position = arena.cell_center(Vector2i(2, 30))
+	shooter.position = arena.cell_center(Vector2i(2, 23))
 	_reset_target(target, base + forward * 12.0)
 	await get_tree().physics_frame
 	var bouncer := GameData.get_move("meowth_main1")
@@ -726,16 +726,16 @@ func _check_swimming_and_gaps() -> void:
 	var arena: Arena = main.arena
 	var player: Brawler = main.player
 
-	# Dragon's Den: the one-tile gap between the pond (11,19) and the boulder (13,20).
-	player.position = arena.cell_center(Vector2i(12, 17))
+	# Dragon's Den: the lane between the pond (columns 9-13, rows 19-20) and the middle.
+	player.position = arena.cell_center(Vector2i(14, 17))
 	await get_tree().physics_frame
 	player.move_input = Vector2(0, 1)
 	await get_tree().create_timer(1.6, false, true).timeout
 	player.move_input = Vector2.ZERO
-	expect(arena.world_to_cell(player.global_position).y >= 21, "walkers fit through the gap between the water and the boulder (reached row %d)" % arena.world_to_cell(player.global_position).y)
+	expect(arena.world_to_cell(player.global_position).y >= 21, "walkers fit past the pond (reached row %d)" % arena.world_to_cell(player.global_position).y)
 
 	# Walkers stop at water; Water and Flying types go across it.
-	player.position = arena.cell_center(Vector2i(7, 18))
+	player.position = arena.cell_center(Vector2i(7, 19))
 	await get_tree().physics_frame
 	player.move_input = Vector2(1, 0)
 	await get_tree().create_timer(1.0, false, true).timeout
@@ -743,15 +743,15 @@ func _check_swimming_and_gaps() -> void:
 	expect(not arena.is_water(player.global_position) and not player.can_swim, "charmander can't walk into water")
 	for swimmer_id in ["squirtle", "pidgey"]:
 		var swimmer: Brawler = main._spawn(swimmer_id, 1, 0, false)
-		swimmer.position = arena.cell_center(Vector2i(7, 18))
+		swimmer.position = arena.cell_center(Vector2i(7, 19))
 		await get_tree().physics_frame
 		swimmer.move_input = Vector2(1, 0)
 		await get_tree().create_timer(0.7, false, true).timeout
 		swimmer.move_input = Vector2.ZERO
 		expect(swimmer.can_swim and arena.is_water(swimmer.global_position), "%s walks out onto the water" % swimmer_id)
 		swimmer.queue_free()
-	var swim_path: PackedVector3Array = arena.find_path(arena.cell_center(Vector2i(7, 18)), arena.cell_center(Vector2i(12, 18)), true)
-	var walk_path: PackedVector3Array = arena.find_path(arena.cell_center(Vector2i(7, 18)), arena.cell_center(Vector2i(12, 18)))
+	var swim_path: PackedVector3Array = arena.find_path(arena.cell_center(Vector2i(10, 18)), arena.cell_center(Vector2i(10, 21)), true)
+	var walk_path: PackedVector3Array = arena.find_path(arena.cell_center(Vector2i(10, 18)), arena.cell_center(Vector2i(10, 21)))
 	expect(swim_path.size() > 0 and swim_path.size() < walk_path.size(), "swimmers path straight over the pond (%d vs %d steps)" % [swim_path.size(), walk_path.size()])
 
 	# A bot can walk around the central pillars and ponds without getting stuck.
@@ -1465,7 +1465,7 @@ func _check_gyms() -> void:
 	for b: Brawler in main.teams[0]:
 		expect(b.species.has_type("grass"), "%s is Grass" % b.species.display_name)
 	main.player.gadget_uses = 1
-	main.scores[0] = 9.0
+	main.scores[0] = 14.0
 	main.teams[1][0]._protect_time = 0.0
 	main.teams[1][0].take_damage(999999.0, main.player)
 	await get_tree().physics_frame
@@ -1484,11 +1484,11 @@ func _check_gyms() -> void:
 	expect(main.player.gadget_uses == 1, "gadget uses carried into the leader round")
 	var clears := Profile.gym_clears("cinnabar_gym", "hard", "grass")
 	var money := Profile.money()
-	main.scores[0] = 7.0
+	main.scores[0] = 13.0
 	ace._protect_time = 0.0
 	ace.take_damage(999999.0, main.player)
 	await get_tree().physics_frame
-	expect(main.round_over, "a KO on the ace counts 3")
+	expect(main.round_over, "a KO on the ace counts 2 (13 + 2 = 15)")
 	expect(Profile.gym_clears("cinnabar_gym", "hard", "grass") == clears + 1 and Profile.money() > money, "beating the leader records the clear and pays")
 	expect(GameData.gym_run["round"] == 0, "the next run starts at round 1")
 	main.queue_free()
@@ -1500,7 +1500,7 @@ func _check_gyms() -> void:
 	main.record_progress = false
 	add_child(main)
 	await get_tree().physics_frame
-	main.scores[1] = 9.0
+	main.scores[1] = 14.0
 	main.player._protect_time = 0.0
 	main.player.take_damage(999999.0, main.teams[1][0])
 	await get_tree().physics_frame
@@ -1509,3 +1509,38 @@ func _check_gyms() -> void:
 	await get_tree().process_frame
 	GameData.gym_run = {}
 	GameData.match_settings = {}
+	# Gyms open with enough Pokémon lines unlocked and the gym before beaten; the Elite Four after Giovanni with 50.
+	var saved_dev := Profile.is_dev()
+	var saved_unlocked: Array = (Profile.data["unlocked"] as Array).duplicate()
+	var saved_gyms: Dictionary = Profile.data["gyms"].duplicate(true)
+	Profile.data["dev"] = false
+	Profile.data["gyms"] = {}
+	Profile.data["unlocked"] = saved_unlocked.slice(0, 9)
+	expect(not Profile.gym_unlocked("pewter_gym") and Profile.gym_lock_reason("pewter_gym").begins_with("Unlock 10"), "Brock needs 10 Pokémon")
+	Profile.data["unlocked"] = saved_unlocked.slice(0, 14)
+	expect(Profile.gym_unlocked("pewter_gym") and not Profile.gym_unlocked("cerulean_gym"), "10 opens Brock; Misty needs Brock beaten")
+	Profile.gym_record("pewter_gym")["normal"] = 1
+	expect(not Profile.gym_unlocked("cerulean_gym"), "Misty also needs 15 Pokémon")
+	Profile.data["unlocked"] = saved_unlocked.slice(0, 15)
+	expect(Profile.gym_unlocked("cerulean_gym"), "15 Pokémon + Brock opens Misty")
+	for id: String in Profile.gym_ids():
+		Profile.gym_record(id)["normal"] = 1
+	Profile.data["unlocked"] = saved_unlocked.slice(0, 49)
+	expect(not Profile.gym_unlocked("elite_four"), "the Elite Four needs 50 Pokémon")
+	Profile.data["unlocked"] = saved_unlocked.slice(0, 50)
+	expect(Profile.gym_unlocked("elite_four"), "all 8 gyms + 50 Pokémon opens the Elite Four")
+	Profile.data["starter"] = "charmander"
+	var e4 := GymMode.settings_for({ "gym": "elite_four", "round": 4, "team_type": "", "difficulty": "normal", "picks": {} })
+	expect(e4["arena"] == "dragons_den" and e4["enemies"][0] == "blastoise", "Blue's ace counters your starter")
+	expect(GymMode.has_ace(Profile.gym("elite_four")["rounds"], 0), "every Elite Four round has an ace")
+	Profile.data["dev"] = saved_dev
+	Profile.data["unlocked"] = saved_unlocked
+	Profile.data["gyms"] = saved_gyms
+	# Boss Raid at Master: one Great Ball a day, nothing after.
+	var tiers := Profile.boss_tiers().size()
+	Profile._stat_dict("boss_wins")["moltres"] = tiers + 3
+	(Profile.data["daily"] as Dictionary).erase("boss_master")
+	var first := Profile.record_match({ "species": "charmander", "result": "victory", "boss": "moltres", "mode": "boss_raid" })
+	var second := Profile.record_match({ "species": "charmander", "result": "victory", "boss": "moltres", "mode": "boss_raid" })
+	expect("great_ball" in first["balls"], "first Master win of the day: a Great Ball")
+	expect(int(second["money"]) < int(first["money"]), "later Master wins that day skip the boss bonus")

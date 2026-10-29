@@ -147,8 +147,8 @@
 		},
 		"gym": {
 			"_comment": "Gym rounds: first to kills_to_win KOs (a KO on the leader's ace counts leader_kos). The ace has ace_hp (ace_hp_hard on Hard) times its normal HP.",
-			"kills_to_win": 10,
-			"leader_kos": 3,
+			"kills_to_win": 15,
+			"leader_kos": 2,
 			"ace_hp": 1.5,
 			"ace_hp_hard": 2.0,
 			"ace_size": 1.3,

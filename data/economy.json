@@ -37,7 +37,7 @@
 		"boss_win": 800
 	},
 	"drops": {
-		"_comment": "After a match: win = always a ball (upgrade chances), otherwise loss_chance of a Poké Ball. Any ball may become a Master Ball. ultra_pity = guaranteed Ultra after this many balls without one.",
+		"_comment": "After a match: win = always a ball (upgrade chances), otherwise loss_chance of a Poké Ball. Any ball may become a Master Ball. ultra_pity = guaranteed Ultra after this many balls without one. Boss Raid at Master: only the first win of the day pays (boss_master_daily and the boss money); later Master wins give normal match money and no balls.",
 		"great_on_win": 0.2,
 		"ultra_on_win": 0.03,
 		"loss_chance": 0.35,
@@ -45,7 +45,8 @@
 		"ultra_pity": 25,
 		"first_win": "great_ball",
 		"challenge": "great_ball",
-		"raid": "ultra_ball"
+		"raid": "ultra_ball",
+		"boss_master_daily": "great_ball"
 	},
 	"balls": {
 		"poke_ball": {
@@ -470,7 +471,7 @@
 		]
 	},
 	"gyms": {
-		"_comment": "Gym gauntlet clears. first_money[i] = first clear of gym i on Normal (Hard pays hard_multiplier times). First Normal clear: the gym's TM + first_ball; first Hard clear: hard_ball (+ the Master Ball milestone). Repeats pay repeat_money (times hard_multiplier on Hard). type_multipliers: when your whole team is one type, money is multiplied by how that type matches up (weak = the gym's type is super effective on yours; resisted = yours is not very effective on it). The first clear of a gym with a resisted or weak team type also gives type_ball.",
+		"_comment": "Gym gauntlet clears. first_money[i] = first clear of gym i on Normal (Hard pays hard_multiplier times). First Normal clear: the gym's TM + first_ball; first Hard clear: hard_ball (+ the Master Ball milestone). Repeats pay repeat_money (times hard_multiplier on Hard). type_multipliers: when your whole team is one type, money is multiplied by how that type matches up (weak = the gym's type is super effective on yours; resisted = yours is not very effective on it). The first clear of a gym with a resisted or weak team type also gives type_ball. elite_four overrides these for the Elite Four.",
 		"first_money": [
 			1000,
 			1300,
@@ -494,6 +495,12 @@
 		"type_ball": {
 			"resisted": "great_ball",
 			"weak": "ultra_ball"
+		},
+		"elite_four": {
+			"first_money": 6000,
+			"first_ball": "ultra_ball",
+			"hard_ball": "master_ball",
+			"repeat_money": 800
 		}
 	}
 }

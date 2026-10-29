@@ -202,12 +202,24 @@ func show_gyms() -> void:
 		elif Profile.gym_clears(id, "normal") > 0:
 			status += "  ·  ★"
 		elif not open:
-			status = "Trainer LV %d" % int(GameData.gyms.get("first_level", 5)) if i == 0 else "Beat %s first" % str(Profile.gym(order[i - 1])["leader"])
+			status = Profile.gym_lock_reason(id)
 		var l := UiKit.label(status, 15, Color(1, 1, 1, 0.8))
 		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		card.add_child(l)
 		grid.add_child(card)
 	v.add_child(grid)
+	# The Elite Four: five rounds back to back after the last gym.
+	var e4_open := Profile.gym_unlocked("elite_four")
+	var e4 := UiKit.button("ELITE FOUR  ·  5 rounds back to back" if e4_open else "ELITE FOUR  ·  LOCKED", show_gym.bind("elite_four"), 26)
+	e4.disabled = not e4_open
+	e4.custom_minimum_size = Vector2(620, 64)
+	e4.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	e4.add_theme_stylebox_override("normal", UiKit.box(Color(0.55, 0.25, 0.7)))
+	v.add_child(e4)
+	var e4_info := "Beaten: Normal ×%d · Hard ×%d" % [Profile.gym_clears("elite_four", "normal"), Profile.gym_clears("elite_four", "hard")] if e4_open else Profile.gym_lock_reason("elite_four")
+	var e4_label := UiKit.label(e4_info, 16, Color(1, 1, 1, 0.8))
+	e4_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(e4_label)
 	_set_screen(v)
 
 
@@ -220,7 +232,8 @@ func show_gym(id: String) -> void:
 	v.add_theme_constant_override("separation", 10)
 	var top := HBoxContainer.new()
 	top.add_child(UiKit.button("‹ BACK", show_gyms))
-	var title := UiKit.label("   %s  ·  %s" % [str(GameData.arenas.get(id, {}).get("name", id)).to_upper(), str(g["leader"]).to_upper()], 28, Color(1, 0.85, 0.25))
+	var place := "ELITE FOUR" if id == "elite_four" else str(GameData.arenas.get(id, {}).get("name", id)).to_upper()
+	var title := UiKit.label("   %s  ·  %s" % [place, str(g["leader"]).to_upper()], 28, Color(1, 0.85, 0.25))
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top.add_child(title)
 	var next := UiKit.button("CHOOSE POKéMON ›", func() -> void:
@@ -234,16 +247,19 @@ func show_gym(id: String) -> void:
 	var rounds: Array = g["rounds"]
 	for i in rounds.size():
 		var box := VBoxContainer.new()
-		var heading := ("ROUND %d  ·  %s" % [i + 1, str(rounds[i]["trainer"])]) if i < rounds.size() - 1 else "ROUND %d  ·  LEADER %s" % [i + 1, str(g["leader"]).to_upper()]
-		box.add_child(UiKit.label(heading, 17, Color(1, 0.9, 0.6) if i == rounds.size() - 1 else Color.WHITE))
+		var ace := GymMode.has_ace(rounds, i)
+		var heading := "%d · %s" % [i + 1, str(rounds[i]["trainer"])] if id == "elite_four" else (
+				("ROUND %d  ·  %s" % [i + 1, str(rounds[i]["trainer"])]) if i < rounds.size() - 1 else "ROUND %d  ·  LEADER %s" % [i + 1, str(g["leader"]).to_upper()])
+		box.add_child(UiKit.label(heading, 17, Color(1, 0.9, 0.6) if ace else Color.WHITE))
 		var team := HBoxContainer.new()
-		for j in (rounds[i]["team"] as Array).size():
-			var sp: SpeciesData = GameData.species[str(rounds[i]["team"][j])]
-			team.add_child(UiKit.sprite(sp.sprite, 64 if i == rounds.size() - 1 and j == 0 else 48))
+		var enemies: Array = GymMode.settings_for({ "gym": id, "round": i, "team_type": "", "difficulty": "normal", "picks": {} })["enemies"]
+		for j in enemies.size():
+			var sp: SpeciesData = GameData.species[str(enemies[j])]
+			team.add_child(UiKit.sprite(sp.sprite, 60 if ace and j == 0 else 44))
 		box.add_child(team)
 		rounds_row.add_child(box)
 	v.add_child(rounds_row)
-	var how := UiKit.label("First to %d KOs wins a round; a KO on the leader's big ace counts %d. Lose a round and it's back to round 1. Gadget uses carry over." % [int(GameData.rule("modes/gym/kills_to_win", 10)), int(GameData.rule("modes/gym/leader_kos", 3))], 16, Color(0.8, 0.85, 1))
+	var how := UiKit.label("First to %d KOs wins a round; a KO on the leader's big ace counts %d. Lose a round and it's back to round 1. Gadget uses carry over." % [int(GameData.rule("modes/gym/kills_to_win", 15)), int(GameData.rule("modes/gym/leader_kos", 2))], 16, Color(0.8, 0.85, 1))
 	how.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	v.add_child(how)
 
@@ -258,7 +274,9 @@ func show_gym(id: String) -> void:
 	diff_row.add_child(done)
 	v.add_child(diff_row)
 
-	v.add_child(_section("TEAM TYPE  (your whole team is one type: weaker types pay more)"))
+	if gym_type == "":
+		_gym_type = ""  # The Elite Four mixes types: no team-type bonus.
+	v.add_child(_section("TEAM TYPE  (your whole team is one type: weaker types pay more)") if gym_type != "" else Control.new())
 	var info := UiKit.label("", 17, Color(1, 0.9, 0.5))
 	var describe := func() -> void:
 		var m := Profile.gym_matchup(gym_type, _gym_type)
@@ -284,6 +302,8 @@ func show_gym(id: String) -> void:
 	v.add_child(types)
 	describe.call()
 	v.add_child(info)
+	types.visible = gym_type != ""
+	info.visible = gym_type != ""
 	for entry: Dictionary in GameData.unlocks.get("order", []):
 		var c: Dictionary = entry.get("challenge", {})
 		if str(c.get("type", "")) == "gym_clear" and str(c.get("gym", "")) == id:

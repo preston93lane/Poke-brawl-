@@ -1,6 +1,8 @@
 {
-	"_comment": "Gym gauntlets: three full 3v3 matches in a row on the gym's map (two trainers, then the leader, whose first Pokémon is the ace: bigger and tougher, and a KO on it scores leader_kos). Lose one and it's back to round 1. Gadget uses carry over between rounds. Gyms open in order: the first at trainer level first_level, each next one once the one before is beaten. Rewards: economy.json gyms.",
-	"first_level": 5,
+	"_comment": "Gym gauntlets: full 3v3 matches in a row on the gym's map (two trainers, then the Gym Leader, whose first Pokémon is the ace: bigger and tougher, and a KO on it scores leader_kos). Lose one and it's back to round 1. Gadget uses carry over between rounds. Gym i opens once the gym before it is beaten and you have first_unlocks + i * unlocks_step Pokémon lines unlocked. The Elite Four (every round has an ace; a round may name its own arena; \"rival\" = the starter that beats yours) opens after the last gym with elite_four_unlocks lines. Rewards: economy.json gyms.",
+	"first_unlocks": 10,
+	"unlocks_step": 5,
+	"elite_four_unlocks": 50,
 	"gyms": {
 		"pewter_gym": {
 			"leader": "Brock",
@@ -258,5 +260,69 @@
 			],
 			"badge": "Earth Badge"
 		}
+	},
+	"elite_four": {
+		"leader": "Champion Blue",
+		"type": "",
+		"badge": "Champion title",
+		"rounds": [
+			{
+				"trainer": "Lorelei",
+				"arena": "lorelei_chamber",
+				"ace": true,
+				"team": [
+					"lapras",
+					"dewgong",
+					"cloyster"
+				]
+			},
+			{
+				"trainer": "Bruno",
+				"arena": "bruno_dojo",
+				"ace": true,
+				"team": [
+					"machamp",
+					"onix",
+					"hitmonlee"
+				]
+			},
+			{
+				"trainer": "Agatha",
+				"arena": "agatha_crypt",
+				"ace": true,
+				"team": [
+					"gengar",
+					"haunter",
+					"arbok"
+				]
+			},
+			{
+				"trainer": "Lance",
+				"arena": "lance_hall",
+				"ace": true,
+				"team": [
+					"dragonite",
+					"dragonair",
+					"gyarados"
+				]
+			},
+			{
+				"trainer": "Champion Blue",
+				"arena": "dragons_den",
+				"ace": true,
+				"team": [
+					"rival",
+					"pidgeot",
+					"alakazam"
+				]
+			}
+		]
+	},
+	"rival": {
+		"bulbasaur": "charizard",
+		"charmander": "blastoise",
+		"squirtle": "venusaur",
+		"pikachu": "venusaur",
+		"": "charizard"
 	}
 }

@@ -665,9 +665,16 @@ func record_match(info: Dictionary) -> Dictionary:
 	var gained := _add_xp(family, xp)
 	var cash := int(econ("money/" + ({ "victory": "win", "defeat": "loss" }.get(result, "draw") as String), 15)) + kos * int(econ("money/per_ko", 5))
 	var boss_tier := 0  # The tier just beaten (this win is already counted).
+	# Boss Raid at Master: only the first Master win of the day pays the boss bonus and a ball.
+	var master_repeat := false
 	if boss != "":
 		boss_tier = clampi(boss_wins(boss) - 1, 0, boss_tiers().size() - 1)
-		cash += roundi(int(econ("money/boss_win", 800)) * (1.0 + 0.25 * boss_tier))
+		var at_master := boss_tier == boss_tiers().size() - 1 and boss_wins(boss) > boss_tiers().size()
+		master_repeat = at_master and bool(daily.get("boss_master", false))
+		if at_master:
+			daily["boss_master"] = true
+		if not master_repeat:
+			cash += roundi(int(econ("money/boss_win", 800)) * (1.0 + 0.25 * boss_tier))
 	data["money"] = money() + cash
 
 	var balls: Array[String] = []
@@ -681,9 +688,14 @@ func record_match(info: Dictionary) -> Dictionary:
 	if raid != "":
 		balls.append(str(econ("drops/raid", "ultra_ball")))
 	if boss != "":
-		# First win at each tier: that tier's ball (up to a Master Ball); repeats at Master: a Great Ball.
+		# First win at each tier: that tier's ball (up to a Master Ball). After that, at Master:
+		# one Great Ball a day and nothing else, so it can't be farmed.
 		var first_at_tier := boss_wins(boss) - 1 == boss_tier
-		balls.append(str(boss_tiers()[boss_tier].get("first_ball", "great_ball")) if first_at_tier else "great_ball")
+		balls.clear()
+		if first_at_tier:
+			balls.append(str(boss_tiers()[boss_tier].get("first_ball", "great_ball")))
+		elif not master_repeat:
+			balls.append(str(econ("drops/boss_master_daily", "great_ball")))
 	var progress := {
 		"matches": 1, "wins": 1 if won else 0, "kos": int(info.get("kos", 0)), "mvp": 1 if mvp else 0,
 		"supers": int(info.get("supers", 0)), "final_stage": 1 if info.get("final_stage", false) else 0,
@@ -951,7 +963,35 @@ func gym_ids() -> Array:
 
 
 func gym(id: String) -> Dictionary:
+	if id == "elite_four":
+		return GameData.gyms.get("elite_four", {})
 	return GameData.gyms.get("gyms", {}).get(id, {})
+
+
+## Pokémon lines you have unlocked.
+func unlocked_count() -> int:
+	return (data.get("unlocked", []) as Array).size()
+
+
+## Lines needed to open a gym (or the Elite Four).
+func gym_unlocks_needed(id: String) -> int:
+	if id == "elite_four":
+		return int(GameData.gyms.get("elite_four_unlocks", 50))
+	return int(GameData.gyms.get("first_unlocks", 10)) + int(GameData.gyms.get("unlocks_step", 5)) * maxi(0, gym_ids().find(id))
+
+
+## "" if the gym is open, else what's still needed.
+func gym_lock_reason(id: String) -> String:
+	if is_dev():
+		return ""
+	var order := gym_ids()
+	var before := str(order[-1]) if id == "elite_four" else (str(order[order.find(id) - 1]) if order.find(id) > 0 else "")
+	if before != "" and gym_clears(before, "normal") + gym_clears(before, "hard") == 0:
+		return "Beat %s first" % str(gym(before).get("leader", ""))
+	var need := gym_unlocks_needed(id)
+	if unlocked_count() < need:
+		return "Unlock %d Pokémon (%d/%d)" % [need, unlocked_count(), need]
+	return ""
 
 
 ## { "normal": clears, "hard": clears, "types": { "hard:water": clears }, "type_balls": [...] }.
@@ -970,22 +1010,15 @@ func gym_clears(id: String, difficulty := "normal", team_type := "") -> int:
 	return int(rec.get(difficulty, 0))
 
 
-## The first gym opens at trainer level first_level; each next one once the one before is beaten.
+## A gym opens once the gym before it is beaten and you have enough lines unlocked
+## (gyms.json first_unlocks + unlocks_step per gym); the Elite Four after the last gym.
 func gym_unlocked(id: String) -> bool:
-	if is_dev():
-		return true
-	var order := gym_ids()
-	var i := order.find(id)
-	if i < 0:
-		return false
-	if i == 0:
-		return total_level() >= int(GameData.gyms.get("first_level", 5))
-	return gym_clears(str(order[i - 1]), "normal") + gym_clears(str(order[i - 1]), "hard") > 0
+	return (id == "elite_four" or id in gym_ids()) and gym_lock_reason(id) == ""
 
 
 ## How a one-type team matches up against a gym: "strong", "neutral", "resisted" or "weak" ("" = mixed team).
 func gym_matchup(gym_type: String, team_type: String) -> String:
-	if team_type == "":
+	if team_type == "" or gym_type == "":
 		return ""
 	if GameData.type_matchup(gym_type, team_type) > 1.0:
 		return "weak"
@@ -1016,16 +1049,21 @@ func record_gym_clear(id: String, difficulty: String, team_type := "") -> Dictio
 	var matchup := gym_matchup(str(g.get("type", "")), team_type)
 	var mult := gym_multiplier(str(g.get("type", "")), team_type)
 	var hard_mult := int(econ("gyms/hard_multiplier", 2)) if hard else 1
-	var cash := int(econ("gyms/repeat_money", 300)) * hard_mult
+	var e4 := id == "elite_four"
+	var cfg := "gyms/elite_four/" if e4 else "gyms/"
+	var cash := int(econ(cfg + "repeat_money", 300)) * hard_mult
 	if first:
-		var table: Array = econ("gyms/first_money", [1000])
-		cash = int(table[clampi(gym_ids().find(id), 0, table.size() - 1)]) * hard_mult
+		if e4:
+			cash = int(econ(cfg + "first_money", 6000)) * hard_mult
+		else:
+			var table: Array = econ("gyms/first_money", [1000])
+			cash = int(table[clampi(gym_ids().find(id), 0, table.size() - 1)]) * hard_mult
 		if hard:
 			texts.append("GOLD %s!" % str(g.get("badge", "Badge")).to_upper())
-			balls.append(str(econ("gyms/hard_ball", "ultra_ball")))
+			balls.append(str(econ(cfg + "hard_ball", "ultra_ball")))
 		else:
 			texts.append("%s earned!" % str(g.get("badge", "Badge")).to_upper())
-			balls.append(str(econ("gyms/first_ball", "great_ball")))
+			balls.append(str(econ(cfg + "first_ball", "great_ball")))
 			var tm := str(g.get("tm", ""))
 			if tm != "" and not has_tm(tm):
 				_add_tm(tm)
