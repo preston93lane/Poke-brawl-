@@ -93,6 +93,16 @@ func _physics_process(delta: float) -> void:
 			brawler.move_input = Vector2(away.x, away.z)
 			return
 
+	# Dodge a telegraphed slam: step sideways out of the cone.
+	for enemy in brawler.enemies():
+		if enemy.windup_threatens(brawler.global_position):
+			var away := brawler.global_position - enemy.global_position
+			away.y = 0.0
+			var side := Vector3(-away.z, 0, away.x).normalized() * _strafe_sign
+			var out := (side + away.normalized() * 0.6).normalized()
+			brawler.move_input = Vector2(out.x, out.z)
+			return
+
 	if mode_logic:
 		var dodge := mode_logic.escape_from(brawler.global_position, brawler)
 		if dodge != Vector3.ZERO:

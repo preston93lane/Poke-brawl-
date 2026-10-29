@@ -120,7 +120,7 @@ def super_template(style, f, type_):
         "zone": dict(kind="projectile", power=350 * f, lob=True, range=7.5, speed=9, linger=5.0, linger_radius=3.2),
         "homing": dict(kind="projectile", power=260 * f, count=6, spread=120, range=7.0, speed=10, radius=0.4),
         # Frank-style: an aimed 90-degree slam in front, not a full circle.
-        "tank_wave": dict(kind="melee", power=1200 * f, range=4.5, arc=90, effect={"type": "stun", "chance": 1.0, "duration": 1.0}),
+        "tank_wave": dict(kind="melee", power=1200 * f, range=4.5, arc=90, windup=0.6, effect={"type": "stun", "chance": 1.0, "duration": 1.0}),
         "piercer": dict(kind="projectile", power=1700 * f, range=10.0, speed=20, radius=0.9, pierce=True),
     }[style]
     return {k: (round(v) if k == "power" else v) for k, v in t.items() if v is not None}

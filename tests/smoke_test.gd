@@ -56,6 +56,7 @@ func _ready() -> void:
 	_check_no_mew_bots()
 	await _check_mvp()
 	await _check_boss_no_heal()
+	await _check_slam_windup()
 	Engine.time_scale = 1.0
 	Profile.data = real_profile
 	Profile.save()
@@ -1675,5 +1676,25 @@ func _check_boss_no_heal() -> void:
 	await get_tree().create_timer(0.3).timeout
 	expect(is_equal_approx(ally.health, hp), "a legendary ally's Sitrus Berry doesn't heal it")
 	expect(is_equal_approx(float(GameData.rule("legendary/ally_duration", 0)), 20.0), "legendary allies stay 20 s")
+	main.queue_free()
+	await get_tree().process_frame
+
+
+func _check_slam_windup() -> void:
+	print("Telegraphed slam")
+	var setup := await _duel_setup("route_1", "snorlax")
+	var main: Node = setup[0]
+	var snorlax: Brawler = setup[1]
+	var target: Brawler = setup[2]
+	snorlax.position = Vector3(0, 0, 4)
+	_reset_target(target, Vector3(0, 0, 2))
+	await get_tree().physics_frame
+	snorlax.super_charge = 1.0
+	snorlax.use_super(Vector3.FORWARD)
+	await get_tree().create_timer(0.3, false, true).timeout
+	expect(target.health >= target.max_health and snorlax.get_speed() == 0.0, "the slam waits, planted, before landing")
+	expect(snorlax.windup_threatens(target.global_position) and not snorlax.windup_threatens(Vector3(4, 0, 4)), "bots can tell if they're in the cone")
+	await get_tree().create_timer(0.5, false, true).timeout
+	expect(target.health < target.max_health, "then it lands")
 	main.queue_free()
 	await get_tree().process_frame

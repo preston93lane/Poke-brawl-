@@ -133,6 +133,10 @@ var _knock_velocity := Vector3.ZERO
 var _knock_time := 0.0
 ## Short lockout after any attack so attacks can't be chained instantly.
 var _attack_lock := 0.0
+## Seconds left planting for a telegraphed melee super (see MoveData.windup).
+var _windup_time := 0.0
+var _windup_dir := Vector3.FORWARD
+var _windup_move: MoveData
 var _regen_timer := 0.0
 var _reveal_timer := 0.0
 var _flash_timer := 0.0
@@ -284,6 +288,8 @@ func get_defense() -> float:
 
 
 func get_speed() -> float:
+	if _windup_time > 0.0:
+		return 0.0  # Planted while winding up a slam.
 	var slow := 1.0 - _slow_amount if _slow_time > 0.0 else 1.0
 	return move_speed * (1.0 + _buff("speed") + _boosts["speed"]) * slow
 
@@ -728,7 +734,38 @@ func _flat_direction(direction: Vector3) -> Vector3:
 	return direction.normalized()
 
 
+## True while this Pokémon is winding up a slam that would hit `pos` (bots dodge it).
+func windup_threatens(pos: Vector3) -> bool:
+	if _windup_time <= 0.0 or _windup_move == null:
+		return false
+	var to := pos - global_position
+	to.y = 0.0
+	if to.length() > _windup_move.reach + BODY_RADIUS + 0.6:
+		return false
+	return to.length() < 0.5 or rad_to_deg(absf(_windup_dir.signed_angle_to(to.normalized(), Vector3.UP))) <= _windup_move.arc * 0.5 + 10.0
+
+
 func _melee_swing(move: MoveData, direction: Vector3) -> void:
+	if move.windup > 0.0:
+		# Telegraph: plant and show a red cone where the slam will land, so it can be dodged.
+		_windup_time = move.windup
+		_windup_dir = direction
+		_windup_move = move
+		_attack_lock = maxf(_attack_lock, move.windup + 0.1)
+		var warn := MeshInstance3D.new()
+		warn.mesh = _build_fan_mesh(move.reach + BODY_RADIUS, deg_to_rad(move.arc))
+		warn.rotation.y = atan2(-direction.x, -direction.z)
+		warn.position.y = 0.06
+		var mat := _flat_material(Color(1, 0.15, 0.1, 0.15))
+		warn.material_override = mat
+		add_child(warn)
+		var tween := warn.create_tween()
+		tween.tween_property(mat, "albedo_color:a", 0.55, move.windup)
+		await get_tree().create_timer(move.windup, false, true).timeout
+		warn.queue_free()
+		if is_dead or is_stunned():
+			_windup_time = 0.0
+			return  # Interrupted: the slam fizzles.
 	_show_melee_fx(direction, move)
 	for other in _enemies_in_cone(direction, move.reach, move.arc):
 		other.take_hit(self, move)
@@ -1209,6 +1246,7 @@ func _clear_status() -> void:
 func _tick_timers(delta: float) -> void:
 	_gadget_timer = maxf(0.0, _gadget_timer - delta)
 	_attack_lock = maxf(0.0, _attack_lock - delta)
+	_windup_time = maxf(0.0, _windup_time - delta)
 	_reveal_timer = maxf(0.0, _reveal_timer - delta)
 	_blind_time = maxf(0.0, _blind_time - delta)
 	_stun_time = maxf(0.0, _stun_time - delta)

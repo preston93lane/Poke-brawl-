@@ -91,6 +91,8 @@ var chain := 0
 var chain_range := 3.5
 ## How fast (radians / s) the shot turns toward the nearest enemy.
 var homing := 0.0
+## Melee: seconds the user plants and telegraphs the swing before it lands (Frank's super).
+var windup := 0.0
 ## Seconds a damaging zone stays where the shot lands (power = damage per second then).
 var linger := 0.0
 var linger_radius := 0.0
@@ -157,6 +159,7 @@ static func from_dict(move_id: String, d: Dictionary) -> MoveData:
 	m.chain = int(d.get("chain", m.chain))
 	m.chain_range = float(d.get("chain_range", m.chain_range))
 	m.homing = float(d.get("homing", m.homing))
+	m.windup = float(d.get("windup", m.windup))
 	m.linger = float(d.get("linger", m.linger))
 	m.linger_radius = float(d.get("linger_radius", m.linger_radius))
 	m.knockback = float(d.get("knockback", m.knockback))
