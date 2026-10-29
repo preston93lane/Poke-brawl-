@@ -22,6 +22,9 @@ const STATS := ["hp", "attack", "defense", "speed"]
 ## Emitted after every save (the cloud sync listens).
 signal changed
 
+## Lines unlocked since the menu last played their reveal (not saved).
+var reveals: Array[String] = []
+
 var data: Dictionary = {}
 var rng := RandomNumberGenerator.new()
 
@@ -136,6 +139,7 @@ func unlock(family: String) -> bool:
 		return false
 	list.append(family)
 	data["unlocked"] = list
+	reveals.append(family)
 	return true
 
 

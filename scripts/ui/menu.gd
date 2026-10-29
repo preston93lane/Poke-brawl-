@@ -170,7 +170,7 @@ func show_bag(prizes: Array[Dictionary] = []) -> void:
 func play_ball_opening(ball: String, prizes: Array[Dictionary]) -> void:
 	var anim := BallOpening.new()
 	anim.setup(ball, prizes)
-	anim.finished.connect(show_bag.bind(prizes))
+	anim.finished.connect(show_bag.bind(prizes))  # The bag then plays any unlock reveals.
 	add_child(anim)
 
 
@@ -897,6 +897,21 @@ func _set_screen(content: Control) -> void:
 	margin.add_child(content)
 	_screen = margin
 	add_child(margin)
+	_play_reveals()
+
+
+## Plays the "you unlocked ..." reveal for each newly unlocked line, one at a time.
+func _play_reveals() -> void:
+	if Profile.reveals.is_empty() or not get_tree().get_nodes_in_group("modal_overlay").is_empty():
+		return
+	var family: String = Profile.reveals.pop_front()
+	if not GameData.species.has(family):
+		_play_reveals()
+		return
+	var reveal := UnlockReveal.new()
+	reveal.species = GameData.species[family]
+	reveal.finished.connect(_play_reveals)
+	add_child(reveal)
 
 
 ## `both_colours` shows the shiny next to the normal one (Pokédex).

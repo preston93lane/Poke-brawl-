@@ -228,6 +228,7 @@ func _show_list() -> void:
 		row.add_child(UiKit.label(str(p.get("text", "")), 24))
 		v.add_child(row)
 	var ok := UiKit.button("OK", func() -> void:
+		remove_from_group("modal_overlay")
 		finished.emit()
 		queue_free(), 26)
 	v.add_child(ok)

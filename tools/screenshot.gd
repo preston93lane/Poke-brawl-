@@ -76,6 +76,13 @@ func _menu_shot(screen: String, out_dir: String) -> void:
 				for i in t:
 					await get_tree().process_frame
 				get_viewport().get_texture().get_image().save_png("%s/menu_ball_%d.png" % [out_dir, t])
+		"reveal":
+			Profile.reveals.append("geodude")
+			menu.show_home()
+			for t in [30, 60, 100, 120, 150]:
+				for i in t:
+					await get_tree().process_frame
+				get_viewport().get_texture().get_image().save_png("%s/menu_reveal_%d.png" % [out_dir, t])
 		_:
 			menu.show_home()
 	for i in 20:
