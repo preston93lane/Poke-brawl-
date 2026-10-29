@@ -75,6 +75,18 @@ def ground_y(shadow_png, fw, fh):
     return (box[1] + box[3]) / 2.0 if box else fh * 0.75
 
 
+def feet(png, fw, fh):
+    """Lowest drawn pixel of the walk cycle, facing down, as pixels below the frame's centre.
+    Every SpriteCollab animation shares the frame centre, so this lines all of them up."""
+    im = Image.open(io.BytesIO(png)).convert("RGBA")
+    bottom = 0
+    for c in range(im.width // fw):
+        box = im.crop((c * fw, 0, (c + 1) * fw, fh)).getchannel("A").getbbox()
+        if box:
+            bottom = max(bottom, box[3])
+    return bottom - fh / 2.0
+
+
 def body_height(png, fw, fh, gy):
     """How tall the Pokémon is above its ground point, in pixels (first frame, facing down)."""
     im = Image.open(io.BytesIO(png)).convert("RGBA").crop((0, 0, fw, fh))
@@ -115,6 +127,11 @@ def import_one(sid, dex):
             "hit": a["hit"], "ground": gy,
             "height": body_height(png, a["fw"], a["fh"], gy),
         }
+    if "walk" in meta:
+        walk = anims[meta["walk"]["source"]]
+        png = open(os.path.join(out, "walk.png"), "rb").read()
+        meta["walk"]["feet"] = feet(png, walk["fw"], walk["fh"])
+        meta["walk"]["height"] = body_height(png, walk["fw"], walk["fh"], walk["fh"] / 2.0 + meta["walk"]["feet"])
     json.dump(meta, open(os.path.join(out, "anims.json"), "w"), indent="\t")
     credits = fetch(f"{folder}/credits.txt")
     names = sorted({line.split("\t")[1] for line in (credits or b"").decode().splitlines() if "\t" in line})

@@ -13,7 +13,8 @@
 		],
 		"hit": -1,
 		"ground": 20.0,
-		"height": 15.0
+		"height": 16.0,
+		"feet": 5.0
 	},
 	"idle": {
 		"source": "Idle",

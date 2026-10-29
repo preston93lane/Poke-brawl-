@@ -14,6 +14,9 @@ func _ready() -> void:
 	if arena_id.begins_with("menu:"):
 		await _menu_shot(arena_id.trim_prefix("menu:"), out_dir)
 		return
+	if arena_id == "showcase":
+		await _showcase(out_dir)
+		return
 	if arena_id.begins_with("record:"):
 		await _record(arena_id.trim_prefix("record:"), out_dir)
 		return
@@ -54,6 +57,56 @@ func _ready() -> void:
 		var img := get_viewport().get_texture().get_image()
 		img.save_png("%s/%s_%s.png" % [out_dir, arena_id, shot])
 		print("saved ", shot)
+	get_tree().quit()
+
+
+## Close-up of the animated sprites: a row of Pokémon walking in a circle, then
+## attacking, shooting, using a special and getting hurt (frames for a clip).
+func _showcase(out_dir: String) -> void:
+	GameData.match_settings = { "mode": "duel", "arena": "pallet_pitch", "species": "pikachu", "level": 20,
+			"allies": ["charmander", "squirtle"], "enemies": ["onix", "charizard", "snorlax"], "difficulty": "normal" }
+	var main := MAIN_SCENE.instantiate()
+	main.show_intro = false
+	main.record_progress = false
+	add_child(main)
+	await get_tree().physics_frame
+	var all: Array[Brawler] = []
+	for t: int in [0, 1]:
+		for b: Brawler in main.teams[t]:
+			for c in b.get_children():
+				if c is BotController or c is PlayerController:
+					c.queue_free()
+			all.append(b)
+	main._raid_done = true
+	main.time_left = 9999.0
+	var cam: FollowCamera = main.camera
+	cam.distance = 13.0
+	for i in all.size():
+		all[i].global_position = Vector3(-6.0 + i * 2.4, 0, 0)
+		all[i].invulnerable = true
+	cam.target = all[2]
+	cam.lead = 0.0
+	cam.snap_to_target()
+	var f := 0
+	for step in 360:
+		await get_tree().physics_frame
+		var ang := step * 0.035
+		for b in all:
+			if step < 140:
+				b.move_input = Vector2(cos(ang), sin(ang)) * 0.4
+				b.facing = Vector3(cos(ang), 0, sin(ang))
+			else:
+				b.move_input = Vector2.ZERO
+				b.velocity = Vector3.ZERO
+		if step in [150, 210, 270, 320]:
+			var anim: String = ["attack", "shoot", "special", "hurt"][[150, 210, 270, 320].find(step)]
+			for b in all:
+				b.facing = Vector3(0, 0, 1)
+				b._play_anim(anim, 1.0)
+		if step % 2 == 0:
+			get_viewport().get_texture().get_image().save_png("%s/frame_%04d.png" % [out_dir, f])
+			f += 1
+	print("saved showcase")
 	get_tree().quit()
 
 

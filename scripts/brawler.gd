@@ -1586,8 +1586,8 @@ func _update_sprite(delta: float) -> void:
 			Vfx.burst(get_parent(), global_position + Vector3(randf_range(-0.4, 0.4), randf_range(0.6, 1.4), 0), "fairy", 5, 0.15, 1.2)
 	var hidden := not visible_to_local_player()
 	sprite.visible = not hidden
-	# No ground shadow or team ring: they made it harder to see the Pokémon themselves.
-	shadow.visible = false
+	# Animated sprites get a soft ground shadow (HD-2D style); the old sprites don't.
+	shadow.visible = not species.pmd.is_empty() and not hidden and not is_dead
 	team_ring.visible = false
 	_animate(delta)
 	_update_shield(hidden)
@@ -1699,7 +1699,8 @@ func _animate_pmd(delta: float, moving: bool, tilt: float, lift: float) -> void:
 	sprite.flip_h = false
 	_pop = move_toward(_pop, 1.0, delta * 3.5)
 	sprite.billboard = BaseMaterial3D.BILLBOARD_DISABLED
-	sprite.offset = Vector2(0, float(a["fh"]) * 0.5 - float(a["ground"]))
+	# All SpriteCollab animations share the frame centre; lift it so the feet touch the ground.
+	sprite.offset = Vector2(0, float(species.pmd["walk"].get("feet", float(a["fh"]) * 0.5 - float(a["ground"]))))
 	sprite.position = Vector3(0, 0.05 + lift, 0)
 	sprite.basis = Basis(Vector3.RIGHT, tilt) * Basis.from_scale(Vector3(_pop, _pop, 1.0))
 
@@ -1725,6 +1726,17 @@ func _set_anim(anim: String) -> void:
 	sprite.vframes = int(a["rows"])
 	sprite.frame = 0
 	sprite.pixel_size = pmd_pixel_size()
+	if shadow.mesh == null:
+		var disc := CylinderMesh.new()
+		disc.top_radius = 1.0
+		disc.bottom_radius = 1.0
+		disc.height = 0.01
+		shadow.mesh = disc
+	# Wide, flat ellipse about as wide as the Pokémon.
+	var w := clampf(visual_height() * 0.3, 0.3, 0.85)
+	shadow.scale = Vector3(w, 1.0, w * 0.55)
+	shadow.position = Vector3(0, 0.02, -w * 0.65)  # Centred under the feet as seen from the tilted camera.
+	shadow.material_override = _flat_material(Color(0, 0, 0, 0.28))
 
 
 ## World size of one sprite pixel, so the Pokémon stands as tall as with the old sprites.
