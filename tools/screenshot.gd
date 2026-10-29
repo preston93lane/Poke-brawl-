@@ -154,6 +154,8 @@ func _menu_shot(screen: String, out_dir: String) -> void:
 			for i in 3:
 				await get_tree().process_frame
 			menu._details_scroll.scroll_vertical = 800
+		"about":
+			menu.show_about()
 		"gyms":
 			menu.show_gyms()
 		"gym":

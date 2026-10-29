@@ -111,5 +111,11 @@ godot --headless --path . res://tests/smoke_test.tscn
 
 ## Credits
 
-Pokémon and the Black/White sprites are © Nintendo / Game Freak / The Pokémon Company. The sprites come from
-the PokeAPI sprites collection. This is a non-commercial fan project.
+- **Made with:** Godot Engine 4 (MIT license).
+- **Pokémon sprites:** Pokémon Black/White sprites from the PokeAPI sprites collection (© Nintendo / Creatures Inc. / GAME FREAK inc.).
+- **Fonts:** Lilita One by Juan Montoreano, SIL Open Font License 1.1.
+- **Everything else:** Maps, 3D models, effects, item icons and sounds are made for this game (procedurally generated).
+
+## Legal
+
+Pokémon and all related names, characters, sprites, music and other assets are © Nintendo, Creatures Inc. and GAME FREAK inc. Poké Brawl is a free, non-commercial fan project. It is not affiliated with or endorsed by Nintendo, Creatures Inc., GAME FREAK inc. or The Pokémon Company. It is not for sale, no money is made from it, and it contains no ads or purchases with real money. If you are a rights holder and want something removed, open an issue on the GitHub repository and it will be taken down.

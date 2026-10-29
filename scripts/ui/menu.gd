@@ -495,6 +495,35 @@ const MAP_EDITOR := preload("res://scripts/ui/map_editor.gd")
 
 
 ## Settings: drag the controls where you want them; size, sides, aim assist.
+## Settings → About & Legal: credits and the fan-project notice (also in README.md).
+const CREDITS := [
+	["Made with", "Godot Engine 4 (MIT license)."],
+	["Pokémon sprites", "Pokémon Black/White sprites from the PokeAPI sprites collection (© Nintendo / Creatures Inc. / GAME FREAK inc.)."],
+	["Fonts", "Lilita One by Juan Montoreano, SIL Open Font License 1.1."],
+	["Everything else", "Maps, 3D models, effects, item icons and sounds are made for this game (procedurally generated)."]
+]
+const LEGAL := "Pokémon and all related names, characters, sprites, music and other assets are © Nintendo, Creatures Inc. and GAME FREAK inc. Poké Brawl is a free, non-commercial fan project. It is not affiliated with or endorsed by Nintendo, Creatures Inc., GAME FREAK inc. or The Pokémon Company. It is not for sale, no money is made from it, and it contains no ads or purchases with real money. If you are a rights holder and want something removed, open an issue on the GitHub repository and it will be taken down."
+
+
+func show_about() -> void:
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 12)
+	var top := HBoxContainer.new()
+	top.add_child(UiKit.button("‹ BACK", show_settings))
+	top.add_child(UiKit.label("   ABOUT & LEGAL", 32, Color(1, 0.85, 0.25)))
+	v.add_child(top)
+	v.add_child(_section("CREDITS"))
+	for c: Array in CREDITS:
+		var l := UiKit.label("%s: %s" % [c[0], c[1]], 18)
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		v.add_child(l)
+	v.add_child(_section("LEGAL"))
+	var legal := UiKit.label(LEGAL, 18, Color(0.85, 0.9, 1))
+	legal.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	v.add_child(legal)
+	_set_screen(UiKit.scroll(v))
+
+
 func show_settings() -> void:
 	var root := VBoxContainer.new()
 	root.add_theme_constant_override("separation", 10)
@@ -516,6 +545,9 @@ func show_settings() -> void:
 		editor.change_scale(0.1)
 		update_size.call()))
 	top.add_child(UiKit.button("SWAP SIDES", func() -> void: editor.swap_sides()))
+	top.add_child(UiKit.button("ABOUT & LEGAL", func() -> void:
+		editor.save()
+		show_about()))
 	top.add_child(UiKit.button("RESET", func() -> void:
 		editor.reset()
 		update_size.call()))
