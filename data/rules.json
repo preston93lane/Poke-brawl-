@@ -26,7 +26,7 @@
 		"_comment": "Any KOs count toward evolving (they are kept when you faint); evolving resets the count."
 	},
 	"tall_grass": {
-		"reveal_distance": 2.5,
+		"reveal_distance": 3.0,
 		"reveal_time_after_attack": 1.0
 	},
 	"modes": {

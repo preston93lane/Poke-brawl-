@@ -58,6 +58,7 @@ func _ready() -> void:
 	await _check_boss_no_heal()
 	await _check_slam_windup()
 	_check_assassin_charge()
+	_check_camera_lead()
 	Engine.time_scale = 1.0
 	Profile.data = real_profile
 	Profile.save()
@@ -1717,3 +1718,24 @@ func _check_assassin_charge() -> void:
 	expect(GameData.get_move("scyther_main1").dash_distance <= 3.3, "shorter Assassin jumps")
 	b.free()
 	main.free()
+
+
+func _check_camera_lead() -> void:
+	print("Camera lead")
+	var cam := FollowCamera.new()
+	var dummy := Node3D.new()
+	add_child(dummy)
+	add_child(cam)
+	cam.target = dummy
+	cam.follow_limits = Rect2(-100, -100, 200, 200)
+	cam.field_half = 22.0
+	dummy.global_position = Vector3(0, 0, 10)
+	var own: Vector3 = cam._desired_position()
+	dummy.global_position = Vector3(0, 0, -20)
+	var enemy: Vector3 = cam._desired_position()
+	var pitch := deg_to_rad(cam.pitch_degrees)
+	var own_focus := own.z - cos(pitch) * cam.distance - 10.0
+	var enemy_focus := enemy.z - cos(pitch) * cam.distance + 20.0
+	expect(own_focus < 0.0 and enemy_focus > 0.0, "the camera looks ahead in your half and back toward your side in theirs (%.1f, %.1f)" % [own_focus, enemy_focus])
+	cam.queue_free()
+	dummy.queue_free()

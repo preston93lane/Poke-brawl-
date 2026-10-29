@@ -19,6 +19,8 @@ const PIXEL_SIZE := 0.05
 ## World units per pixel for front/side/back sheets (96px Black/White frames).
 ## Keep in sync with tools/import_bw_sprites.py.
 const SHEET_PIXEL_SIZE := 0.0253
+## Pokémon are drawn this much bigger than their sheet size (easier to tell apart on a phone).
+const VISUAL_SCALE := 1.6
 const DOT_TICK := 0.5
 ## Physics layers that stop walking and teleports: world + water.
 const MOVE_BLOCK_MASK := 1 | 8
@@ -453,7 +455,7 @@ func _apply_species() -> void:
 	sprite.texture = sheet if sheet else species.sprite
 	sprite.hframes = 3 if species.sheet else 1
 	sprite.frame = 0
-	sprite.pixel_size = (SHEET_PIXEL_SIZE if species.sheet else PIXEL_SIZE) * species.sprite_scale * size_scale
+	sprite.pixel_size = (SHEET_PIXEL_SIZE if species.sheet else PIXEL_SIZE) * species.sprite_scale * size_scale * VISUAL_SCALE
 
 
 ## Evolve to the next stage (after enough KOs). Returns false at final stage.
@@ -1366,11 +1368,12 @@ func is_hidden_from(viewer_team: int) -> bool:
 	if not invisible and (_reveal_timer > 0.0 or not is_in_grass()):
 		return false
 	# Invisible brawlers are only given away by someone almost touching them.
-	var reveal := 1.2 if invisible else float(GameData.rule("tall_grass/reveal_distance", 2.5))
+	# Everyone sees into grass a few metres around them, but not through walls.
+	var reveal := 1.2 if invisible else float(GameData.rule("tall_grass/reveal_distance", 3.0))
 	for node in get_tree().get_nodes_in_group("brawlers"):
 		var other := node as Brawler
 		if other and other.team == viewer_team and not other.is_dead \
-				and other.global_position.distance_to(global_position) <= reveal:
+				and other.global_position.distance_to(global_position) <= reveal and other.has_line_of_sight_to(self):
 			return false
 	return true
 

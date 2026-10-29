@@ -141,6 +141,7 @@ func _ready() -> void:
 	var x_limit := maxf(0.0, half.x - 14.0)
 	var z_limit := maxf(0.0, half.y - 9.0)
 	camera.follow_limits = Rect2(-x_limit, -z_limit, x_limit * 2.0, z_limit * 2.0)
+	camera.field_half = half.y
 	camera.target = player
 	camera.snap_to_target()
 

@@ -1,7 +1,7 @@
 extends Control
 ## Draws name, health bar, status and (for the player) ammo bars above each brawler.
 
-const BAR_SIZE := Vector2(96, 14)
+const BAR_SIZE := Vector2(78, 11)
 const HEAD_HEIGHT := 2.2
 
 
@@ -21,8 +21,9 @@ func _draw() -> void:
 		var head := HEAD_HEIGHT * brawler.species.sprite_scale
 		if brawler.species.sprite_height > 0:
 			# Well clear of the sprite so the bar never covers the Pokémon.
-			head = brawler.species.sprite_height * Brawler.SHEET_PIXEL_SIZE * brawler.species.sprite_scale * brawler.size_scale + 1.15
-		var world_pos := brawler.global_position + Vector3.UP * (head + (0.9 if brawler.flying else 0.0))
+			head = brawler.species.sprite_height * Brawler.SHEET_PIXEL_SIZE * brawler.species.sprite_scale * brawler.size_scale * Brawler.VISUAL_SCALE + 0.55
+		# Billboarded sprites lean toward the camera, so measure "up" along the camera's up.
+		var world_pos := brawler.global_position + camera.global_basis.y * (head + (0.9 if brawler.flying else 0.0))
 		if camera.is_position_behind(world_pos):
 			continue
 		var p := camera.unproject_position(world_pos)
@@ -43,10 +44,11 @@ func _draw() -> void:
 			_round_rect(Rect2(bar.position, Vector2(maxf(bar.size.x * ratio, 8.0), bar.size.y)), fill_color, 5)
 			_round_rect(Rect2(bar.position, Vector2(maxf(bar.size.x * ratio, 8.0), bar.size.y * 0.45)), Color(1, 1, 1, 0.25), 5)
 
-		_text(font, Vector2(bar.position.x, bar.position.y - 4), bar.size.x, str(ceili(brawler.health)), 18, Color.WHITE)
+		# Brawl Stars style: a slim bar just above the head, HP on it, name above.
+		_text(font, Vector2(bar.position.x, bar.end.y - 1), bar.size.x, str(ceili(brawler.health)), 13, Color.WHITE)
 		var name_color := Color(0.6, 0.85, 1.0) if friendly else Color(1.0, 0.7, 0.7)
 		var title := "%s%s Lv%d" % ["✦ " if brawler.shiny else "", brawler.species.display_name, brawler.level]
-		_text(font, Vector2(bar.position.x - 60, bar.position.y - 24), bar.size.x + 120, title, 16, name_color)
+		_text(font, Vector2(bar.position.x - 60, bar.position.y - 6), bar.size.x + 120, title, 14, name_color)
 
 		# Type pips to the left of the bar.
 		for i in brawler.species.types.size():
