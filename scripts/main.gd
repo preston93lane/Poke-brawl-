@@ -11,6 +11,7 @@ const MODE_SCRIPTS := {
 	"brawl_ball": preload("res://scripts/modes/brawl_ball.gd"),
 	"candy_rush": preload("res://scripts/modes/candy_rush.gd"),
 	"showdown": preload("res://scripts/modes/showdown.gd"),
+	"boss_raid": preload("res://scripts/modes/boss_raid.gd"),
 }
 const MENU_SCENE := "res://scenes/menu.tscn"
 
@@ -20,9 +21,9 @@ const MENU_SCENE := "res://scenes/menu.tscn"
 const MATCH_INTRO := preload("res://scripts/ui/match_intro.gd")
 const MODE_TITLES := {
 	"duel": "BATTLE", "king_of_the_hill": "KING OF THE HILL", "brawl_ball": "BRAWL BALL",
-	"candy_rush": "RARE CANDY RUSH", "showdown": "SHOWDOWN",
+	"candy_rush": "RARE CANDY RUSH", "showdown": "SHOWDOWN", "boss_raid": "BOSS RAID",
 }
-@export_enum("duel", "king_of_the_hill", "brawl_ball", "candy_rush", "showdown") var mode := "duel"
+@export_enum("duel", "king_of_the_hill", "brawl_ball", "candy_rush", "showdown", "boss_raid") var mode := "duel"
 
 @export_group("Player")
 @export var player_species := "charmander"
@@ -127,7 +128,8 @@ func _ready() -> void:
 	else:
 		for species_id in _fill_team(ally_team, team_size - 1, [player_species]):
 			_spawn_bot(species_id, 0)
-		for species_id in _fill_team(enemy_team, team_size, []):
+		# Boss Raid: the mode brings in the boss itself.
+		for species_id in _fill_team(enemy_team, 0 if mode == "boss_raid" else team_size, []):
 			var bot := _spawn_bot(species_id, 1)
 			if enemy == null:
 				enemy = bot
@@ -532,6 +534,9 @@ func end_round(result_name: String, subtitle := "") -> void:
 		rewards = Profile.record_match({
 			"species": player_species, "result": result_name, "kos": player.kills, "mvp": mvp,
 			"arena": arena_id, "mode": mode, "difficulty": bot_difficulty, "raid": raid_won,
+			"boss": str(mode_logic.get("boss_id")) if mode == "boss_raid" and result_name == "victory" else "",
+			"goals": player.goals, "supers": player.supers_used, "final_stage": player.species.stage > 1 and player.species.evolves_to == "",
+			"types": player.species.types,
 		})
 	hud.show_result(result_name, rows, mode_logic.stat_name() if mode_logic else "", subtitle, rewards)
 

@@ -14,6 +14,9 @@ func _ready() -> void:
 	if arena_id.begins_with("menu:"):
 		await _menu_shot(arena_id.trim_prefix("menu:"), out_dir)
 		return
+	if arena_id.begins_with("boss:"):
+		await _boss_shot(arena_id.trim_prefix("boss:"), out_dir)
+		return
 	var main := MAIN_SCENE.instantiate()
 	main.show_intro = false
 	main.arena_id = arena_id
@@ -48,6 +51,26 @@ func _ready() -> void:
 	get_tree().quit()
 
 
+## A Boss Raid a few seconds in, with a telegraphed strike on the way.
+func _boss_shot(boss_id: String, out_dir: String) -> void:
+	GameData.match_settings = { "mode": "boss_raid", "boss": boss_id, "species": "pikachu",
+			"arena": str(GameData.rule("modes/boss_raid/bosses/%s/arena" % boss_id, "route_1")) }
+	var main := MAIN_SCENE.instantiate()
+	main.show_intro = false
+	main.record_progress = false
+	add_child(main)
+	for i in 200:
+		await get_tree().process_frame
+	main.player.global_position = main.mode_logic.boss.global_position + Vector3(0, 0, 5)
+	main.camera.snap_to_target()
+	main.mode_logic._strike_at(main.player.global_position, 2.2)
+	for i in 40:
+		await get_tree().process_frame
+	get_viewport().get_texture().get_image().save_png("%s/boss_%s.png" % [out_dir, boss_id])
+	print("saved boss")
+	get_tree().quit()
+
+
 func _menu_shot(screen: String, out_dir: String) -> void:
 	var menu: Node = load("res://scenes/menu.tscn").instantiate()
 	add_child(menu)
@@ -76,6 +99,8 @@ func _menu_shot(screen: String, out_dir: String) -> void:
 				for i in t:
 					await get_tree().process_frame
 				get_viewport().get_texture().get_image().save_png("%s/menu_ball_%d.png" % [out_dir, t])
+		"bosses":
+			menu.show_bosses()
 		"reveal":
 			Profile.reveals.append("geodude")
 			menu.show_home()

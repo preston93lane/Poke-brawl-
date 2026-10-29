@@ -49,6 +49,8 @@ func _ready() -> void:
 	await _check_text_boxes()
 	await _check_tm_super_shapes()
 	await _check_ball_goals_and_walls()
+	await _check_boss_raid()
+	_check_dailies()
 	Engine.time_scale = 1.0
 	Profile.data = real_profile
 	Profile.save()
@@ -1381,3 +1383,55 @@ func _check_ball_goals_and_walls() -> void:
 	expect(blockers == 8, "rocks narrow both goals (2 each side, %d found)" % blockers)
 	main.queue_free()
 	await get_tree().process_frame
+
+
+func _check_boss_raid() -> void:
+	print("Boss Raid")
+	GameData.match_settings = { "boss": "zapdos" }
+	var main := await _start_match("vermilion_gym", "boss_raid", "pikachu", [])
+	GameData.match_settings = {}
+	var boss: Brawler = main.mode_logic.boss
+	expect(main.teams[0].size() == 3 and main.teams[1].size() == 1, "3 of you vs. one boss")
+	expect(boss.species.id == "zapdos" and boss.size_scale > 1.5, "the boss is a giant Zapdos")
+	expect(boss.max_health > main.player.max_health * 8.0, "the boss has a huge health bar")
+	boss.take_damage(boss.max_health * 0.4, main.player)
+	for i in 3:
+		await get_tree().physics_frame
+	expect(main.mode_logic.phase == 2 and main.teams[1].size() == 3, "at 60% it enrages and calls 2 minions")
+	main.player.global_position = Vector3.ZERO
+	main.mode_logic._strike_at(Vector3.ZERO, 2.0)
+	expect(main.mode_logic.escape_from(Vector3(0.5, 0, 0), main.teams[0][1]) != Vector3.ZERO, "bots know to leave the red circle")
+	var hp := main.player.health
+	main.player._protect_time = 0.0
+	await get_tree().create_timer(1.6).timeout
+	expect(main.player.health < hp, "the strike hits whoever stays in it")
+	var lives: int = main.mode_logic.lives
+	main.teams[0][1].take_damage(99999.0, boss)
+	await get_tree().physics_frame
+	expect(main.mode_logic.lives == lives - 1, "a faint uses a team life")
+	boss.take_damage(boss.max_health, main.player)
+	await get_tree().physics_frame
+	expect(main.round_over, "KO the boss and you win")
+	main.queue_free()
+	await get_tree().process_frame
+	expect(Profile.is_dev() or not Profile.boss_unlocked("moltres"), "bosses unlock in order")
+
+
+func _check_dailies() -> void:
+	print("Daily challenges")
+	Profile.data["dailies"] = {}
+	var tasks := Profile.dailies()
+	expect(tasks.size() == 3, "three dailies a day")
+	var stats: Array = []
+	for t: Dictionary in tasks:
+		expect(t["stat"] not in stats, "no two dailies track the same thing")
+		stats.append(t["stat"])
+	expect(Profile.reroll_daily(0) and not Profile.can_reroll_daily(), "one free reroll a day")
+	var money := Profile.money()
+	for t: Dictionary in tasks:
+		Profile._daily_progress({ t["stat"]: 999 })
+	var done := true
+	for t: Dictionary in Profile.dailies():
+		done = done and bool(t["done"])
+	expect(done and bool(Profile.data["dailies"]["bonus"]), "finishing all three gives the bonus")
+	expect(Profile.money() >= money, "rewards are paid")

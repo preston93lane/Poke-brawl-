@@ -325,6 +325,8 @@ func _rewards_label(r: Dictionary) -> Label:
 		parts.append("✦ SHINY %s UNLOCKED! ✦" % GameData.species[str(r["shiny"])].display_name.to_upper())
 	for m: String in r.get("milestones", []):
 		parts.append("Milestone: %s" % m)
+	for d: String in r.get("dailies", []):
+		parts.append(d)
 	var label := UiKit.label("   ·   ".join(PackedStringArray(parts)), 19, Color(1, 0.9, 0.45))
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

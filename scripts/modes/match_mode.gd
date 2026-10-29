@@ -30,6 +30,11 @@ func plan_for(_bot: Brawler) -> Dictionary:
 	return {}
 
 
+## Direction to step to get out of a mode danger zone (Boss Raid strikes), or ZERO.
+func escape_from(_pos: Vector3, _b: Brawler) -> Vector3:
+	return Vector3.ZERO
+
+
 ## Result when the clock runs out ("victory"/"defeat"/"draw"); "" = compare scores.
 func time_up() -> String:
 	return ""

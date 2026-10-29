@@ -21,7 +21,7 @@ func _draw() -> void:
 		var head := HEAD_HEIGHT * brawler.species.sprite_scale
 		if brawler.species.sprite_height > 0:
 			# Well clear of the sprite so the bar never covers the Pokémon.
-			head = brawler.species.sprite_height * Brawler.SHEET_PIXEL_SIZE * brawler.species.sprite_scale + 1.15
+			head = brawler.species.sprite_height * Brawler.SHEET_PIXEL_SIZE * brawler.species.sprite_scale * brawler.size_scale + 1.15
 		var world_pos := brawler.global_position + Vector3.UP * (head + (0.9 if brawler.flying else 0.0))
 		if camera.is_position_behind(world_pos):
 			continue
@@ -90,7 +90,8 @@ func _draw() -> void:
 ## Raid boss: wide gold bar plus a blue-vs-red bar of who has hurt it most.
 ## Summoned ally: its team colour and the seconds it has left.
 func _draw_legendary(b: Brawler, p: Vector2, font: Font) -> void:
-	var bar_size := Vector2(190, 16)
+	var boss := b.size_scale > 1.0
+	var bar_size := Vector2(300, 20) if boss else Vector2(190, 16)
 	var bar := Rect2(p - Vector2(bar_size.x * 0.5, 0), bar_size)
 	var neutral := b.team >= 9
 	var fill := Color(1.0, 0.78, 0.2)
@@ -100,6 +101,8 @@ func _draw_legendary(b: Brawler, p: Vector2, font: Font) -> void:
 	_round_rect(Rect2(bar.position, Vector2(maxf(bar_size.x * b.health / b.max_health, 8.0), bar_size.y)), fill, 6)
 	var title := ("WILD %s" % b.species.display_name.to_upper()) if neutral \
 			else "%s  %ds" % [b.species.display_name.to_upper(), ceili(b.legendary_time_left)]
+	if boss:
+		title = "%s  %d%%" % [b.species.display_name.to_upper(), ceili(100.0 * b.health / b.max_health)]
 	_text(font, Vector2(bar.position.x - 40, bar.position.y - 8), bar_size.x + 80, title, 20, Color(1, 0.92, 0.55))
 	if neutral:
 		var blue := float(b.damage_by_team.get(GameData.local_team, 0.0))

@@ -57,6 +57,14 @@ var kills := 0
 var respawn_left := 0.0
 ## Legendary raid boss or summoned ally (no evolving, no KO score, special HUD).
 var is_legendary := false
+## Boss raid: drawn this many times bigger (and a fatter hitbox).
+var size_scale := 1.0
+## Supers used this match (daily challenges).
+var supers_used := 0
+## Multiplies the damage this brawler deals (raid bosses hit softer than their size suggests).
+var damage_scale := 1.0
+## False for raid bosses: no healing between hits.
+var regenerates := true
 ## Takes no damage (summoned legendary allies).
 var invulnerable := false
 ## Hovers above the ground and flies over walls.
@@ -386,7 +394,7 @@ func portrait() -> Texture2D:
 
 ## Damage multiplier from Showdown power cubes (levels unlock moves, they don't add power).
 func power_bonus() -> float:
-	return 1.0 + float(GameData.rule("modes/showdown/cube_damage", 0.1)) * power_cubes
+	return (1.0 + float(GameData.rule("modes/showdown/cube_damage", 0.1)) * power_cubes) * damage_scale
 
 
 ## Physics layers that stop this brawler walking (swimmers cross water).
@@ -437,7 +445,7 @@ func _apply_species() -> void:
 	sprite.texture = sheet if sheet else species.sprite
 	sprite.hframes = 3 if species.sheet else 1
 	sprite.frame = 0
-	sprite.pixel_size = SHEET_PIXEL_SIZE * species.sprite_scale if species.sheet else PIXEL_SIZE * species.sprite_scale
+	sprite.pixel_size = (SHEET_PIXEL_SIZE if species.sheet else PIXEL_SIZE) * species.sprite_scale * size_scale
 
 
 ## Evolve to the next stage (after enough KOs). Returns false at final stage.
@@ -692,6 +700,7 @@ func use_super(direction: Vector3, distance := -1.0) -> bool:
 	var move := current_super()
 	direction = _flat_direction(direction)
 	super_charge = 0.0
+	supers_used += 1
 	_on_attack(direction, move)
 	_spawn_floating_text(move.display_name.to_upper() + "!", Color(1, 0.9, 0.3), 72, 2.6)
 	Vfx.ring(get_parent(), global_position, 1.0, move.type, 30)
@@ -1219,7 +1228,7 @@ func _tick_timers(delta: float) -> void:
 	elif ammo < max_ammo():
 		ammo = minf(max_ammo(), ammo + delta / main_move.reload)
 	_regen_timer += delta
-	if _regen_timer >= float(GameData.rule("regen_delay", 3.0)) and health < max_health:
+	if regenerates and _regen_timer >= float(GameData.rule("regen_delay", 3.0)) and health < max_health:
 		health = minf(max_health, health + max_health * float(GameData.rule("regen_rate", 0.13)) * delta)
 
 

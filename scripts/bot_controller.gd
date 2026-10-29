@@ -93,6 +93,12 @@ func _physics_process(delta: float) -> void:
 			brawler.move_input = Vector2(away.x, away.z)
 			return
 
+	if mode_logic:
+		var dodge := mode_logic.escape_from(brawler.global_position, brawler)
+		if dodge != Vector3.ZERO:
+			brawler.move_input = Vector2(dodge.x, dodge.z)
+			return
+
 	if leash_radius > 0.0 and _flat_distance(brawler.global_position, leash_center) > leash_radius:
 		_go_to(leash_center, delta)
 		return

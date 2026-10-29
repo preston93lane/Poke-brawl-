@@ -265,6 +265,7 @@ static func challenges(menu: Node) -> Control:
 	var hint := UiKit.label("Trainer level = all your unlocked Pokémon's levels added up.", 18, Color(0.8, 0.85, 1))
 	v.add_child(hint)
 	var unlocked: Array = Profile.data.get("unlocked", [])
+	v.add_child(_dailies(menu))
 
 	var h := Profile.hunt()
 	var left_s := Profile.week_seconds_left()
@@ -377,6 +378,39 @@ static func challenges(menu: Node) -> Control:
 	ball_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	v.add_child(ball_label)
 	return UiKit.scroll(v)
+
+
+## Today's daily challenges, with a reroll for one unfinished task a day.
+static func _dailies(menu: Node) -> Control:
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 6)
+	var left_s := Profile.day_seconds_left()
+	var streak := Profile.daily_streak()
+	box.add_child(_heading("☀ DAILY CHALLENGES  ·  new ones in %dh %dm%s" % [floori(left_s / 3600.0), floori((left_s % 3600) / 60.0),
+			"  ·  streak %d day%s" % [streak, "" if streak == 1 else "s"] if streak > 0 else ""]))
+	var can_reroll := Profile.can_reroll_daily()
+	var tasks := Profile.dailies()
+	for i in tasks.size():
+		var t: Dictionary = tasks[i]
+		var done := bool(t["done"])
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 12)
+		var text := UiKit.label(str(t["text"]), 19, Color(0.6, 1, 0.6) if done else Color.WHITE)
+		text.custom_minimum_size.x = 380
+		row.add_child(text)
+		row.add_child(_progress(int(t["progress"]), int(t["goal"]), done))
+		var reward := UiKit.label(Profile.reward_text(t["reward"]), 17, Color(1, 0.9, 0.5))
+		reward.custom_minimum_size.x = 130
+		row.add_child(reward)
+		if can_reroll and not done:
+			row.add_child(UiKit.button("↻ NEW TASK", func() -> void:
+				Profile.reroll_daily(i)
+				menu.show_challenges(), 15))
+		box.add_child(row)
+	var bonus := "Finish all %d: %s" % [tasks.size(), Profile.item_name(str(Profile.econ("dailies/all_done", "great_ball")))]
+	bonus += "  ·  every %d days in a row: %s" % [int(Profile.econ("dailies/streak_days", 7)), Profile.item_name(str(Profile.econ("dailies/streak_reward", "ultra_ball")))]
+	box.add_child(UiKit.label(bonus, 16, Color(0.8, 0.85, 1)))
+	return box
 
 
 static func _heading(text: String) -> Label:

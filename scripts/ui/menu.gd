@@ -9,6 +9,7 @@ const MODES := {
 	"brawl_ball": { "button": "BRAWL BALL", "title": "BRAWL BALL 3v3", "blurb": "Kick the Poké Ball into their goal. First to 2." },
 	"candy_rush": { "button": "RARE CANDY RUSH", "title": "RARE CANDY RUSH 3v3", "blurb": "Grab 10 Rare Candies from the mine and hold them for 10 s." },
 	"showdown": { "button": "SHOWDOWN", "title": "SHOWDOWN", "blurb": "Everyone for themselves. Smash crates for power cubes. Last one standing wins." },
+	"boss_raid": { "button": "BOSS RAID", "title": "BOSS RAID", "blurb": "Team up against a giant legendary. Dodge the red circles!" },
 }
 
 var _screen: Control
@@ -29,6 +30,8 @@ var _group: ButtonGroup
 var _allies: Array[String] = []
 var _enemies: Array[String] = []
 var _arena := ""
+## Boss Raid: the boss picked on the boss screen.
+var _boss := ""
 var _difficulty := "normal"
 var _details: VBoxContainer
 var _details_scroll: ScrollContainer
@@ -98,6 +101,17 @@ func show_home() -> void:
 	challenges.custom_minimum_size = Vector2(380, 104)
 	challenges.add_theme_stylebox_override("normal", UiKit.box(Color(0.45, 0.3, 0.75)))
 	challenges.add_theme_stylebox_override("hover", UiKit.box(Color(0.52, 0.36, 0.82)))
+	var left := 0
+	for t: Dictionary in Profile.dailies():
+		if not bool(t["done"]):
+			left += 1
+	if left > 0:
+		var badge := UiKit.label("%d DAILIES LEFT" % left, 15, Color(1, 0.9, 0.4))
+		badge.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+		badge.offset_top = -26
+		badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		challenges.add_child(badge)
 	main_row.add_child(challenges)
 	var battle := UiKit.button("BATTLE", show_battle_modes, 48)
 	battle.custom_minimum_size = Vector2(560, 104)
@@ -134,9 +148,55 @@ func show_battle_modes() -> void:
 	grid.add_theme_constant_override("h_separation", 14)
 	grid.add_theme_constant_override("v_separation", 14)
 	for mode_id: String in MODES:
+		if mode_id == "boss_raid":
+			grid.add_child(_mode_card("BOSS RAID", MODES[mode_id]["blurb"], show_bosses, Color(0.75, 0.25, 0.3)))
+			continue
 		grid.add_child(_mode_card(MODES[mode_id]["button"], MODES[mode_id]["blurb"], show_select.bind(mode_id), Color(0.22, 0.48, 0.9)))
 	grid.add_child(_mode_card("MAP MAKER", "Design your own arenas and test them.", show_map_editor, Color(0.35, 0.38, 0.5)))
 	v.add_child(grid)
+	_set_screen(v)
+
+
+## Boss Raid: pick a legendary. They open one by one (see Profile.boss_unlocked).
+func show_bosses() -> void:
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 16)
+	var top := HBoxContainer.new()
+	top.add_child(UiKit.button("‹ BACK", show_battle_modes))
+	top.add_child(UiKit.label("   BOSS RAID  ·  3 of you vs. a giant legendary", 30, Color(1, 0.85, 0.25)))
+	v.add_child(top)
+	var tip := UiKit.label("Your team shares %d lives. At 66%% and 33%% health it calls in minions (KO them to evolve) and strikes faster. First win: Ultra Ball." % int(GameData.rule("modes/boss_raid/team_lives", 6)), 18, Color(0.8, 0.85, 1))
+	tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	v.add_child(tip)
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 14)
+	var order: Array = (GameData.rule("modes/boss_raid/bosses", {}) as Dictionary).keys()
+	for i in order.size():
+		var boss_id: String = order[i]
+		var s: SpeciesData = GameData.species[boss_id]
+		var open := Profile.boss_unlocked(boss_id)
+		var card := VBoxContainer.new()
+		card.alignment = BoxContainer.ALIGNMENT_CENTER
+		var pic := UiKit.sprite(s.sprite, 120)
+		if not open:
+			pic.modulate = Color(0, 0, 0, 0.8)
+		card.add_child(pic)
+		var wins := Profile.boss_wins(boss_id)
+		var info := "Beaten ×%d" % wins if wins > 0 else ("Not beaten yet" if open else
+				("Trainer LV %d" % int(GameData.rule("modes/boss_raid/first_level", 10)) if i == 0 else "Beat %s first" % GameData.species[order[i - 1]].display_name))
+		var b := UiKit.button(s.display_name.to_upper() if open else "LOCKED", func() -> void:
+			_boss = boss_id
+			show_select("boss_raid"), 24)
+		b.disabled = not open
+		b.custom_minimum_size = Vector2(220, 64)
+		b.add_theme_stylebox_override("normal", UiKit.box(Color(0.75, 0.25, 0.3)))
+		card.add_child(b)
+		var l := UiKit.label(info, 16, Color(1, 1, 1, 0.8))
+		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		card.add_child(l)
+		row.add_child(card)
+	v.add_child(row)
 	_set_screen(v)
 
 
@@ -191,6 +251,9 @@ func _unlocked_count() -> int:
 
 
 func show_select(mode: String) -> void:
+	if mode == "boss_raid" and not GameData.species.has(_boss):
+		show_bosses()
+		return
 	_mode = mode
 	if _species == null or not Profile.is_unlocked(_species.id):
 		_species = GameData.base_species()[0]
@@ -205,8 +268,10 @@ func show_select(mode: String) -> void:
 	var root := VBoxContainer.new()
 	root.add_theme_constant_override("separation", 12)
 	var top := HBoxContainer.new()
-	top.add_child(UiKit.button("‹ BACK", show_battle_modes))
+	top.add_child(UiKit.button("‹ BACK", show_bosses if mode == "boss_raid" else show_battle_modes))
 	var title := UiKit.label("%s  —  %s" % [MODES[mode]["title"], MODES[mode]["blurb"]], 26)
+	if mode == "boss_raid":
+		title.text = "BOSS RAID  —  vs. %s" % GameData.species[_boss].display_name.to_upper()
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	# Long blurbs shorten with "…" instead of pushing the START button off screen.
@@ -660,17 +725,18 @@ func _refresh_select_details() -> void:
 		difficulty_row.add_child(b)
 	_details.add_child(difficulty_row)
 
-	_details.add_child(_section("ARENA  (random by default; pick one to play a challenge's map)"))
-	var arenas := HFlowContainer.new()
-	var arena_group := ButtonGroup.new()
-	var random_arena := _toggle("RANDOM", arena_group, _arena == "random")
-	random_arena.pressed.connect(func() -> void: _arena = "random")
-	arenas.add_child(random_arena)
-	for arena_id in GameData.arenas_for_mode(_mode):
-		var b := _toggle(str(GameData.arenas[arena_id].get("name", arena_id)), arena_group, arena_id == _arena)
-		b.pressed.connect(func() -> void: _arena = arena_id)
-		arenas.add_child(b)
-	_details.add_child(arenas)
+	if _mode != "boss_raid":  # The boss picks the arena.
+		_details.add_child(_section("ARENA  (random by default; pick one to play a challenge's map)"))
+		var arenas := HFlowContainer.new()
+		var arena_group := ButtonGroup.new()
+		var random_arena := _toggle("RANDOM", arena_group, _arena == "random")
+		random_arena.pressed.connect(func() -> void: _arena = "random")
+		arenas.add_child(random_arena)
+		for arena_id in GameData.arenas_for_mode(_mode):
+			var b := _toggle(str(GameData.arenas[arena_id].get("name", arena_id)), arena_group, arena_id == _arena)
+			b.pressed.connect(func() -> void: _arena = arena_id)
+			arenas.add_child(b)
+		_details.add_child(arenas)
 
 	await get_tree().process_frame
 	if is_instance_valid(_details_scroll):
@@ -802,6 +868,9 @@ func _start_match() -> void:
 		"enemies": _enemies.duplicate(),
 		"difficulty": _difficulty,
 	}
+	if _mode == "boss_raid":
+		GameData.match_settings["boss"] = _boss
+		GameData.match_settings["arena"] = str(GameData.rule("modes/boss_raid/bosses/%s/arena" % _boss, "route_1"))
 	get_tree().change_scene_to_file(MAIN_SCENE)
 
 
@@ -820,6 +889,7 @@ func _restore_last_choices() -> void:
 		_enemies.append(str(id))
 	_arena = str(last.get("arena_choice", "random"))
 	_difficulty = str(last.get("difficulty", "normal"))
+	_boss = str(last.get("boss", ""))
 
 
 # --- Pokédex details -------------------------------------------------------

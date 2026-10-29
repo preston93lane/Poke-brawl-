@@ -43,8 +43,8 @@ static func blank() -> Dictionary:
 	return {
 		"version": VERSION, "levels": {}, "xp": {}, "dev": false, "money": 0, "unlocked": [], "starter": "",
 		"inventory": {}, "tms": [], "hms": {}, "vitamins": {}, "loadout": {},
-		"stats": { "matches": 0, "wins": 0, "arena_wins": {}, "arena_mvps": {}, "raid_wins": {}, "mode_wins": {} },
-		"milestones": [], "since_ultra": 0, "store": {}, "daily": {}, "updated": 0, "shinies": [], "hunt": {},
+		"stats": { "matches": 0, "wins": 0, "arena_wins": {}, "arena_mvps": {}, "raid_wins": {}, "mode_wins": {}, "boss_wins": {} },
+		"milestones": [], "since_ultra": 0, "store": {}, "daily": {}, "updated": 0, "shinies": [], "hunt": {}, "dailies": {},
 	}
 
 
@@ -646,6 +646,12 @@ func record_match(info: Dictionary) -> Dictionary:
 	if mvp:
 		var am := _stat_dict("arena_mvps")
 		am[arena] = int(am.get(arena, 0)) + 1
+	var boss := str(info.get("boss", ""))
+	if boss != "":
+		var bw := _stat_dict("boss_wins")
+		bw[boss] = int(bw.get(boss, 0)) + 1
+		var rw0 := _stat_dict("raid_wins")  # Counts for the "win the X raid" challenges too.
+		rw0[boss] = int(rw0.get(boss, 0)) + 1
 	var raid := str(info.get("raid", ""))
 	if raid != "":
 		var rw := _stat_dict("raid_wins")
@@ -658,6 +664,8 @@ func record_match(info: Dictionary) -> Dictionary:
 	var levels_before := level_of(family)
 	var gained := _add_xp(family, xp)
 	var cash := int(econ("money/" + ({ "victory": "win", "defeat": "loss" }.get(result, "draw") as String), 15)) + kos * int(econ("money/per_ko", 5))
+	if boss != "":
+		cash += int(econ("money/boss_win", 800))
 	data["money"] = money() + cash
 
 	var balls: Array[String] = []
@@ -670,6 +678,24 @@ func record_match(info: Dictionary) -> Dictionary:
 		balls.append(str(econ("drops/first_win", "great_ball")))
 	if raid != "":
 		balls.append(str(econ("drops/raid", "ultra_ball")))
+	if boss != "":
+		# First win against each boss: an Ultra Ball; after that a Great Ball.
+		balls.append("ultra_ball" if int(_stat_dict("boss_wins")[boss]) == 1 else "great_ball")
+	var progress := {
+		"matches": 1, "wins": 1 if won else 0, "kos": int(info.get("kos", 0)), "mvp": 1 if mvp else 0,
+		"supers": int(info.get("supers", 0)), "final_stage": 1 if info.get("final_stage", false) else 0,
+		"goals": int(info.get("goals", 0)), "mode_" + str(info.get("mode", "")): 1, "boss_win": 1 if boss != "" else 0,
+	}
+	if won:
+		for t: String in info.get("types", []):
+			progress["win_type_" + t] = 1
+	var daily_done := _daily_progress(progress)
+	for reward: Dictionary in daily_done["rewards"]:
+		if reward.has("money"):
+			cash += int(reward["money"])
+		elif str(reward.get("item", "")).ends_with("_ball"):
+			balls.append(str(reward["item"]))
+	
 	var shiny_won := _track_hunt(family, int(info.get("kos", 0)), won)
 	var unlocked := _check_unlocks()
 	for i in int(unlocked["challenges"]):
@@ -684,6 +710,7 @@ func record_match(info: Dictionary) -> Dictionary:
 	return {
 		"xp": xp, "first_win": first_win, "levels": gained, "level": level_of(family), "level_before": levels_before,
 		"money": cash, "balls": balls, "pokemon": unlocked["pokemon"], "milestones": milestones, "shiny": shiny_won,
+		"dailies": daily_done["texts"],
 	}
 
 
@@ -758,6 +785,9 @@ func open_ball(ball: String) -> Array[Dictionary]:
 			var family: String = options[rng.randi() % options.size()]
 			_give_shiny(family)
 			prizes.append({ "item": "shiny", "count": 1, "text": "SHINY %s!" % GameData.species[family].display_name, "family": family })
+	var daily_done := _daily_progress({ "open_ball": 1 })
+	for reward: Dictionary in daily_done["rewards"]:
+		_give_reward(reward)
 	var tm_rolls := 1 if rng.randf() < float(spec.get("tm", 0.0)) else 0
 	if rng.randf() < float(spec.get("pokemon", 0.0)):
 		var family := next_ball_pokemon()
@@ -777,6 +807,157 @@ func open_ball(ball: String) -> Array[Dictionary]:
 	_check_unlocks()
 	save()
 	return prizes
+
+
+# --- Daily challenges ---------------------------------------------------------
+
+## Today's tasks: [{ "id", "text", "stat", "goal", "progress", "done", "reward" }].
+func dailies() -> Array:
+	var d := _dict("dailies")
+	if d.get("day", "") != today() or not d.get("tasks") is Array:
+		d["day"] = today()
+		d["rerolled"] = false
+		d["bonus"] = false
+		d["tasks"] = []
+		for i in int(econ("dailies/count", 3)):
+			var t := _roll_daily(d["tasks"])
+			if not t.is_empty():
+				(d["tasks"] as Array).append(t)
+		save()
+	return d["tasks"]
+
+
+func _roll_daily(taken: Array) -> Dictionary:
+	var used: Array = []
+	for t: Dictionary in taken:
+		used.append(t["id"])
+		used.append(t["stat"])
+	var types: Array[String] = []
+	for family in data.get("unlocked", []):
+		for t: String in GameData.species[family].types:
+			if t not in types:
+				types.append(t)
+	var pool: Array = []
+	for spec: Dictionary in econ("dailies/tasks", []):
+		if spec["id"] in used or spec["stat"] in used:
+			continue
+		if spec["id"] == "boss" and not boss_unlocked(str(GameData.rule("modes/boss_raid/bosses", {}).keys()[0])):
+			continue
+		if spec["id"] == "win_type" and types.is_empty():
+			continue
+		pool.append(spec)
+	if pool.is_empty():
+		return {}
+	var spec: Dictionary = pool[rng.randi() % pool.size()]
+	var t := spec.duplicate(true)
+	if t["id"] == "win_type":
+		var type_name: String = types[rng.randi() % types.size()]
+		t["stat"] = "win_type_" + type_name
+		t["text"] = str(t["text"]).replace("{type}", type_name.capitalize())
+	t["progress"] = 0
+	t["done"] = false
+	return t
+
+
+## Adds match (or ball) progress; returns { "rewards": [...], "texts": [...] } for tasks just finished.
+func _daily_progress(progress: Dictionary) -> Dictionary:
+	var rewards: Array[Dictionary] = []
+	var texts: Array[String] = []
+	var tasks := dailies()
+	for t: Dictionary in tasks:
+		if bool(t["done"]) or not progress.has(t["stat"]):
+			continue
+		t["progress"] = mini(int(t["goal"]), int(t["progress"]) + int(progress[t["stat"]]))
+		if int(t["progress"]) >= int(t["goal"]):
+			t["done"] = true
+			rewards.append(t["reward"])
+			texts.append("Daily ✓ %s (%s)" % [t["text"], reward_text(t["reward"])])
+	var d := _dict("dailies")
+	var all_done := not tasks.is_empty()
+	for t: Dictionary in tasks:
+		all_done = all_done and bool(t["done"])
+	if all_done and not bool(d.get("bonus", false)):
+		d["bonus"] = true
+		var yesterday := Time.get_date_string_from_unix_time(int(Time.get_unix_time_from_system()) - 86400)
+		d["streak"] = int(d.get("streak", 0)) + 1 if d.get("last_full", "") == yesterday else 1
+		d["last_full"] = today()
+		rewards.append({ "item": econ("dailies/all_done", "great_ball") })
+		texts.append("All dailies done! (%s)" % item_name(str(econ("dailies/all_done", "great_ball"))))
+		if int(d["streak"]) % int(econ("dailies/streak_days", 7)) == 0:
+			rewards.append({ "item": econ("dailies/streak_reward", "ultra_ball") })
+			texts.append("%d-day streak! (%s)" % [int(d["streak"]), item_name(str(econ("dailies/streak_reward", "ultra_ball")))])
+	# Balls and money are handed out by the caller; other items go straight in the bag.
+	var out: Array[Dictionary] = []
+	for r in rewards:
+		if r.has("money") or str(r.get("item", "")).ends_with("_ball"):
+			out.append(r)
+		else:
+			_give_reward(r)
+	return { "rewards": out, "texts": texts }
+
+
+func _give_reward(r: Dictionary) -> void:
+	if r.has("money"):
+		data["money"] = money() + int(r["money"])
+	elif r.has("item"):
+		_give(str(r["item"]), int(r.get("count", 1)))
+
+
+func reward_text(r: Dictionary) -> String:
+	if r.has("money"):
+		return "%d ₽" % int(r["money"])
+	return item_name(str(r.get("item", "")))
+
+
+func daily_streak() -> int:
+	var d := _dict("dailies")
+	var yesterday := Time.get_date_string_from_unix_time(int(Time.get_unix_time_from_system()) - 86400)
+	return int(d.get("streak", 0)) if d.get("last_full", "") in [today(), yesterday] else 0
+
+
+func can_reroll_daily() -> bool:
+	dailies()
+	return not bool(_dict("dailies").get("rerolled", false))
+
+
+## Swaps an unfinished task for a new one (once a day).
+func reroll_daily(index: int) -> bool:
+	var tasks := dailies()
+	if not can_reroll_daily() or index < 0 or index >= tasks.size() or bool(tasks[index]["done"]):
+		return false
+	var others: Array = tasks.duplicate()
+	var t := _roll_daily(others)
+	if t.is_empty():
+		return false
+	tasks[index] = t
+	_dict("dailies")["rerolled"] = true
+	save()
+	return true
+
+
+## Seconds until the dailies reset (local midnight).
+static func day_seconds_left() -> int:
+	var d := Time.get_time_dict_from_system()
+	return 86400 - (int(d["hour"]) * 3600 + int(d["minute"]) * 60 + int(d["second"]))
+
+
+# --- Boss raids ----------------------------------------------------------------
+
+## The first boss opens at trainer level modes/boss_raid/first_level; each next one once you beat the one before.
+func boss_unlocked(boss_id: String) -> bool:
+	if is_dev():
+		return true
+	var order: Array = (GameData.rule("modes/boss_raid/bosses", {}) as Dictionary).keys()
+	var i := order.find(boss_id)
+	if i < 0:
+		return false
+	if i == 0:
+		return total_level() >= int(GameData.rule("modes/boss_raid/first_level", 10))
+	return boss_wins(str(order[i - 1])) > 0
+
+
+func boss_wins(boss_id: String) -> int:
+	return int(_stat_dict("boss_wins").get(boss_id, 0))
 
 
 # --- Shinies -------------------------------------------------------------------
