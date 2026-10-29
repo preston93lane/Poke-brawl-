@@ -132,7 +132,7 @@
 		}
 	},
 	"milestones": {
-		"_comment": "Each gives a Master Ball once: a total level, or your first win against each gym (for now: a win on Hard on that gym's map, until Gym Leader battles exist).",
+		"_comment": "Each gives a Master Ball once: a total level, or your first Hard clear of each gym's gauntlet.",
 		"total_levels": [
 			250,
 			500,
@@ -468,5 +468,32 @@
 				}
 			}
 		]
+	},
+	"gyms": {
+		"_comment": "Gym gauntlet clears. first_money[i] = first clear of gym i on Normal (Hard pays hard_multiplier times). First Normal clear: the gym's TM + first_ball; first Hard clear: hard_ball (+ the Master Ball milestone). Repeats pay repeat_money (times hard_multiplier on Hard). type_multipliers: when your whole team is one type, money is multiplied by how that type matches up (weak = the gym's type is super effective on yours; resisted = yours is not very effective on it). The first clear of a gym with a resisted or weak team type also gives type_ball.",
+		"first_money": [
+			1000,
+			1300,
+			1600,
+			1900,
+			2200,
+			2500,
+			2800,
+			3000
+		],
+		"repeat_money": 300,
+		"hard_multiplier": 2,
+		"first_ball": "great_ball",
+		"hard_ball": "ultra_ball",
+		"type_multipliers": {
+			"strong": 1.0,
+			"neutral": 1.5,
+			"resisted": 2.0,
+			"weak": 3.0
+		},
+		"type_ball": {
+			"resisted": "great_ball",
+			"weak": "ultra_ball"
+		}
 	}
 }

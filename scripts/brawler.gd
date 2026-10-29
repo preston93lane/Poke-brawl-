@@ -63,6 +63,8 @@ var size_scale := 1.0
 var supers_used := 0
 ## Multiplies the damage this brawler deals (raid bosses hit softer than their size suggests).
 var damage_scale := 1.0
+## Multiplies max HP (a gym leader's ace); kept through evolving and Power Ups.
+var hp_scale := 1.0
 ## False for raid bosses: no healing between hits.
 var regenerates := true
 ## Takes no damage (summoned legendary allies).
@@ -435,7 +437,7 @@ func _apply_species() -> void:
 	collision_mask = walk_mask()
 	var growth := 1.0 + float(GameData.rule("evolution/power_up_bonus", 0.12)) * power_ups
 	var vit := func(stat: String) -> float: return float(vitamin_bonus.get(stat, 0.0))
-	max_health = species.hp * growth * (1.0 + vit.call("hp")) * (1.0 + _hp_bonus + float(GameData.rule("modes/showdown/cube_hp", 0.1)) * power_cubes)
+	max_health = species.hp * hp_scale * growth * (1.0 + vit.call("hp")) * (1.0 + _hp_bonus + float(GameData.rule("modes/showdown/cube_hp", 0.1)) * power_cubes)
 	attack = species.attack * growth * (1.0 + vit.call("attack"))
 	defense = species.defense * (1.0 + vit.call("defense"))
 	move_speed = species.speed * float(GameData.rule("speed_to_meters", 0.05)) \

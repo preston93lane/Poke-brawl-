@@ -226,6 +226,11 @@ func announce(text: String) -> void:
 	_announce_tween.tween_property(announcement, "modulate:a", 0.0, 0.5)
 
 
+## Renames the REMATCH button (gyms: "ROUND 2 ›", "RETRY GYM"...).
+func set_rematch_text(text: String) -> void:
+	(_result_buttons.get_child(0) as Button).text = text
+
+
 ## result: "victory", "defeat" or "draw". `rows` (from main.summary_rows) fill the
 ## match summary; `stat_name` adds a mode column (GOALS, CANDIES, CUBES).
 ## `rewards`: what Profile.record_match() gave (shown under the table).
@@ -325,6 +330,8 @@ func _rewards_label(r: Dictionary) -> Label:
 		parts.append("✦ SHINY %s UNLOCKED! ✦" % GameData.species[str(r["shiny"])].display_name.to_upper())
 	for m: String in r.get("milestones", []):
 		parts.append("Milestone: %s" % m)
+	for e: String in r.get("extras", []):
+		parts.append(e)
 	for d: String in r.get("dailies", []):
 		parts.append(d)
 	var label := UiKit.label("   ·   ".join(PackedStringArray(parts)), 19, Color(1, 0.9, 0.45))

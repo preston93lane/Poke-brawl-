@@ -9,6 +9,7 @@ const MODES := {
 	"brawl_ball": { "button": "BRAWL BALL", "title": "BRAWL BALL 3v3", "blurb": "Kick the Poké Ball into their goal. First to 2." },
 	"candy_rush": { "button": "RARE CANDY RUSH", "title": "RARE CANDY RUSH 3v3", "blurb": "Grab 10 Rare Candies from the mine and hold them for 10 s." },
 	"showdown": { "button": "SHOWDOWN", "title": "SHOWDOWN", "blurb": "Everyone for themselves. Smash crates for power cubes. Last one standing wins." },
+	"gym": { "button": "GYMS", "title": "GYM", "blurb": "Beat two trainers, then the Gym Leader, three matches in a row." },
 	"boss_raid": { "button": "BOSS RAID", "title": "BOSS RAID", "blurb": "Team up against a giant legendary. Dodge the red circles!" },
 }
 
@@ -32,6 +33,10 @@ var _enemies: Array[String] = []
 var _arena := ""
 ## Boss Raid: the boss picked on the boss screen.
 var _boss := ""
+## Gym gauntlet choices (gym screen).
+var _gym := ""
+var _gym_difficulty := "normal"
+var _gym_type := ""
 var _difficulty := "normal"
 var _details: VBoxContainer
 var _details_scroll: ScrollContainer
@@ -148,6 +153,9 @@ func show_battle_modes() -> void:
 	grid.add_theme_constant_override("h_separation", 14)
 	grid.add_theme_constant_override("v_separation", 14)
 	for mode_id: String in MODES:
+		if mode_id == "gym":
+			grid.add_child(_mode_card("GYMS", MODES[mode_id]["blurb"], show_gyms, Color(0.85, 0.5, 0.15)))
+			continue
 		if mode_id == "boss_raid":
 			grid.add_child(_mode_card("BOSS RAID", MODES[mode_id]["blurb"], show_bosses, Color(0.75, 0.25, 0.3)))
 			continue
@@ -155,6 +163,133 @@ func show_battle_modes() -> void:
 	grid.add_child(_mode_card("MAP MAKER", "Design your own arenas and test them.", show_map_editor, Color(0.35, 0.38, 0.5)))
 	v.add_child(grid)
 	_set_screen(v)
+
+
+## The eight Kanto gyms, opening one after another.
+func show_gyms() -> void:
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 14)
+	var top := HBoxContainer.new()
+	top.add_child(UiKit.button("‹ BACK", show_battle_modes))
+	top.add_child(UiKit.label("   GYMS  ·  win 3 matches in a row to beat the leader", 30, Color(1, 0.85, 0.25)))
+	v.add_child(top)
+	var grid := GridContainer.new()
+	grid.columns = 4
+	grid.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	grid.add_theme_constant_override("h_separation", 14)
+	grid.add_theme_constant_override("v_separation", 10)
+	var order := Profile.gym_ids()
+	for i in order.size():
+		var id: String = order[i]
+		var g := Profile.gym(id)
+		var open := Profile.gym_unlocked(id)
+		var card := VBoxContainer.new()
+		card.alignment = BoxContainer.ALIGNMENT_CENTER
+		var ace: SpeciesData = GameData.species[str(g["rounds"][-1]["team"][0])]
+		var pic := UiKit.sprite(ace.sprite, 72)
+		pic.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		if not open:
+			pic.modulate = Color(0, 0, 0, 0.8)
+		card.add_child(pic)
+		var b := UiKit.button(str(g["leader"]).to_upper() if open else "LOCKED", show_gym.bind(id), 22)
+		b.disabled = not open
+		b.custom_minimum_size = Vector2(250, 56)
+		b.add_theme_stylebox_override("normal", UiKit.box(GameData.type_color(str(g["type"])).darkened(0.25)))
+		card.add_child(b)
+		var status := "%s  ·  %s" % [str(GameData.arenas.get(id, {}).get("name", id)), str(g["type"]).capitalize()]
+		if Profile.gym_clears(id, "hard") > 0:
+			status += "  ·  ★ GOLD"
+		elif Profile.gym_clears(id, "normal") > 0:
+			status += "  ·  ★"
+		elif not open:
+			status = "Trainer LV %d" % int(GameData.gyms.get("first_level", 5)) if i == 0 else "Beat %s first" % str(Profile.gym(order[i - 1])["leader"])
+		var l := UiKit.label(status, 15, Color(1, 1, 1, 0.8))
+		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		card.add_child(l)
+		grid.add_child(card)
+	v.add_child(grid)
+	_set_screen(v)
+
+
+## One gym: its three rounds, difficulty, and an optional one-type team for bigger rewards.
+func show_gym(id: String) -> void:
+	_gym = id
+	var g := Profile.gym(id)
+	var gym_type := str(g["type"])
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 10)
+	var top := HBoxContainer.new()
+	top.add_child(UiKit.button("‹ BACK", show_gyms))
+	var title := UiKit.label("   %s  ·  %s" % [str(GameData.arenas.get(id, {}).get("name", id)).to_upper(), str(g["leader"]).to_upper()], 28, Color(1, 0.85, 0.25))
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top.add_child(title)
+	var next := UiKit.button("CHOOSE POKéMON ›", func() -> void:
+		_type_filter = _gym_type
+		show_select("gym"), 26)
+	next.add_theme_stylebox_override("normal", UiKit.box(Color(0.25, 0.7, 0.35)))
+	top.add_child(next)
+	v.add_child(top)
+	var rounds_row := HBoxContainer.new()
+	rounds_row.add_theme_constant_override("separation", 26)
+	var rounds: Array = g["rounds"]
+	for i in rounds.size():
+		var box := VBoxContainer.new()
+		var heading := ("ROUND %d  ·  %s" % [i + 1, str(rounds[i]["trainer"])]) if i < rounds.size() - 1 else "ROUND %d  ·  LEADER %s" % [i + 1, str(g["leader"]).to_upper()]
+		box.add_child(UiKit.label(heading, 17, Color(1, 0.9, 0.6) if i == rounds.size() - 1 else Color.WHITE))
+		var team := HBoxContainer.new()
+		for j in (rounds[i]["team"] as Array).size():
+			var sp: SpeciesData = GameData.species[str(rounds[i]["team"][j])]
+			team.add_child(UiKit.sprite(sp.sprite, 64 if i == rounds.size() - 1 and j == 0 else 48))
+		box.add_child(team)
+		rounds_row.add_child(box)
+	v.add_child(rounds_row)
+	var how := UiKit.label("First to %d KOs wins a round; a KO on the leader's big ace counts %d. Lose a round and it's back to round 1. Gadget uses carry over." % [int(GameData.rule("modes/gym/kills_to_win", 10)), int(GameData.rule("modes/gym/leader_kos", 3))], 16, Color(0.8, 0.85, 1))
+	how.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	v.add_child(how)
+
+	v.add_child(_section("DIFFICULTY"))
+	var diff_row := HBoxContainer.new()
+	var diff_group := ButtonGroup.new()
+	for d in ["normal", "hard"]:
+		var b := _toggle(d.to_upper(), diff_group, d == _gym_difficulty)
+		b.pressed.connect(func() -> void: _gym_difficulty = d)
+		diff_row.add_child(b)
+	var done := UiKit.label("   Beaten: Normal ×%d · Hard ×%d" % [Profile.gym_clears(id, "normal"), Profile.gym_clears(id, "hard")], 16, Color(0.8, 0.85, 1))
+	diff_row.add_child(done)
+	v.add_child(diff_row)
+
+	v.add_child(_section("TEAM TYPE  (your whole team is one type: weaker types pay more)"))
+	var info := UiKit.label("", 17, Color(1, 0.9, 0.5))
+	var describe := func() -> void:
+		var m := Profile.gym_matchup(gym_type, _gym_type)
+		var words := { "": "Any team: normal rewards.", "strong": "Strong against %s: normal rewards.", "neutral": "Neutral vs %s: rewards ×1.5.",
+				"resisted": "Resisted by %s: rewards ×2 (+ a Great Ball the first time).", "weak": "Weak to %s: rewards ×3 (+ an Ultra Ball the first time)!" }
+		info.text = str(words[m]) % gym_type.capitalize() if m != "" else str(words[m])
+	var types := HFlowContainer.new()
+	var type_group := ButtonGroup.new()
+	var any := _toggle("ANY", type_group, _gym_type == "")
+	any.pressed.connect(func() -> void:
+		_gym_type = ""
+		describe.call())
+	types.add_child(any)
+	for t in GameData.all_types():
+		if not _type_has_pokemon(t):
+			continue
+		var b := _toggle(t.to_upper(), type_group, t == _gym_type)
+		b.add_theme_color_override("font_color", GameData.type_color(t).lightened(0.35))
+		b.pressed.connect(func() -> void:
+			_gym_type = t
+			describe.call())
+		types.add_child(b)
+	v.add_child(types)
+	describe.call()
+	v.add_child(info)
+	for entry: Dictionary in GameData.unlocks.get("order", []):
+		var c: Dictionary = entry.get("challenge", {})
+		if str(c.get("type", "")) == "gym_clear" and str(c.get("gym", "")) == id:
+			var have := Profile.is_unlocked(str(entry["family"]))
+			v.add_child(UiKit.label("%s Challenge: %s → unlocks %s" % ["✓" if have else "★", str(c["text"]), GameData.species[str(entry["family"])].display_name], 17, Color(0.6, 1, 0.6) if have else Color(1, 0.85, 0.4)))
+	_set_screen(UiKit.scroll(v))
 
 
 ## Boss Raid: pick a legendary. They open one by one (see Profile.boss_unlocked).
@@ -254,6 +389,9 @@ func show_select(mode: String) -> void:
 	if mode == "boss_raid" and not GameData.species.has(_boss):
 		show_bosses()
 		return
+	if mode == "gym" and Profile.gym(_gym).is_empty():
+		show_gyms()
+		return
 	_mode = mode
 	if _species == null or not Profile.is_unlocked(_species.id):
 		_species = GameData.base_species()[0]
@@ -268,10 +406,18 @@ func show_select(mode: String) -> void:
 	var root := VBoxContainer.new()
 	root.add_theme_constant_override("separation", 12)
 	var top := HBoxContainer.new()
-	top.add_child(UiKit.button("‹ BACK", show_bosses if mode == "boss_raid" else show_battle_modes))
+	var back: Callable = show_battle_modes
+	if mode == "boss_raid":
+		back = show_bosses
+	elif mode == "gym":
+		back = show_gym.bind(_gym)
+	top.add_child(UiKit.button("‹ BACK", back))
 	var title := UiKit.label("%s  —  %s" % [MODES[mode]["title"], MODES[mode]["blurb"]], 26)
 	if mode == "boss_raid":
 		title.text = "BOSS RAID  —  vs. %s" % GameData.species[_boss].display_name.to_upper()
+	elif mode == "gym":
+		title.text = "%s  —  %s%s" % [str(GameData.arenas.get(_gym, {}).get("name", _gym)).to_upper(), _gym_difficulty.to_upper(),
+				"  ·  pick a %s type" % _gym_type.capitalize() if _gym_type != "" else ""]
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	# Long blurbs shorten with "…" instead of pushing the START button off screen.
@@ -631,7 +777,7 @@ func _refresh_select_details() -> void:
 		lock.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		_details.add_child(lock)
 	if is_instance_valid(_start_button):
-		_start_button.disabled = not Profile.is_unlocked(s.id)
+		_start_button.disabled = not Profile.is_unlocked(s.id) or (_mode == "gym" and _gym_type != "" and not _line_has_type(s, _gym_type))
 	var loadout := Profile.loadout(s.id)
 	if _main == "" or not Profile.unlocked_mains(s.id).has(_main):
 		_main = str(loadout.get("main", ""))
@@ -716,16 +862,17 @@ func _refresh_select_details() -> void:
 	_allies.clear()
 	_enemies.clear()
 
-	_details.add_child(_section("BOT DIFFICULTY"))
-	var difficulty_row := HBoxContainer.new()
-	var difficulty_group := ButtonGroup.new()
-	for level in ["easy", "normal", "hard"]:
-		var b := _toggle(level.to_upper(), difficulty_group, level == _difficulty)
-		b.pressed.connect(func() -> void: _difficulty = level)
-		difficulty_row.add_child(b)
-	_details.add_child(difficulty_row)
+	if _mode != "gym":  # Gyms use the difficulty picked on the gym screen.
+		_details.add_child(_section("BOT DIFFICULTY"))
+		var difficulty_row := HBoxContainer.new()
+		var difficulty_group := ButtonGroup.new()
+		for level in ["easy", "normal", "hard"]:
+			var b := _toggle(level.to_upper(), difficulty_group, level == _difficulty)
+			b.pressed.connect(func() -> void: _difficulty = level)
+			difficulty_row.add_child(b)
+		_details.add_child(difficulty_row)
 
-	if _mode != "boss_raid":  # The boss picks the arena.
+	if _mode not in ["boss_raid", "gym"]:  # The boss / gym picks the arena.
 		_details.add_child(_section("ARENA  (random by default; pick one to play a challenge's map)"))
 		var arenas := HFlowContainer.new()
 		var arena_group := ButtonGroup.new()
@@ -868,6 +1015,8 @@ func _start_match() -> void:
 		"enemies": _enemies.duplicate(),
 		"difficulty": _difficulty,
 	}
+	if _mode == "gym":
+		GameData.match_settings = GymMode.start_run(_gym, _gym_difficulty, _gym_type, GameData.match_settings)
 	if _mode == "boss_raid":
 		GameData.match_settings["boss"] = _boss
 		GameData.match_settings["arena"] = str(GameData.rule("modes/boss_raid/bosses/%s/arena" % _boss, "route_1"))
@@ -1072,6 +1221,19 @@ func _toggle(text: String, group: ButtonGroup, pressed: bool) -> Button:
 	b.button_pressed = pressed
 	b.add_theme_font_size_override("font_size", 20)
 	return b
+
+
+## True if some playable base form is of `type_name` (no Dark/Steel/Fairy in Kanto).
+func _type_has_pokemon(type_name: String) -> bool:
+	for s in GameData.base_species():
+		if not s.legendary and s.has_type(type_name):
+			return true
+	return false
+
+
+## True if the base form `s` is of `type_name` (gym type teams pick by the base form's types).
+func _line_has_type(s: SpeciesData, type_name: String) -> bool:
+	return s.has_type(type_name)
 
 
 func _section(text: String) -> Label:

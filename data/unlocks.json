@@ -81,10 +81,11 @@
 			"family": "onix",
 			"area": "Pewter City & Mt. Moon",
 			"challenge": {
-				"type": "win",
-				"arena": "pewter_gym",
-				"count": 15,
-				"text": "Win 15 matches in Pewter Gym"
+				"type": "gym_clear",
+				"gym": "pewter_gym",
+				"difficulty": "hard",
+				"count": 1,
+				"text": "Beat Brock's gym on Hard"
 			}
 		},
 		{
@@ -132,10 +133,11 @@
 			"family": "staryu",
 			"area": "Cerulean City",
 			"challenge": {
-				"type": "mvp",
-				"arena": "cerulean_gym",
-				"count": 10,
-				"text": "Get MVP 10 times in Cerulean Gym"
+				"type": "gym_clear",
+				"gym": "cerulean_gym",
+				"difficulty": "hard",
+				"count": 1,
+				"text": "Beat Misty's gym on Hard"
 			}
 		},
 		{
@@ -170,10 +172,12 @@
 			"family": "voltorb",
 			"area": "Vermilion City & the S.S. Anne",
 			"challenge": {
-				"type": "mvp",
-				"arena": "vermilion_gym",
-				"count": 10,
-				"text": "Get MVP 10 times in Vermilion Gym"
+				"type": "gym_clear",
+				"gym": "vermilion_gym",
+				"difficulty": "hard",
+				"team_type": "water",
+				"count": 1,
+				"text": "Beat Lt. Surge's gym on Hard with a Water team"
 			}
 		},
 		{
@@ -231,10 +235,11 @@
 			"family": "tangela",
 			"area": "Celadon City",
 			"challenge": {
-				"type": "mvp",
-				"arena": "celadon_gym",
-				"count": 10,
-				"text": "Get MVP 10 times in Celadon Gym"
+				"type": "gym_clear",
+				"gym": "celadon_gym",
+				"difficulty": "hard",
+				"count": 1,
+				"text": "Beat Erika's gym on Hard"
 			}
 		},
 		{
@@ -373,10 +378,12 @@
 			"family": "magmar",
 			"area": "Seafoam, Cinnabar & Victory Road",
 			"challenge": {
-				"type": "mvp",
-				"arena": "cinnabar_gym",
-				"count": 10,
-				"text": "Get MVP 10 times in Cinnabar Gym"
+				"type": "gym_clear",
+				"gym": "cinnabar_gym",
+				"difficulty": "hard",
+				"team_type": "grass",
+				"count": 2,
+				"text": "Beat Blaine's gym on Hard with a Grass team, twice"
 			}
 		},
 		{
@@ -475,7 +482,7 @@
 					{
 						"type": "gyms_hard",
 						"count": 8,
-						"text": "Win on Hard in all 8 gyms"
+						"text": "Beat all 8 gyms on Hard"
 					}
 				]
 			}

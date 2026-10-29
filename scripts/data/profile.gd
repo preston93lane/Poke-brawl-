@@ -44,7 +44,7 @@ static func blank() -> Dictionary:
 		"version": VERSION, "levels": {}, "xp": {}, "dev": false, "money": 0, "unlocked": [], "starter": "",
 		"inventory": {}, "tms": [], "hms": {}, "vitamins": {}, "loadout": {},
 		"stats": { "matches": 0, "wins": 0, "arena_wins": {}, "arena_mvps": {}, "raid_wins": {}, "mode_wins": {}, "boss_wins": {} },
-		"milestones": [], "since_ultra": 0, "store": {}, "daily": {}, "updated": 0, "shinies": [], "hunt": {}, "dailies": {},
+		"milestones": [], "since_ultra": 0, "store": {}, "daily": {}, "updated": 0, "shinies": [], "hunt": {}, "dailies": {}, "gyms": {},
 	}
 
 
@@ -210,10 +210,12 @@ func challenge_progress(c: Dictionary) -> int:
 			return total_level()
 		"gyms_hard":
 			var done := 0
-			for m in data.get("milestones", []):
-				if str(m).begins_with("gym_"):
+			for id: String in gym_ids():
+				if gym_clears(id, "hard") > 0:
 					done += 1
 			return done
+		"gym_clear":
+			return gym_clears(str(c.get("gym", "")), str(c.get("difficulty", "normal")), str(c.get("team_type", "")))
 		"all_unlocked":
 			var have := 0
 			for family in _families_except(c.get("except", [])):
@@ -700,7 +702,7 @@ func record_match(info: Dictionary) -> Dictionary:
 	var unlocked := _check_unlocks()
 	for i in int(unlocked["challenges"]):
 		balls.append(str(econ("drops/challenge", "great_ball")))
-	var milestones := _check_milestones(arena if won and str(info.get("difficulty", "")) == "hard" else "")
+	var milestones := _check_milestones("")
 	for i in milestones.size():
 		balls.append("master_ball")
 	balls = _apply_ball_luck(balls)
@@ -939,6 +941,112 @@ func reroll_daily(index: int) -> bool:
 static func day_seconds_left() -> int:
 	var d := Time.get_time_dict_from_system()
 	return 86400 - (int(d["hour"]) * 3600 + int(d["minute"]) * 60 + int(d["second"]))
+
+
+# --- Gyms ----------------------------------------------------------------------
+
+func gym_ids() -> Array:
+	return (GameData.gyms.get("gyms", {}) as Dictionary).keys()
+
+
+func gym(id: String) -> Dictionary:
+	return GameData.gyms.get("gyms", {}).get(id, {})
+
+
+## { "normal": clears, "hard": clears, "types": { "hard:water": clears }, "type_balls": [...] }.
+func gym_record(id: String) -> Dictionary:
+	var all := _dict("gyms")
+	if not all.get(id) is Dictionary:
+		all[id] = { "normal": 0, "hard": 0, "types": {}, "type_balls": [] }
+	return all[id]
+
+
+## Full gauntlet clears; `team_type` counts only clears with your whole team of that type.
+func gym_clears(id: String, difficulty := "normal", team_type := "") -> int:
+	var rec := gym_record(id)
+	if team_type != "":
+		return int((rec["types"] as Dictionary).get(difficulty + ":" + team_type, 0))
+	return int(rec.get(difficulty, 0))
+
+
+## The first gym opens at trainer level first_level; each next one once the one before is beaten.
+func gym_unlocked(id: String) -> bool:
+	if is_dev():
+		return true
+	var order := gym_ids()
+	var i := order.find(id)
+	if i < 0:
+		return false
+	if i == 0:
+		return total_level() >= int(GameData.gyms.get("first_level", 5))
+	return gym_clears(str(order[i - 1]), "normal") + gym_clears(str(order[i - 1]), "hard") > 0
+
+
+## How a one-type team matches up against a gym: "strong", "neutral", "resisted" or "weak" ("" = mixed team).
+func gym_matchup(gym_type: String, team_type: String) -> String:
+	if team_type == "":
+		return ""
+	if GameData.type_matchup(gym_type, team_type) > 1.0:
+		return "weak"
+	var ours := GameData.type_matchup(team_type, gym_type)
+	if ours < 1.0:
+		return "resisted"
+	return "strong" if ours > 1.0 else "neutral"
+
+
+func gym_multiplier(gym_type: String, team_type: String) -> float:
+	var m := gym_matchup(gym_type, team_type)
+	return 1.0 if m == "" else float(econ("gyms/type_multipliers/" + m, 1.0))
+
+
+## Rewards for beating a gym's whole gauntlet. Returns { "money", "balls", "texts", "pokemon" }.
+func record_gym_clear(id: String, difficulty: String, team_type := "") -> Dictionary:
+	var g := gym(id)
+	var rec := gym_record(id)
+	var hard := difficulty == "hard"
+	var key := "hard" if hard else "normal"
+	var first := int(rec.get(key, 0)) == 0
+	rec[key] = int(rec.get(key, 0)) + 1
+	if team_type != "":
+		var types: Dictionary = rec["types"]
+		types[key + ":" + team_type] = int(types.get(key + ":" + team_type, 0)) + 1
+	var texts: Array[String] = []
+	var balls: Array[String] = []
+	var matchup := gym_matchup(str(g.get("type", "")), team_type)
+	var mult := gym_multiplier(str(g.get("type", "")), team_type)
+	var hard_mult := int(econ("gyms/hard_multiplier", 2)) if hard else 1
+	var cash := int(econ("gyms/repeat_money", 300)) * hard_mult
+	if first:
+		var table: Array = econ("gyms/first_money", [1000])
+		cash = int(table[clampi(gym_ids().find(id), 0, table.size() - 1)]) * hard_mult
+		if hard:
+			texts.append("GOLD %s!" % str(g.get("badge", "Badge")).to_upper())
+			balls.append(str(econ("gyms/hard_ball", "ultra_ball")))
+		else:
+			texts.append("%s earned!" % str(g.get("badge", "Badge")).to_upper())
+			balls.append(str(econ("gyms/first_ball", "great_ball")))
+			var tm := str(g.get("tm", ""))
+			if tm != "" and not has_tm(tm):
+				_add_tm(tm)
+				texts.append(item_name(tm))
+	cash = roundi(cash * mult)
+	if mult > 1.0:
+		texts.append("%s team ×%s" % [team_type.capitalize(), str(mult).trim_suffix(".0")])
+	var type_key := id + ":" + team_type
+	if team_type != "" and (econ("gyms/type_ball", {}) as Dictionary).has(matchup) and type_key not in (rec["type_balls"] as Array):
+		(rec["type_balls"] as Array).append(type_key)
+		balls.append(str(econ("gyms/type_ball/" + matchup, "great_ball")))
+	data["money"] = money() + cash
+	var unlocked := _check_unlocks()
+	for i in int(unlocked["challenges"]):
+		balls.append(str(econ("drops/challenge", "great_ball")))
+	for m in _check_milestones(id if hard else ""):
+		balls.append("master_ball")
+		texts.append("Milestone: " + m)
+	for ball in balls:
+		_give(ball)
+	save()
+	return { "money": cash, "balls": balls, "texts": texts, "pokemon": unlocked["pokemon"] }
 
 
 # --- Boss raids ----------------------------------------------------------------

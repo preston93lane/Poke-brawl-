@@ -1,0 +1,262 @@
+{
+	"_comment": "Gym gauntlets: three full 3v3 matches in a row on the gym's map (two trainers, then the leader, whose first Pokémon is the ace: bigger and tougher, and a KO on it scores leader_kos). Lose one and it's back to round 1. Gadget uses carry over between rounds. Gyms open in order: the first at trainer level first_level, each next one once the one before is beaten. Rewards: economy.json gyms.",
+	"first_level": 5,
+	"gyms": {
+		"pewter_gym": {
+			"leader": "Brock",
+			"type": "rock",
+			"tm": "tm_rock_tomb",
+			"rounds": [
+				{
+					"trainer": "Camper Liam",
+					"team": [
+						"geodude",
+						"sandshrew",
+						"diglett"
+					]
+				},
+				{
+					"trainer": "Hiker Marcos",
+					"team": [
+						"geodude",
+						"rhyhorn",
+						"onix"
+					]
+				},
+				{
+					"trainer": "Brock",
+					"team": [
+						"onix",
+						"geodude",
+						"omanyte"
+					]
+				}
+			],
+			"badge": "Boulder Badge"
+		},
+		"cerulean_gym": {
+			"leader": "Misty",
+			"type": "water",
+			"tm": "tm_scald",
+			"rounds": [
+				{
+					"trainer": "Swimmer Luis",
+					"team": [
+						"horsea",
+						"goldeen",
+						"shellder"
+					]
+				},
+				{
+					"trainer": "Picnicker Diana",
+					"team": [
+						"poliwag",
+						"krabby",
+						"psyduck"
+					]
+				},
+				{
+					"trainer": "Misty",
+					"team": [
+						"starmie",
+						"staryu",
+						"seel"
+					]
+				}
+			],
+			"badge": "Cascade Badge"
+		},
+		"vermilion_gym": {
+			"leader": "Lt. Surge",
+			"type": "electric",
+			"tm": "tm_thunder",
+			"rounds": [
+				{
+					"trainer": "Engineer Baily",
+					"team": [
+						"voltorb",
+						"magnemite",
+						"pikachu"
+					]
+				},
+				{
+					"trainer": "Gentleman Tucker",
+					"team": [
+						"electabuzz",
+						"voltorb",
+						"magnemite"
+					]
+				},
+				{
+					"trainer": "Lt. Surge",
+					"team": [
+						"raichu",
+						"voltorb",
+						"magnemite"
+					]
+				}
+			],
+			"badge": "Thunder Badge"
+		},
+		"celadon_gym": {
+			"leader": "Erika",
+			"type": "grass",
+			"tm": "tm_solar_beam",
+			"rounds": [
+				{
+					"trainer": "Lass Kay",
+					"team": [
+						"oddish",
+						"bellsprout",
+						"exeggcute"
+					]
+				},
+				{
+					"trainer": "Beauty Bridget",
+					"team": [
+						"tangela",
+						"paras",
+						"oddish"
+					]
+				},
+				{
+					"trainer": "Erika",
+					"team": [
+						"vileplume",
+						"tangela",
+						"weepinbell"
+					]
+				}
+			],
+			"badge": "Rainbow Badge"
+		},
+		"fuchsia_gym": {
+			"leader": "Koga",
+			"type": "poison",
+			"tm": "tm_sludge_bomb",
+			"rounds": [
+				{
+					"trainer": "Juggler Kirk",
+					"team": [
+						"grimer",
+						"koffing",
+						"ekans"
+					]
+				},
+				{
+					"trainer": "Tamer Phil",
+					"team": [
+						"venonat",
+						"zubat",
+						"tentacool"
+					]
+				},
+				{
+					"trainer": "Koga",
+					"team": [
+						"weezing",
+						"grimer",
+						"koffing"
+					]
+				}
+			],
+			"badge": "Soul Badge"
+		},
+		"saffron_gym": {
+			"leader": "Sabrina",
+			"type": "psychic",
+			"tm": "tm_psychic",
+			"rounds": [
+				{
+					"trainer": "Channeler Amanda",
+					"team": [
+						"abra",
+						"drowzee",
+						"slowpoke"
+					]
+				},
+				{
+					"trainer": "Psychic Johan",
+					"team": [
+						"mr_mime",
+						"jynx",
+						"drowzee"
+					]
+				},
+				{
+					"trainer": "Sabrina",
+					"team": [
+						"alakazam",
+						"kadabra",
+						"mr_mime"
+					]
+				}
+			],
+			"badge": "Marsh Badge"
+		},
+		"cinnabar_gym": {
+			"leader": "Blaine",
+			"type": "fire",
+			"tm": "tm_fire_blast",
+			"rounds": [
+				{
+					"trainer": "Burglar Quinn",
+					"team": [
+						"vulpix",
+						"growlithe",
+						"ponyta"
+					]
+				},
+				{
+					"trainer": "Super Nerd Erik",
+					"team": [
+						"magmar",
+						"charmander",
+						"ponyta"
+					]
+				},
+				{
+					"trainer": "Blaine",
+					"team": [
+						"arcanine",
+						"ponyta",
+						"magmar"
+					]
+				}
+			],
+			"badge": "Volcano Badge"
+		},
+		"viridian_gym": {
+			"leader": "Giovanni",
+			"type": "ground",
+			"tm": "tm_earthquake",
+			"rounds": [
+				{
+					"trainer": "Cooltrainer Samuel",
+					"team": [
+						"diglett",
+						"sandshrew",
+						"cubone"
+					]
+				},
+				{
+					"trainer": "Black Belt Kiyo",
+					"team": [
+						"rhyhorn",
+						"nidoran_m",
+						"nidoran_f"
+					]
+				},
+				{
+					"trainer": "Giovanni",
+					"team": [
+						"rhydon",
+						"nidoking",
+						"dugtrio"
+					]
+				}
+			],
+			"badge": "Earth Badge"
+		}
+	}
+}

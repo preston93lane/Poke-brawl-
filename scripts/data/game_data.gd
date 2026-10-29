@@ -28,6 +28,9 @@ var styles: Dictionary = {}
 var economy: Dictionary = {}
 var progression: Dictionary = {}
 var unlocks: Dictionary = {}
+## Gym gauntlets (data/gyms.json) and the run in progress ({} = none; see GymMode).
+var gyms: Dictionary = {}
+var gym_run: Dictionary = {}
 var stab := 1.1
 ## Overall type multiplier limits (after dual types multiply).
 var type_range := Vector2(0.75, 1.3)
@@ -76,6 +79,7 @@ func load_all() -> void:
 	economy = _load_json(DATA_DIR + "/economy.json")
 	progression = _load_json(DATA_DIR + "/progression.json")
 	unlocks = _load_json(DATA_DIR + "/unlocks.json")
+	gyms = _load_json(DATA_DIR + "/gyms.json")
 	moves.clear()
 	for move_file in _json_files(DATA_DIR + "/moves"):
 		var move_defs := _load_json(DATA_DIR + "/moves/" + move_file)
@@ -377,6 +381,11 @@ func effectiveness(attack_type: String, defender_types: Array[String]) -> float:
 	for t in defender_types:
 		result *= float(row.get(t, 1.0))
 	return clampf(result, type_range.x, type_range.y)
+
+
+## Raw chart multiplier of one type attacking another (2, 1, 0.5 or 0).
+func type_matchup(attack_type: String, defender_type: String) -> float:
+	return float((_chart.get(attack_type, {}) as Dictionary).get(defender_type, 1.0))
 
 
 ## damage = power * attack / defense * STAB * type effectiveness * crit

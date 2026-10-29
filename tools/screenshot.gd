@@ -14,6 +14,9 @@ func _ready() -> void:
 	if arena_id.begins_with("menu:"):
 		await _menu_shot(arena_id.trim_prefix("menu:"), out_dir)
 		return
+	if arena_id.begins_with("gym:"):
+		await _gym_shot(arena_id.trim_prefix("gym:"), out_dir)
+		return
 	if arena_id.begins_with("boss:"):
 		await _boss_shot(arena_id.trim_prefix("boss:"), out_dir)
 		return
@@ -48,6 +51,26 @@ func _ready() -> void:
 		var img := get_viewport().get_texture().get_image()
 		img.save_png("%s/%s_%s.png" % [out_dir, arena_id, shot])
 		print("saved ", shot)
+	get_tree().quit()
+
+
+## A gym's leader round (round 3), a few seconds in.
+func _gym_shot(gym_id: String, out_dir: String) -> void:
+	GymMode.start_run(gym_id, "normal", "", { "species": "squirtle" })
+	GameData.gym_run["round"] = 2
+	GameData.match_settings = GymMode.settings_for(GameData.gym_run)
+	var main := MAIN_SCENE.instantiate()
+	main.show_intro = false
+	main.record_progress = false
+	add_child(main)
+	for i in 120:
+		await get_tree().process_frame
+	main.player.global_position = main.mode_logic.ace.global_position + Vector3(0, 0, 4)
+	main.camera.snap_to_target()
+	for i in 20:
+		await get_tree().process_frame
+	get_viewport().get_texture().get_image().save_png("%s/gym_%s.png" % [out_dir, gym_id])
+	print("saved gym")
 	get_tree().quit()
 
 
@@ -101,6 +124,11 @@ func _menu_shot(screen: String, out_dir: String) -> void:
 				get_viewport().get_texture().get_image().save_png("%s/menu_ball_%d.png" % [out_dir, t])
 		"bosses":
 			menu.show_bosses()
+		"gyms":
+			menu.show_gyms()
+		"gym":
+			menu._gym_type = "water"
+			menu.show_gym("vermilion_gym")
 		"reveal":
 			Profile.reveals.append("geodude")
 			menu.show_home()

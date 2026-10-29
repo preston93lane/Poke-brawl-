@@ -51,6 +51,7 @@ func _ready() -> void:
 	await _check_ball_goals_and_walls()
 	await _check_boss_raid()
 	_check_dailies()
+	await _check_gyms()
 	Engine.time_scale = 1.0
 	Profile.data = real_profile
 	Profile.save()
@@ -1435,3 +1436,69 @@ func _check_dailies() -> void:
 		done = done and bool(t["done"])
 	expect(done and bool(Profile.data["dailies"]["bonus"]), "finishing all three gives the bonus")
 	expect(Profile.money() >= money, "rewards are paid")
+
+
+func _check_gyms() -> void:
+	print("Gym gauntlet")
+	expect(Profile.gym_ids().size() == 8, "8 gyms")
+	expect(Profile.gym_matchup("electric", "water") == "weak" and Profile.gym_matchup("electric", "ground") == "strong"
+			and Profile.gym_matchup("fire", "fire") == "resisted" and Profile.gym_matchup("rock", "electric") == "neutral", "type matchups")
+	var allies := GymMode.team_of_type("grass", "bulbasaur")
+	expect(allies.size() == 2 and GameData.species[allies[0]].has_type("grass") and GameData.species[allies[1]].has_type("grass"), "a Grass team gets Grass teammates")
+	expect(GymMode.team_of_type("dragon", "charmander").size() == 2, "rare types still fill the team")
+	GameData.match_settings = GymMode.start_run("cinnabar_gym", "hard", "grass", { "species": "oddish" })
+	var s1 := GameData.match_settings.duplicate()
+	expect(s1["mode"] == "gym" and s1["arena"] == "cinnabar_gym" and s1["enemies"] == ["vulpix", "growlithe", "ponyta"], "round 1 is the first trainer")
+	var main := MAIN_SCENE.instantiate()
+	main.show_intro = false
+	main.record_progress = false
+	add_child(main)
+	await get_tree().physics_frame
+	expect(main.mode == "gym" and main.mode_logic.ace == null, "no ace before the leader")
+	for b: Brawler in main.teams[0]:
+		expect(b.species.has_type("grass"), "%s is Grass" % b.species.display_name)
+	main.player.gadget_uses = 1
+	main.scores[0] = 9.0
+	main.teams[1][0]._protect_time = 0.0
+	main.teams[1][0].take_damage(999999.0, main.player)
+	await get_tree().physics_frame
+	expect(main.round_over and GameData.gym_run["round"] == 1 and GameData.gym_run["gadget_uses"] == 1, "winning round 1 moves on and keeps gadget uses")
+	main.queue_free()
+	await get_tree().process_frame
+	GameData.gym_run["round"] = 2
+	GameData.match_settings = GymMode.settings_for(GameData.gym_run)
+	main = MAIN_SCENE.instantiate()
+	main.show_intro = false
+	main.record_progress = false
+	add_child(main)
+	await get_tree().physics_frame
+	var ace: Brawler = main.mode_logic.ace
+	expect(ace != null and ace.species.id == "arcanine" and ace.hp_scale >= 2.0, "the leader's ace is big and tough on Hard")
+	expect(main.player.gadget_uses == 1, "gadget uses carried into the leader round")
+	var clears := Profile.gym_clears("cinnabar_gym", "hard", "grass")
+	var money := Profile.money()
+	main.scores[0] = 7.0
+	ace._protect_time = 0.0
+	ace.take_damage(999999.0, main.player)
+	await get_tree().physics_frame
+	expect(main.round_over, "a KO on the ace counts 3")
+	expect(Profile.gym_clears("cinnabar_gym", "hard", "grass") == clears + 1 and Profile.money() > money, "beating the leader records the clear and pays")
+	expect(GameData.gym_run["round"] == 0, "the next run starts at round 1")
+	main.queue_free()
+	await get_tree().process_frame
+	GameData.gym_run["round"] = 1
+	GameData.match_settings = GymMode.settings_for(GameData.gym_run)
+	main = MAIN_SCENE.instantiate()
+	main.show_intro = false
+	main.record_progress = false
+	add_child(main)
+	await get_tree().physics_frame
+	main.scores[1] = 9.0
+	main.player._protect_time = 0.0
+	main.player.take_damage(999999.0, main.teams[1][0])
+	await get_tree().physics_frame
+	expect(main.round_over and GameData.gym_run["round"] == 0, "losing a round sends you back to round 1")
+	main.queue_free()
+	await get_tree().process_frame
+	GameData.gym_run = {}
+	GameData.match_settings = {}

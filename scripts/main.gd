@@ -12,6 +12,7 @@ const MODE_SCRIPTS := {
 	"candy_rush": preload("res://scripts/modes/candy_rush.gd"),
 	"showdown": preload("res://scripts/modes/showdown.gd"),
 	"boss_raid": preload("res://scripts/modes/boss_raid.gd"),
+	"gym": preload("res://scripts/modes/gym.gd"),
 }
 const MENU_SCENE := "res://scenes/menu.tscn"
 
@@ -21,9 +22,9 @@ const MENU_SCENE := "res://scenes/menu.tscn"
 const MATCH_INTRO := preload("res://scripts/ui/match_intro.gd")
 const MODE_TITLES := {
 	"duel": "BATTLE", "king_of_the_hill": "KING OF THE HILL", "brawl_ball": "BRAWL BALL",
-	"candy_rush": "RARE CANDY RUSH", "showdown": "SHOWDOWN", "boss_raid": "BOSS RAID",
+	"candy_rush": "RARE CANDY RUSH", "showdown": "SHOWDOWN", "boss_raid": "BOSS RAID", "gym": "GYM BATTLE",
 }
-@export_enum("duel", "king_of_the_hill", "brawl_ball", "candy_rush", "showdown", "boss_raid") var mode := "duel"
+@export_enum("duel", "king_of_the_hill", "brawl_ball", "candy_rush", "showdown", "boss_raid", "gym") var mode := "duel"
 
 @export_group("Player")
 @export var player_species := "charmander"
@@ -148,7 +149,10 @@ func _ready() -> void:
 	hud.set_matchup(_team_names(0), _team_names(1), arena.arena_name)
 	_refresh_hud_moves()
 	hud.set_teams(teams)
-	hud.restart_requested.connect(func() -> void: get_tree().reload_current_scene())
+	hud.restart_requested.connect(func() -> void:
+		if mode == "gym" and not GameData.gym_run.is_empty():
+			GameData.match_settings = GymMode.settings_for(GameData.gym_run)  # Next round (or round 1 again).
+		get_tree().reload_current_scene())
 	hud.menu_requested.connect(func() -> void: get_tree().change_scene_to_file(MENU_SCENE))
 	_update_status()
 	if Profile.is_dev():
@@ -184,7 +188,10 @@ func _play_intro() -> void:
 	var intro = MATCH_INTRO.new()
 	hud.add_child(intro)
 	get_tree().paused = true
-	await intro.play(allies, others, MODE_TITLES.get(mode, mode.to_upper()), arena.arena_name)
+	var title: String = MODE_TITLES.get(mode, mode.to_upper())
+	if mode == "gym" and not GameData.gym_run.is_empty():
+		title = GymMode.round_title(GameData.gym_run)
+	await intro.play(allies, others, title, arena.arena_name)
 	get_tree().paused = false
 
 
@@ -538,6 +545,16 @@ func end_round(result_name: String, subtitle := "") -> void:
 			"goals": player.goals, "supers": player.supers_used, "final_stage": player.species.stage > 1 and player.species.evolves_to == "",
 			"types": player.species.types,
 		})
+	if mode == "gym":
+		var gym_end: Dictionary = mode_logic.call("finish", result_name)
+		subtitle = str(gym_end.get("subtitle", subtitle))
+		hud.set_rematch_text(str(gym_end.get("next", "REMATCH")))
+		var cleared: Dictionary = gym_end.get("rewards", {})
+		if not cleared.is_empty() and not rewards.is_empty():
+			rewards["money"] = int(rewards["money"]) + int(cleared["money"])
+			(rewards["balls"] as Array).append_array(cleared["balls"])
+			(rewards["pokemon"] as Array).append_array(cleared["pokemon"])
+			rewards["extras"] = cleared["texts"]
 	hud.show_result(result_name, rows, mode_logic.stat_name() if mode_logic else "", subtitle, rewards)
 
 
