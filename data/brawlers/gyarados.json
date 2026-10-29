@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 77,
 	"style": "stream",
-	"stats": {"hp": 3850, "attack": 132, "defense": 114, "speed": 107},
+	"stats": {"hp": 4150, "attack": 133, "defense": 114, "speed": 107},
 	"super": "gyarados_super",
 	"gadget": "gadget_sitrus",
 	"evolves_from": "magikarp"

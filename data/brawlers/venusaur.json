@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 69,
 	"style": "thrower",
-	"stats": {"hp": 3700, "attack": 128, "defense": 115, "speed": 107},
+	"stats": {"hp": 3900, "attack": 128, "defense": 115, "speed": 107},
 	"super": "giga_drain",
 	"gadget": "gadget_smokescreen",
 	"evolves_from": "ivysaur"

@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 61,
 	"style": "gunner",
-	"stats": {"hp": 3650, "attack": 108, "defense": 108, "speed": 98},
+	"stats": {"hp": 3850, "attack": 108, "defense": 108, "speed": 98},
 	"super": "aqua_ring",
 	"gadget": "gadget_teleport",
 	"evolves_from": "squirtle",

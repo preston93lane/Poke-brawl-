@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 57,
 	"style": "brawler",
-	"stats": {"hp": 5250, "attack": 131, "defense": 108, "speed": 87},
+	"stats": {"hp": 5500, "attack": 134, "defense": 108, "speed": 87},
 	"super": "parasect_super",
 	"gadget": "gadget_protect",
 	"evolves_from": "paras"

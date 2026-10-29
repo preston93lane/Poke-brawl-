@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 61,
 	"style": "stream",
-	"stats": {"hp": 3550, "attack": 123, "defense": 103, "speed": 112},
+	"stats": {"hp": 3700, "attack": 123, "defense": 103, "speed": 112},
 	"super": "magmar_super",
 	"gadget": "gadget_sitrus",
 	"moves": [

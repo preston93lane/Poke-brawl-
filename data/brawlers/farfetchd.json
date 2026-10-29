@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 50,
 	"style": "spinner",
-	"stats": {"hp": 4550, "attack": 127, "defense": 95, "speed": 99},
+	"stats": {"hp": 4350, "attack": 124, "defense": 95, "speed": 99},
 	"super": "farfetchd_super",
 	"gadget": "gadget_agility",
 	"moves": [

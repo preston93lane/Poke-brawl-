@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 61,
 	"style": "brawler",
-	"stats": {"hp": 4350, "attack": 134, "defense": 111, "speed": 109},
+	"stats": {"hp": 4150, "attack": 130, "defense": 111, "speed": 109},
 	"super": "pinsir_super",
 	"gadget": "gadget_protect",
 	"moves": [

@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 77,
 	"style": "gunner",
-	"stats": {"hp": 3750, "attack": 121, "defense": 98, "speed": 115},
+	"stats": {"hp": 4150, "attack": 124, "defense": 98, "speed": 115},
 	"super": "fearow_super",
 	"gadget": "gadget_teleport",
 	"evolves_from": "spearow"

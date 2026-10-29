@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 51,
 	"style": "zone",
-	"stats": {"hp": 4200, "attack": 131, "defense": 99, "speed": 103},
+	"stats": {"hp": 4550, "attack": 131, "defense": 99, "speed": 103},
 	"super": "butterfree_super",
 	"gadget": "gadget_smokescreen",
 	"evolves_from": "metapod"

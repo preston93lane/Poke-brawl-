@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 59,
 	"style": "homing",
-	"stats": {"hp": 3700, "attack": 121, "defense": 107, "speed": 109},
+	"stats": {"hp": 4050, "attack": 124, "defense": 107, "speed": 109},
 	"super": "golduck_super",
 	"gadget": "gadget_smokescreen",
 	"evolves_from": "psyduck"

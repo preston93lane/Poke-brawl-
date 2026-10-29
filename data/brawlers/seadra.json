@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 47,
 	"style": "sniper",
-	"stats": {"hp": 3050, "attack": 126, "defense": 102, "speed": 109},
+	"stats": {"hp": 3250, "attack": 126, "defense": 102, "speed": 109},
 	"super": "seadra_super",
 	"gadget": "gadget_teleport",
 	"evolves_from": "horsea"

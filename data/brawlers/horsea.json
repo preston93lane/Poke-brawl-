@@ -6,7 +6,7 @@
 	"sprite_scale": 1.104,
 	"sprite_height": 35,
 	"style": "sniper",
-	"stats": {"hp": 2500, "attack": 110, "defense": 88, "speed": 99},
+	"stats": {"hp": 2650, "attack": 110, "defense": 88, "speed": 99},
 	"super": "horsea_super",
 	"gadget": "gadget_teleport",
 	"evolve_level": 32,

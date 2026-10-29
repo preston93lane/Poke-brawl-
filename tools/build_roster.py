@@ -100,6 +100,28 @@ STYLES = {
         dict(kind="projectile", pierce=True, range=8.5, speed=16, radius=0.5, ammo=3, reload=2.1, effect_from_type=True)]),
 }
 
+# Tuning from bot balance sims (tools/sim_balance.gd): (damage multiplier, health
+# multiplier) per style, pulling close-range styles down and ranged ones up.
+STYLE_TUNE = {
+    "tank_wave": (0.8, 0.88), "assassin": (0.9, 0.95), "spinner": (0.95, 1.0), "brawler": (0.93, 1.0),
+    "boomerang": (0.95, 1.0), "shotgun": (0.95, 1.0), "chain": (1.05, 1.0), "lasher": (1.08, 1.0),
+    "sniper": (1.1, 1.05), "thrower": (1.15, 1.05), "stream": (1.15, 1.05), "gunner": (1.15, 1.05),
+    "bouncer": (1.2, 1.05), "homing": (1.4, 1.05), "zone": (1.5, 1.08),
+}
+for _name, (_dps, _hp) in STYLE_TUNE.items():
+    STYLES[_name]["dps"] *= _dps
+    STYLES[_name]["hp"] *= _hp
+
+# Per-family stat target nudges (added to the stage's goal) for outliers within their style.
+FAMILY_GOAL = {
+    "snorlax": -16.0, "pinsir": -5.0, "kangaskhan": -6.0, "farfetchd": -4.0, "hitmonlee": -4.0, "scyther": -3.0,
+    "venonat": 6.0, "venomoth": 6.0, "spearow": 5.0, "fearow": 5.0, "charmander": 5.0, "charmeleon": 5.0, "charizard": 5.0,
+    "vulpix": 4.0, "ninetales": 4.0, "paras": 5.0, "parasect": 5.0, "bellsprout": 4.0, "weepinbell": 4.0, "victreebel": 4.0,
+    "magikarp": 4.0, "gyarados": 2.0, "staryu": 4.0, "starmie": 4.0, "koffing": 5.0, "weezing": 5.0, "psyduck": 4.0, "golduck": 4.0,
+    "pikachu": 5.0, "raichu": 5.0, "meowth": 5.0, "persian": 5.0, "abra": 4.0, "kadabra": 4.0, "alakazam": 4.0,
+}
+
+
 # Supers for Pokemon that don't have a hand-made one; f = stage strength factor.
 def super_template(style, f, type_):
     eff = TYPE_EFFECT.get(type_)
@@ -248,6 +270,7 @@ def build():
                 goal = 125.0
             else:
                 goal = {1: 104.0, 2: 116.5, 3: 133.0}[stage]
+            goal += FAMILY_GOAL.get(sid, 0.0)
             stats = balance(convert(base), goal, fam["style"])
 
             if sup in supers:

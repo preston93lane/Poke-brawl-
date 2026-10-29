@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 65,
 	"style": "brawler",
-	"stats": {"hp": 5250, "attack": 116, "defense": 108, "speed": 111},
+	"stats": {"hp": 4900, "attack": 112, "defense": 108, "speed": 111},
 	"super": "kangaskhan_super",
 	"gadget": "gadget_protect",
 	"moves": [

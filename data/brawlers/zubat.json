@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 48,
 	"style": "assassin",
-	"stats": {"hp": 3200, "attack": 99, "defense": 82, "speed": 97},
+	"stats": {"hp": 3050, "attack": 99, "defense": 82, "speed": 97},
 	"super": "zubat_super",
 	"gadget": "gadget_agility",
 	"evolve_level": 22,

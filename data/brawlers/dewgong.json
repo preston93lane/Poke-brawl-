@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 67,
 	"style": "bouncer",
-	"stats": {"hp": 4050, "attack": 110, "defense": 112, "speed": 103},
+	"stats": {"hp": 4250, "attack": 110, "defense": 112, "speed": 103},
 	"super": "dewgong_super",
 	"gadget": "gadget_teleport",
 	"evolves_from": "seel"

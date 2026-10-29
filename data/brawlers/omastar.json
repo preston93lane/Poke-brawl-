@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 50,
 	"style": "gunner",
-	"stats": {"hp": 3750, "attack": 133, "defense": 118, "speed": 97},
+	"stats": {"hp": 3900, "attack": 133, "defense": 118, "speed": 97},
 	"super": "omastar_super",
 	"gadget": "gadget_teleport",
 	"evolves_from": "omanyte"

@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 56,
 	"style": "homing",
-	"stats": {"hp": 3450, "attack": 144, "defense": 100, "speed": 119},
+	"stats": {"hp": 3600, "attack": 144, "defense": 100, "speed": 119},
 	"super": "night_terror",
 	"gadget": "gadget_smokescreen",
 	"evolves_from": "haunter"

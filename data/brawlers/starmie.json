@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 54,
 	"style": "boomerang",
-	"stats": {"hp": 3300, "attack": 121, "defense": 111, "speed": 121},
+	"stats": {"hp": 3450, "attack": 124, "defense": 111, "speed": 121},
 	"super": "starmie_super",
 	"gadget": "gadget_teleport",
 	"evolves_from": "staryu"

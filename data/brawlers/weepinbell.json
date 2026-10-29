@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 48,
 	"style": "lasher",
-	"stats": {"hp": 4100, "attack": 124, "defense": 88, "speed": 97},
+	"stats": {"hp": 4250, "attack": 127, "defense": 88, "speed": 97},
 	"super": "stun_spore",
 	"gadget": "gadget_agility",
 	"evolves_from": "bellsprout",

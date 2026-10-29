@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 67,
 	"style": "tank_wave",
-	"stats": {"hp": 6900, "attack": 123, "defense": 112, "speed": 87},
+	"stats": {"hp": 5150, "attack": 114, "defense": 112, "speed": 87},
 	"super": "snorlax_super",
 	"gadget": "gadget_protect",
 	"moves": [

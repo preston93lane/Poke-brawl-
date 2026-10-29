@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 53,
 	"style": "homing",
-	"stats": {"hp": 3350, "attack": 101, "defense": 92, "speed": 93},
+	"stats": {"hp": 3800, "attack": 105, "defense": 92, "speed": 93},
 	"super": "venonat_super",
 	"gadget": "gadget_smokescreen",
 	"evolve_level": 31,

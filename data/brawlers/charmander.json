@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 42,
 	"style": "stream",
-	"stats": {"hp": 3100, "attack": 104, "defense": 88, "speed": 101},
+	"stats": {"hp": 3500, "attack": 107, "defense": 88, "speed": 101},
 	"super": "fire_spin",
 	"gadget": "gadget_sitrus",
 	"evolve_level": 16,

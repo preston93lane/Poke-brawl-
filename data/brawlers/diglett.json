@@ -6,7 +6,7 @@
 	"sprite_scale": 1.431,
 	"sprite_height": 27,
 	"style": "assassin",
-	"stats": {"hp": 2400, "attack": 103, "defense": 81, "speed": 113},
+	"stats": {"hp": 2300, "attack": 103, "defense": 81, "speed": 113},
 	"super": "diglett_super",
 	"gadget": "gadget_agility",
 	"evolve_level": 26,

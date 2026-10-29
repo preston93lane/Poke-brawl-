@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 44,
 	"style": "thrower",
-	"stats": {"hp": 3250, "attack": 126, "defense": 108, "speed": 89},
+	"stats": {"hp": 3400, "attack": 126, "defense": 108, "speed": 89},
 	"super": "earthquake",
 	"gadget": "gadget_smokescreen",
 	"evolves_from": "geodude",

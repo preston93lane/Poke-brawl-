@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 49,
 	"style": "bouncer",
-	"stats": {"hp": 2900, "attack": 94, "defense": 82, "speed": 111},
+	"stats": {"hp": 3300, "attack": 98, "defense": 82, "speed": 111},
 	"super": "meowth_super",
 	"gadget": "gadget_teleport",
 	"evolve_level": 28,

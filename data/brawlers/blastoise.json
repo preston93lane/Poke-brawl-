@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 62,
 	"style": "gunner",
-	"stats": {"hp": 4150, "attack": 120, "defense": 122, "speed": 106},
+	"stats": {"hp": 4350, "attack": 120, "defense": 122, "speed": 106},
 	"super": "hydro_cannon",
 	"gadget": "gadget_teleport",
 	"evolves_from": "wartortle"

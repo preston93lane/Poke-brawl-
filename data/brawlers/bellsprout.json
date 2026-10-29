@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 46,
 	"style": "lasher",
-	"stats": {"hp": 3700, "attack": 115, "defense": 80, "speed": 91},
+	"stats": {"hp": 3850, "attack": 118, "defense": 80, "speed": 91},
 	"super": "sleep_powder",
 	"gadget": "gadget_agility",
 	"evolve_level": 21,

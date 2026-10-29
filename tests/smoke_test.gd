@@ -83,7 +83,8 @@ func _check_data() -> void:
 			dex += 1
 	expect(dex >= 148, "the original 151 (minus the three legendary birds) are playable (%d)" % dex)
 	expect(GameData.get_species("eevee").evolutions.size() == 3, "eevee branches three ways")
-	expect(is_equal_approx(GameData.get_species("charmander").hp, 3100.0 * float(GameData.rule("hp_multiplier", 1.0))), "hp_multiplier raises health")
+	var raw_hp := float((JSON.parse_string(FileAccess.get_file_as_string("res://data/brawlers/charmander.json")) as Dictionary)["stats"]["hp"])
+	expect(is_equal_approx(GameData.get_species("charmander").hp, raw_hp * float(GameData.rule("hp_multiplier", 1.0))), "hp_multiplier raises health")
 	expect(ThemeDB.fallback_font.resource_path.ends_with("lilita-one.woff"), "game font installed")
 	for line_base in ["geodude", "bellsprout", "gastly", "mankey"]:
 		expect(GameData.evolution_line(line_base).size() == 3, "%s line has 3 stages" % line_base)
@@ -1236,6 +1237,7 @@ func _check_progression() -> void:
 	Profile._give("ultra_ball", 1)
 	Profile.open_ball("ultra_ball")
 	expect(Profile.count("rare_candy") > before, "an Ultra Ball always has a Rare Candy")
+	Profile.data["shinies"] = []  # Ultra Balls can hold a shiny; the shiny checks below start from none.
 	Profile._give("protein", 12)
 	for i in 12:
 		Profile.give_vitamin("charmander", "protein")

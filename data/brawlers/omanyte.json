@@ -6,7 +6,7 @@
 	"sprite_scale": 1.136,
 	"sprite_height": 34,
 	"style": "gunner",
-	"stats": {"hp": 2900, "attack": 118, "defense": 106, "speed": 89},
+	"stats": {"hp": 3050, "attack": 118, "defense": 106, "speed": 89},
 	"super": "omanyte_super",
 	"gadget": "gadget_teleport",
 	"evolve_level": 40,

@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 67,
 	"style": "sniper",
-	"stats": {"hp": 2900, "attack": 119, "defense": 102, "speed": 127},
+	"stats": {"hp": 3050, "attack": 119, "defense": 102, "speed": 127},
 	"super": "aerodactyl_super",
 	"gadget": "gadget_teleport",
 	"moves": [

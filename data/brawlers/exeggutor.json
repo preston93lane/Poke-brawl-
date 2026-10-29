@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 70,
 	"style": "thrower",
-	"stats": {"hp": 3750, "attack": 136, "defense": 108, "speed": 97},
+	"stats": {"hp": 3900, "attack": 136, "defense": 108, "speed": 97},
 	"super": "exeggutor_super",
 	"gadget": "gadget_smokescreen",
 	"evolves_from": "exeggcute"

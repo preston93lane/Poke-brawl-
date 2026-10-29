@@ -6,7 +6,7 @@
 	"sprite_scale": 1.044,
 	"sprite_height": 37,
 	"style": "brawler",
-	"stats": {"hp": 4200, "attack": 113, "defense": 93, "speed": 85},
+	"stats": {"hp": 4500, "attack": 117, "defense": 93, "speed": 85},
 	"super": "paras_super",
 	"gadget": "gadget_protect",
 	"evolve_level": 24,

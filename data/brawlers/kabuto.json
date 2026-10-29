@@ -6,7 +6,7 @@
 	"sprite_scale": 1.207,
 	"sprite_height": 32,
 	"style": "assassin",
-	"stats": {"hp": 2650, "attack": 113, "defense": 100, "speed": 97},
+	"stats": {"hp": 2500, "attack": 113, "defense": 100, "speed": 97},
 	"super": "kabuto_super",
 	"gadget": "gadget_agility",
 	"evolve_level": 40,

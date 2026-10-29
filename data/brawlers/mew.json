@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 44,
 	"style": "homing",
-	"stats": {"hp": 3850, "attack": 120, "defense": 120, "speed": 115},
+	"stats": {"hp": 4050, "attack": 120, "defense": 120, "speed": 115},
 	"super": "mew_super",
 	"gadget": "gadget_smokescreen",
 	"moves": [

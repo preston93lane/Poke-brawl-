@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 53,
 	"style": "homing",
-	"stats": {"hp": 3300, "attack": 131, "defense": 99, "speed": 113},
+	"stats": {"hp": 3500, "attack": 131, "defense": 99, "speed": 113},
 	"super": "jynx_super",
 	"gadget": "gadget_smokescreen",
 	"moves": [

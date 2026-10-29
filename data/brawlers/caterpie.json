@@ -6,7 +6,7 @@
 	"sprite_scale": 1.104,
 	"sprite_height": 35,
 	"style": "zone",
-	"stats": {"hp": 3800, "attack": 94, "defense": 76, "speed": 93},
+	"stats": {"hp": 4100, "attack": 94, "defense": 76, "speed": 93},
 	"super": "caterpie_super",
 	"gadget": "gadget_smokescreen",
 	"evolve_level": 7,

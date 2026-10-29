@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 69,
 	"style": "homing",
-	"stats": {"hp": 3500, "attack": 113, "defense": 112, "speed": 115},
+	"stats": {"hp": 3850, "attack": 115, "defense": 112, "speed": 115},
 	"super": "ninetales_super",
 	"gadget": "gadget_smokescreen",
 	"evolves_from": "vulpix"

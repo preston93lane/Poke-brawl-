@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 57,
 	"style": "thrower",
-	"stats": {"hp": 3800, "attack": 140, "defense": 118, "speed": 93},
+	"stats": {"hp": 3950, "attack": 140, "defense": 118, "speed": 93},
 	"super": "explosion",
 	"gadget": "gadget_smokescreen",
 	"evolves_from": "graveler"

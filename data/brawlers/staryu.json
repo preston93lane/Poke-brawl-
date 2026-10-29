@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 44,
 	"style": "boomerang",
-	"stats": {"hp": 2700, "attack": 105, "defense": 93, "speed": 109},
+	"stats": {"hp": 2850, "attack": 108, "defense": 93, "speed": 109},
 	"super": "staryu_super",
 	"gadget": "gadget_teleport",
 	"evolve_level": 25,

@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 62,
 	"style": "zone",
-	"stats": {"hp": 4400, "attack": 126, "defense": 112, "speed": 95},
+	"stats": {"hp": 4750, "attack": 126, "defense": 112, "speed": 95},
 	"super": "muk_super",
 	"gadget": "gadget_smokescreen",
 	"evolves_from": "grimer"

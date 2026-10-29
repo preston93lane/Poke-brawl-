@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 65,
 	"style": "sniper",
-	"stats": {"hp": 3200, "attack": 140, "defense": 114, "speed": 127},
+	"stats": {"hp": 3350, "attack": 140, "defense": 114, "speed": 127},
 	"super": "mewtwo_super",
 	"gadget": "gadget_teleport",
 	"moves": [

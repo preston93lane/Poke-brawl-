@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 53,
 	"style": "zone",
-	"stats": {"hp": 3150, "attack": 107, "defense": 102, "speed": 89},
+	"stats": {"hp": 3600, "attack": 110, "defense": 102, "speed": 89},
 	"super": "koffing_super",
 	"gadget": "gadget_smokescreen",
 	"evolve_level": 35,

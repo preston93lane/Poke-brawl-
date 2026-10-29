@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 39,
 	"style": "zone",
-	"stats": {"hp": 3850, "attack": 112, "defense": 90, "speed": 85},
+	"stats": {"hp": 4150, "attack": 112, "defense": 90, "speed": 85},
 	"super": "grimer_super",
 	"gadget": "gadget_smokescreen",
 	"evolve_level": 38,

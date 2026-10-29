@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 42,
 	"style": "assassin",
-	"stats": {"hp": 2950, "attack": 128, "defense": 96, "speed": 123},
+	"stats": {"hp": 2800, "attack": 128, "defense": 96, "speed": 123},
 	"super": "dugtrio_super",
 	"gadget": "gadget_agility",
 	"evolves_from": "diglett"

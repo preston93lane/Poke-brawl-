@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 54,
 	"style": "gunner",
-	"stats": {"hp": 2850, "attack": 115, "defense": 84, "speed": 105},
+	"stats": {"hp": 3000, "attack": 115, "defense": 84, "speed": 105},
 	"super": "doduo_super",
 	"gadget": "gadget_teleport",
 	"evolve_level": 31,

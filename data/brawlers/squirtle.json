@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 39,
 	"style": "gunner",
-	"stats": {"hp": 3300, "attack": 99, "defense": 99, "speed": 92},
+	"stats": {"hp": 3450, "attack": 99, "defense": 99, "speed": 92},
 	"super": "withdraw",
 	"gadget": "gadget_teleport",
 	"evolve_level": 16,

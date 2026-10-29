@@ -6,7 +6,7 @@
 	"sprite_scale": 1.017,
 	"sprite_height": 38,
 	"style": "assassin",
-	"stats": {"hp": 3450, "attack": 97, "defense": 75, "speed": 95},
+	"stats": {"hp": 3300, "attack": 97, "defense": 75, "speed": 95},
 	"super": "weedle_super",
 	"gadget": "gadget_agility",
 	"evolve_level": 7,

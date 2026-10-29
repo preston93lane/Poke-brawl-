@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 62,
 	"style": "assassin",
-	"stats": {"hp": 3200, "attack": 124, "defense": 108, "speed": 117},
+	"stats": {"hp": 2950, "attack": 122, "defense": 108, "speed": 117},
 	"super": "scyther_super",
 	"gadget": "gadget_agility",
 	"moves": [

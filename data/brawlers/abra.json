@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 44,
 	"style": "sniper",
-	"stats": {"hp": 2200, "attack": 123, "defense": 81, "speed": 111},
+	"stats": {"hp": 2450, "attack": 127, "defense": 81, "speed": 111},
 	"super": "teleport",
 	"gadget": "gadget_teleport",
 	"evolve_level": 16,

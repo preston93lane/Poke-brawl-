@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 45,
 	"style": "homing",
-	"stats": {"hp": 3100, "attack": 105, "defense": 89, "speed": 97},
+	"stats": {"hp": 3450, "attack": 108, "defense": 89, "speed": 97},
 	"super": "psyduck_super",
 	"gadget": "gadget_smokescreen",
 	"evolve_level": 33,

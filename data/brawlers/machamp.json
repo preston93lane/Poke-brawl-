@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 69,
 	"style": "tank_wave",
-	"stats": {"hp": 5850, "attack": 144, "defense": 110, "speed": 97},
+	"stats": {"hp": 5150, "attack": 144, "defense": 110, "speed": 97},
 	"super": "machamp_super",
 	"gadget": "gadget_protect",
 	"evolves_from": "machoke"

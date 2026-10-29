@@ -6,7 +6,7 @@
 	"sprite_scale": 1.073,
 	"sprite_height": 36,
 	"style": "zone",
-	"stats": {"hp": 3300, "attack": 113, "defense": 96, "speed": 87},
+	"stats": {"hp": 3550, "attack": 113, "defense": 96, "speed": 87},
 	"super": "oddish_super",
 	"gadget": "gadget_smokescreen",
 	"evolve_level": 21,

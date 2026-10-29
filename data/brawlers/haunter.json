@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 48,
 	"style": "homing",
-	"stats": {"hp": 2950, "attack": 132, "defense": 90, "speed": 113},
+	"stats": {"hp": 3100, "attack": 132, "defense": 90, "speed": 113},
 	"super": "phantom_force",
 	"gadget": "gadget_smokescreen",
 	"evolves_from": "gastly",

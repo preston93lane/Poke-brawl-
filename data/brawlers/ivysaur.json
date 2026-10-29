@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 51,
 	"style": "thrower",
-	"stats": {"hp": 3250, "attack": 116, "defense": 103, "speed": 99},
+	"stats": {"hp": 3450, "attack": 116, "defense": 103, "speed": 99},
 	"super": "poison_powder",
 	"gadget": "gadget_smokescreen",
 	"evolves_from": "bulbasaur",

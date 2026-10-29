@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 71,
 	"style": "lasher",
-	"stats": {"hp": 4600, "attack": 134, "defense": 100, "speed": 103},
+	"stats": {"hp": 4800, "attack": 137, "defense": 100, "speed": 103},
 	"super": "leaf_storm",
 	"gadget": "gadget_agility",
 	"evolves_from": "weepinbell"

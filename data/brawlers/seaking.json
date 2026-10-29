@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 56,
 	"style": "assassin",
-	"stats": {"hp": 3900, "attack": 123, "defense": 104, "speed": 102},
+	"stats": {"hp": 3700, "attack": 123, "defense": 104, "speed": 102},
 	"super": "seaking_super",
 	"gadget": "gadget_agility",
 	"evolves_from": "goldeen"

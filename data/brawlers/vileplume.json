@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 49,
 	"style": "zone",
-	"stats": {"hp": 4250, "attack": 137, "defense": 112, "speed": 95},
+	"stats": {"hp": 4600, "attack": 137, "defense": 112, "speed": 95},
 	"super": "vileplume_super",
 	"gadget": "gadget_smokescreen",
 	"evolves_from": "gloom"

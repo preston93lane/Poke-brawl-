@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 83,
 	"style": "stream",
-	"stats": {"hp": 3950, "attack": 131, "defense": 109, "speed": 115},
+	"stats": {"hp": 4350, "attack": 134, "defense": 109, "speed": 115},
 	"super": "blast_burn",
 	"gadget": "gadget_sitrus",
 	"evolves_from": "charmeleon"

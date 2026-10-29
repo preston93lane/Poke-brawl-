@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 76,
 	"style": "gunner",
-	"stats": {"hp": 3450, "attack": 129, "defense": 99, "speed": 119},
+	"stats": {"hp": 3600, "attack": 129, "defense": 99, "speed": 119},
 	"super": "dodrio_super",
 	"gadget": "gadget_teleport",
 	"evolves_from": "doduo"

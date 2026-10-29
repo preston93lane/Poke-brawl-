@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 57,
 	"style": "sniper",
-	"stats": {"hp": 2500, "attack": 133, "defense": 90, "speed": 117},
+	"stats": {"hp": 2750, "attack": 136, "defense": 90, "speed": 117},
 	"super": "reflect",
 	"gadget": "gadget_teleport",
 	"evolves_from": "abra",

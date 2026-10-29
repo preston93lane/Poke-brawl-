@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 56,
 	"style": "homing",
-	"stats": {"hp": 2600, "attack": 123, "defense": 80, "speed": 107},
+	"stats": {"hp": 2750, "attack": 123, "defense": 80, "speed": 107},
 	"super": "hypnosis",
 	"gadget": "gadget_smokescreen",
 	"evolve_level": 25,

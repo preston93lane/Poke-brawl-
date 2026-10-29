@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 46,
 	"style": "bouncer",
-	"stats": {"hp": 3450, "attack": 94, "defense": 98, "speed": 93},
+	"stats": {"hp": 3600, "attack": 94, "defense": 98, "speed": 93},
 	"super": "seel_super",
 	"gadget": "gadget_teleport",
 	"evolve_level": 34,

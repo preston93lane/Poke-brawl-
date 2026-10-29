@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 47,
 	"style": "chain",
-	"stats": {"hp": 2700, "attack": 98, "defense": 87, "speed": 111},
+	"stats": {"hp": 2950, "attack": 102, "defense": 87, "speed": 111},
 	"super": "flash",
 	"gadget": "gadget_sitrus",
 	"evolve_level": 25,

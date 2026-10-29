@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 67,
 	"style": "sniper",
-	"stats": {"hp": 2900, "attack": 145, "defense": 102, "speed": 123},
+	"stats": {"hp": 3200, "attack": 148, "defense": 102, "speed": 123},
 	"super": "future_sight",
 	"gadget": "gadget_teleport",
 	"evolves_from": "kadabra"

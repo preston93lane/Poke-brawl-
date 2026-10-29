@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 64,
 	"style": "zone",
-	"stats": {"hp": 3800, "attack": 122, "defense": 117, "speed": 99},
+	"stats": {"hp": 4300, "attack": 125, "defense": 117, "speed": 99},
 	"super": "weezing_super",
 	"gadget": "gadget_smokescreen",
 	"evolves_from": "koffing"

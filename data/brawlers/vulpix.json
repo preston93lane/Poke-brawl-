@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 48,
 	"style": "homing",
-	"stats": {"hp": 2950, "attack": 99, "defense": 92, "speed": 101},
+	"stats": {"hp": 3250, "attack": 101, "defense": 92, "speed": 101},
 	"super": "vulpix_super",
 	"gadget": "gadget_smokescreen",
 	"evolve_level": 25,

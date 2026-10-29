@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 46,
 	"style": "assassin",
-	"stats": {"hp": 3100, "attack": 107, "defense": 88, "speed": 99},
+	"stats": {"hp": 2950, "attack": 107, "defense": 88, "speed": 99},
 	"super": "growlithe_super",
 	"gadget": "gadget_agility",
 	"evolve_level": 25,

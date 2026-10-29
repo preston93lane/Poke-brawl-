@@ -6,7 +6,7 @@
 	"sprite_scale": 1.171,
 	"sprite_height": 33,
 	"style": "thrower",
-	"stats": {"hp": 2900, "attack": 107, "defense": 94, "speed": 93},
+	"stats": {"hp": 3050, "attack": 107, "defense": 94, "speed": 93},
 	"super": "leech_seed",
 	"gadget": "gadget_smokescreen",
 	"evolve_level": 16,

@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 65,
 	"style": "chain",
-	"stats": {"hp": 3350, "attack": 120, "defense": 100, "speed": 119},
+	"stats": {"hp": 3550, "attack": 123, "defense": 100, "speed": 119},
 	"super": "discharge",
 	"gadget": "gadget_sitrus",
 	"evolves_from": "pikachu"
