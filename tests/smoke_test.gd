@@ -1401,7 +1401,7 @@ func _check_boss_raid() -> void:
 	main.player.global_position = Vector3.ZERO
 	main.mode_logic._strike_at(Vector3.ZERO, 2.0)
 	expect(main.mode_logic.escape_from(Vector3(0.5, 0, 0), main.teams[0][1]) != Vector3.ZERO, "bots know to leave the red circle")
-	var hp := main.player.health
+	var hp: float = main.player.health
 	main.player._protect_time = 0.0
 	await get_tree().create_timer(1.6).timeout
 	expect(main.player.health < hp, "the strike hits whoever stays in it")
@@ -1414,7 +1414,7 @@ func _check_boss_raid() -> void:
 	expect(main.round_over, "KO the boss and you win")
 	main.queue_free()
 	await get_tree().process_frame
-	expect(Profile.is_dev() or not Profile.boss_unlocked("moltres"), "bosses unlock in order")
+	expect(Profile.boss_unlocked("moltres") and (Profile.is_dev() or not Profile.boss_unlocked("mewtwo")), "beating Zapdos opens Moltres, not Mewtwo")
 
 
 func _check_dailies() -> void:
