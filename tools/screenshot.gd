@@ -139,6 +139,21 @@ func _menu_shot(screen: String, out_dir: String) -> void:
 				for i in 3:
 					await get_tree().process_frame
 				menu._show_dex_entry(GameData.species["scyther"])
+		"select_lockedmon":
+			Profile.data["dev"] = false
+			Profile.data["unlocked"] = ["charmander", "pidgey", "rattata"]
+			menu.show_select("duel")
+			for i in 3:
+				await get_tree().process_frame
+			menu._species = GameData.species["scyther"]
+			menu._refresh_select_details()
+		"dex_build":
+			Profile.data["dev"] = false
+			Profile.data["unlocked"] = ["charmander", "pidgey", "rattata", "geodude"]
+			menu.show_pokedex("charmander", "mine")
+			for i in 3:
+				await get_tree().process_frame
+			menu._details_scroll.scroll_vertical = 800
 		"gyms":
 			menu.show_gyms()
 		"gym":

@@ -55,6 +55,7 @@ func _ready() -> void:
 	_check_starter_order()
 	_check_no_mew_bots()
 	await _check_mvp()
+	await _check_boss_no_heal()
 	Engine.time_scale = 1.0
 	Profile.data = real_profile
 	Profile.save()
@@ -1641,5 +1642,29 @@ func _check_mvp() -> void:
 		if r["mvp"]:
 			mvp = r["brawler"]
 	expect(mvp == all[2], "Brawl Ball goals count for MVP")
+	main.queue_free()
+	await get_tree().process_frame
+
+
+func _check_boss_no_heal() -> void:
+	print("Battle legendaries never heal")
+	var main := await _start_match("route_1", "duel", "charmander", [])
+	var boss: Brawler = main.spawn_raid_boss()
+	await get_tree().physics_frame
+	boss._protect_time = 0.0
+	boss.take_damage(boss.max_health * 0.5, main.player)
+	var hp := boss.health
+	boss.heal(boss.max_health * 0.3, boss)
+	boss._regen_timer = 10.0
+	await get_tree().create_timer(0.5).timeout
+	expect(is_equal_approx(boss.health, hp), "the raid boss doesn't heal or regenerate (%d → %d)" % [hp, boss.health])
+	var ally: Brawler = main.summon_legendary("zapdos", 0, Vector3.ZERO)
+	await get_tree().physics_frame
+	ally.take_damage(ally.max_health * 0.4, main.enemy)
+	hp = ally.health
+	ally.use_gadget(Vector3.FORWARD)
+	await get_tree().create_timer(0.3).timeout
+	expect(is_equal_approx(ally.health, hp), "a legendary ally's Sitrus Berry doesn't heal it")
+	expect(is_equal_approx(float(GameData.rule("legendary/ally_duration", 0)), 20.0), "legendary allies stay 20 s")
 	main.queue_free()
 	await get_tree().process_frame

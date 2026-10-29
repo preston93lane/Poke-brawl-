@@ -65,7 +65,7 @@ var supers_used := 0
 var damage_scale := 1.0
 ## Multiplies max HP (a gym leader's ace); kept through evolving and Power Ups.
 var hp_scale := 1.0
-## False for raid bosses: no healing between hits.
+## False for legendaries and raid bosses: no regeneration and no healing of any kind.
 var regenerates := true
 ## Takes no damage (summoned legendary allies).
 var invulnerable := false
@@ -332,8 +332,8 @@ func _buff(stat: String) -> float:
 
 ## `source` (if any) gets credit for the healing on the match summary.
 func heal(amount: float, source: Brawler = null) -> void:
-	if is_dead or amount <= 0.0:
-		return
+	if is_dead or amount <= 0.0 or not regenerates:
+		return  # Legendaries and raid bosses never heal (drain, gadgets, team heals included).
 	var healed := minf(amount, max_health - health)
 	health += healed
 	if is_instance_valid(source):

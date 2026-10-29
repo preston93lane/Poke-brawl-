@@ -35,6 +35,8 @@ var _arena := ""
 var _boss := ""
 ## Pokédex tab: "mine" (default) or "all"; silhouettes cache for locked Pokémon.
 var _dex_tab := "mine"
+## What the build editor redraws after a change (select screen or Pokédex entry).
+var _editor_refresh: Callable
 var _silhouettes := {}
 ## Gym gauntlet choices (gym screen).
 var _gym := ""
@@ -817,124 +819,25 @@ func _refresh_select_details() -> void:
 	var keep_scroll := _details_scroll.scroll_vertical
 	_clear(_details)
 	var s := _species
-	if not Profile.has_shiny(s.id):
-		_shiny = false  # The toggle from another Pokémon doesn't carry over.
-	_details.add_child(_species_header(s, 112))
-	for stat in ["hp", "attack", "defense", "speed"]:
-		_details.add_child(UiKit.stat_bar(stat, _stat(s, stat)))
-
+	var known := Profile.is_unlocked(s.id)
+	if known:
+		_shiny = Profile.has_shiny(s.id) and str(Profile.loadout(s.id).get("shiny", "")) != ""
+		_details.add_child(_species_header(s, 112))
+		for stat in ["hp", "attack", "defense", "speed"]:
+			_details.add_child(UiKit.stat_bar(stat, _stat(s, stat)))
+	else:
+		# Locked: a silhouette, how to get it, and no stats or moves until then.
+		_details.add_child(_locked_header(s, 112))
+		_details.add_child(UiKit.label("Stats and moves: ??? (unlock it to see them)", 17, Color(1, 1, 1, 0.5)))
 	_details.add_child(_style_box(s))
-	_details.add_child(_trainer_level_box(s))
-
-	if s.shiny_sheet and not Profile.has_shiny(s.id):
-		_shiny = false
-		var how := UiKit.label("✦ Shiny locked: win it in the weekly shiny hunt, find it in Ultra/Master Balls, or buy it when it's in the Poké Mart", 15, Color(0.75, 0.8, 0.9))
-		how.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		_details.add_child(how)
-	elif s.shiny_sheet:
-		var shiny_row := HBoxContainer.new()
-		var shiny_button := Button.new()
-		shiny_button.text = "SHINY: ON" if _shiny else "SHINY: OFF"
-		shiny_button.toggle_mode = true
-		shiny_button.button_pressed = _shiny
-		shiny_button.add_theme_font_size_override("font_size", 20)
-		shiny_button.pressed.connect(func() -> void:
-			_shiny = not _shiny
-			_refresh_select_details())
-		shiny_row.add_child(shiny_button)
-		shiny_row.add_child(UiKit.label("  Play with shiny colours", 16, Color(0.75, 0.8, 0.9)))
-		_details.add_child(shiny_row)
-
-	if not Profile.is_unlocked(s.id):
-		var lock := UiKit.label("LOCKED  ·  " + Profile.unlock_hint(s.id), 22, Color(1, 0.6, 0.45))
-		lock.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		_details.add_child(lock)
+	if known:
+		_details.add_child(_trainer_level_box(s))
 	if is_instance_valid(_start_button):
 		_start_button.disabled = not Profile.is_unlocked(s.id) or (_mode == "gym" and _gym_type != "" and not _line_has_type(s, _gym_type))
-	var loadout := Profile.loadout(s.id)
-	if _main == "" or not Profile.unlocked_mains(s.id).has(_main):
-		_main = str(loadout.get("main", ""))
-	_hm = str(loadout.get("hm", ""))
-
-	_main = _valid_move("main", _main)
-	_details.add_child(_section("MAIN ATTACK  (right stick: drag to aim, tap to auto-aim)"))
-	var row := HFlowContainer.new()
-	var move_group := ButtonGroup.new()
-	var unlocked := Profile.unlocked_mains(s.id)
-	for entry in s.learnset:
-		var move: MoveData = entry["move"]
-		if move.slot != "main":
-			continue
-		var text := move.display_name
-		if move.id not in unlocked:
-			var tm := str(entry["tm"])
-			text = "%s (Lv %d%s)" % [move.display_name, int(entry["level"]), " or its TM" if tm != "" else ""]
-		var b := _toggle(text, move_group, move.id == _main)
-		b.disabled = move.id not in unlocked
-		b.pressed.connect(func() -> void:
-			_main = move.id
-			Profile.set_loadout(s.id, "main", move.id)
-			_refresh_select_details())
-		row.add_child(b)
-	_details.add_child(row)
-	_details.add_child(UiKit.move_card(GameData.get_move(_main)))
-
-	if s.gadget_move:
-		_details.add_child(_section("GADGET  (%d uses per match)" % int(GameData.rule("gadget/uses", 3))))
-		_details.add_child(UiKit.move_card(s.gadget_move))
-
-	_details.add_child(_section("SUPER  (pick per stage: its own, an earlier one, or a TM super)"))
-	for stage in GameData.evolution_line(s.id):
-		var super_row := HBoxContainer.new()
-		super_row.add_child(UiKit.sprite(stage.sprite, 48))
-		var choices := HFlowContainer.new()
-		choices.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		var group := ButtonGroup.new()
-		var picked := Profile.chosen_super(stage.id)
-		for option in Profile.super_options(stage.id):
-			var move: MoveData = GameData.get_move(option)
-			var b := _toggle(move.display_name, group, option == picked or (picked == "" and option == stage.super_move.id))
-			b.pressed.connect(func() -> void:
-				Profile.set_loadout(stage.id, "super_" + stage.id, "" if option == stage.super_move.id else option)
-				_refresh_select_details())
-			choices.add_child(b)
-		# TM supers this stage could use but you don't own yet: shown locked.
-		for tm_super in Profile.stage_tm_supers(stage.id):
-			if Profile.owns_tm_super(tm_super) or not GameData.moves.has(tm_super):
-				continue
-			var locked := Button.new()
-			locked.text = "TM %s" % GameData.get_move(tm_super).display_name
-			locked.disabled = true
-			locked.tooltip_text = "Buy this TM in the Poké Mart or find it in a Poké Ball to use it."
-			locked.add_theme_font_size_override("font_size", 18)
-			choices.add_child(locked)
-		super_row.add_child(choices)
-		_details.add_child(super_row)
-		var card := UiKit.move_card(GameData.get_move(picked) if picked != "" else stage.super_move)
-		_details.add_child(card)
-	var tm_note := UiKit.label("Greyed-out TM supers: buy the TM in the Poké Mart or find it in a Poké Ball. Each type's TMs work for Pokémon of that type (per stage).", 15, Color(0.75, 0.8, 0.9))
-	tm_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_details.add_child(tm_note)
-
-	_details.add_child(_hm_picker(s))
-	_details.add_child(_vitamin_box(s))
-
-	if s.evolutions.size() > 1:
-		_details.add_child(_section("EVOLVES INTO"))
-		var branches := HFlowContainer.new()
-		var branch_group := ButtonGroup.new()
-		var random_button := _toggle("RANDOM", branch_group, _evolution == "")
-		random_button.pressed.connect(func() -> void: _evolution = "")
-		branches.add_child(random_button)
-		for branch_id in s.evolutions:
-			var branch: SpeciesData = GameData.species[branch_id]
-			var b := _toggle(branch.display_name, branch_group, _evolution == branch_id)
-			b.icon = branch.sprite
-			b.expand_icon = true
-			b.add_theme_constant_override("icon_max_width", 36)
-			b.pressed.connect(func() -> void: _evolution = branch_id)
-			branches.add_child(b)
-		_details.add_child(branches)
+	if not Profile.is_unlocked(s.id):
+		return  # Locked: no build to edit (and its stats stay hidden).
+	_editor_refresh = _refresh_select_details
+	_build_editor(s)
 
 	# Teammates and opponents are always random.
 	_allies.clear()
@@ -993,11 +896,12 @@ func _team_picker(chosen: Array[String], max_count: int) -> HFlowContainer:
 	return row
 
 
-func _valid_move(_slot: String, move_id: String) -> String:
-	var unlocked := Profile.unlocked_mains(_species.id)
+## `move_id` if it's an unlocked main attack of `s`'s line, else its newest unlocked one.
+func _valid_move(s: SpeciesData, move_id: String) -> String:
+	var unlocked := Profile.unlocked_mains(s.id)
 	if move_id in unlocked:
 		return move_id
-	return unlocked.back() if not unlocked.is_empty() else _species.default_move("main", 1).id
+	return unlocked.back() if not unlocked.is_empty() else s.default_move("main", 1).id
 
 
 const HM_INFO := {
@@ -1010,6 +914,121 @@ const HM_INFO := {
 }
 
 
+## The build editor shared by the battle select screen and My Pokémon in the
+## Pokédex: shiny, main attack, super per stage, HM, vitamins and evolution
+## branch. Every choice is saved per line (Profile.loadout) so it carries over.
+func _build_editor(s: SpeciesData) -> void:
+	var loadout := Profile.loadout(s.id)
+	_shiny = Profile.has_shiny(s.id) and str(loadout.get("shiny", "")) != ""
+	_evolution = str(loadout.get("evolution", "")) if str(loadout.get("evolution", "")) in s.evolutions else ""
+	if s.shiny_sheet and not Profile.has_shiny(s.id):
+		_shiny = false
+		var how := UiKit.label("✦ Shiny locked: win it in the weekly shiny hunt, find it in Ultra/Master Balls, or buy it when it's in the Poké Mart", 15, Color(0.75, 0.8, 0.9))
+		how.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_details.add_child(how)
+	elif s.shiny_sheet:
+		var shiny_row := HBoxContainer.new()
+		var shiny_button := Button.new()
+		shiny_button.text = "SHINY: ON" if _shiny else "SHINY: OFF"
+		shiny_button.toggle_mode = true
+		shiny_button.button_pressed = _shiny
+		shiny_button.add_theme_font_size_override("font_size", 20)
+		shiny_button.pressed.connect(func() -> void:
+			_shiny = not _shiny
+			Profile.set_loadout(s.id, "shiny", "1" if _shiny else "")
+			_editor_refresh.call())
+		shiny_row.add_child(shiny_button)
+		shiny_row.add_child(UiKit.label("  Play with shiny colours", 16, Color(0.75, 0.8, 0.9)))
+		_details.add_child(shiny_row)
+
+	_main = _valid_move(s, str(loadout.get("main", "")))
+	_hm = str(loadout.get("hm", ""))
+
+	_details.add_child(_section("MAIN ATTACK  (right stick: drag to aim, tap to auto-aim)"))
+	var row := HFlowContainer.new()
+	var move_group := ButtonGroup.new()
+	var unlocked := Profile.unlocked_mains(s.id)
+	for entry in s.learnset:
+		var move: MoveData = entry["move"]
+		if move.slot != "main":
+			continue
+		var text := move.display_name
+		if move.id not in unlocked:
+			var tm := str(entry["tm"])
+			text = "%s (Lv %d%s)" % [move.display_name, int(entry["level"]), " or its TM" if tm != "" else ""]
+		var b := _toggle(text, move_group, move.id == _main)
+		b.disabled = move.id not in unlocked
+		b.pressed.connect(func() -> void:
+			_main = move.id
+			Profile.set_loadout(s.id, "main", move.id)
+			_editor_refresh.call())
+		row.add_child(b)
+	_details.add_child(row)
+	_details.add_child(UiKit.move_card(GameData.get_move(_main)))
+
+	if s.gadget_move:
+		_details.add_child(_section("GADGET  (%d uses per match)" % int(GameData.rule("gadget/uses", 3))))
+		_details.add_child(UiKit.move_card(s.gadget_move))
+
+	_details.add_child(_section("SUPER  (pick per stage: its own, an earlier one, or a TM super)"))
+	for stage in GameData.evolution_line(s.id):
+		var super_row := HBoxContainer.new()
+		super_row.add_child(UiKit.sprite(stage.sprite, 48))
+		var choices := HFlowContainer.new()
+		choices.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var group := ButtonGroup.new()
+		var picked := Profile.chosen_super(stage.id)
+		for option in Profile.super_options(stage.id):
+			var move: MoveData = GameData.get_move(option)
+			var b := _toggle(move.display_name, group, option == picked or (picked == "" and option == stage.super_move.id))
+			b.pressed.connect(func() -> void:
+				Profile.set_loadout(stage.id, "super_" + stage.id, "" if option == stage.super_move.id else option)
+				_editor_refresh.call())
+			choices.add_child(b)
+		# TM supers this stage could use but you don't own yet: shown locked.
+		for tm_super in Profile.stage_tm_supers(stage.id):
+			if Profile.owns_tm_super(tm_super) or not GameData.moves.has(tm_super):
+				continue
+			var locked := Button.new()
+			locked.text = "TM %s" % GameData.get_move(tm_super).display_name
+			locked.disabled = true
+			locked.tooltip_text = "Buy this TM in the Poké Mart or find it in a Poké Ball to use it."
+			locked.add_theme_font_size_override("font_size", 18)
+			choices.add_child(locked)
+		super_row.add_child(choices)
+		_details.add_child(super_row)
+		var card := UiKit.move_card(GameData.get_move(picked) if picked != "" else stage.super_move)
+		_details.add_child(card)
+	var tm_note := UiKit.label("Greyed-out TM supers: buy the TM in the Poké Mart or find it in a Poké Ball. Each type's TMs work for Pokémon of that type (per stage).", 15, Color(0.75, 0.8, 0.9))
+	tm_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_details.add_child(tm_note)
+
+	_details.add_child(_hm_picker(s))
+	_details.add_child(_vitamin_box(s))
+
+	if s.evolutions.size() > 1:
+		_details.add_child(_section("EVOLVES INTO"))
+		var branches := HFlowContainer.new()
+		var branch_group := ButtonGroup.new()
+		var random_button := _toggle("RANDOM", branch_group, _evolution == "")
+		random_button.pressed.connect(func() -> void:
+			_evolution = ""
+			Profile.set_loadout(s.id, "evolution", ""))
+		branches.add_child(random_button)
+		for branch_id in s.evolutions:
+			var branch: SpeciesData = GameData.species[branch_id]
+			var b := _toggle(branch.display_name, branch_group, _evolution == branch_id)
+			b.icon = branch.sprite
+			b.expand_icon = true
+			b.add_theme_constant_override("icon_max_width", 36)
+			b.pressed.connect(func() -> void:
+				_evolution = branch_id
+				Profile.set_loadout(s.id, "evolution", branch_id))
+			branches.add_child(b)
+		_details.add_child(branches)
+
+
+
 ## HMs: one or two per line; teach with an HM item, then pick the one to bring.
 func _hm_picker(s: SpeciesData) -> Control:
 	var box := VBoxContainer.new()
@@ -1020,7 +1039,7 @@ func _hm_picker(s: SpeciesData) -> Control:
 	var none := _toggle("NONE", group, _hm == "")
 	none.pressed.connect(func() -> void:
 		Profile.set_loadout(s.id, "hm", "")
-		_refresh_select_details())
+		_editor_refresh.call())
 	row.add_child(none)
 	for hm in Profile.hm_options(s.id):
 		var label := hm.replace("_", " ").to_upper()
@@ -1029,12 +1048,12 @@ func _hm_picker(s: SpeciesData) -> Control:
 			b.tooltip_text = HM_INFO.get(hm, "")
 			b.pressed.connect(func() -> void:
 				Profile.set_loadout(s.id, "hm", hm)
-				_refresh_select_details())
+				_editor_refresh.call())
 			row.add_child(b)
 		else:
 			var teach := UiKit.button("TEACH %s (%d in bag)" % [label, Profile.count("hm_" + hm)], func() -> void:
 				Profile.teach_hm(s.id, hm)
-				_refresh_select_details(), 16)
+				_editor_refresh.call(), 16)
 			teach.disabled = Profile.count("hm_" + hm) <= 0 or not Profile.is_unlocked(s.id)
 			row.add_child(teach)
 	box.add_child(row)
@@ -1066,13 +1085,13 @@ func _vitamin_box(s: SpeciesData) -> Control:
 		row.add_child(label)
 		row.add_child(UiKit.button("−", func() -> void:
 			Profile.change_active_vitamin(s.id, stat, -1)
-			_refresh_select_details(), 16))
+			_editor_refresh.call(), 16))
 		row.add_child(UiKit.button("+", func() -> void:
 			Profile.change_active_vitamin(s.id, stat, 1)
-			_refresh_select_details(), 16))
+			_editor_refresh.call(), 16))
 		var give := UiKit.button("GIVE (%d in bag)" % Profile.count(item), func() -> void:
 			Profile.give_vitamin(s.id, item)
-			_refresh_select_details(), 16)
+			_editor_refresh.call(), 16)
 		give.disabled = Profile.count(item) <= 0 or not Profile.is_unlocked(s.id)
 		row.add_child(give)
 		box.add_child(row)
@@ -1121,7 +1140,8 @@ func _restore_last_choices() -> void:
 
 # --- Pokédex details -------------------------------------------------------
 
-func _show_dex_entry(s: SpeciesData) -> void:
+func _show_dex_entry(s: SpeciesData, keep_scroll := false) -> void:
+	var scroll := _details_scroll.scroll_vertical
 	_clear(_details)
 	if not Profile.is_unlocked(s.id):
 		_show_locked_dex_entry(s)
@@ -1137,6 +1157,18 @@ func _show_dex_entry(s: SpeciesData) -> void:
 	_details.add_child(_dex_line(s, true))
 	_dex_matchups(s)
 
+	if _dex_tab == "mine" and not s.legendary:
+		# Your build, edited here the same way as on the battle screen; it carries into battle.
+		var base: SpeciesData = GameData.species[GameData.family_root(s.id)]
+		var heading := UiKit.label("YOUR BUILD  (saved, and used when you pick %s for battle)" % base.display_name, 22, Color(0.6, 1, 0.6))
+		heading.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_details.add_child(heading)
+		_editor_refresh = func() -> void: _show_dex_entry(s, true)
+		_build_editor(base)
+		await get_tree().process_frame
+		if keep_scroll and is_instance_valid(_details_scroll):
+			_details_scroll.scroll_vertical = scroll
+		return
 	_details.add_child(_section("SUPER  (this stage's own)"))
 	_details.add_child(UiKit.move_card(s.super_move))
 	if s.gadget_move:
@@ -1231,21 +1263,26 @@ func _dex_matchups(s: SpeciesData) -> void:
 	_details.add_child(resist if resist.get_child_count() > 0 else UiKit.label("Nothing", 18))
 
 
-## Full Pokédex entry for a line you haven't unlocked: silhouette, name, types,
-## play style, how to get it and its move names; stats and move details stay hidden.
-func _show_locked_dex_entry(s: SpeciesData) -> void:
+## Silhouette, number, name, types and how to unlock it.
+func _locked_header(s: SpeciesData, sprite_size: float) -> HBoxContainer:
 	var header := HBoxContainer.new()
 	header.add_theme_constant_override("separation", 16)
-	header.add_child(UiKit.sprite(_silhouette(s.sprite), 144))
+	header.add_child(UiKit.sprite(_silhouette(s.sprite), sprite_size))
 	var info := VBoxContainer.new()
 	info.alignment = BoxContainer.ALIGNMENT_CENTER
-	info.add_child(UiKit.label("#%03d  %s" % [s.dex, s.display_name], 40))
+	info.add_child(UiKit.label("#%03d  %s" % [s.dex, s.display_name], 40 if sprite_size > 120 else 32))
 	info.add_child(UiKit.type_row(s.types))
-	var how := UiKit.label("LEGENDARY  ·  raid boss and shrine guardian" if s.legendary else "NOT UNLOCKED  ·  " + Profile.unlock_hint(s.id), 18, Color(1, 0.6, 0.45))
+	var how := UiKit.label("LEGENDARY  ·  raid boss and shrine guardian" if s.legendary else "LOCKED  ·  " + Profile.unlock_hint(s.id), 18, Color(1, 0.6, 0.45))
 	how.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	info.add_child(how)
 	header.add_child(info)
-	_details.add_child(header)
+	return header
+
+
+## Full Pokédex entry for a line you haven't unlocked: silhouette, name, types,
+## play style, how to get it and its move names; stats and move details stay hidden.
+func _show_locked_dex_entry(s: SpeciesData) -> void:
+	_details.add_child(_locked_header(s, 144))
 	_details.add_child(_style_box(s))
 	_details.add_child(_section("EVOLUTION"))
 	_details.add_child(_dex_line(s, false))
