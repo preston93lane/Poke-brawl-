@@ -191,6 +191,8 @@ func _play_intro() -> void:
 	var title: String = MODE_TITLES.get(mode, mode.to_upper())
 	if mode == "gym" and not GameData.gym_run.is_empty():
 		title = GymMode.round_title(GameData.gym_run)
+	elif mode == "boss_raid" and mode_logic.get("boss"):
+		title = "BOSS RAID  ·  %s" % str(mode_logic.get("tier").get("name", "")).to_upper()
 	await intro.play(allies, others, title, arena.arena_name)
 	get_tree().paused = false
 

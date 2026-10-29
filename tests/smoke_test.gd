@@ -1257,7 +1257,7 @@ func _check_progression() -> void:
 		if base.id not in ["mewtwo", "mew"]:
 			Profile.unlock(base.id)
 	for boss in ["zapdos", "moltres", "articuno"]:
-		Profile.data["stats"]["raid_wins"][boss] = 5
+		Profile._stat_dict("boss_wins")[boss] = 5  # Boss Raid wins (Battle raids don't count).
 	Profile._check_unlocks()
 	expect(Profile.is_unlocked("mewtwo") and not Profile.is_unlocked("mew"), "Mewtwo after every other line and all raids")
 	Profile.data = saved
@@ -1389,6 +1389,8 @@ func _check_ball_goals_and_walls() -> void:
 func _check_boss_raid() -> void:
 	print("Boss Raid")
 	GameData.match_settings = { "boss": "zapdos" }
+	var wins_before := Profile.boss_wins("zapdos")
+	var tier_before := Profile.boss_tier_index("zapdos")
 	var main := await _start_match("vermilion_gym", "boss_raid", "pikachu", [])
 	GameData.match_settings = {}
 	var boss: Brawler = main.mode_logic.boss
@@ -1413,6 +1415,11 @@ func _check_boss_raid() -> void:
 	boss.take_damage(boss.max_health, main.player)
 	await get_tree().physics_frame
 	expect(main.round_over, "KO the boss and you win")
+	expect(Profile.boss_wins("zapdos") == wins_before + 1 and Profile.boss_tier_index("zapdos") == mini(tier_before + 1, 4), "each win moves the boss up a tier")
+	var raid_challenge := { "type": "raid", "boss": "zapdos", "count": 3 }
+	expect(Profile.challenge_progress(raid_challenge) == Profile.boss_wins("zapdos"), "raid challenges count Boss Raid wins")
+	Profile.record_match({ "species": "pikachu", "result": "victory", "raid": "zapdos", "mode": "duel" })
+	expect(Profile.challenge_progress(raid_challenge) == Profile.boss_wins("zapdos"), "a Battle-match raid doesn't count")
 	main.queue_free()
 	await get_tree().process_frame
 	expect(Profile.boss_unlocked("moltres") and (Profile.is_dev() or not Profile.boss_unlocked("mewtwo")), "beating Zapdos opens Moltres, not Mewtwo")

@@ -11,6 +11,8 @@ const STRIKE_WARN := 1.4
 var boss_id := ""
 var boss: Brawler
 var lives := 6
+## This fight's difficulty (rules.json modes/boss_raid/tiers): set from your wins against this boss.
+var tier: Dictionary = {}
 var phase := 1
 var _strike_timer := 4.0
 var _minions: Array[Brawler] = []
@@ -26,7 +28,8 @@ func start() -> void:
 	boss_id = str(GameData.match_settings.get("boss", ""))
 	if not GameData.species.has(boss_id):
 		boss_id = str(bosses().keys()[0])
-	lives = int(rules.get("team_lives", 6))
+	tier = Profile.boss_tier(boss_id)
+	lives = maxi(1, int(rules.get("team_lives", 6)) + int(tier.get("lives", 0)))
 	var team_hp := 0.0
 	for b: Brawler in main.teams[0]:
 		team_hp += b.max_health
@@ -37,15 +40,15 @@ func start() -> void:
 	boss.refresh_stats()
 	boss.collision_mask = 0
 	boss.regenerates = false
-	boss.damage_scale = float(bosses().get(boss_id, {}).get("boss_damage", rules.get("boss_damage", 0.4)))
+	boss.damage_scale = float(bosses().get(boss_id, {}).get("boss_damage", rules.get("boss_damage", 0.4))) * float(tier.get("damage", 1.0))
 	var capsule := (boss.get_node("CollisionShape3D") as CollisionShape3D).shape as CapsuleShape3D
 	capsule.radius = Brawler.COLLIDER_RADIUS * boss.size_scale
 	capsule.height = maxf(capsule.height, capsule.radius * 2.0 + 0.2)
-	boss.max_health = team_hp / maxf(1.0, main.teams[0].size()) * float(rules.get("boss_hp", 14.0))
+	boss.max_health = team_hp / maxf(1.0, main.teams[0].size()) * float(rules.get("boss_hp", 14.0)) * float(tier.get("hp", 1.0))
 	boss.health = boss.max_health
 	boss.position = main.arena.center_point()
 	var bot := BotController.new()
-	bot.set_difficulty("hard")
+	bot.set_difficulty(str(tier.get("bot", "hard")))
 	bot.leash_center = boss.position
 	bot.leash_radius = float(rules.get("leash", 6.0))
 	bot.start_delay = 2.0
@@ -67,7 +70,7 @@ func tick(delta: float) -> void:
 		_call_minions(phase)
 	_strike_timer -= delta
 	if _strike_timer <= 0.0:
-		_strike_timer = [6.0, 4.5, 3.2][phase - 1]
+		_strike_timer = [6.0, 4.5, 3.2][phase - 1] * float(tier.get("strike_gap", 1.0))
 		_strikes(phase)
 
 
@@ -119,7 +122,7 @@ func _land_strike(disc: Node3D, at: Vector3, radius: float) -> void:
 	Vfx.burst(main.arena, at + Vector3(0, 0.5, 0), type_name, 30, 0.6, 5.0)
 	for b: Brawler in main.teams[0]:
 		if not b.is_dead and Vector2(b.global_position.x - at.x, b.global_position.z - at.z).length() <= radius:
-			b.take_damage(b.max_health * float(rules.get("strike_damage", 0.3)), boss)
+			b.take_damage(b.max_health * float(rules.get("strike_damage", 0.3)) * float(tier.get("damage", 1.0)), boss)
 
 
 ## Minions of the boss's type (base forms): fodder to KO and evolve on.
@@ -181,7 +184,7 @@ func time_up() -> String:
 
 
 func scoreboard_info() -> Dictionary:
-	return { "goal": "BEAT %s" % (boss.species.display_name.to_upper() if boss else "THE BOSS") }
+	return { "goal": "%s · %s" % [boss.species.display_name.to_upper() if boss else "BOSS", str(tier.get("name", "")).to_upper()] }
 
 
 func spawn_position(b: Brawler) -> Vector3:

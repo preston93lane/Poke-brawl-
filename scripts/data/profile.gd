@@ -201,7 +201,7 @@ func challenge_progress(c: Dictionary) -> int:
 		"win":
 			return int(_stat_dict("arena_wins").get(c.get("arena", ""), 0))
 		"raid":
-			return int(_stat_dict("raid_wins").get(c.get("boss", ""), 0))
+			return boss_wins(str(c.get("boss", "")))  # Boss Raid wins only, not Battle raids.
 		"mode_win":
 			return int(_stat_dict("mode_wins").get(c.get("mode", ""), 0))
 		"wins":
@@ -652,8 +652,6 @@ func record_match(info: Dictionary) -> Dictionary:
 	if boss != "":
 		var bw := _stat_dict("boss_wins")
 		bw[boss] = int(bw.get(boss, 0)) + 1
-		var rw0 := _stat_dict("raid_wins")  # Counts for the "win the X raid" challenges too.
-		rw0[boss] = int(rw0.get(boss, 0)) + 1
 	var raid := str(info.get("raid", ""))
 	if raid != "":
 		var rw := _stat_dict("raid_wins")
@@ -666,8 +664,10 @@ func record_match(info: Dictionary) -> Dictionary:
 	var levels_before := level_of(family)
 	var gained := _add_xp(family, xp)
 	var cash := int(econ("money/" + ({ "victory": "win", "defeat": "loss" }.get(result, "draw") as String), 15)) + kos * int(econ("money/per_ko", 5))
+	var boss_tier := 0  # The tier just beaten (this win is already counted).
 	if boss != "":
-		cash += int(econ("money/boss_win", 800))
+		boss_tier = clampi(boss_wins(boss) - 1, 0, boss_tiers().size() - 1)
+		cash += roundi(int(econ("money/boss_win", 800)) * (1.0 + 0.25 * boss_tier))
 	data["money"] = money() + cash
 
 	var balls: Array[String] = []
@@ -681,8 +681,9 @@ func record_match(info: Dictionary) -> Dictionary:
 	if raid != "":
 		balls.append(str(econ("drops/raid", "ultra_ball")))
 	if boss != "":
-		# First win against each boss: an Ultra Ball; after that a Great Ball.
-		balls.append("ultra_ball" if int(_stat_dict("boss_wins")[boss]) == 1 else "great_ball")
+		# First win at each tier: that tier's ball (up to a Master Ball); repeats at Master: a Great Ball.
+		var first_at_tier := boss_wins(boss) - 1 == boss_tier
+		balls.append(str(boss_tiers()[boss_tier].get("first_ball", "great_ball")) if first_at_tier else "great_ball")
 	var progress := {
 		"matches": 1, "wins": 1 if won else 0, "kos": int(info.get("kos", 0)), "mvp": 1 if mvp else 0,
 		"supers": int(info.get("supers", 0)), "final_stage": 1 if info.get("final_stage", false) else 0,
@@ -1066,6 +1067,20 @@ func boss_unlocked(boss_id: String) -> bool:
 
 func boss_wins(boss_id: String) -> int:
 	return int(_stat_dict("boss_wins").get(boss_id, 0))
+
+
+## Difficulty tiers (easy → master), rules.json modes/boss_raid/tiers.
+func boss_tiers() -> Array:
+	return GameData.rule("modes/boss_raid/tiers", [{ "name": "medium" }])
+
+
+## Each win moves a boss up a tier, up to the last.
+func boss_tier_index(boss_id: String) -> int:
+	return mini(boss_wins(boss_id), boss_tiers().size() - 1)
+
+
+func boss_tier(boss_id: String) -> Dictionary:
+	return boss_tiers()[boss_tier_index(boss_id)]
 
 
 # --- Shinies -------------------------------------------------------------------

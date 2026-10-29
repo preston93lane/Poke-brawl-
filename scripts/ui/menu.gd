@@ -300,7 +300,7 @@ func show_bosses() -> void:
 	top.add_child(UiKit.button("‹ BACK", show_battle_modes))
 	top.add_child(UiKit.label("   BOSS RAID  ·  3 of you vs. a giant legendary", 30, Color(1, 0.85, 0.25)))
 	v.add_child(top)
-	var tip := UiKit.label("Your team shares %d lives. At 66%% and 33%% health it calls in minions (KO them to evolve) and strikes faster. First win: Ultra Ball." % int(GameData.rule("modes/boss_raid/team_lives", 6)), 18, Color(0.8, 0.85, 1))
+	var tip := UiKit.label("Each win makes that boss harder: Easy → Medium → Hard → Expert → Master (better rewards each step). At 66% and 33% health it calls in minions (KO them to evolve) and strikes faster.", 18, Color(0.8, 0.85, 1))
 	tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	v.add_child(tip)
 	var row := HBoxContainer.new()
@@ -318,7 +318,8 @@ func show_bosses() -> void:
 			pic.modulate = Color(0, 0, 0, 0.8)
 		card.add_child(pic)
 		var wins := Profile.boss_wins(boss_id)
-		var info := "Beaten ×%d" % wins if wins > 0 else ("Not beaten yet" if open else
+		var next_tier := str(Profile.boss_tier(boss_id).get("name", "")).to_upper()
+		var info := ("Beaten ×%d · Next: %s" % [wins, next_tier] if wins > 0 else "Next: %s" % next_tier) if open else (
 				("Trainer LV %d" % int(GameData.rule("modes/boss_raid/first_level", 10)) if i == 0 else "Beat %s first" % GameData.species[order[i - 1]].display_name))
 		var b := UiKit.button(s.display_name.to_upper() if open else "LOCKED", func() -> void:
 			_boss = boss_id
@@ -414,7 +415,7 @@ func show_select(mode: String) -> void:
 	top.add_child(UiKit.button("‹ BACK", back))
 	var title := UiKit.label("%s  —  %s" % [MODES[mode]["title"], MODES[mode]["blurb"]], 26)
 	if mode == "boss_raid":
-		title.text = "BOSS RAID  —  vs. %s" % GameData.species[_boss].display_name.to_upper()
+		title.text = "BOSS RAID  —  vs. %s  (%s)" % [GameData.species[_boss].display_name.to_upper(), str(Profile.boss_tier(_boss).get("name", "")).to_upper()]
 	elif mode == "gym":
 		title.text = "%s  —  %s%s" % [str(GameData.arenas.get(_gym, {}).get("name", _gym)).to_upper(), _gym_difficulty.to_upper(),
 				"  ·  pick a %s type" % _gym_type.capitalize() if _gym_type != "" else ""]

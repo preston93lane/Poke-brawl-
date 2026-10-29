@@ -206,7 +206,7 @@
 				"type": "raid",
 				"boss": "moltres",
 				"count": 3,
-				"text": "Win the Moltres raid 3 times"
+				"text": "Beat Moltres in Boss Raid 3 times"
 			}
 		},
 		{
@@ -338,7 +338,7 @@
 				"type": "raid",
 				"boss": "articuno",
 				"count": 3,
-				"text": "Win the Articuno raid 3 times"
+				"text": "Beat Articuno in Boss Raid 3 times"
 			}
 		},
 		{
@@ -371,7 +371,7 @@
 				"type": "raid",
 				"boss": "zapdos",
 				"count": 3,
-				"text": "Win the Zapdos raid 3 times"
+				"text": "Beat Zapdos in Boss Raid 3 times"
 			}
 		},
 		{
@@ -434,7 +434,7 @@
 			"area": "Seafoam, Cinnabar & Victory Road",
 			"challenge": {
 				"type": "all",
-				"text": "Unlock every other Pokémon (except Mew), then win each legendary raid 5 times",
+				"text": "Unlock every other Pokémon (except Mew), then beat each legendary in Boss Raid 5 times (up to Master)",
 				"parts": [
 					{
 						"type": "all_unlocked",
@@ -448,19 +448,19 @@
 						"type": "raid",
 						"boss": "zapdos",
 						"count": 5,
-						"text": "Win the Zapdos raid 5 times"
+						"text": "Beat Zapdos in Boss Raid 5 times"
 					},
 					{
 						"type": "raid",
 						"boss": "moltres",
 						"count": 5,
-						"text": "Win the Moltres raid 5 times"
+						"text": "Beat Moltres in Boss Raid 5 times"
 					},
 					{
 						"type": "raid",
 						"boss": "articuno",
 						"count": 5,
-						"text": "Win the Articuno raid 5 times"
+						"text": "Beat Articuno in Boss Raid 5 times"
 					}
 				]
 			}
