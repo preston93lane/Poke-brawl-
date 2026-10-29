@@ -1221,6 +1221,10 @@ func _check_progression() -> void:
 			if prize["item"] == "rare_candy":
 				candies += 1
 	expect(candies > 5 and candies < 45, "Poké Balls give a Rare Candy about 1 time in 10 (%d of 200)" % candies)
+	var before := Profile.count("rare_candy")
+	Profile._give("ultra_ball", 1)
+	Profile.open_ball("ultra_ball")
+	expect(Profile.count("rare_candy") > before, "an Ultra Ball always has a Rare Candy")
 	Profile._give("protein", 12)
 	for i in 12:
 		Profile.give_vitamin("charmander", "protein")
@@ -1252,6 +1256,15 @@ func _check_progression() -> void:
 	for i in 7:
 		Profile.buy("protein")
 	expect(Profile.bought_today("vitamin") == 5, "store caps vitamins at 5 a day")
+	Profile.data["store"] = {}
+	slots = Profile.store_slots()
+	Profile.data["store"]["slots"] = [{ "item": "rare_candy", "rarity": "common" }, { "item": "great_ball", "rarity": "rare" }]
+	var first_price := Profile.store_price("rare_candy")
+	expect(Profile.buy("rare_candy", 0) and Profile.store_price("rare_candy") == int(round(first_price * 1.25 / 10.0) * 10), "each buy makes the next 25%% dearer (%d → %d)" % [first_price, Profile.store_price("rare_candy")])
+	Profile.buy("rare_candy", 0)
+	Profile.buy("rare_candy", 0)
+	expect(Profile.cant_buy("rare_candy", 0) == "Sold out", "common slots sell 3 a day")
+	expect(Profile.buy("great_ball", 1) and Profile.cant_buy("great_ball", 1) == "Sold out", "rare slots sell once a day")
 	var main := await _start_match("route_1", "duel", "charmander", [])
 	expect(main.player.attack > GameData.get_species("charmander").attack * 1.2, "vitamins boost stats in a match")
 	main.queue_free()

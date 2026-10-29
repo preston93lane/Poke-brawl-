@@ -164,7 +164,9 @@ static func store(menu: Node, message := "") -> Control:
 	grid.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	grid.add_theme_constant_override("h_separation", 12)
 	grid.add_theme_constant_override("v_separation", 12)
-	for slot: Dictionary in Profile.store_slots():
+	var slots := Profile.store_slots()
+	for index in slots.size():
+		var slot: Dictionary = slots[index]
 		var item := str(slot["item"])
 		var card := VBoxContainer.new()
 		card.custom_minimum_size = Vector2(250, 150)
@@ -174,10 +176,11 @@ static func store(menu: Node, message := "") -> Control:
 		name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		card.add_child(name_label)
 		var category := Profile.item_category(item)
-		card.add_child(UiKit.label("Bought today %d / %d" % [Profile.bought_today(category), Profile.daily_cap(category)], 14, Color(0.85, 0.9, 1)))
-		var why := Profile.cant_buy(item)
-		var buy := UiKit.button("BUY  %d ₽" % Profile.item_price(item) if why == "" else "%d ₽ · %s" % [Profile.item_price(item), why.to_upper()], func() -> void:
-			if Profile.buy(item):
+		card.add_child(UiKit.label("%d / %d left today" % [maxi(0, Profile.slot_limit(index) - Profile.slot_bought(index)), Profile.slot_limit(index)], 14, Color(0.85, 0.9, 1)))
+		var why := Profile.cant_buy(item, index)
+		var price := Profile.store_price(item)
+		var buy := UiKit.button("BUY  %d ₽" % price if why == "" else "%d ₽ · %s" % [price, why.to_upper()], func() -> void:
+			if Profile.buy(item, index):
 				menu.show_store("Bought %s!" % Profile.item_name(item)), 20)
 		buy.disabled = why != ""
 		card.add_child(buy)
@@ -188,7 +191,10 @@ static func store(menu: Node, message := "") -> Control:
 	var caps := PackedStringArray()
 	for category: String in Profile.econ("store/daily_caps", {}):
 		caps.append("%s %d" % [category.replace("_", " "), Profile.daily_cap(category)])
-	v.add_child(UiKit.label("Daily limits: " + ", ".join(caps), 16, Color(0.75, 0.8, 0.9)))
+	var rules_label := UiKit.label("Common items: 3 a day, uncommon: 2, rare and featured: 1. Each buy of the same item costs 25% more until tomorrow. Also capped per day: " + ", ".join(caps), 16, Color(0.75, 0.8, 0.9))
+	rules_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	rules_label.custom_minimum_size.x = 600
+	v.add_child(rules_label)
 	return UiKit.scroll(v)
 
 

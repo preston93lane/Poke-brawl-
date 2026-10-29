@@ -1285,28 +1285,58 @@ func daily_cap(category: String) -> int:
 	return int(econ("store/daily_caps/" + category, 99))
 
 
-## "" if it can be bought now, else why not.
-func cant_buy(item: String) -> String:
+## Today's price: the base price, up price_step (25%) for each one of it already bought today.
+func store_price(item: String) -> int:
+	store_slots()
+	var n := int((_dict("store").get("item_counts", {}) as Dictionary).get(item, 0))
+	return int(round(item_price(item) * pow(1.0 + float(econ("store/price_step", 0.25)), n) / 10.0) * 10.0)
+
+
+## How many times a slot can be bought today (by its rarity) and how many it has been.
+func slot_limit(slot: int) -> int:
+	var slots := store_slots()
+	if slot < 0 or slot >= slots.size():
+		return 99
+	return int(econ("store/slot_limits/" + str(slots[slot]["rarity"]), 1))
+
+
+func slot_bought(slot: int) -> int:
+	store_slots()
+	return int((_dict("store").get("slot_bought", {}) as Dictionary).get(str(slot), 0))
+
+
+## "" if it can be bought now, else why not. `slot` = the store slot (-1 = no slot limit).
+func cant_buy(item: String, slot := -1) -> String:
 	var category := item_category(item)
 	if item.begins_with("tm_") and has_tm(item):
 		return "Owned"
 	if item.begins_with("shiny_") and has_shiny(item.trim_prefix("shiny_")):
 		return "Owned"
+	if slot >= 0 and slot_bought(slot) >= slot_limit(slot):
+		return "Sold out"
 	if bought_today(category) >= daily_cap(category):
 		return "Daily limit"
-	if money() < item_price(item):
+	if money() < store_price(item):
 		return "Not enough ₽"
 	return ""
 
 
-func buy(item: String) -> bool:
-	if cant_buy(item) != "":
+func buy(item: String, slot := -1) -> bool:
+	if cant_buy(item, slot) != "":
 		return false
-	data["money"] = money() - item_price(item)
-	var bought: Dictionary = _dict("store").get("bought", {})
+	data["money"] = money() - store_price(item)
+	var store := _dict("store")
+	var bought: Dictionary = store.get("bought", {})
 	var category := item_category(item)
 	bought[category] = int(bought.get(category, 0)) + 1
-	_dict("store")["bought"] = bought
+	store["bought"] = bought
+	var counts: Dictionary = store.get("item_counts", {})
+	counts[item] = int(counts.get(item, 0)) + 1
+	store["item_counts"] = counts
+	if slot >= 0:
+		var per_slot: Dictionary = store.get("slot_bought", {})
+		per_slot[str(slot)] = int(per_slot.get(str(slot), 0)) + 1
+		store["slot_bought"] = per_slot
 	if item.begins_with("tm_"):
 		_add_tm(item)
 	elif item.begins_with("shiny_"):

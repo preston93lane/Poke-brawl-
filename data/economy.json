@@ -96,7 +96,7 @@
 				600
 			],
 			"candy": [
-				0.75,
+				1.0,
 				1,
 				2
 			],
@@ -188,7 +188,7 @@
 		"rare_candy": {
 			"name": "Rare Candy",
 			"category": "rare_candy",
-			"price": 800
+			"price": 300
 		},
 		"hp_up": {
 			"name": "HP Up",
@@ -253,12 +253,12 @@
 		"hunt_wins": 15
 	},
 	"store": {
-		"_comment": "Slot pools: each slot picks one entry by weight. 'tm' = a random TM you don't own yet.",
+		"_comment": "Slot pools: each slot picks one entry by weight. 'tm' = a random TM you don't own yet. Each slot can be bought slot_limits[rarity] times a day; every purchase of the same item that day makes the next one cost price_step (25%) more.",
 		"slots": [
 			{
 				"rarity": "common",
 				"pool": {
-					"rare_candy": 1,
+					"rare_candy": 3,
 					"hp_up": 1,
 					"protein": 1,
 					"iron": 1,
@@ -268,7 +268,7 @@
 			{
 				"rarity": "common",
 				"pool": {
-					"rare_candy": 1,
+					"rare_candy": 3,
 					"hp_up": 1,
 					"protein": 1,
 					"iron": 1,
@@ -317,14 +317,21 @@
 		"daily_caps": {
 			"vitamin": 5,
 			"tm": 2,
-			"rare_candy": 3,
+			"rare_candy": 10,
 			"poke_ball": 3,
 			"great_ball": 3,
 			"ultra_ball": 3,
 			"master_ball": 1,
 			"hm": 3,
 			"shiny": 1
-		}
+		},
+		"slot_limits": {
+			"common": 3,
+			"uncommon": 2,
+			"rare": 1,
+			"featured": 1
+		},
+		"price_step": 0.25
 	},
 	"dailies": {
 		"_comment": "Daily challenges: `count` tasks rolled each day from `tasks` (no two with the same stat), rewards given as soon as one is done. {type} = a type you own. Finish all for `all_done`; every streak_days days in a row also gives streak_reward. One free reroll a day.",
