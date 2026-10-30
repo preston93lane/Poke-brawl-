@@ -46,6 +46,8 @@ var _difficulty := "normal"
 var _details: VBoxContainer
 var _details_scroll: ScrollContainer
 var _start_button: Button
+## Which screen is showing ("home", "store"...), so rebuilding it doesn't replay its entrance.
+var _screen_kind := ""
 ## Equipped HM for the selected line.
 var _hm := ""
 
@@ -68,7 +70,7 @@ func _ready() -> void:
 	add_child(bg)
 	_restore_last_choices()
 	if Profile.needs_starter():
-		_set_screen(TrainerScreens.starter(self))
+		_set_screen(TrainerScreens.starter(self), "_ready")
 	else:
 		show_home()
 
@@ -86,9 +88,10 @@ func show_home() -> void:
 
 	var starters := HBoxContainer.new()
 	starters.alignment = BoxContainer.ALIGNMENT_CENTER
+	starters.add_theme_constant_override("separation", 4)
 	for id in ["bulbasaur", "charmander", "squirtle", "pikachu", "eevee", "gastly", "dratini"]:
 		if GameData.species.has(id):
-			starters.add_child(UiKit.sprite(GameData.species[id].sprite, 72))
+			starters.add_child(PmdIcon.make(GameData.species[id], 76))
 	v.add_child(starters)
 
 	# Trainer card: level, money, Pokémon unlocked; opens the challenges.
@@ -108,6 +111,8 @@ func show_home() -> void:
 	main_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	main_row.add_theme_constant_override("separation", 16)
 	var challenges := UiKit.button("CHALLENGES", show_challenges, 36)
+	if Profile.has_news("challenges"):
+		UiKit.news_dot(challenges)
 	challenges.custom_minimum_size = Vector2(380, 104)
 	challenges.add_theme_stylebox_override("normal", UiKit.box(Color(0.45, 0.3, 0.75)))
 	challenges.add_theme_stylebox_override("hover", UiKit.box(Color(0.52, 0.36, 0.82)))
@@ -133,15 +138,19 @@ func show_home() -> void:
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 12)
-	for entry in [["POKéDEX", show_pokedex.bind("", "mine"), Color(0.75, 0.3, 0.3)], ["BAG", show_bag.bind([] as Array[Dictionary]), Color(0.25, 0.55, 0.45)],
-			["POKé MART", show_store.bind(""), Color(0.3, 0.45, 0.8)], ["ACCOUNT", show_account.bind(""), Color(0.35, 0.38, 0.5)],
-			["SETTINGS", show_settings, Color(0.35, 0.38, 0.5)]]:
-		var b := UiKit.button(entry[0], entry[1], 22)
-		b.custom_minimum_size = Vector2(196, 64)
+	# [label, opens, colour, news key (a red dot while there's something new)]
+	for entry in [["POKéDEX", show_pokedex.bind("", "mine"), Color(0.75, 0.3, 0.3), "pokedex"],
+			["BAG", show_bag.bind([] as Array[Dictionary]), Color(0.25, 0.55, 0.45), "bag"],
+			["POKé MART", show_store.bind(""), Color(0.3, 0.45, 0.8), "store"], ["PROFILE", show_profile, Color(0.55, 0.4, 0.2), ""],
+			["ACCOUNT", show_account.bind(""), Color(0.35, 0.38, 0.5), ""], ["SETTINGS", show_settings, Color(0.35, 0.38, 0.5), ""]]:
+		var b := UiKit.button(entry[0], entry[1], 21)
+		b.custom_minimum_size = Vector2(168, 64)
 		b.add_theme_stylebox_override("normal", UiKit.box(entry[2]))
+		if entry[3] != "" and Profile.has_news(entry[3]):
+			UiKit.news_dot(b, Profile.count_balls() if entry[3] == "bag" else 0)
 		row.add_child(b)
 	v.add_child(row)
-	_set_screen(v)
+	_set_screen(v, "home")
 	# A "?" in the corner opens How to Play; it opens by itself the very first time.
 	var help := UiKit.button("?  HOW TO PLAY", show_tutorial, 16)
 	help.add_theme_stylebox_override("normal", UiKit.box(Color(0, 0, 0, 0.35), 12, 8))
@@ -211,7 +220,7 @@ func show_battle_modes() -> void:
 	lower.add_child(create)
 	body.add_child(lower)
 	v.add_child(body)
-	_set_screen(v)
+	_set_screen(v, "battle_modes")
 
 
 func _species_icon(id: String) -> Texture2D:
@@ -274,7 +283,7 @@ func show_gyms() -> void:
 	var e4_label := UiKit.label(e4_info, 16, Color(1, 1, 1, 0.8))
 	e4_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(e4_label)
-	_set_screen(v)
+	_set_screen(v, "gyms")
 
 
 ## One gym: its three rounds, difficulty, and an optional one-type team for bigger rewards.
@@ -363,7 +372,7 @@ func show_gym(id: String) -> void:
 		if str(c.get("type", "")) == "gym_clear" and str(c.get("gym", "")) == id:
 			var have := Profile.is_unlocked(str(entry["family"]))
 			v.add_child(UiKit.label("%s Challenge: %s → unlocks %s" % ["DONE ·" if have else "★", str(c["text"]), GameData.species[str(entry["family"])].display_name], 17, Color(0.6, 1, 0.6) if have else Color(1, 0.85, 0.4)))
-	_set_screen(UiKit.scroll(v))
+	_set_screen(UiKit.scroll(v), "gym")
 
 
 ## Boss Raid: pick a legendary. They open one by one (see Profile.boss_unlocked).
@@ -407,7 +416,7 @@ func show_bosses() -> void:
 		card.add_child(l)
 		row.add_child(card)
 	v.add_child(row)
-	_set_screen(v)
+	_set_screen(v, "bosses")
 
 
 func _mode_card(title: String, blurb: String, on_pressed: Callable, color: Color) -> Button:
@@ -429,11 +438,12 @@ func _mode_card(title: String, blurb: String, on_pressed: Callable, color: Color
 
 
 func show_challenges() -> void:
-	_set_screen(TrainerScreens.challenges(self))
+	Profile.mark_seen("challenges")
+	_set_screen(TrainerScreens.challenges(self), "challenges")
 
 
 func show_bag(prizes: Array[Dictionary] = []) -> void:
-	_set_screen(TrainerScreens.bag(self, prizes))
+	_set_screen(TrainerScreens.bag(self, prizes), "bag")
 
 
 ## Plays the ball opening over the bag, then shows the bag with what came out.
@@ -444,12 +454,21 @@ func play_ball_opening(ball: String, prizes: Array[Dictionary]) -> void:
 	add_child(anim)
 
 
+func mode_names() -> Dictionary:
+	return MODES
+
+
+func show_profile() -> void:
+	_set_screen(TrainerScreens.profile(self), "profile")
+
+
 func show_account(message := "") -> void:
-	_set_screen(TrainerScreens.account(self, message))
+	_set_screen(TrainerScreens.account(self, message), "account")
 
 
 func show_store(message := "") -> void:
-	_set_screen(TrainerScreens.store(self, message))
+	Profile.mark_seen("store")
+	_set_screen(TrainerScreens.store(self, message), "store")
 
 
 func _unlocked_count() -> int:
@@ -535,7 +554,7 @@ func show_select(mode: String) -> void:
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	body.add_child(right)
 	root.add_child(body)
-	_set_screen(root)
+	_set_screen(root, "select")
 	_refresh_select_details()
 
 
@@ -584,7 +603,7 @@ func show_about() -> void:
 	var legal := UiKit.label(LEGAL, 18, Color(0.85, 0.9, 1))
 	legal.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	v.add_child(legal)
-	_set_screen(UiKit.scroll(v))
+	_set_screen(UiKit.scroll(v), "about")
 
 
 func show_settings() -> void:
@@ -654,7 +673,7 @@ func show_settings() -> void:
 	root.add_child(top)
 	editor.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.add_child(editor)
-	_set_screen(root)
+	_set_screen(root, "settings")
 	update_size.call()
 
 
@@ -691,7 +710,7 @@ func show_dev() -> void:
 		show_home(), 20))
 	v.add_child(reset_row)
 	v.add_child(UiKit.label("In a match, dev mode adds RAID NOW and WIN buttons at the top left.", 18, Color(0.75, 0.8, 0.9)))
-	_set_screen(UiKit.scroll(v))
+	_set_screen(UiKit.scroll(v), "dev")
 
 
 ## Profile level of the line and how many KOs each growth takes in a match.
@@ -751,13 +770,14 @@ func _trainer_level_box(s: SpeciesData) -> VBoxContainer:
 func show_map_editor() -> void:
 	var editor = MAP_EDITOR.new()
 	editor.menu = self
-	_set_screen(editor)
+	_set_screen(editor, "map_editor")
 
 
 ## Two tabs: MY POKéMON (default: only lines you've unlocked, with your levels,
 ## shinies, TMs, HMs and vitamins) and FULL POKéDEX (every Pokémon; ones you
 ## haven't unlocked are silhouettes with their stats and move details hidden).
 func show_pokedex(selected_id: String, tab := "") -> void:
+	Profile.mark_seen("pokedex")
 	if tab != "":
 		_dex_tab = tab
 	var mine := _dex_tab == "mine"
@@ -822,7 +842,7 @@ func show_pokedex(selected_id: String, tab := "") -> void:
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	body.add_child(right)
 	root.add_child(body)
-	_set_screen(root)
+	_set_screen(root, "pokedex")
 	if selected:
 		_show_dex_entry(selected)
 
@@ -1539,12 +1559,66 @@ func _show_locked_dex_entry(s: SpeciesData) -> void:
 
 ## Every label added to the menu is checked so long text can't make a row wider than
 ## the screen: long labels in a row wrap onto more lines instead.
+## Buttons also get a little squash when pressed and a bounce when let go.
 func _on_node_added(node: Node) -> void:
 	if node is Label and is_ancestor_of(node):
 		UiKit.fit_label.call_deferred(node)
+	elif node is BaseButton and is_ancestor_of(node):
+		var b := node as BaseButton
+		if not b.button_down.is_connected(_press_bounce):
+			b.button_down.connect(_press_bounce.bind(b, true))
+			b.button_up.connect(_press_bounce.bind(b, false))
 
 
-func _set_screen(content: Control) -> void:
+func _press_bounce(b: BaseButton, down: bool) -> void:
+	if not is_instance_valid(b) or not b.is_inside_tree():
+		return
+	b.pivot_offset = b.size * 0.5
+	var tween := b.create_tween()
+	if down:
+		tween.tween_property(b, "scale", Vector2(0.93, 0.93), 0.06).set_ease(Tween.EASE_OUT)
+	else:
+		tween.tween_property(b, "scale", Vector2.ONE, 0.32).set_trans(Tween.TRANS_ELASTIC).set_ease(Tween.EASE_OUT)
+
+
+## A new screen slides up and fades in, and its buttons pop in one after another.
+## Rebuilding the same screen (after buying something, picking a Pokémon...) doesn't
+## replay it.
+func _animate_in(screen: Control) -> void:
+	screen.modulate.a = 0.0
+	await get_tree().process_frame
+	if not is_instance_valid(screen) or not screen.is_inside_tree():
+		return
+	var buttons: Array[Control] = []
+	_collect_buttons(screen, buttons)
+	for b in buttons:
+		b.modulate.a = 0.0
+	screen.modulate.a = 1.0
+	var rest_y := screen.position.y
+	screen.position.y = rest_y + 26.0
+	var slide := screen.create_tween().set_parallel()
+	slide.tween_property(screen, "position:y", rest_y, 0.28).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	for i in buttons.size():
+		var b := buttons[i]
+		b.pivot_offset = b.size * 0.5
+		b.scale = Vector2(0.86, 0.86)
+		var delay := minf(i * 0.035, 0.5)
+		slide.tween_property(b, "modulate:a", 1.0, 0.18).set_delay(delay)
+		slide.tween_property(b, "scale", Vector2.ONE, 0.34).set_delay(delay).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+## Visible buttons in screen order, skipping long lists (a Pokédex grid pops in as a whole).
+func _collect_buttons(node: Node, into: Array[Control]) -> void:
+	for child in node.get_children():
+		if into.size() >= 30:
+			return
+		if child is BaseButton and (child as Control).visible:
+			into.append(child as Control)
+		elif child is Control and (child as Control).visible and not child is GridContainer:
+			_collect_buttons(child, into)
+
+
+func _set_screen(content: Control, kind := "") -> void:
 	if not get_tree().node_added.is_connected(_on_node_added):
 		get_tree().node_added.connect(_on_node_added)
 	if _screen:
@@ -1559,6 +1633,9 @@ func _set_screen(content: Control) -> void:
 	margin.add_child(content)
 	_screen = margin
 	add_child(margin)
+	if kind != _screen_kind:
+		_animate_in(margin)
+	_screen_kind = kind
 	_play_reveals()
 
 

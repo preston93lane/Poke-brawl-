@@ -1080,6 +1080,7 @@ func _check_menu_fits() -> void:
 	screens.append(["account", func() -> void: menu.show_account("")])
 	screens.append(["battle modes", func() -> void: menu.show_battle_modes()])
 	screens.append(["challenges", func() -> void: menu.show_challenges()])
+	screens.append(["profile", func() -> void: menu.show_profile()])
 	for entry in screens:
 		entry[1].call()
 		for i in 3:
@@ -1240,6 +1241,16 @@ func _check_progression() -> void:
 	expect(int(r["money"]) == 60 + 20 and Profile.money() == 80, "Poké Dollars for winning")
 	expect((r["balls"] as Array).size() >= 2, "a ball for the win plus the first-win Great Ball (%s)" % str(r["balls"]))
 	expect(Profile.level_of("charmander") > 1, "levelled up (Lv %d)" % Profile.level_of("charmander"))
+	expect(str(r["family"]) == "charmander" and r.has("xp_before") and int(r["xp_after"]) == Profile.xp_of("charmander"),
+			"the result screen gets the XP before and after, to fill the bar")
+	var st: Dictionary = Profile.data["stats"]
+	expect(int(st.get("kos", 0)) >= 4 and int(st.get("mvps", 0)) >= 1 and int((st["family_matches"] as Dictionary).get("charmander", 0)) >= 1,
+			"Profile stats count KOs, MVPs and matches per Pokémon")
+	expect(Profile.favourite_family() == "charmander", "the most-played line is the favourite")
+	Profile.data.erase("seen")
+	expect(Profile.has_news("store"), "new stock shows a dot on the Poké Mart")
+	Profile.mark_seen("store")
+	expect(not Profile.has_news("store"), "opening the Poké Mart clears its dot")
 	Profile._give("ultra_ball", 1)
 	var prizes := Profile.open_ball("ultra_ball")
 	expect(prizes.size() >= 2 and prizes[0]["item"] == "money", "an Ultra Ball has ₽ plus more (%d prizes)" % prizes.size())

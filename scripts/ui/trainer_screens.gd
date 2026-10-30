@@ -431,3 +431,146 @@ static func _progress(value: int, goal: int, done: bool) -> Control:
 	label.custom_minimum_size.x = 90
 	box.add_child(label)
 	return box
+
+
+## Profile: career totals, your favourite Pokémon, win rate in each mode and the
+## gym badges. (KOs, MVPs and per-mode / per-Pokémon numbers count from the
+## version that added this screen; older matches only counted wins.)
+static func profile(menu: Node) -> Control:
+	var stats: Dictionary = Profile.data.get("stats", {})
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 12)
+	v.add_child(_top(menu, "TRAINER PROFILE"))
+	var cols := HBoxContainer.new()
+	cols.add_theme_constant_override("separation", 18)
+	cols.size_flags_vertical = Control.SIZE_EXPAND_FILL
+
+	# Left: favourite Pokémon and collection.
+	var left := VBoxContainer.new()
+	left.custom_minimum_size.x = 330
+	left.add_theme_constant_override("separation", 8)
+	left.add_child(_heading("FAVOURITE POKéMON"))
+	var fav := Profile.favourite_family()
+	if fav == "":
+		var none := UiKit.label("Play a match and your most-used Pokémon shows up here.", 18, Color(0.8, 0.85, 1))
+		none.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		left.add_child(none)
+	else:
+		var s: SpeciesData = GameData.species[fav]
+		var icon := PmdIcon.make(s, 120, Profile.has_shiny(fav))
+		icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		left.add_child(icon)
+		var name_label := UiKit.label("%s  ·  Lv %d" % [s.display_name, Profile.level_of(fav)], 26, Color(1, 0.95, 0.7))
+		name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		left.add_child(name_label)
+		var played := int((stats.get("family_matches", {}) as Dictionary).get(fav, 0))
+		var wins := int((stats.get("family_wins", {}) as Dictionary).get(fav, 0))
+		var kos := int((stats.get("family_kos", {}) as Dictionary).get(fav, 0))
+		var line := UiKit.label("%d matches  ·  %d wins  ·  %d KOs" % [played, wins, kos], 18, Color(0.8, 0.85, 1))
+		line.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		left.add_child(line)
+	left.add_child(_heading("COLLECTION"))
+	var collection := GridContainer.new()
+	collection.columns = 2
+	collection.add_theme_constant_override("h_separation", 10)
+	collection.add_theme_constant_override("v_separation", 10)
+	collection.add_child(_stat_tile("TRAINER LV", str(Profile.total_level()), Color(0.3, 0.45, 0.8)))
+	collection.add_child(_stat_tile("POKéMON", "%d / %d" % [Profile.unlocked_count(), GameData.base_species().size()], Color(0.75, 0.3, 0.3)))
+	collection.add_child(_stat_tile("SHINIES", str((Profile.data.get("shinies", []) as Array).size()), Color(0.7, 0.5, 0.15)))
+	collection.add_child(_stat_tile("TMs", str((Profile.data.get("tms", []) as Array).size()), Color(0.25, 0.55, 0.45)))
+	left.add_child(collection)
+	cols.add_child(left)
+
+	# Right: totals, modes, badges.
+	var right := VBoxContainer.new()
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right.add_theme_constant_override("separation", 10)
+	right.add_child(_heading("CAREER"))
+	var totals := HBoxContainer.new()
+	totals.add_theme_constant_override("separation", 10)
+	var matches := int(stats.get("matches", 0))
+	var all_wins := int(stats.get("wins", 0))
+	for t: Array in [["MATCHES", str(matches)], ["WINS", str(all_wins)],
+			["WIN RATE", "%d%%" % roundi(100.0 * all_wins / matches) if matches > 0 else "–"],
+			["KOs", str(int(stats.get("kos", 0)))], ["MVPs", str(int(stats.get("mvps", 0)))],
+			["BEST STREAK", str(int(stats.get("best_streak", 0)))]]:
+		var tile := _stat_tile(str(t[0]), str(t[1]), Color(0.2, 0.25, 0.45))
+		tile.custom_minimum_size.x = 0
+		tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		totals.add_child(tile)
+	right.add_child(totals)
+
+	right.add_child(_heading("WIN RATE BY MODE"))
+	var modes := VBoxContainer.new()
+	modes.add_theme_constant_override("separation", 4)
+	var mode_matches: Dictionary = stats.get("mode_matches", {})
+	var mode_wins: Dictionary = stats.get("mode_wins", {})
+	var mode_info: Dictionary = menu.call("mode_names")
+	for mode: String in mode_info:
+		var row := HBoxContainer.new()
+		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var name_label := UiKit.label(str(mode_info[mode]["button"]), 17)
+		name_label.custom_minimum_size.x = 170
+		row.add_child(name_label)
+		var played := int(mode_matches.get(mode, 0))
+		var won := int(mode_wins.get(mode, 0))
+		var bar := ProgressBar.new()
+		bar.max_value = 1.0
+		bar.step = 0.0
+		bar.value = float(won) / played if played > 0 else 0.0
+		bar.show_percentage = false
+		bar.custom_minimum_size = Vector2(200, 14)
+		var fill := StyleBoxFlat.new()
+		fill.bg_color = Color(0.3, 0.8, 0.45) if bar.value >= 0.5 else Color(0.95, 0.65, 0.2)
+		fill.set_corner_radius_all(6)
+		bar.add_theme_stylebox_override("fill", fill)
+		bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		row.add_child(bar)
+		var text := "%d%%  (%d/%d)" % [roundi(100.0 * won / played), won, played] if played > 0 else ("%d wins" % won if won > 0 else "–")
+		var value := UiKit.label(text, 16, Color(0.85, 0.9, 1))
+		value.custom_minimum_size.x = 120
+		value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		row.add_child(value)
+		modes.add_child(row)
+	right.add_child(modes)
+
+	var earned := Profile.badges()
+	right.add_child(_heading("BADGES  %d / %d" % [earned.size(), Profile.gym_ids().size()]))
+	var badges := HBoxContainer.new()
+	badges.add_theme_constant_override("separation", 6)
+	for id: String in Profile.gym_ids():
+		var g := Profile.gym(id)
+		var cell := VBoxContainer.new()
+		cell.add_theme_constant_override("separation", 0)
+		var badge := BadgeIcon.new()
+		badge.type_name = str(g.get("type", "normal"))
+		badge.earned = id in earned
+		badge.custom_minimum_size = Vector2(68, 64)
+		badge.tooltip_text = "%s (%s)" % [str(g.get("badge", "")), str(g.get("leader", ""))]
+		cell.add_child(badge)
+		var caption := UiKit.label(str(g.get("badge", "")).trim_suffix(" Badge").to_upper(), 12, Color(1, 0.9, 0.55) if badge.earned else Color(1, 1, 1, 0.35))
+		caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		cell.add_child(caption)
+		badges.add_child(cell)
+	right.add_child(badges)
+	cols.add_child(right)
+	v.add_child(cols)
+	return v
+
+
+## A small coloured box: a big number with its name underneath.
+static func _stat_tile(title: String, value: String, color: Color) -> PanelContainer:
+	var tile := PanelContainer.new()
+	tile.add_theme_stylebox_override("panel", UiKit.box(color, 12, 8))
+	tile.custom_minimum_size = Vector2(150, 0)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 0)
+	var big := UiKit.label(value, 28, Color.WHITE)
+	big.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(big)
+	var small := UiKit.label(title, 13, Color(1, 1, 1, 0.75))
+	small.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(small)
+	tile.add_child(box)
+	return tile

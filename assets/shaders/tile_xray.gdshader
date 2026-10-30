@@ -25,7 +25,7 @@ void fragment() {
 	vec3 c = texture(albedo_tex, local_pos.zy).rgb * w.x
 			+ texture(albedo_tex, local_pos.xz).rgb * w.y
 			+ texture(albedo_tex, local_pos.xy).rgb * w.z;
-	ALBEDO = c * tint.rgb;
+	ALBEDO = c * tint.rgb * COLOR.rgb;  // COLOR: per-copy shade from the arena's MultiMesh.
 	ROUGHNESS = 1.0;
 	SPECULAR = 0.2;
 }

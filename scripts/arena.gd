@@ -106,7 +106,9 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 	var path_blobs: Array[Transform3D] = []
 
 	var floors := {}  # texture name -> Array[Transform3D]
+	var floor_shades := {}  # texture name -> Array[Color], one per tile
 	var rocks := {}  # wall texture variant -> Array[Transform3D]
+	var rock_shades := {}
 	var boulders: Array[Transform3D] = []
 	var grass: Array[Transform3D] = []
 	var trees: Array[Transform3D] = []
@@ -129,7 +131,7 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 			var center := cell_center(cell)
 			var floor_name := _variant(floor_tile, cell)
 			if floor_tile == "grass":
-				floor_name = "grass_%d" % posmod(x * 7 + y * 13 + (x * y) % 5, 3)  # Mix of variants.
+				floor_name = "grass_%d" % posmod(x * 7 + y * 13 + (x * y) % 7, 6)  # Mix of variants.
 			if c == ".":
 				open_cells.append(cell)
 			if c == ",":
@@ -142,7 +144,9 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 				floor_name = "water"
 			if not floors.has(floor_name):
 				floors[floor_name] = []
+				floor_shades[floor_name] = []
 			floors[floor_name].append(Transform3D(_turn(floor_tile, cell), center))
+			floor_shades[floor_name].append(_shade(cell))
 			if c == "#" and breakable_walls and x > 1 and y > 1 and x < width - 2 and y < height - 2:
 				# Inner walls break to supers (like Brawl Stars); the map's edge stays solid.
 				breakable_cells[cell] = "wall_style"
@@ -159,6 +163,8 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 					var wall_variant := _variant(wall_tile, cell)
 					if not rocks.has(wall_variant):
 						rocks[wall_variant] = []
+						rock_shades[wall_variant] = []
+					rock_shades[wall_variant].append(_shade(cell, 0.7))
 					rocks[wall_variant].append(Transform3D(_jitter(cell) if wall_tile in ORGANIC_WALLS else _turn(wall_tile, cell), center + Vector3(0, WALL_HEIGHT * 0.5, 0)))
 				"B":
 					breakable_cells[cell] = "boulder"
@@ -218,7 +224,9 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 		if art_ground and floor_name != "water":
 			continue
 		var mat: Material = _water_material() if floor_name == "water" else _tile_material(floor_name)
-		_add_multimesh(floor_plane, mat, floors[floor_name])
+		if floor_name != "water":
+			(mat as StandardMaterial3D).vertex_color_use_as_albedo = true
+		_add_multimesh(floor_plane, mat, floors[floor_name], true, [] if floor_name == "water" else floor_shades[floor_name])
 	if lets_go and get_parent():
 		ArenaArt.apply_lighting(get_parent())
 	if art_ground:
@@ -249,7 +257,7 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 		if lets_go and rocky:
 			_add_multimesh(rock_mesh, rock_mat, rocks[wall_variant])
 		else:
-			_add_multimesh(lump if wall_tile in ORGANIC_WALLS else block, _wall_material(wall_variant), rocks[wall_variant])
+			_add_multimesh(lump if wall_tile in ORGANIC_WALLS else block, _wall_material(wall_variant), rocks[wall_variant], true, rock_shades[wall_variant])
 	_add_multimesh(rock_mesh if lets_go else block, rock_mat if lets_go else _wall_material("boulder"), boulders)
 	_breakable_mesh = lump
 	var materials := {
@@ -727,15 +735,19 @@ func _setup_grid(grid: AStarGrid2D, blocked: Dictionary) -> void:
 					break
 
 
-func _add_multimesh(mesh: Mesh, material: Material, transforms: Array, shadows := true) -> MultiMeshInstance3D:
+## `colors` (optional, one per transform) tints each copy: used to shade tiles.
+func _add_multimesh(mesh: Mesh, material: Material, transforms: Array, shadows := true, colors: Array = []) -> MultiMeshInstance3D:
 	if transforms.is_empty():
 		return null
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.use_colors = not colors.is_empty()
 	mm.mesh = mesh
 	mm.instance_count = transforms.size()
 	for i in transforms.size():
 		mm.set_instance_transform(i, transforms[i])
+		if mm.use_colors:
+			mm.set_instance_color(i, colors[i])
 	var instance := MultiMeshInstance3D.new()
 	instance.multimesh = mm
 	instance.material_override = material
@@ -769,9 +781,34 @@ func _variant(tile_name: String, cell: Vector2i) -> String:
 	if count == 0:
 		return tile_name
 	var h := posmod(cell.x * 73856093 ^ cell.y * 19349663, 1000)
-	if h < 400:
+	if h < 250:
 		return tile_name
-	return "%s_v%d" % [tile_name, 1 + (h - 400) * count / 600]
+	return "%s_v%d" % [tile_name, 1 + (h - 250) * count / 750]
+
+
+## How light or dark the tile at `cell` is: soft patches a few tiles across (smooth
+## noise) plus a little per tile, with a faint warm/cool drift. `amount` scales it.
+func _shade(cell: Vector2i, amount := 1.0) -> Color:
+	var patch := _smooth_noise(Vector2(cell) / 4.5, 11) * 0.65 + _smooth_noise(Vector2(cell) / 2.0, 23) * 0.35
+	var each := _cell_hash(cell, 31) - 0.5
+	var k := 1.0 + ((patch - 0.5) * 0.2 + each * 0.07) * amount
+	var warm := (_smooth_noise(Vector2(cell) / 6.0, 47) - 0.5) * 0.06 * amount
+	return Color(k * (1.0 + warm), k, k * (1.0 - warm))
+
+
+func _cell_hash(cell: Vector2i, seed: int) -> float:
+	return float(posmod((cell.x + seed * 101) * 73856093 ^ (cell.y - seed * 37) * 19349663, 1009)) / 1008.0
+
+
+func _smooth_noise(p: Vector2, seed: int) -> float:
+	var i := Vector2i(floori(p.x), floori(p.y))
+	var f := p - Vector2(i)
+	f = f * f * (Vector2(3, 3) - f * 2.0)
+	var a := _cell_hash(i, seed)
+	var b := _cell_hash(i + Vector2i(1, 0), seed)
+	var c := _cell_hash(i + Vector2i(0, 1), seed)
+	var d := _cell_hash(i + Vector2i(1, 1), seed)
+	return lerpf(lerpf(a, b, f.x), lerpf(c, d, f.x), f.y)
 
 
 ## A quarter-turn per cell for textures that look fine any way round.

@@ -636,7 +636,7 @@ func end_round(result_name: String, subtitle := "") -> void:
 			if row["is_player"]:
 				mvp = row["mvp"]
 		rewards = Profile.record_match({
-			"species": player_species, "result": result_name, "kos": player.kills, "mvp": mvp,
+			"species": player_species, "result": result_name, "kos": player.kills, "deaths": player.deaths, "mvp": mvp,
 			"arena": arena_id, "mode": mode, "difficulty": bot_difficulty, "raid": raid_won,
 			"boss": str(mode_logic.get("boss_id")) if mode == "boss_raid" and result_name == "victory" else "",
 			"goals": player.goals, "supers": player.supers_used, "final_stage": player.species.stage > 1 and player.species.evolves_to == "",

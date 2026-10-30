@@ -17,6 +17,9 @@ func _ready() -> void:
 	if arena_id.begins_with("showcase"):
 		await _showcase(out_dir, arena_id.trim_prefix("showcase").trim_prefix(":").split(",", false))
 		return
+	if arena_id == "results":
+		await _results_shot(out_dir)
+		return
 	if arena_id == "pause":
 		await _pause_shot(out_dir)
 		return
@@ -277,6 +280,7 @@ func _boss_shot(boss_id: String, out_dir: String) -> void:
 
 
 func _menu_shot(screen: String, out_dir: String) -> void:
+	Profile.data["tutorial_seen"] = screen != "first_launch"
 	var menu: Node = load("res://scenes/menu.tscn").instantiate()
 	add_child(menu)
 	await get_tree().process_frame
@@ -326,6 +330,17 @@ func _menu_shot(screen: String, out_dir: String) -> void:
 				get_viewport().get_texture().get_image().save_png("%s/menu_ball_%d.png" % [out_dir, t])
 		"bosses":
 			menu.show_bosses()
+		"profile":
+			var st: Dictionary = Profile.data["stats"]
+			st.merge({ "matches": 84, "wins": 51, "kos": 312, "mvps": 23, "best_streak": 7,
+				"mode_matches": { "duel": 40, "king_of_the_hill": 12, "brawl_ball": 10, "showdown": 14, "gym": 8 },
+				"mode_wins": { "duel": 26, "king_of_the_hill": 7, "brawl_ball": 6, "showdown": 5, "gym": 7 },
+				"family_matches": { "charmander": 30, "pikachu": 22 }, "family_wins": { "charmander": 19 }, "family_kos": { "charmander": 120 } }, true)
+			Profile.gym_record("pewter_gym")["normal"] = 1
+			Profile.gym_record("cerulean_gym")["hard"] = 1
+			menu.show_profile()
+			for i in 90:
+				await get_tree().process_frame
 		"select_locked":
 			Profile.data["dev"] = false
 			menu._species = GameData.species["charmander"]
@@ -376,4 +391,27 @@ func _menu_shot(screen: String, out_dir: String) -> void:
 		await get_tree().process_frame
 	get_viewport().get_texture().get_image().save_png("%s/menu_%s.png" % [out_dir, screen])
 	print("saved ", screen)
+	get_tree().quit()
+
+
+## The end-of-match screen: XP bar filling, a level up, rewards popping in.
+func _results_shot(out_dir: String) -> void:
+	Profile.data["dev"] = false
+	Profile.set_level("pikachu", 4)
+	Profile._dict("xp")["pikachu"] = 60
+	var main := MAIN_SCENE.instantiate()
+	main.show_intro = false
+	main.arena_id = "pallet_pitch"
+	main.player_species = "pikachu"
+	main.record_progress = true
+	add_child(main)
+	for i in 30:
+		await get_tree().process_frame
+	main.player.kills = 6
+	main.end_round("victory")
+	for t in [20, 50, 90, 160]:
+		for i in t:
+			await get_tree().process_frame
+		get_viewport().get_texture().get_image().save_png("%s/results_%d.png" % [out_dir, t])
+	print("saved results")
 	get_tree().quit()

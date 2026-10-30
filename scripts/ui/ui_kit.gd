@@ -113,6 +113,38 @@ static func card_button(title: String, blurb: String, icon: Texture2D, color: Co
 
 
 ## A small heading for a group of cards.
+## A red "something new" dot on a button's top-right corner, with a number if `n` > 0.
+static func news_dot(on: Control, n := 0) -> void:
+	var dot := PanelContainer.new()
+	var style := box(Color(0.9, 0.15, 0.2), 14, 0)
+	style.border_color = Color.WHITE
+	style.set_border_width_all(2)
+	style.content_margin_left = 7
+	style.content_margin_right = 7
+	style.content_margin_top = 0
+	style.content_margin_bottom = 0
+	dot.add_theme_stylebox_override("panel", style)
+	dot.custom_minimum_size = Vector2(26, 26)
+	dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var text := label(str(mini(n, 99)) if n > 0 else "!", 15)
+	text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	dot.add_child(text)
+	dot.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	dot.offset_left = -18
+	dot.offset_right = 8
+	dot.offset_top = -8
+	dot.offset_bottom = 18
+	dot.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	dot.name = "NewsDot"
+	on.add_child(dot)
+	# A gentle pulse so it catches the eye.
+	dot.pivot_offset = Vector2(13, 13)
+	var pulse := dot.create_tween().set_loops()
+	pulse.tween_property(dot, "scale", Vector2(1.15, 1.15), 0.5).set_trans(Tween.TRANS_SINE)
+	pulse.tween_property(dot, "scale", Vector2.ONE, 0.5).set_trans(Tween.TRANS_SINE)
+
+
 static func section_title(text: String) -> Label:
 	var l := label(text, 18, Color(1, 0.85, 0.3))
 	l.add_theme_constant_override("outline_size", 4)

@@ -1,9 +1,12 @@
-"""Makes 3 variants of each themed floor and wall texture, so tiles don't look copy-pasted:
-assets/tiles/<name>_v1.png .. _v3.png. The arena mixes them in per tile (scripts/arena.gd).
+"""Makes 5 variants of each themed floor and wall texture, so tiles don't look copy-pasted:
+assets/tiles/<name>_v1.png .. _v5.png, plus grass_3 .. grass_5 (flipped, reshaded copies of
+grass_0 .. grass_2). The arena mixes them in per tile (scripts/arena.gd) and shades each
+tile a little lighter or darker in soft patches across the map.
 
     python3 tools/make_tile_variants.py
 
-Each variant: a slight colour shift, soft blotches made from tileable noise (so seams
+Each variant: the base turned or mirrored (only the ways that pattern allows: planks and
+bricks only flip, so rows stay level), a colour and brightness shift, soft blotches made from tileable noise (so seams
 still match), and details that suit the material (cracks, knots, pebbles, frost, rust,
 moss, flowers...). Details keep away from the edges, so neighbouring tiles still join.
 Deterministic: the same seed always gives the same pictures.
@@ -19,6 +22,17 @@ MARGIN = 7
 
 FLOORS = ["gym_floor", "wood", "sand", "ice", "metal", "dark", "psychic", "volcanic", "pool"]
 WALLS = ["rock", "brick", "hedge", "metal_wall", "wood_wall", "ice_block", "cracked", "boulder"]
+VARIANTS = 5
+
+# Turns and mirrors each picture allows: (quarter turns, mirrored). Noise-like textures and
+# square grids allow all 8; planks, bricks and slabs only flips (rows stay level, and wall
+# sides keep their bricks the right way up); the checkerboard keeps its colours in step.
+ALL = [(0, True), (1, False), (2, False), (3, False), (1, True), (2, True), (3, True)]
+FLIPS = [(0, True), (2, False), (2, True)]
+TRANSFORMS = {
+    "wood": FLIPS, "brick": FLIPS, "wood_wall": FLIPS, "metal_wall": FLIPS, "gym_floor": FLIPS,
+    "psychic": [(2, False), (1, True), (3, True)],
+}
 
 
 def tileable_noise(rng, cells):
@@ -156,14 +170,25 @@ def details(name, img, rng):
     return Image.alpha_composite(img, layer)
 
 
+def turned(img, name, index):
+    """The base picture turned / mirrored one of the ways its pattern allows."""
+    options = TRANSFORMS.get(name, ALL)
+    quarter, mirror = options[(index - 1) % len(options)]
+    if mirror:
+        img = img.transpose(Image.FLIP_LEFT_RIGHT)
+    for _ in range(quarter):
+        img = img.transpose(Image.ROTATE_90)
+    return img
+
+
 def variant(name, base, index):
     rng = random.Random(sum(map(ord, name)) * 7919 + index * 104729)
     nrng = np.random.default_rng(sum(map(ord, name)) * 31 + index)
-    arr = np.array(base.convert("RGBA")).astype(float)
-    arr = shift(arr, rng, 0.05)
+    arr = np.array(turned(base.convert("RGBA"), name, index)).astype(float)
+    arr = shift(arr, rng, 0.09)
     tint = {"rock": (-8, 6, -8), "brick": (-6, 4, -6), "metal_wall": (8, -2, -8), "metal": (8, -2, -8),
             "wood": (6, 2, -4), "wood_wall": (6, 2, -4)}.get(name, (0, 0, 0))
-    arr = blotches(arr, nrng, 0.07, tint)
+    arr = blotches(arr, nrng, 0.11, tint)
     img = Image.fromarray(arr.astype(np.uint8), "RGBA")
     return details(name, img, rng)
 
@@ -175,9 +200,18 @@ def main():
         if not os.path.exists(path):
             continue
         base = Image.open(path)
-        for i in range(1, 4):
+        for i in range(1, VARIANTS + 1):
             variant(name, base, i).save(os.path.join(TILES, "%s_v%d.png" % (name, i)))
             made += 1
+    # Grass: mirrored, reshaded copies of the three hand-made tiles (blades stay upright).
+    for i in range(3):
+        base = Image.open(os.path.join(TILES, "grass_%d.png" % i)).convert("RGBA")
+        img = base.transpose(Image.FLIP_LEFT_RIGHT if i != 1 else Image.FLIP_TOP_BOTTOM)
+        rng = random.Random(4242 + i)
+        arr = shift(np.array(img).astype(float), rng, 0.07)
+        arr = blotches(arr, np.random.default_rng(99 + i), 0.09, (-4, 6, -6))
+        Image.fromarray(arr.astype(np.uint8), "RGBA").save(os.path.join(TILES, "grass_%d.png" % (i + 3)))
+        made += 1
     print("made %d variants" % made)
 
 

@@ -36,7 +36,8 @@ const PAGES := [
 		"BATTLE: every mode: Battle, King of the Hill, Brawl Ball, Rare Candy Rush, Showdown, Gyms, Boss Raids.",
 		"CHALLENGES: daily tasks and the weekly shiny hunt.",
 		"POKéDEX: your Pokémon. Tap one to edit its build (moves, super, gadget, Ability, HM, vitamins).",
-		"ACCOUNT saves your progress to the cloud. SETTINGS has the control layout and options.",
+		"PROFILE: your stats, favourite Pokémon and gym badges. ACCOUNT saves to the cloud; SETTINGS has the controls.",
+		"A red dot on a button means something new is waiting there.",
 	]],
 	["THE BAG", "bag", [
 		"Poké Balls from matches: open them for money, Rare Candy, vitamins, TMs, HMs and even new Pokémon.",

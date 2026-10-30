@@ -722,6 +722,7 @@ func record_match(info: Dictionary) -> Dictionary:
 	var arena := str(info.get("arena", ""))
 	var stats: Dictionary = data["stats"]
 	stats["matches"] = int(stats.get("matches", 0)) + 1
+	_track_profile_stats(stats, family, won, info)
 	var daily := _dict("daily")
 	if daily.get("day", "") != today():
 		daily.clear()
@@ -752,6 +753,7 @@ func record_match(info: Dictionary) -> Dictionary:
 	if first_win:
 		xp *= int(econ("xp/first_win_multiplier", 2))
 	var levels_before := level_of(family)
+	var xp_before := xp_of(family)
 	var gained := _add_xp(family, xp)
 	var cash := int(econ("money/" + ({ "victory": "win", "defeat": "loss" }.get(result, "draw") as String), 15)) + kos * int(econ("money/per_ko", 5))
 	var boss_tier := 0  # The tier just beaten (this win is already counted).
@@ -814,9 +816,87 @@ func record_match(info: Dictionary) -> Dictionary:
 	save()
 	return {
 		"xp": xp, "first_win": first_win, "levels": gained, "level": level_of(family), "level_before": levels_before,
+		"family": family, "xp_before": xp_before, "xp_after": xp_of(family),
 		"money": cash, "balls": balls, "pokemon": unlocked["pokemon"], "milestones": milestones, "shiny": shiny_won,
 		"dailies": daily_done["texts"],
 	}
+
+
+## Career numbers for the Profile screen: KOs, MVPs, win streaks, and matches /
+## wins / KOs per mode and per Pokémon line.
+func _track_profile_stats(stats: Dictionary, family: String, won: bool, info: Dictionary) -> void:
+	var kos := int(info.get("kos", 0))
+	stats["kos"] = int(stats.get("kos", 0)) + kos
+	stats["fainted"] = int(stats.get("fainted", 0)) + int(info.get("deaths", 0))
+	if bool(info.get("mvp", false)):
+		stats["mvps"] = int(stats.get("mvps", 0)) + 1
+	stats["streak"] = int(stats.get("streak", 0)) + 1 if won else 0
+	stats["best_streak"] = maxi(int(stats.get("best_streak", 0)), int(stats["streak"]))
+	var mode := str(info.get("mode", ""))
+	var mm := _stat_dict("mode_matches")
+	mm[mode] = int(mm.get(mode, 0)) + 1
+	for key: String in ["family_matches", "family_wins", "family_kos"]:
+		var d := _stat_dict(key)
+		var add := 1 if key == "family_matches" else (int(won) if key == "family_wins" else kos)
+		d[family] = int(d.get(family, 0)) + add
+
+
+## The line played most (ties: more KOs), or "" before the first match.
+func favourite_family() -> String:
+	var played := _stat_dict("family_matches")
+	var kos := _stat_dict("family_kos")
+	var best := ""
+	for family: String in played:
+		if not GameData.species.has(family):
+			continue
+		if best == "" or int(played[family]) * 1000 + int(kos.get(family, 0)) > int(played[best]) * 1000 + int(kos.get(best, 0)):
+			best = family
+	return best
+
+
+## Badges earned: gyms beaten at least once (any difficulty).
+func badges() -> Array[String]:
+	var earned: Array[String] = []
+	for id: String in gym_ids():
+		if gym_clears(id, "normal") + gym_clears(id, "hard") > 0:
+			earned.append(id)
+	return earned
+
+
+# --- "New!" dots on the home screen -----------------------------------------
+# Each menu has a marker that changes when there's something new there; the dot
+# shows until you open it (which stores the marker as seen).
+
+func news_marker(key: String) -> String:
+	match key:
+		"challenges":
+			return today() + "/" + week_key()
+		"store":
+			return today()
+		"pokedex":
+			return "%d/%d/%d" % [(data.get("unlocked", []) as Array).size(), (data.get("tms", []) as Array).size(), (data.get("shinies", []) as Array).size()]
+	return ""
+
+
+func count_balls() -> int:
+	var n := 0
+	for ball: String in BALLS:
+		n += count(ball)
+	return n
+
+
+func has_news(key: String) -> bool:
+	if key == "bag":
+		return count_balls() > 0
+	var seen: Dictionary = data.get("seen", {})
+	return news_marker(key) != "" and str(seen.get(key, "")) != news_marker(key)
+
+
+func mark_seen(key: String) -> void:
+	if not has_news(key) or key == "bag":
+		return
+	_dict("seen")[key] = news_marker(key)
+	save()
 
 
 ## Master Ball upgrades and the Ultra Ball pity timer.
