@@ -56,9 +56,7 @@ func _draw() -> void:
 			draw_circle(pip, 5, Color.BLACK)
 			draw_circle(pip, 4, GameData.type_color(brawler.species.types[i]))
 
-		var status := brawler.status_text()
-		if status != "":
-			_text(font, Vector2(bar.end.x + 4, bar.end.y), 40, status, 14, Color(1, 0.8, 0.3), HORIZONTAL_ALIGNMENT_LEFT)
+		_draw_status(brawler, font, Vector2(bar.end.x + 5, bar.end.y))
 		# Rare Candies carried / power cubes, left of the name.
 		var counter := ""
 		var counter_color := Color.WHITE
@@ -115,6 +113,27 @@ func _draw_legendary(b: Brawler, p: Vector2, font: Font) -> void:
 			var split := bar_size.x * blue / (blue + red)
 			_round_rect(Rect2(share.position, Vector2(split, 6)), Color(0.3, 0.6, 1.0), 3)
 			_round_rect(Rect2(share.position + Vector2(split, 0), Vector2(bar_size.x - split, 6)), Color(0.95, 0.3, 0.3), 3)
+
+
+## Status conditions and stat changes in a row right of the bar; stats get a
+## drawn arrow (up = raised, down = lowered).
+func _draw_status(brawler: Brawler, font: Font, at: Vector2) -> void:
+	for chip: Dictionary in brawler.status_chips():
+		var text := str(chip["text"])
+		var color: Color = chip["color"]
+		var width := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x
+		_text(font, at, width + 2, text, 13, color, HORIZONTAL_ALIGNMENT_LEFT)
+		at.x += width + 2
+		var arrow := int(chip["arrow"])
+		if arrow != 0:
+			var mid := at + Vector2(5, -5)
+			var tip := Vector2(0, -5 * arrow)
+			var pts := PackedVector2Array([mid + tip, mid + Vector2(5, 4 * arrow), mid + Vector2(-5, 4 * arrow)])
+			draw_colored_polygon(pts, Color.BLACK)
+			var inner := PackedVector2Array([mid + tip * 0.6, mid + Vector2(3, 2.5 * arrow), mid + Vector2(-3, 2.5 * arrow)])
+			draw_colored_polygon(inner, color)
+			at.x += 12
+		at.x += 4
 
 
 func _round_rect(rect: Rect2, color: Color, radius: int) -> void:

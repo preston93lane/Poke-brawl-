@@ -102,6 +102,18 @@ var linger_radius := 0.0
 var knockback := 0.0
 ## Seconds of damage immunity for the user (Protect).
 var protect := 0.0
+## Lowers (negative) or raises the target's stats on hit:
+## { "attack"/"defense"/"speed": fraction, "duration": s, "chance": 0-1 }.
+var stat_change: Dictionary = {}
+## Crowd control on hit (data/move_extras.json), by "type":
+## "grab": latch on and hold the target (both stay put) for "duration" s, dealing
+##   "share" of the power over that time; mashing the stick breaks free sooner.
+## "tomb": a ring of rocks ("look": rock / ice) boxes the target in for "duration" s.
+## "torrent": carries the target "push" m along the shot; slammed into a wall it's
+##   pinned (stunned) for "pin" s and takes "pin_bonus" extra damage.
+## "vortex": a whirl at the impact point that drags enemies toward its centre for
+##   "duration" s ("pull" m/s), dealing "share" of the power over that time.
+var control: Dictionary = {}
 
 
 static func from_dict(move_id: String, d: Dictionary) -> MoveData:
@@ -167,7 +179,18 @@ static func from_dict(move_id: String, d: Dictionary) -> MoveData:
 	m.linger_radius = float(d.get("linger_radius", m.linger_radius))
 	m.knockback = float(d.get("knockback", m.knockback))
 	m.protect = float(d.get("protect", m.protect))
+	var stat_value: Variant = d.get("stat_change", {})
+	m.stat_change = stat_value if stat_value is Dictionary else {}
+	var control_value: Variant = d.get("control", {})
+	m.control = control_value if control_value is Dictionary else {}
 	return m
+
+
+## Fraction of the power dealt on impact: grabs and vortexes deal the rest over time.
+func upfront_share() -> float:
+	if str(control.get("type", "")) in ["grab", "vortex"]:
+		return 1.0 - float(control.get("share", 0.4))
+	return 1.0
 
 
 ## Close-range kinds (swipes and lunges) that use the shorter attack delay.

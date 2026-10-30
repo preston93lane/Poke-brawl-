@@ -84,6 +84,8 @@ func _ready() -> void:
 		return
 	mode_rules = GameData.rule("modes/" + mode, {})
 	arena.build(arena_id, camera.pitch_degrees, mode)
+	if bool(GameData.setting("haze_blur", true)):
+		_add_haze()
 	if mode == "king_of_the_hill" and not arena.has_zone():
 		push_warning("Arena '%s' has no Z tiles; switching to battle" % arena_id)
 		mode = "duel"
@@ -292,6 +294,24 @@ func spawn_position(b: Brawler) -> Vector3:
 	if mode_logic:
 		return mode_logic.spawn_position(b)
 	return arena.spawn_point(b.team, _spawn_index[b])
+
+
+## Light haze and soft edge blur over the 3D view, under the HUD (Settings can turn it off).
+func _add_haze() -> void:
+	var layer := CanvasLayer.new()
+	layer.name = "Haze"
+	layer.layer = 0
+	var rect := ColorRect.new()
+	rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var mat := ShaderMaterial.new()
+	mat.shader = preload("res://assets/shaders/haze_blur.gdshader")
+	var haze: Variant = arena.haze_color if arena.haze_color.a > 0.0 else null
+	if haze != null:
+		mat.set_shader_parameter("haze_color", haze)
+	rect.material = mat
+	layer.add_child(rect)
+	add_child(layer)
 
 
 ## Tells the see-through shaders where your Pokémon is (xray.gdshaderinc).

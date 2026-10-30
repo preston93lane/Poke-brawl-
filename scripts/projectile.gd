@@ -36,6 +36,10 @@ var _lob_height := 2.0
 var _smashed: Array[RID] = []
 var _core: Sprite3D
 var _spin := false
+var _vortex_spawned := false
+var _look: Dictionary = {}
+var _beam: MoveFx.Beam
+var _halo: Sprite3D
 
 @onready var mesh: MeshInstance3D = $Mesh
 @onready var shape: CollisionShape3D = $CollisionShape3D
@@ -57,15 +61,24 @@ func _ready() -> void:
 	mesh.material_override = Vfx.core_material(move.type)
 	var size := move.radius / 0.3
 	mesh.scale = Vector3.ONE * size * (1.3 if move.lob else 0.8)
-	# Shaped core (fireball, bolt, droplet, leaf...) instead of a plain glowing ball.
-	_core = Vfx.core_sprite(move.type, move.radius * (1.3 if move.lob else 1.0))
+	# Shaped core from the move's look (fireball, bone, coin, note, orb...).
+	_look = MoveLook.of(move)
+	var orb := bool(_look.get("orb", false)) or bool(_look.get("beam", false))
+	_core = Vfx.core_sprite(move.type, move.radius * (1.3 if move.lob else 1.0) * (1.35 if orb else 1.0), _look)
 	if _core:
 		mesh.visible = false
 		add_child(_core)
-		_spin = Vfx.style(move.type).get("spin", false)
+		_spin = Vfx.style(move.type).get("spin", false) or _look.get("spin", false)
+		if orb:
+			# A soft glow around energy balls and beam heads.
+			_halo = Vfx.core_sprite(move.type, move.radius * 2.4, { "shape": "orb", "colors": _look.get("colors", []) })
+			_halo.modulate.a = 0.45
+			add_child(_halo)
 	_jitter = float(Vfx.style(move.type).get("jitter", 0.0))
-	_trail = Vfx.trail(move.type, move.radius)
+	_trail = Vfx.trail(move.type, move.radius, _look)
 	add_child(_trail)
+	if _look.get("beam", false) and not move.lob and get_parent():
+		_beam = MoveFx.Beam.new(get_parent(), global_position, MoveFx._color(_look, 0), maxf(0.12, move.radius * 0.7))
 	# The scene's shape resource is shared between projectiles, so give each its own.
 	var sphere := SphereShape3D.new()
 	sphere.radius = move.radius
@@ -84,6 +97,10 @@ func _process(delta: float) -> void:
 				_core.flip_h = randf() < 0.5
 		elif _spin:
 			_core.rotation.z += delta * 9.0
+	if _halo:
+		_halo.scale = Vector3.ONE * (1.0 + 0.12 * sin(Time.get_ticks_msec() * 0.02))
+	if _beam:
+		_beam.update(global_position)
 
 
 func _physics_process(delta: float) -> void:
@@ -235,10 +252,13 @@ func _check_brawlers() -> void:
 			_finish()
 			return
 		if is_instance_valid(shooter):
-			target.take_hit(shooter, move, _distance_multiplier())
+			target.take_hit(shooter, move, _distance_multiplier() * move.upfront_share())
 			_knock(target)
 			if move.chain > 0:
 				_chain_from(target)
+			if not _vortex_spawned:
+				_vortex_spawned = true
+				shooter.spawn_vortex(move, target.global_position, 2.2)
 		if not move.pierce and not move.returns:
 			_finish()
 			return
@@ -298,13 +318,22 @@ func _finish(effects := true) -> void:
 		if move.explode_radius > 0.0:
 			_explode(move.explode_radius)
 		else:
-			Vfx.burst(get_parent(), global_position, move.type, 10, 0.2, 2.5)
+			Vfx.burst(get_parent(), global_position, move.type, 6, 0.2, 2.5, _look)
+	if _beam:
+		_beam.fade()
+		_beam = null
 	if move.linger > 0.0 and is_instance_valid(shooter):
 		var zone: Node3D = LINGER_ZONE.new()
 		zone.setup(shooter, move, Vector3(global_position.x, 0.0, global_position.z))
 		get_parent().add_child(zone)
 	_detach_trail()
 	queue_free()
+
+
+func _exit_tree() -> void:
+	if _beam:
+		_beam.fade()
+		_beam = null
 
 
 ## Let the trail fade out on its own instead of vanishing with the projectile.
@@ -329,11 +358,16 @@ func _explode(radius: float) -> void:
 			var offset := _flat(target.global_position - global_position)
 			if offset.length() <= radius + Brawler.BODY_RADIUS \
 					and Brawler.clear_between(self, global_position, target.global_position):
-				target.take_hit(shooter, move, _distance_multiplier())
+				target.take_hit(shooter, move, _distance_multiplier() * move.upfront_share())
 				_knock(target)
 		Breakable.hit_area(get_tree(), global_position, radius, shooter, move, _distance_multiplier())
+		if not _vortex_spawned:
+			_vortex_spawned = true
+			shooter.spawn_vortex(move, global_position, radius)
 	_spawn_explosion_fx(radius)
-	Vfx.burst(get_parent(), global_position, move.type, 36, radius * 0.4, 5.0)
+	if move.slot == "super" or radius >= 1.8:
+		MoveFx.area(get_parent(), global_position, radius, move)
+	Vfx.burst(get_parent(), global_position, move.type, 18, radius * 0.35, 4.5, _look)
 	Vfx.ring(get_parent(), Vector3(global_position.x, 0, global_position.z), radius, move.type)
 
 

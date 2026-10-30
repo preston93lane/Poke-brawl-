@@ -43,6 +43,8 @@ var showdown_spawns: Array[Vector3] = []
 ## Hazard tiles (built by hazards.gd): fire vents and warp pads.
 var vent_cells: Array[Vector2i] = []
 var warp_cells: Array[Vector2i] = []
+## Tint of the distance haze (rules: arena "haze"); alpha 0 = the default light blue.
+var haze_color := Color(0, 0, 0, 0)
 ## Map-wide hazard from the map's "weather" ("" or "lightning").
 var weather := ""
 ## Set by main.gd when the map has hazards (bots ask it what to avoid).
@@ -84,6 +86,7 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 	var breakable_walls := bool(def.get("breakable_walls", true))
 	liquid = str(def.get("liquid", "water"))
 	weather = str(def.get("weather", ""))
+	haze_color = Color.html(str(def["haze"])) if def.has("haze") else Color(0, 0, 0, 0)
 	# "lets_go": the 3D Let's Go look (see arena_art.gd) instead of flat tiles and sprites.
 	var lets_go := str(def.get("art", "lets_go")) == "lets_go"
 	# The blended Let's Go ground replaces grass floors; themed floors (gym tiles,

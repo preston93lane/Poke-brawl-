@@ -574,6 +574,15 @@ func show_settings() -> void:
 		GameData.set_setting("aim_assist", on)
 		assist.text = "AIM ASSIST: ON" if on else "AIM ASSIST: OFF")
 	top.add_child(assist)
+	var haze := Button.new()
+	haze.toggle_mode = true
+	haze.button_pressed = bool(GameData.setting("haze_blur", true))
+	haze.text = "HAZE & BLUR: ON" if haze.button_pressed else "HAZE & BLUR: OFF"
+	haze.add_theme_font_size_override("font_size", 20)
+	haze.toggled.connect(func(on: bool) -> void:
+		GameData.set_setting("haze_blur", on)
+		haze.text = "HAZE & BLUR: ON" if on else "HAZE & BLUR: OFF")
+	top.add_child(haze)
 	if Profile.is_dev():
 		top.add_child(UiKit.button("DEV TOOLS", show_dev))
 	if not Profile.is_dev():

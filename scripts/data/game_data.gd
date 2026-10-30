@@ -81,6 +81,7 @@ func load_all() -> void:
 	unlocks = _load_json(DATA_DIR + "/unlocks.json")
 	gyms = _load_json(DATA_DIR + "/gyms.json")
 	moves.clear()
+	var extras := _load_json(DATA_DIR + "/move_extras.json")
 	for move_file in _json_files(DATA_DIR + "/moves"):
 		var move_defs := _load_json(DATA_DIR + "/moves/" + move_file)
 		for move_id: String in move_defs:
@@ -88,8 +89,8 @@ func load_all() -> void:
 				continue
 			if moves.has(move_id):
 				push_error("GameData: move '%s' is defined twice (%s)" % [move_id, move_file])
-			move_dicts[move_id] = move_defs[move_id]
-			var move := MoveData.from_dict(move_id, move_defs[move_id])
+			move_dicts[move_id] = _with_extras(move_defs[move_id], extras)
+			var move := MoveData.from_dict(move_id, move_dicts[move_id])
 			_check_type(move.type, "moves/%s → %s" % [move_file, move_id])
 			moves[move_id] = move
 
@@ -215,6 +216,20 @@ func get_species(species_id: String) -> SpeciesData:
 		push_error("GameData: unknown species '%s'" % species_id)
 		return null
 	return species[species_id]
+
+
+## data/move_extras.json adds fields to every move with a given name, by slot
+## ("main", "super", "any"), so the generated move files can be rebuilt freely.
+func _with_extras(d: Dictionary, extras: Dictionary) -> Dictionary:
+	var by_name: Dictionary = extras.get(str(d.get("name", "")), {})
+	if by_name.is_empty():
+		return d
+	var merged := d.duplicate(true)
+	for key: String in ["any", str(d.get("slot", ""))]:
+		var add: Dictionary = by_name.get(key, {})
+		for field: String in add:
+			merged[field] = add[field]
+	return merged
 
 
 func get_move(move_id: String) -> MoveData:

@@ -59,6 +59,8 @@ func _ready() -> void:
 	await _check_slam_windup()
 	_check_assassin_charge()
 	_check_camera_lead()
+	_check_move_looks()
+	await _check_controls()
 	Engine.time_scale = 1.0
 	Profile.data = real_profile
 	Profile.save()
@@ -189,6 +191,8 @@ func _check_supers() -> void:
 					child.queue_free()  # Everyone else stands still, far away.
 	Engine.time_scale = 3.0  # 155 Pokémon: run the clock faster.
 	for s: SpeciesData in GameData.species.values():
+		for rock in get_tree().get_nodes_in_group("tomb_rocks"):
+			rock.free()  # The last Pokémon's Rock Tomb / Sheer Cold would block this one's charge.
 		var b: Brawler = main._spawn(s.id, 1, 0, false)
 		b.position = target.position + Vector3(0, 0, 2.5)
 		await get_tree().physics_frame
@@ -1746,3 +1750,112 @@ func _check_camera_lead() -> void:
 	expect(own_focus < 0.0 and enemy_focus > 0.0, "the camera looks ahead in your half and back toward your side in theirs (%.1f, %.1f)" % [own_focus, enemy_focus])
 	cam.queue_free()
 	dummy.queue_free()
+
+
+func _check_move_looks() -> void:
+	print("Move looks and extras")
+	var missing: Array[String] = []
+	for move: MoveData in GameData.moves.values():
+		var shape := str(MoveLook.of(move).get("shape", "dot"))
+		if shape != "dot" and not ResourceLoader.exists("res://assets/fx/%s.png" % shape):
+			missing.append("%s (%s)" % [move.display_name, shape])
+	expect(missing.is_empty(), "every move's look has a baked shape (missing: %s)" % ", ".join(missing))
+	var extras: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/move_extras.json"))
+	var names := {}
+	for move: MoveData in GameData.moves.values():
+		names[move.display_name] = true
+	var unknown: Array[String] = []
+	for key: String in extras:
+		if not key.begins_with("_") and not names.has(key):
+			unknown.append(key)
+	expect(unknown.is_empty(), "move_extras.json only names real moves (unknown: %s)" % ", ".join(unknown))
+	expect(str(GameData.get_move("tangela_super").control.get("type", "")) == "grab", "Vine Snare is a grab")
+	expect(str(GameData.get_move("hydro_cannon").control.get("type", "")) == "torrent", "Hydro Cannon is a torrent")
+	expect(not GameData.get_move("tmsuper_rock_tomb_shot").stat_change.is_empty(), "Rock Tomb lowers Speed")
+
+
+func _check_controls() -> void:
+	print("Grabs, tombs, torrents, vortexes, stat drops")
+	var main := await _start_match("pallet_pitch", "duel", "tangela", ["geodude"])
+	await _freeze_all(main, main.enemy)
+	var player: Brawler = main.player
+	var target: Brawler = main.enemy
+	player.global_position = main.arena.nearest_open(Vector3(0, 0, 2))
+	target.global_position = player.global_position + Vector3(0, 0, -2.5)
+	await get_tree().physics_frame
+
+	# Stat drops: Defense down makes hits land harder, and shows a down arrow.
+	var def_before := target.get_defense()
+	target.apply_stat_change({ "defense": -0.3, "duration": 3.0 })
+	expect(target.get_defense() < def_before, "Defense drops lower defense")
+	var arrow := 0
+	for chip: Dictionary in target.status_chips():
+		if chip["text"] == "DEF":
+			arrow = int(chip["arrow"])
+	expect(arrow == -1, "a lowered stat shows a down arrow")
+	target._debuffs.clear()
+
+	# Grab: both are held, the target can't attack, and it lets go after the hold.
+	var grab := GameData.get_move("tangela_super")
+	player._perform(grab, Vector3(0, 0, -1), -1.0)
+	await get_tree().physics_frame
+	expect(player.is_holding() and target.is_grabbed(), "Vine Snare grabs the target")
+	expect(not target.can_shoot(), "a grabbed Pokémon can't attack")
+	var hp := target.health
+	for i in 30:
+		await get_tree().physics_frame
+	expect(target.health < hp, "the grab squeezes for damage")
+	for i in 90:
+		await get_tree().physics_frame
+	expect(not target.is_grabbed() and not player.is_holding(), "the grab ends on its own")
+	# Hitting the grabber hard frees its victim.
+	target.health = target.max_health
+	player._grab_target = null
+	target._grabbed_by = null
+	player._perform(grab, Vector3(0, 0, -1), -1.0)
+	await get_tree().physics_frame
+	player.take_damage(player.max_health * 0.2, target)
+	expect(not target.is_grabbed(), "damaging the grabber breaks the grab")
+
+	# Tomb: rocks ring the target.
+	for i in 20:
+		await get_tree().physics_frame
+	target.entomb("rock", 2.5)
+	await get_tree().physics_frame
+	var rocks := 0
+	for n in main.arena.get_children():
+		if n is TombRock:
+			rocks += 1
+	expect(rocks >= 4, "Rock Tomb drops a ring of rocks (%d)" % rocks)
+
+	# Torrent: swept into something solid, the target is pinned (stunned).
+	target._stun_time = 0.0
+	var wall_dir := Vector3.ZERO
+	for d: Vector3 in [Vector3.FORWARD, Vector3.BACK, Vector3.LEFT, Vector3.RIGHT]:
+		if player.clear_distance(d, 30.0) < 29.0:
+			wall_dir = d
+			break
+	target.global_position = player.global_position
+	target.carry(wall_dir, 40.0, 1.0, 0.2, player, GameData.get_move("hydro_cannon"))
+	for i in 240:
+		await get_tree().physics_frame
+		if target.is_stunned():
+			break
+	expect(target.is_stunned(), "a torrent pins its target against a wall")
+
+	# Vortex: drags enemies toward its centre.
+	target._stun_time = 0.0
+	for n in main.arena.get_children():
+		if n is TombRock:
+			n.queue_free()
+	await get_tree().physics_frame
+	target.global_position = main.arena.nearest_open(Vector3(0, 0, -2))
+	var centre := target.global_position + Vector3(2.0, 0, 0)
+	player.spawn_vortex(GameData.get_move("fire_spin"), centre, 2.6)
+	var start := target.global_position.distance_to(centre)
+	for i in 40:
+		await get_tree().physics_frame
+	expect(target.global_position.distance_to(centre) < start - 0.3, "Fire Spin's vortex pulls enemies in")
+	main.queue_free()
+	await get_tree().physics_frame
+

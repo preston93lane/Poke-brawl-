@@ -17,6 +17,9 @@ func _ready() -> void:
 	if arena_id.begins_with("showcase"):
 		await _showcase(out_dir, arena_id.trim_prefix("showcase").trim_prefix(":").split(",", false))
 		return
+	if arena_id.begins_with("move:"):
+		await _move_demo(arena_id.trim_prefix("move:"), out_dir)
+		return
 	if arena_id.begins_with("record:"):
 		await _record(arena_id.trim_prefix("record:"), out_dir)
 		return
@@ -145,6 +148,57 @@ func _record(spec: String, out_dir: String) -> void:
 		if i % 2 == 0:
 			get_viewport().get_texture().get_image().save_png("%s/frame_%04d.png" % [out_dir, i / 2])
 	print("saved record")
+	get_tree().quit()
+
+
+## One move used on a frozen target standing just in front of a wall (so pins
+## and tombs show): move:<attacker>,<move id>[,<target>[,<arena>]]. Saves frames.
+func _move_demo(spec: String, out_dir: String) -> void:
+	var parts := spec.split(",")
+	var move := GameData.get_move(parts[1])
+	var target_id := parts[2] if parts.size() > 2 else "geodude"
+	GameData.match_settings = { "mode": "duel", "arena": parts[3] if parts.size() > 3 else "pewter_gym", "species": parts[0], "level": 20,
+			"allies": ["pikachu", "pikachu"], "enemies": [target_id, "pikachu", "pikachu"], "difficulty": "normal" }
+	var main := MAIN_SCENE.instantiate()
+	main.show_intro = false
+	main.record_progress = false
+	add_child(main)
+	await get_tree().physics_frame
+	main._raid_done = true
+	main.time_left = 9999.0
+	var arena: Arena = main.arena
+	var wall_front := Vector3.ZERO
+	for y in range(8, arena.height - 8):
+		for x in range(5, arena.width - 5):
+			if wall_front == Vector3.ZERO and arena.rows[y - 1][x] == "#" and arena.rows[y][x] == "." \
+					and arena.rows[y + 1][x] == "." and arena.rows[y + 2][x] == "." and arena.rows[y + 3][x] == "." and arena.rows[y + 4][x] == ".":
+				wall_front = arena.cell_center(Vector2i(x, y))
+	var player: Brawler = main.player
+	var target: Brawler = main.teams[1][0]
+	for b: Brawler in main.teams[0] + main.teams[1]:
+		for c in b.get_children():
+			if c is BotController or c is PlayerController:
+				c.queue_free()
+		b._protect_time = 0.0
+		if b != player and b != target:
+			b.global_position = Vector3(30, 0, 30)  # Out of the way.
+	target.global_position = wall_front + Vector3(0, 0, 0.6)
+	player.global_position = wall_front + Vector3(0, 0, 3.6)
+	player.facing = Vector3(0, 0, -1)
+	main.camera.snap_to_target()
+	for i in 20:
+		await get_tree().physics_frame
+	var f := 0
+	for step in 200:
+		if step == 10:
+			player._on_attack(Vector3(0, 0, -1), move)
+			player._perform(move, Vector3(0, 0, -1), 3.0)
+			player._apply_support(move, Vector3(0, 0, -1))
+		await get_tree().physics_frame
+		if step % 3 == 0:
+			get_viewport().get_texture().get_image().save_png("%s/frame_%04d.png" % [out_dir, f])
+			f += 1
+	print("saved move demo")
 	get_tree().quit()
 
 

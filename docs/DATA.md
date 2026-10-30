@@ -89,6 +89,15 @@ Every `.json` file in `data/moves/` is loaded; ids must be unique across them.
 | `bonus_vs_status` | all | Damage multiplier against targets that already have a status (Hex) |
 | `charge` | super | Damage needed to fill the meter (default `rules.super_charge_damage`) |
 | `delay` | all | Seconds before *any* attack can be used again (default `rules.attack_delay`, or `rules.melee_attack_delay` for melee and dash) |
+| `stat_change` | all | Lowers the target's stats on hit: `{ "speed": -0.3, "attack": -0.2, "defense": -0.25, "duration": 3, "chance": 0.3 }` (Speed ▼ / Attack ▼ / Defense ▼, shown by the health bar) |
+| `control` | all | Crowd control on hit, by `"type"`: **grab** (`duration`, `share` of the power dealt over the hold, `look`: tentacle / coil / vine / tongue / rock_coil; melee only), **tomb** (`duration`, `look`: rock / ice: a ring of rocks boxes the target in), **torrent** (`push` metres, `pin` stun seconds and `pin_bonus` extra damage if it slams into a wall), **vortex** (`duration`, `pull` m/s, `share`: a whirl that drags enemies in) |
+
+`data/move_extras.json` adds fields to every move with a given **name** (per slot: `main`, `super` or `any`), on
+top of the move files. The stat drops and crowd control above live there, so `tools/build_roster.py` can rewrite
+`generated.json` without losing them.
+
+How each move *looks* (the shape of its shots, the style of its swipes, charges and area strikes) is decided by
+`scripts/move_look.gd` from its type and name; `tools/bake_fx_shapes.gd` draws the shapes into `assets/fx/`.
 
 Run `python3 tools/balance_report.py` after changing numbers. It summarises health and damage per second for each
 play style and lists main attacks that are far from the average.

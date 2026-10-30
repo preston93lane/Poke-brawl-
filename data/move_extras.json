@@ -1,0 +1,557 @@
+{
+	"_comment": "Extra fields added to every move with this name (by slot: main / super / any), on top of data/moves/*.json, so those files can be regenerated. stat_change: stat drops (negative) on hit. control: grab / tomb / torrent / vortex (see scripts/data/move_data.gd).",
+	"Bind": {
+		"super": {
+			"control": {
+				"type": "grab",
+				"duration": 1.4,
+				"share": 0.4,
+				"look": "tentacle"
+			},
+			"effect": {}
+		}
+	},
+	"Wring Out": {
+		"super": {
+			"control": {
+				"type": "grab",
+				"duration": 1.4,
+				"share": 0.4,
+				"look": "tentacle"
+			},
+			"effect": {}
+		}
+	},
+	"Coil Crush": {
+		"super": {
+			"control": {
+				"type": "grab",
+				"duration": 1.4,
+				"share": 0.4,
+				"look": "coil"
+			},
+			"effect": {}
+		}
+	},
+	"Vine Snare": {
+		"super": {
+			"control": {
+				"type": "grab",
+				"duration": 1.4,
+				"share": 0.4,
+				"look": "vine"
+			},
+			"effect": {}
+		}
+	},
+	"Tongue Grab": {
+		"super": {
+			"control": {
+				"type": "grab",
+				"duration": 1.4,
+				"share": 0.4,
+				"look": "tongue"
+			},
+			"effect": {}
+		}
+	},
+	"Earthquake Coil": {
+		"super": {
+			"control": {
+				"type": "grab",
+				"duration": 1.3,
+				"share": 0.35,
+				"look": "rock_coil"
+			}
+		}
+	},
+	"Rock Tomb": {
+		"super": {
+			"control": {
+				"type": "tomb",
+				"duration": 2.5,
+				"look": "rock"
+			},
+			"stat_change": {
+				"speed": -0.4,
+				"duration": 2.5
+			}
+		}
+	},
+	"Avalanche": {
+		"super": {
+			"control": {
+				"type": "tomb",
+				"duration": 2.2,
+				"look": "ice"
+			}
+		}
+	},
+	"Sheer Cold": {
+		"super": {
+			"control": {
+				"type": "tomb",
+				"duration": 2.2,
+				"look": "ice"
+			}
+		}
+	},
+	"Sheer Cold Beam": {
+		"super": {
+			"control": {
+				"type": "tomb",
+				"duration": 2.2,
+				"look": "ice"
+			}
+		}
+	},
+	"Hydro Cannon": {
+		"super": {
+			"control": {
+				"type": "torrent",
+				"push": 3.5,
+				"pin": 1.0,
+				"pin_bonus": 0.3
+			}
+		}
+	},
+	"Hydro Lance": {
+		"super": {
+			"control": {
+				"type": "torrent",
+				"push": 3.0,
+				"pin": 0.8,
+				"pin_bonus": 0.25
+			}
+		}
+	},
+	"Twister Lance": {
+		"super": {
+			"control": {
+				"type": "torrent",
+				"push": 3.0,
+				"pin": 0.8,
+				"pin_bonus": 0.25
+			}
+		}
+	},
+	"Waterfall Rush": {
+		"super": {
+			"control": {
+				"type": "torrent",
+				"push": 2.0,
+				"pin": 0.9,
+				"pin_bonus": 0.3
+			}
+		}
+	},
+	"Hydro Charge": {
+		"super": {
+			"control": {
+				"type": "torrent",
+				"push": 2.0,
+				"pin": 0.9,
+				"pin_bonus": 0.3
+			}
+		}
+	},
+	"Muddy Water": {
+		"super": {
+			"control": {
+				"type": "torrent",
+				"push": 2.2,
+				"pin": 0.6,
+				"pin_bonus": 0.2
+			}
+		}
+	},
+	"Hydro Pump": {
+		"main": {
+			"control": {
+				"type": "torrent",
+				"push": 0.35
+			}
+		}
+	},
+	"Waterfall": {
+		"main": {
+			"control": {
+				"type": "torrent",
+				"push": 1.4
+			}
+		}
+	},
+	"Fire Spin": {
+		"super": {
+			"control": {
+				"type": "vortex",
+				"duration": 2.5,
+				"pull": 1.6,
+				"share": 0.5,
+				"look": "fire"
+			}
+		}
+	},
+	"Leek Tornado": {
+		"super": {
+			"control": {
+				"type": "vortex",
+				"duration": 2.0,
+				"pull": 2.0,
+				"share": 0.4
+			}
+		}
+	},
+	"Sandstorm": {
+		"super": {
+			"control": {
+				"type": "vortex",
+				"duration": 2.0,
+				"pull": 2.0,
+				"share": 0.4
+			}
+		}
+	},
+	"Hurricane": {
+		"super": {
+			"control": {
+				"type": "vortex",
+				"duration": 2.0,
+				"pull": 2.2,
+				"share": 0.35
+			}
+		}
+	},
+	"Crunch Rush": {
+		"super": {
+			"stat_change": {
+				"defense": -0.3,
+				"duration": 4.0
+			}
+		}
+	},
+	"Shadow Ball": {
+		"super": {
+			"stat_change": {
+				"defense": -0.3,
+				"duration": 4.0
+			}
+		},
+		"main": {
+			"stat_change": {
+				"defense": -0.2,
+				"duration": 3.0,
+				"chance": 0.3
+			}
+		}
+	},
+	"Psychic": {
+		"super": {
+			"stat_change": {
+				"defense": -0.3,
+				"duration": 4.0
+			}
+		},
+		"main": {
+			"stat_change": {
+				"defense": -0.2,
+				"duration": 3.0,
+				"chance": 0.3
+			}
+		}
+	},
+	"Psyshock": {
+		"super": {
+			"stat_change": {
+				"defense": -0.3,
+				"duration": 4.0
+			}
+		}
+	},
+	"Flash Cannon": {
+		"super": {
+			"stat_change": {
+				"defense": -0.3,
+				"duration": 4.0
+			}
+		},
+		"main": {
+			"stat_change": {
+				"defense": -0.2,
+				"duration": 3.0,
+				"chance": 0.3
+			}
+		}
+	},
+	"Earth Power": {
+		"super": {
+			"stat_change": {
+				"defense": -0.3,
+				"duration": 4.0
+			}
+		},
+		"main": {
+			"stat_change": {
+				"defense": -0.2,
+				"duration": 3.0,
+				"chance": 0.3
+			}
+		}
+	},
+	"Bug Buzz": {
+		"super": {
+			"stat_change": {
+				"defense": -0.3,
+				"duration": 4.0
+			}
+		},
+		"main": {
+			"stat_change": {
+				"defense": -0.2,
+				"duration": 3.0,
+				"chance": 0.3
+			}
+		}
+	},
+	"Focus Blast": {
+		"super": {
+			"stat_change": {
+				"defense": -0.3,
+				"duration": 4.0
+			}
+		}
+	},
+	"Iron Head": {
+		"super": {
+			"stat_change": {
+				"defense": -0.3,
+				"duration": 4.0
+			}
+		}
+	},
+	"Close Combat": {
+		"super": {
+			"stat_change": {
+				"defense": -0.3,
+				"duration": 4.0
+			}
+		}
+	},
+	"Gunk Shot": {
+		"super": {
+			"stat_change": {
+				"defense": -0.3,
+				"duration": 4.0
+			}
+		}
+	},
+	"Crush Claw": {
+		"main": {
+			"stat_change": {
+				"defense": -0.2,
+				"duration": 3.0,
+				"chance": 0.3
+			}
+		}
+	},
+	"Iron Tail Spin": {
+		"main": {
+			"stat_change": {
+				"defense": -0.2,
+				"duration": 3.0,
+				"chance": 0.3
+			}
+		}
+	},
+	"Rock Smash Burst": {
+		"main": {
+			"stat_change": {
+				"defense": -0.2,
+				"duration": 3.0,
+				"chance": 0.3
+			}
+		}
+	},
+	"Razor Shell": {
+		"main": {
+			"stat_change": {
+				"defense": -0.2,
+				"duration": 3.0,
+				"chance": 0.3
+			}
+		}
+	},
+	"Bite": {
+		"main": {
+			"stat_change": {
+				"defense": -0.2,
+				"duration": 3.0,
+				"chance": 0.3
+			}
+		}
+	},
+	"Acid Spray": {
+		"main": {
+			"stat_change": {
+				"defense": -0.25,
+				"duration": 3.0,
+				"chance": 0.6
+			}
+		}
+	},
+	"Moonblast": {
+		"super": {
+			"stat_change": {
+				"attack": -0.3,
+				"duration": 4.0
+			}
+		}
+	},
+	"Dazzling Gleam": {
+		"super": {
+			"stat_change": {
+				"attack": -0.3,
+				"duration": 4.0
+			}
+		},
+		"main": {
+			"stat_change": {
+				"attack": -0.2,
+				"duration": 3.0,
+				"chance": 0.3
+			}
+		}
+	},
+	"Lullaby": {
+		"super": {
+			"stat_change": {
+				"attack": -0.3,
+				"duration": 4.0
+			}
+		}
+	},
+	"Disarming Voice": {
+		"main": {
+			"stat_change": {
+				"attack": -0.2,
+				"duration": 3.0,
+				"chance": 0.3
+			}
+		}
+	},
+	"Dazzling Wave": {
+		"main": {
+			"stat_change": {
+				"attack": -0.2,
+				"duration": 3.0,
+				"chance": 0.3
+			}
+		}
+	},
+	"Hyper Voice": {
+		"main": {
+			"stat_change": {
+				"attack": -0.2,
+				"duration": 3.0,
+				"chance": 0.3
+			}
+		}
+	},
+	"Round": {
+		"main": {
+			"stat_change": {
+				"attack": -0.2,
+				"duration": 3.0,
+				"chance": 0.3
+			}
+		}
+	},
+	"Sing Wave": {
+		"main": {
+			"stat_change": {
+				"attack": -0.2,
+				"duration": 3.0,
+				"chance": 0.3
+			}
+		}
+	},
+	"Icy Wind": {
+		"super": {
+			"stat_change": {
+				"speed": -0.4,
+				"duration": 2.5
+			}
+		}
+	},
+	"Rock Slide": {
+		"super": {
+			"stat_change": {
+				"speed": -0.4,
+				"duration": 2.5
+			}
+		}
+	},
+	"Mud Shot": {
+		"main": {
+			"stat_change": {
+				"speed": -0.25,
+				"duration": 2.0,
+				"chance": 0.4
+			}
+		}
+	},
+	"Mud-Slap": {
+		"main": {
+			"stat_change": {
+				"speed": -0.25,
+				"duration": 2.0,
+				"chance": 0.4
+			}
+		}
+	},
+	"Bubble Beam": {
+		"main": {
+			"stat_change": {
+				"speed": -0.25,
+				"duration": 2.0,
+				"chance": 0.4
+			}
+		}
+	},
+	"Bubble": {
+		"main": {
+			"stat_change": {
+				"speed": -0.25,
+				"duration": 2.0,
+				"chance": 0.4
+			}
+		}
+	},
+	"Rock Tomb Wave": {
+		"main": {
+			"stat_change": {
+				"speed": -0.25,
+				"duration": 2.0,
+				"chance": 0.4
+			}
+		}
+	},
+	"String Shot": {
+		"main": {
+			"stat_change": {
+				"speed": -0.25,
+				"duration": 2.0,
+				"chance": 0.4
+			}
+		}
+	},
+	"Ice Shard": {
+		"main": {
+			"stat_change": {
+				"speed": -0.25,
+				"duration": 2.0,
+				"chance": 0.4
+			}
+		}
+	}
+}

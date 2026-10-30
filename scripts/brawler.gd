@@ -23,7 +23,9 @@ const SHEET_PIXEL_SIZE := 0.0253
 const VISUAL_SCALE := 1.6
 const DOT_TICK := 0.5
 ## Physics layers that stop walking and teleports: world + water.
-const MOVE_BLOCK_MASK := 1 | 8
+const MOVE_BLOCK_MASK := 1 | 8 | 16
+## Rock Tomb rocks: they block walking (swimmers too) but not shots or sight.
+const TOMB_LAYER := 16
 const WATER_LAYER := 8
 ## Walls and obstacles (what stops shots and line of sight).
 const WALL_MASK := 1
@@ -164,6 +166,10 @@ var _stun_time := 0.0
 var _invisible_time := 0.0
 ## stat name -> { "amount": float, "time": float }
 var _buffs := {}
+## Stat drops from enemy moves (Speed / Attack / Defense ▼): stat -> { "amount" (< 0), "time" }.
+var _debuffs := {}
+## The type of whatever slowed us (electric = paralysis, otherwise Speed ▼).
+var _slow_type := ""
 ## Particle auras showing status conditions, created on first use.
 var _auras := {}
 var _stream_particles: CPUParticles3D
@@ -173,6 +179,9 @@ var _dash_time := 0.0
 var _dash_dir := Vector3.ZERO
 var _dash_move: MoveData
 var _dash_hit: Array[Brawler] = []
+var _ghost_timer := 0.0
+## Little puffs of dust kicked up while running (one cheap emitter per Pokémon).
+var _dust: CPUParticles3D
 var _dash_broke: Array[Breakable] = []
 
 var _melee_material: StandardMaterial3D
@@ -185,6 +194,29 @@ var _stream_tick := 0.0
 var _stream_idle := 0.0
 var _stream_fx: MeshInstance3D
 var _stream_material: StandardMaterial3D
+
+# Grabs (Wrap, Bind...): the grabber holds _grab_target; the target knows _grabbed_by.
+var _grab_target: Brawler
+var _grabbed_by: Brawler
+var _grab_move: MoveData
+var _grab_time := 0.0
+var _grab_total := 0.0
+var _grab_tick := 0.0
+var _grab_dir := Vector3.FORWARD
+## Damage the grabber has taken while holding: enough of it shakes the target free.
+var _grab_hurt := 0.0
+## Mashing the stick while grabbed: how much the input has turned since the last check.
+var _wiggle := 0.0
+var _last_wiggle_input := Vector2.ZERO
+var _grab_fx: Node3D
+## Torrents: a push that pins us (stun + extra damage) if it slams us into a wall.
+var _pin: Dictionary = {}
+## Vortexes add a drag toward their centre; used up by the next movement step.
+var _pull := Vector3.ZERO
+## Seconds left boxed in by a Rock Tomb (one tomb at a time).
+var _tomb_time := 0.0
+## Shifts the sprite (toward a grabbed Pokémon, so they overlap like a coil).
+var _sprite_nudge := Vector3.ZERO
 
 @onready var sprite: Sprite3D = $Sprite
 @onready var shadow: MeshInstance3D = $Shadow
@@ -232,6 +264,12 @@ func _physics_process(delta: float) -> void:
 	legendary_time_left = maxf(0.0, legendary_time_left - delta)
 	_tick_timers(delta)
 	_tick_status(delta)
+	if is_grabbed():
+		_process_grabbed(delta)
+		return
+	if is_holding():
+		_process_hold(delta)
+		return
 	if is_stunned():
 		_stream_hold = 0.0
 		_dash_time = 0.0
@@ -247,6 +285,10 @@ func _physics_process(delta: float) -> void:
 		_knock_time -= delta
 		velocity = _knock_velocity
 		move_and_slide()
+		if not _pin.is_empty() and get_slide_collision_count() > 0 and is_on_wall():
+			_pinned()
+		elif _knock_time <= 0.0:
+			_pin = {}
 		return
 
 	var dir := Vector3(move_input.x, 0.0, move_input.y)
@@ -259,12 +301,17 @@ func _physics_process(delta: float) -> void:
 
 func _process(delta: float) -> void:
 	_update_sprite(delta)
+	# Dust while running on open ground (not in grass, where it would give you away).
+	_dust.emitting = not is_dead and velocity.length() > 2.0 and not flying and not is_in_grass() and _surf_time <= 0.0 \
+			and (arena == null or arena.is_walkable(global_position)) and visible_to_local_player()
 
 
 ## move_and_slide, plus a fallback for when it gets stuck on a corner while
 ## moving diagonally: try each axis of the input on its own so the brawler
 ## keeps sliding along the wall in the direction that's still open.
 func _move_with_wall_slide(desired: Vector3, delta: float) -> void:
+	desired += _pull
+	_pull = Vector3.ZERO
 	velocity = desired
 	var start := global_position
 	move_and_slide()
@@ -287,18 +334,23 @@ func _move_with_wall_slide(desired: Vector3, delta: float) -> void:
 # --- Stats -----------------------------------------------------------------
 
 func get_attack() -> float:
-	return attack * (1.0 + _buff("attack") + _boosts["attack"])
+	return attack * _stat_multiplier("attack")
 
 
 func get_defense() -> float:
-	return defense * (1.0 + _buff("defense") + _boosts["defense"])
+	return defense * _stat_multiplier("defense")
+
+
+## Buffs, item boosts and stat drops together (never below 40%).
+func _stat_multiplier(stat: String) -> float:
+	return maxf(0.4, 1.0 + _buff(stat) + float(_boosts[stat]) + _debuff(stat))
 
 
 func get_speed() -> float:
 	if _windup_time > 0.0:
 		return 0.0  # Planted while winding up a slam.
 	var slow := 1.0 - _slow_amount if _slow_time > 0.0 else 1.0
-	return move_speed * (1.0 + _buff("speed") + _boosts["speed"]) * slow
+	return move_speed * _stat_multiplier("speed") * slow
 
 
 ## Apply an item from data/items.json. Boosts last until you faint.
@@ -341,6 +393,21 @@ func protect(seconds: float) -> void:
 func _buff(stat: String) -> float:
 	var b: Dictionary = _buffs.get(stat, {})
 	return float(b.get("amount", 0.0)) if float(b.get("time", 0.0)) > 0.0 else 0.0
+
+
+func _debuff(stat: String) -> float:
+	var b: Dictionary = _debuffs.get(stat, {})
+	return float(b.get("amount", 0.0)) if float(b.get("time", 0.0)) > 0.0 else 0.0
+
+
+## -1 (lowered), 0 or 1 (raised): what the stat's arrow by the health bar shows.
+func stat_trend(stat: String) -> int:
+	var total := _buff(stat) + float(_boosts[stat]) + _debuff(stat)
+	if stat == "speed" and _slow_time > 0.0 and _slow_type != "electric":
+		total -= _slow_amount
+	if absf(total) < 0.01:
+		return 0
+	return 1 if total > 0.0 else -1
 
 
 ## `source` (if any) gets credit for the healing on the match summary.
@@ -414,7 +481,7 @@ func power_bonus() -> float:
 
 ## Physics layers that stop this brawler walking (swimmers cross water).
 func walk_mask() -> int:
-	return WALL_MASK if can_swim or _surf_time > 0.0 else MOVE_BLOCK_MASK
+	return WALL_MASK | TOMB_LAYER if can_swim or _surf_time > 0.0 else MOVE_BLOCK_MASK
 
 
 ## Re-pick the main attack after changing species (each stage has its own version
@@ -572,8 +639,11 @@ func respawn(spawn_position: Vector3) -> void:
 	_attack_lock = 0.0
 	_dash_time = 0.0
 	_knock_time = 0.0
+	_pin = {}
+	_tomb_time = 0.0
 	_clear_status()
 	_buffs.clear()
+	_debuffs.clear()
 	_last_attacker = null
 	shadow.scale = Vector3.ONE
 
@@ -588,11 +658,11 @@ func max_ammo() -> float:
 
 
 func is_stunned() -> bool:
-	return _stun_time > 0.0
+	return _stun_time > 0.0 or is_grabbed()
 
 
 func _busy() -> bool:
-	return is_dead or _dash_time > 0.0 or is_stunned()
+	return is_dead or _dash_time > 0.0 or is_stunned() or is_holding()
 
 
 func can_shoot() -> bool:
@@ -702,7 +772,7 @@ func use_gadget(direction: Vector3) -> bool:
 
 
 func super_ready() -> bool:
-	return not is_dead and super_charge >= 1.0 and _dash_time <= 0.0 and _attack_lock <= 0.0 and not is_stunned()
+	return not is_dead and super_charge >= 1.0 and _dash_time <= 0.0 and _attack_lock <= 0.0 and not is_stunned() and not is_holding()
 
 
 func add_super_charge(damage_dealt: float) -> void:
@@ -730,6 +800,10 @@ func use_super(direction: Vector3, distance := -1.0) -> bool:
 		health = maxf(1.0, health - max_health * move.self_damage)
 	_perform(move, direction, distance)
 	_apply_support(move, direction)
+	if move.kind == "self":
+		var look := MoveLook.of(move)
+		MoveFx.decal(get_parent(), global_position, "ring", MoveFx._color(look, 0), 2.6, 0.5, 1.6)
+		Vfx.burst(get_parent(), global_position + Vector3(0, 0.5, 0), move.type, 16, 0.6, 2.5, look)
 	if move.invisible > 0.0:
 		_invisible_time = move.invisible
 	return true
@@ -781,10 +855,26 @@ func _melee_swing(move: MoveData, direction: Vector3) -> void:
 			_windup_time = 0.0
 			return  # Interrupted: the slam fizzles.
 	_show_melee_fx(direction, move)
-	for other in _enemies_in_cone(direction, move.reach, move.arc):
+	var targets := _enemies_in_cone(direction, move.reach, move.arc)
+	var grabbed: Brawler = null
+	if str(move.control.get("type", "")) == "grab":
+		# Latch on to the nearest one; it takes the rest of the damage while held.
+		targets.sort_custom(func(a: Brawler, b: Brawler) -> bool:
+			return a.global_position.distance_to(global_position) < b.global_position.distance_to(global_position))
+		for other in targets:
+			if other.can_be_grabbed():
+				grabbed = other
+				break
+	for other in targets:
+		if other == grabbed:
+			other.take_hit(self, move, 1.0 - float(move.control.get("share", 0.4)))
+			if not other.is_dead:
+				_start_grab(other, move)
+			continue
 		other.take_hit(self, move)
 		other.knock_from(global_position, move.knockback)
 	Breakable.hit_cone(get_tree(), global_position, direction, move.reach, move.arc, self, move)
+	MoveFx.melee(self, direction, move, targets)
 
 
 # --- HMs ---------------------------------------------------------------------
@@ -887,6 +977,8 @@ func knock_from(origin: Vector3, distance: float) -> void:
 	_knock_velocity = away.normalized() * distance / _knock_time
 	_dash_time = 0.0
 	_stream_hold = 0.0
+	if is_holding():
+		release_grab()  # Knocked away: lets go.
 
 
 ## Enemies within `reach` and inside a cone of `arc` degrees, not behind walls.
@@ -917,7 +1009,8 @@ func _start_dash(move: MoveData, direction: Vector3) -> void:
 	_dash_broke.clear()
 	if _dash_trail:
 		_dash_trail.queue_free()
-	_dash_trail = Vfx.trail(move.type, 0.5)
+	_dash_trail = Vfx.trail(move.type, 0.5, MoveLook.of(move))
+	_ghost_timer = 0.0
 	_dash_trail.position = Vector3(0, 0.8, 0)
 	add_child(_dash_trail)
 
@@ -971,16 +1064,28 @@ func _area_strike(move: MoveData, center: Vector3) -> void:
 		var offset := other.global_position - center
 		offset.y = 0.0
 		if offset.length() <= move.area_radius + BODY_RADIUS and Brawler.clear_between(self, center, other.global_position):
-			other.take_hit(self, move)
+			other.take_hit(self, move, move.upfront_share())
 			other.knock_from(center, move.knockback)
 	Breakable.hit_area(get_tree(), center, move.area_radius, self, move)
-	Vfx.ring(parent, center, move.area_radius, move.type, 50)
-	Vfx.burst(parent, center + Vector3(0, 0.3, 0), move.type, 30, move.area_radius * 0.6, 3.5)
+	spawn_vortex(move, center, move.area_radius)
+	var look := MoveLook.of(move)
+	Vfx.ring(parent, center, move.area_radius, move.type, 22, look)
+	Vfx.burst(parent, center + Vector3(0, 0.3, 0), move.type, 10, move.area_radius * 0.5, 3.0, look)
+	MoveFx.area(parent, center, move.area_radius, move)
 	var mat := fx.material_override as StandardMaterial3D
-	mat.albedo_color.a = 0.75
+	mat.albedo_color.a = 0.4
 	var tween := fx.create_tween()
 	tween.tween_property(mat, "albedo_color:a", 0.0, 0.45)
 	tween.tween_callback(fx.queue_free)
+
+
+## Vortex moves leave a whirl where they land (vortex_zone.gd).
+func spawn_vortex(move: MoveData, center: Vector3, radius: float) -> void:
+	if str(move.control.get("type", "")) != "vortex" or get_parent() == null:
+		return
+	var zone := VortexZone.new()
+	zone.setup(self, move, center, radius)
+	get_parent().add_child(zone)
 
 
 ## Heals, buffs, teleports, shields, blinding and cleansing attached to a super or gadget.
@@ -1027,7 +1132,23 @@ func apply_buff(buff: Dictionary) -> void:
 	var duration := float(buff.get("duration", 4.0))
 	for stat in ["attack", "defense", "speed"]:
 		if buff.has(stat):
+			if _buff(stat) <= 0.0 and float(buff[stat]) > 0.0:
+				_spawn_stat_popup(stat, 1)
 			_buffs[stat] = { "amount": float(buff[stat]), "time": duration }
+
+
+## A move's stat changes on whoever it hits: drops refresh (the bigger one wins), and pop up once.
+func apply_stat_change(change: Dictionary) -> void:
+	if is_dead or change.is_empty() or randf() >= float(change.get("chance", 1.0)):
+		return
+	var duration := float(change.get("duration", 3.0))
+	for stat in ["attack", "defense", "speed"]:
+		var amount := float(change.get(stat, 0.0))
+		if amount >= 0.0:
+			continue
+		if _debuff(stat) >= 0.0:
+			_spawn_stat_popup(stat, -1)
+		_debuffs[stat] = { "amount": minf(amount, _debuff(stat)), "time": maxf(duration, float(_debuffs.get(stat, {}).get("time", 0.0))) }
 
 
 func apply_blind(duration: float) -> void:
@@ -1041,6 +1162,10 @@ func is_blind() -> bool:
 
 func _process_dash(delta: float) -> void:
 	_dash_time -= delta
+	_ghost_timer -= delta
+	if _ghost_timer <= 0.0:
+		_ghost_timer = 0.05
+		MoveFx.afterimage(self, MoveLook.of(_dash_move))
 	# Crates in the way take a hit; dashing supers smash through breakable walls.
 	for b in Breakable.near(get_tree(), global_position + _dash_dir * 0.7, 0.2):
 		if b not in _dash_broke:
@@ -1162,6 +1287,189 @@ func clear_distance(direction: Vector3, max_distance: float) -> float:
 	return max_distance if hit.is_empty() else from.distance_to(hit["position"])
 
 
+# --- Grabs, tombs, torrents, vortexes (MoveData.control) ----------------------
+
+func is_grabbed() -> bool:
+	return _grabbed_by != null and is_instance_valid(_grabbed_by)
+
+
+func is_holding() -> bool:
+	return _grab_target != null and is_instance_valid(_grab_target)
+
+
+func can_be_grabbed() -> bool:
+	return not is_dead and not is_legendary and not invulnerable and not is_protected() and not is_grabbed() and not is_holding()
+
+
+## Side effects of a move's `control` on the Pokémon it just hit (grabs start in _melee_swing,
+## vortexes where the move lands).
+func _apply_control(move: MoveData, attacker: Brawler, multiplier: float) -> void:
+	if move.control.is_empty() or not is_instance_valid(attacker):
+		return
+	match str(move.control.get("type", "")):
+		"tomb":
+			if _tomb_time <= 0.0 and not is_legendary:
+				entomb(str(move.control.get("look", "rock")), float(move.control.get("duration", 2.5)))
+		"torrent":
+			if is_legendary or is_grabbed() or multiplier <= 0.0:
+				return
+			var away := global_position - attacker.global_position
+			if attacker._dash_time > 0.0:
+				away = attacker._dash_dir  # Carried along by the charge.
+			away.y = 0.0
+			if away.length() < 0.01:
+				away = attacker.facing
+			# Streams push a little every tick; shots and charges in one go.
+			var push := float(move.control.get("push", 1.0)) * minf(1.0, multiplier)
+			carry(away.normalized(), push, float(move.control.get("pin", 0.0)), float(move.control.get("pin_bonus", 0.0)), attacker, move)
+
+
+## Torrent: swept `distance` m along `dir`; hitting a wall on the way pins us.
+func carry(dir: Vector3, distance: float, pin: float, pin_bonus: float, attacker: Brawler, move: MoveData) -> void:
+	if is_dead or invulnerable or distance < 0.01:
+		return
+	var speed := 11.0
+	_knock_time = distance / speed
+	_knock_velocity = dir * speed
+	_dash_time = 0.0
+	_stream_hold = 0.0
+	_pin = {} if pin <= 0.0 else { "time": pin, "bonus": pin_bonus, "attacker": attacker, "move": move }
+	if is_holding():
+		release_grab()
+
+
+func _pinned() -> void:
+	var pin := _pin
+	_pin = {}
+	_knock_time = 0.0
+	_stun_time = maxf(_stun_time, float(pin["time"]))
+	_spawn_floating_text("PINNED!", Color(0.6, 0.85, 1.0), 48, 2.3)
+	Vfx.burst(get_parent(), global_position + Vector3(0, 0.7, 0), "water", 26, 0.5, 4.0)
+	var attacker := pin["attacker"] as Brawler
+	if is_instance_valid(attacker) and float(pin["bonus"]) > 0.0:
+		var move: MoveData = pin["move"]
+		var result: Dictionary = GameData.calc_damage(move, attacker, self, float(pin["bonus"]) * attacker.power_bonus())
+		take_damage(result["amount"], attacker, result["effectiveness"], false)
+
+
+## Rock Tomb: rocks (or ice blocks) drop in a ring around us and stay for `duration` s.
+func entomb(look: String, duration: float) -> void:
+	var parent := get_parent()
+	if parent == null or is_dead:
+		return
+	_tomb_time = duration
+	_spawn_floating_text("TRAPPED!", Color(1, 0.85, 0.5), 44, 2.3)
+	var count := 7
+	var radius := 1.15
+	for i in count:
+		var angle := TAU * i / count + randf_range(-0.15, 0.15)
+		var at := global_position + Vector3(cos(angle), 0, sin(angle)) * radius
+		at.y = 0.0
+		if arena and not arena.is_walkable(at):
+			continue  # A wall is already there.
+		var crowded := false
+		for node in get_tree().get_nodes_in_group("brawlers"):
+			var other := node as Brawler
+			if other != self and not other.is_dead and Vector2(other.global_position.x - at.x, other.global_position.z - at.z).length() < 0.75:
+				crowded = true
+		if crowded:
+			continue
+		var rock := TombRock.new()
+		rock.setup(look, duration, i * 0.04)
+		parent.add_child(rock)
+		rock.global_position = at
+
+
+func _start_grab(target: Brawler, move: MoveData) -> void:
+	_grab_target = target
+	_grab_move = move
+	_grab_total = float(move.control.get("duration", 1.4))
+	_grab_time = _grab_total
+	_grab_tick = 0.0
+	_grab_hurt = 0.0
+	var to := target.global_position - global_position
+	to.y = 0.0
+	_grab_dir = to.normalized() if to.length() > 0.05 else facing
+	facing = _grab_dir
+	target._grabbed_by = self
+	target._wiggle = 0.0
+	target._last_wiggle_input = target.move_input
+	target._stream_hold = 0.0
+	target._dash_time = 0.0
+	target._knock_time = 0.0
+	target._spawn_floating_text("TRAPPED!", Color(1, 0.85, 0.5), 44, 2.3)
+	_grab_fx = Vfx.coil(str(move.control.get("look", "coil")), move.type, target.visual_height())
+	target.add_child(_grab_fx)
+
+
+## Lets go of whoever we're holding (or frees us, if we're the one held).
+func release_grab() -> void:
+	if is_grabbed():
+		_grabbed_by.release_grab()
+		return
+	if _grab_target != null:
+		var target := _grab_target
+		_grab_target = null
+		_sprite_nudge = Vector3.ZERO
+		if is_instance_valid(target):
+			target._grabbed_by = null
+			target._sprite_nudge = Vector3.ZERO
+			if not target.is_dead:
+				target.knock_from(global_position, 0.8)
+		if is_instance_valid(_grab_fx):
+			_grab_fx.queue_free()
+		_grab_fx = null
+		_attack_lock = maxf(_attack_lock, 0.25)
+
+
+## Holding on: both stay put while the target takes the squeeze damage.
+func _process_hold(delta: float) -> void:
+	velocity = Vector3.ZERO
+	_stream_hold = 0.0
+	var target := _grab_target
+	if target.is_dead or is_stunned() or target.is_legendary:
+		release_grab()
+		return
+	_grab_time -= delta
+	_grab_tick -= delta
+	_sprite_nudge = _grab_dir * 0.2
+	if not species.pmd.is_empty() and _anim_hold <= 0.05:
+		_play_anim("attack", 0.4)
+	if _grab_tick <= 0.0:
+		_grab_tick = 0.35
+		var share := float(_grab_move.control.get("share", 0.4))
+		target.take_hit(self, _grab_move, share * 0.35 / maxf(0.1, _grab_total))
+		target._play_anim("hurt", 0.4)
+		if is_instance_valid(_grab_fx) and _grab_fx.has_method("squeeze"):
+			_grab_fx.call("squeeze")
+	if _grab_time <= 0.0 or not is_instance_valid(target):
+		release_grab()
+
+
+## Being held: pinned next to the grabber, struggling. Turning the stick around
+## (mashing) breaks free sooner; bots wriggle a little on their own.
+func _process_grabbed(delta: float) -> void:
+	var grabber := _grabbed_by
+	velocity = Vector3.ZERO
+	# Close enough that the sprites overlap a little, far enough to still see who's held.
+	var gap := maxf(0.8, (grabber.visual_height() + visual_height()) * 0.38)
+	var hold_at := grabber.global_position + grabber._grab_dir * gap
+	hold_at.y = global_position.y
+	global_position = global_position.lerp(hold_at, 1.0 - exp(-14.0 * delta))
+	_sprite_nudge = Vector3(randf_range(-1, 1), 0, randf_range(-1, 1)) * 0.04
+	var escape := 0.0
+	if is_player:
+		if move_input.length() > 0.5 and _last_wiggle_input.length() > 0.5:
+			_wiggle += absf(move_input.angle_to(_last_wiggle_input))
+		_last_wiggle_input = move_input
+		if _wiggle >= PI * 0.5:
+			_wiggle = 0.0
+			escape = float(GameData.rule("grab/mash_escape", 0.12))
+	else:
+		escape = delta * float(GameData.rule("grab/bot_escape", 0.25))
+	grabber._grab_time -= escape
+
+
 # --- Damage & status -------------------------------------------------------
 
 ## Hit by a move: applies the damage formula, type matchups and side effects.
@@ -1178,7 +1486,7 @@ func take_hit(attacker: Brawler, move: MoveData, multiplier := 1.0) -> void:
 		multiplier *= attacker.power_bonus()
 	var result: Dictionary = GameData.calc_damage(move, attacker, self, multiplier)
 	if multiplier >= 0.5:  # Skip the tiny per-tick stream hits.
-		Vfx.burst(get_parent(), global_position + Vector3(0, 0.9, 0), move.type, 10, 0.35, 2.5)
+		MoveFx.impact(get_parent(), global_position + Vector3(0, 0.9, 0), MoveLook.of(move), 0.45 if move.slot == "main" else 0.7)
 	var amount: float = minf(result["amount"], health)
 	take_damage(result["amount"], attacker, result["effectiveness"], result["crit"])
 	if is_instance_valid(attacker):
@@ -1186,8 +1494,10 @@ func take_hit(attacker: Brawler, move: MoveData, multiplier := 1.0) -> void:
 			attacker.add_super_charge(amount)
 		if move.drain > 0.0:
 			attacker.heal(amount * move.drain)
-	if not is_dead:
-		_apply_effect(move.effect, attacker)
+	if not is_dead and not (is_instance_valid(attacker) and attacker._grab_target == self):
+		_apply_effect(move.effect, attacker, move.type)
+		apply_stat_change(move.stat_change)
+		_apply_control(move, attacker, multiplier)
 
 
 func take_damage(amount: float, source: Brawler = null, effectiveness := 1.0, crit := false) -> void:
@@ -1199,10 +1509,15 @@ func take_damage(amount: float, source: Brawler = null, effectiveness := 1.0, cr
 		if source != self:
 			source.damage_dealt += minf(amount, health)
 	_pop = 0.86
+	if is_holding():
+		_grab_hurt += amount
+		if _grab_hurt > max_health * float(GameData.rule("grab/break_damage", 0.15)):
+			release_grab()  # Teammates can hit the grabber to free its victim.
 	health = maxf(0.0, health - amount)
 	_regen_timer = 0.0
 	_reveal_timer = float(GameData.rule("tall_grass/reveal_time_after_attack", 1.0))
-	_flash_timer = 0.12
+	if amount > max_health * 0.05:
+		_flash_timer = 0.12  # Not for small ticks (squeezes, burns), or the sprite stays red.
 	if not species.pmd.is_empty() and _anim_hold <= 0.0 and amount > max_health * 0.04:
 		_play_anim("hurt", 0.3)
 	_spawn_damage_number(amount, effectiveness, crit)
@@ -1220,6 +1535,8 @@ func has_status() -> bool:
 
 func status_text() -> String:
 	var parts: Array[String] = []
+	if is_grabbed():
+		parts.append("TRAPPED")
 	if _stun_time > 0.0:
 		parts.append("SLP")
 	if _invisible_time > 0.0:
@@ -1228,17 +1545,44 @@ func status_text() -> String:
 		parts.append("BLIND")
 	if _dot_time > 0.0:
 		parts.append({ "burn": "BRN", "poison": "PSN", "leech": "SEED" }.get(_dot_kind, "DOT"))
-	if _slow_time > 0.0:
+	if _slow_time > 0.0 and _slow_type == "electric":
 		parts.append("PAR")
 	for stat in ["attack", "defense", "speed"]:
-		if _buff(stat) > 0.0 or _boosts[stat] > 0.0:
-			parts.append("+" + stat.substr(0, 3).to_upper())
+		var trend := stat_trend(stat)
+		if trend != 0:
+			parts.append(stat.substr(0, 3).to_upper() + ("+" if trend > 0 else "-"))
 	if _extra_ammo > 0:
 		parts.append("+PP")
 	return " ".join(parts)
 
 
-func _apply_effect(effect: Dictionary, source: Brawler) -> void:
+## What to show by the health bar: [{ "text", "color", "arrow" (-1 / 0 / 1) }].
+func status_chips() -> Array[Dictionary]:
+	var chips: Array[Dictionary] = []
+	var bad := Color(1, 0.8, 0.3)
+	if is_grabbed():
+		chips.append({ "text": "TRAP", "color": bad, "arrow": 0 })
+	if _stun_time > 0.0:
+		chips.append({ "text": "SLP", "color": bad, "arrow": 0 })
+	if _blind_time > 0.0:
+		chips.append({ "text": "BLIND", "color": bad, "arrow": 0 })
+	if _dot_time > 0.0:
+		chips.append({ "text": { "burn": "BRN", "poison": "PSN", "leech": "SEED" }.get(_dot_kind, "DOT"), "color": bad, "arrow": 0 })
+	if _slow_time > 0.0 and _slow_type == "electric":
+		chips.append({ "text": "PAR", "color": bad, "arrow": 0 })
+	for stat in ["attack", "defense", "speed"]:
+		var trend := stat_trend(stat)
+		if trend != 0:
+			chips.append({ "text": stat.substr(0, 3).to_upper(), "arrow": trend,
+					"color": Color(1.0, 0.6, 0.25) if trend > 0 else Color(0.45, 0.72, 1.0) })
+	if _extra_ammo > 0:
+		chips.append({ "text": "+PP", "color": Color(0.6, 1, 0.8), "arrow": 0 })
+	if _invisible_time > 0.0:
+		chips.append({ "text": "HIDDEN", "color": Color(0.8, 0.8, 1), "arrow": 0 })
+	return chips
+
+
+func _apply_effect(effect: Dictionary, source: Brawler, move_type := "") -> void:
 	if effect.is_empty() or randf() >= float(effect.get("chance", 1.0)):
 		return
 	var kind := str(effect.get("type", ""))
@@ -1249,8 +1593,14 @@ func _apply_effect(effect: Dictionary, source: Brawler) -> void:
 			_dot_dps = float(effect.get("dps", 100.0))
 			_dot_source = source
 		"slow":
+			if _slow_time <= 0.0:
+				if move_type == "electric":
+					_spawn_floating_text("PARALYZED", Color(1, 0.9, 0.3), 44, 2.2)
+				else:
+					_spawn_stat_popup("speed", -1)
 			_slow_time = float(effect.get("duration", 1.0))
 			_slow_amount = clampf(float(effect.get("amount", 0.4)), 0.0, 0.9)
+			_slow_type = move_type
 		"stun":
 			_stun_time = maxf(_stun_time, float(effect.get("duration", 1.5)))
 		"blind":
@@ -1273,6 +1623,7 @@ func _tick_timers(delta: float) -> void:
 	_stun_time = maxf(0.0, _stun_time - delta)
 	_invisible_time = maxf(0.0, _invisible_time - delta)
 	_protect_time = maxf(0.0, _protect_time - delta)
+	_tomb_time = maxf(0.0, _tomb_time - delta)
 	_hm_cooldown = maxf(0.0, _hm_cooldown - delta)
 	if _surf_time > 0.0:
 		_surf_time -= delta
@@ -1283,6 +1634,8 @@ func _tick_timers(delta: float) -> void:
 			collision_mask = walk_mask()
 	for stat: String in _buffs:
 		_buffs[stat]["time"] = float(_buffs[stat]["time"]) - delta
+	for stat: String in _debuffs:
+		_debuffs[stat]["time"] = float(_debuffs[stat]["time"]) - delta
 	if main_move.kind == "stream":
 		if not is_streaming() and _stream_idle >= STREAM_REFILL_DELAY:
 			ammo = minf(max_ammo(), ammo + delta / main_move.reload)
@@ -1347,6 +1700,7 @@ func _tick_stream(delta: float) -> void:
 func _die() -> void:
 	is_dead = true
 	deaths += 1
+	release_grab()
 	if ball:
 		ball.drop()
 	_stream_hold = 0.0
@@ -1523,6 +1877,8 @@ func _build_static_visuals() -> void:
 	melee_fx.visible = false
 	aim_indicator.material_override = _flat_material(Color(1, 1, 1, 0.45))
 	aim_indicator.visible = false
+	_dust = Vfx.dust()
+	add_child(_dust)
 
 
 ## Rebuild the aim preview (and stream cone) to match the equipped main attack.
@@ -1539,7 +1895,7 @@ func _apply_loadout_visuals() -> void:
 		var cone := _build_fan_mesh(r.reach, deg_to_rad(r.arc))
 		aim_indicator.mesh = cone
 		aim_indicator.position = Vector3(0, 0.05, 0)
-		_stream_particles = Vfx.stream(r.type)
+		_stream_particles = Vfx.stream(r.type, MoveLook.of(r))
 		_stream_particles.position = Vector3(0, 0.8, 0)
 		add_child(_stream_particles)
 		_stream_fx = MeshInstance3D.new()
@@ -1659,7 +2015,7 @@ func _animate(delta: float) -> void:
 
 	sprite.billboard = BaseMaterial3D.BILLBOARD_DISABLED
 	sprite.offset = Vector2(0, sprite.texture.get_height() * 0.5) if sprite.texture else Vector2.ZERO
-	sprite.position = Vector3(0, 0.05 + lift, 0)
+	sprite.position = Vector3(0, 0.05 + lift, 0) + _sprite_nudge
 	sprite.basis = Basis(Vector3.RIGHT, tilt) * Basis(Vector3.BACK, roll) * Basis.from_scale(Vector3(sx, sy, 1.0))
 
 
@@ -1708,7 +2064,7 @@ func _animate_pmd(delta: float, moving: bool, tilt: float, lift: float) -> void:
 	if row < bottoms.size() and col < (bottoms[row] as Array).size():
 		dip = maxf(0.0, float(bottoms[row][col]) - feet)
 	sprite.offset = Vector2(0, feet + dip)
-	sprite.position = Vector3(0, 0.05 + lift, dip * sprite.pixel_size)
+	sprite.position = Vector3(0, 0.05 + lift, dip * sprite.pixel_size) + _sprite_nudge
 	sprite.basis = Basis(Vector3.RIGHT, tilt) * Basis.from_scale(Vector3(_pop, _pop, 1.0))
 
 
@@ -1810,7 +2166,7 @@ func _show_melee_fx(direction: Vector3, move: MoveData) -> void:
 	melee_fx.visible = true
 	if _melee_tween:
 		_melee_tween.kill()
-	_melee_material.albedo_color = Color(GameData.type_color(move.type).lightened(0.4), 0.6)
+	_melee_material.albedo_color = Color(GameData.type_color(move.type).lightened(0.4), 0.35)
 	_melee_tween = create_tween()
 	_melee_tween.tween_property(_melee_material, "albedo_color:a", 0.0, 0.2)
 	_melee_tween.tween_callback(func() -> void: melee_fx.visible = false)
@@ -1867,6 +2223,7 @@ func _spawn_damage_number(amount: float, effectiveness: float, crit: bool) -> vo
 
 func _spawn_floating_text(text: String, color: Color, size: int, height := 2.0) -> void:
 	var label := Label3D.new()
+	label.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	label.text = text
 	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	label.no_depth_test = true
@@ -1882,6 +2239,46 @@ func _spawn_floating_text(text: String, color: Color, size: int, height := 2.0) 
 	tween.tween_property(label, "modulate:a", 0.0, 0.6).set_delay(0.3)
 	tween.tween_property(label, "outline_modulate:a", 0.0, 0.6).set_delay(0.3)
 	tween.chain().tween_callback(label.queue_free)
+
+
+## "SPEED" / "ATTACK" / "DEFENSE" with an up or down arrow (the fonts have no ▲▼, so
+## the arrow is a small sprite): raises in orange, drops in blue, like the games.
+func _spawn_stat_popup(stat: String, direction: int) -> void:
+	if get_parent() == null:
+		return
+	var color := Color(1.0, 0.6, 0.25) if direction > 0 else Color(0.45, 0.72, 1.0)
+	var root := Node3D.new()
+	var label := Label3D.new()
+	label.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	label.text = stat.to_upper()
+	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	label.no_depth_test = true
+	label.font_size = 44
+	label.outline_size = 12
+	label.pixel_size = 0.008
+	label.modulate = color
+	label.outline_modulate = Color(0.05, 0.05, 0.15)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	label.offset = Vector2(-4, 0)
+	root.add_child(label)
+	var arrow := Sprite3D.new()
+	arrow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	arrow.texture = Vfx.arrow_texture(direction > 0)
+	arrow.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	arrow.no_depth_test = true
+	arrow.pixel_size = 0.006
+	arrow.modulate = color
+	arrow.offset = Vector2(24, 0)
+	arrow.render_priority = 1
+	root.add_child(arrow)
+	get_parent().add_child(root)
+	root.global_position = global_position + Vector3(randf_range(-0.2, 0.2), visual_height() + 0.9, 0)
+	var tween := root.create_tween().set_parallel()
+	tween.tween_property(root, "position:y", root.position.y + 0.8 * direction if direction > 0 else root.position.y - 0.4, 0.8)
+	tween.tween_property(label, "modulate:a", 0.0, 0.5).set_delay(0.5)
+	tween.tween_property(label, "outline_modulate:a", 0.0, 0.5).set_delay(0.5)
+	tween.tween_property(arrow, "modulate:a", 0.0, 0.5).set_delay(0.5)
+	tween.chain().tween_callback(root.queue_free)
 
 
 static func _flat_material(color: Color) -> StandardMaterial3D:

@@ -36,6 +36,7 @@ static var _dot: Texture2D
 static var _shapes := {}
 static var _quad: QuadMesh
 static var _shrink: Curve
+static var _arrows := {}
 
 
 static func style(type_name: String) -> Dictionary:
@@ -44,15 +45,18 @@ static func style(type_name: String) -> Dictionary:
 
 ## Shaped sprite for a projectile's core (flame, bolt, droplet, leaf...), tinted with the
 ## type's core colour. Rock and ground keep their solid 3D lump instead (returns null).
-static func core_sprite(type_name: String, radius: float) -> Sprite3D:
+static func core_sprite(type_name: String, radius: float, look := {}) -> Sprite3D:
 	var s := style(type_name)
-	if s.get("solid", false):
+	if s.get("solid", false) and not look.has("colors") and str(look.get("shape", "chunk")) == "chunk":
 		return null
 	var sprite := Sprite3D.new()
-	sprite.texture = shape_texture(str(s.get("shape", "dot")))
+	sprite.texture = shape_texture(str(look.get("shape", s.get("shape", "dot"))))
 	sprite.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	sprite.shaded = false
-	sprite.modulate = Color.html(s["core"])
+	sprite.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF  # Or it drops a black silhouette.
+	sprite.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR
+	var colors: Array = look.get("colors", [])
+	sprite.modulate = Color.html(colors[1]) if colors.size() > 1 else Color.html(s["core"])
 	sprite.pixel_size = maxf(0.5, radius * 2.8) / 64.0
 	sprite.no_depth_test = false
 	return sprite
@@ -107,9 +111,9 @@ static func core_material(type_name: String) -> StandardMaterial3D:
 
 
 ## Continuous trail that stays behind a moving projectile.
-static func trail(type_name: String, radius: float) -> CPUParticles3D:
+static func trail(type_name: String, radius: float, look := {}) -> CPUParticles3D:
 	var s := style(type_name)
-	var p := _base(type_name, 22, s["life"])
+	var p := _base(type_name, 22, s["life"], look)
 	p.local_coords = false
 	p.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
 	p.emission_sphere_radius = radius * 0.6
@@ -127,11 +131,11 @@ static func trail(type_name: String, radius: float) -> CPUParticles3D:
 
 
 ## One-off spray of particles (hit sparks, explosions, heals...).
-static func burst(parent: Node, pos: Vector3, type_name: String, amount := 14, radius := 0.35, speed := 3.0) -> void:
+static func burst(parent: Node, pos: Vector3, type_name: String, amount := 14, radius := 0.35, speed := 3.0, look := {}) -> void:
 	if parent == null or not parent.is_inside_tree():
 		return
 	var s := style(type_name)
-	var p := _base(type_name, amount, s["life"])
+	var p := _base(type_name, amount, s["life"], look)
 	p.one_shot = true
 	p.explosiveness = 0.92
 	p.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
@@ -144,11 +148,11 @@ static func burst(parent: Node, pos: Vector3, type_name: String, amount := 14, r
 
 
 ## Expanding ring of particles on the ground (area attacks, supers).
-static func ring(parent: Node, pos: Vector3, radius: float, type_name: String, amount := 40) -> void:
+static func ring(parent: Node, pos: Vector3, radius: float, type_name: String, amount := 40, look := {}) -> void:
 	if parent == null or not parent.is_inside_tree():
 		return
 	var s := style(type_name)
-	var p := _base(type_name, amount, s["life"] * 1.3)
+	var p := _base(type_name, amount, s["life"] * 1.3, look)
 	p.one_shot = true
 	p.explosiveness = 0.85
 	p.emission_shape = CPUParticles3D.EMISSION_SHAPE_RING
@@ -164,15 +168,58 @@ static func ring(parent: Node, pos: Vector3, radius: float, type_name: String, a
 
 
 ## Emitter for stream moves; the owner aims it and sets its speed each frame.
-static func stream(type_name: String) -> CPUParticles3D:
+static func stream(type_name: String, look := {}) -> CPUParticles3D:
 	var s := style(type_name)
-	var p := _base(type_name, 70, 0.35)
+	var p := _base(type_name, 70, 0.35, look)
 	p.local_coords = false
 	p.direction = Vector3(0, 0, -1)
 	p.gravity = s["gravity"] * 0.3
 	p.scale_amount_min *= 1.3
 	p.scale_amount_max *= 1.6
 	p.emitting = false
+	return p
+
+
+## Puffs of dust at a runner's feet. One per Pokémon, switched on while it runs:
+## 8 tiny particles at a time, so it costs next to nothing.
+static func dust() -> CPUParticles3D:
+	var p := _base("normal", 5, 0.4, { "shape": "dot", "colors": ["#f4eee280", "#ddd3be60", "#bdb196"] })
+	p.local_coords = false
+	p.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
+	p.emission_sphere_radius = 0.15
+	p.position = Vector3(0, 0.12, 0)
+	p.direction = Vector3.UP
+	p.spread = 60.0
+	p.gravity = Vector3(0, 0.6, 0)
+	p.initial_velocity_min = 0.2
+	p.initial_velocity_max = 0.5
+	p.scale_amount_min = 0.12
+	p.scale_amount_max = 0.2
+	p.emitting = false
+	return p
+
+
+## Column of particles spinning around a vortex's centre and drawn inward.
+static func whirl(type_name: String, radius: float, look := {}) -> CPUParticles3D:
+	var p := _base(type_name, 36, 0.9, look)
+	p.local_coords = true
+	p.emission_shape = CPUParticles3D.EMISSION_SHAPE_RING
+	p.emission_ring_axis = Vector3.UP
+	p.emission_ring_radius = radius
+	p.emission_ring_inner_radius = radius * 0.5
+	p.emission_ring_height = 0.2
+	p.direction = Vector3.UP
+	p.spread = 10.0
+	p.gravity = Vector3(0, 1.5, 0)
+	p.initial_velocity_min = 0.5
+	p.initial_velocity_max = 1.5
+	p.tangential_accel_min = 9.0
+	p.tangential_accel_max = 12.0
+	p.radial_accel_min = -6.0
+	p.radial_accel_max = -4.0
+	p.damping_min = 0.0
+	p.damping_max = 0.5
+	p.emitting = true
 	return p
 
 
@@ -190,24 +237,25 @@ static func aura(type_name: String) -> CPUParticles3D:
 	return p
 
 
-static func _base(type_name: String, amount: int, lifetime: float) -> CPUParticles3D:
+## `look` (MoveLook) can swap the shape ("shape") and colours ("colors") for one move.
+static func _base(type_name: String, amount: int, lifetime: float, look := {}) -> CPUParticles3D:
 	var s := style(type_name)
 	var p := CPUParticles3D.new()
 	if _quad == null:
 		_quad = QuadMesh.new()
 	p.mesh = _quad
-	p.material_override = _material(type_name)
+	p.material_override = _material(type_name, str(look.get("shape", "")))
 	p.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	p.amount = amount
 	p.lifetime = lifetime
 	p.gravity = s["gravity"]
-	p.color_ramp = _gradient(type_name)
+	p.color_ramp = _gradient(type_name, look.get("colors", []))
 	p.scale_amount_min = s["size"] * 0.7
 	p.scale_amount_max = s["size"] * 1.2
 	p.scale_amount_curve = _shrink_curve()
 	p.damping_min = 1.0
 	p.damping_max = 3.0
-	if s.get("spin", false):
+	if s.get("spin", false) or look.get("spin", false):
 		p.angle_min = -180.0
 		p.angle_max = 180.0
 		p.angular_velocity_min = -240.0
@@ -228,10 +276,13 @@ static func _spawn_one_shot(parent: Node, p: CPUParticles3D, pos: Vector3) -> vo
 	parent.get_tree().create_timer(p.lifetime + 0.4, false).timeout.connect(p.queue_free)
 
 
-static func _material(type_name: String) -> StandardMaterial3D:
-	if _materials.has(type_name):
-		return _materials[type_name]
+static func _material(type_name: String, shape := "") -> StandardMaterial3D:
 	var s := style(type_name)
+	if shape == "":
+		shape = str(s.get("shape", "dot"))
+	var key := type_name + "|" + shape
+	if _materials.has(key):
+		return _materials[key]
 	var mat := StandardMaterial3D.new()
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -239,21 +290,24 @@ static func _material(type_name: String) -> StandardMaterial3D:
 		mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
 	mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	mat.vertex_color_use_as_albedo = true
-	mat.albedo_texture = shape_texture(str(s.get("shape", "dot")))
+	mat.albedo_texture = shape_texture(shape)
+	mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR  # Mipmapped sampling of small particles can come out black.
 	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	_materials[type_name] = mat
+	_materials[key] = mat
 	return mat
 
 
-static func _gradient(type_name: String) -> Gradient:
-	if _gradients.has(type_name):
-		return _gradients[type_name]
-	var colors: Array = style(type_name)["colors"]
+static func _gradient(type_name: String, colors: Array = []) -> Gradient:
+	if colors.is_empty():
+		colors = style(type_name)["colors"]
+	var key := "|".join(colors)
+	if _gradients.has(key):
+		return _gradients[key]
 	var g := Gradient.new()
 	g.set_color(0, Color.html(colors[0]))
 	g.set_color(1, Color(Color.html(colors[2]), 0.0))
 	g.add_point(0.4, Color.html(colors[1]))
-	_gradients[type_name] = g
+	_gradients[key] = g
 	return g
 
 
@@ -264,6 +318,16 @@ static func shape_texture(shape: String) -> Texture2D:
 		return _dot_texture()
 	if _shapes.has(shape):
 		return _shapes[shape]
+	# Baked by tools/bake_fx_shapes.gd (drawing them here is slow on phones).
+	var baked := "res://assets/fx/%s.png" % shape
+	if ResourceLoader.exists(baked):
+		_shapes[shape] = load(baked)
+		return _shapes[shape]
+	return draw_shape(shape)
+
+
+## Draws a shape mask (64x64) from _shape_alpha.
+static func draw_shape(shape: String) -> Texture2D:
 	var size := 64
 	var img := Image.create(size, size, false, Image.FORMAT_RGBA8)
 	for y in size:
@@ -325,15 +389,107 @@ static func _shape_alpha(shape: String, u: float, v: float) -> float:
 			return clampf(1.0 - smoothstep(0.2, 0.95, r), 0.0, 1.0) * 0.85
 		"crescent":
 			return 1.0 if r < 0.85 and Vector2(u - 0.38, v + 0.1).length() > 0.72 else 0.0
-		"star", "spark":
-			var points := 5 if shape == "star" else 4
+		"petal":
+			var pu := (u - v) * 0.7071
+			var pv := (u + v) * 0.7071
+			return 1.0 if (pu / 0.42) * (pu / 0.42) + (pv / 0.95) * (pv / 0.95) < 1.0 and pv > -0.9 else 0.0
+		"coin":
+			if r > 0.88:
+				return 0.0
+			return 0.75 if r > 0.62 and r < 0.72 else 1.0
+		"bone":
+			if absf(v) < 0.17 and absf(u) < 0.62:
+				return 1.0
+			for kx: float in [-0.62, 0.62]:
+				for ky: float in [-0.2, 0.2]:
+					if Vector2(u - kx, v - ky).length() < 0.24:
+						return 1.0
+			return 0.0
+		"needle":
+			return 1.0 if absf(u) / 0.13 + absf(v) / 0.98 < 1.0 else 0.0
+		"orb":
+			return clampf(1.25 - r * 1.25, 0.0, 1.0)
+		"note":
+			if Vector2((u + 0.18) / 0.34, (v - 0.52) / 0.25).length() < 1.0:
+				return 1.0
+			if u > 0.05 and u < 0.17 and v > -0.85 and v < 0.52:
+				return 1.0
+			if v > -0.85 and v < -0.35 and u > 0.05 and u < 0.17 + (v + 0.85) * 0.9:
+				return 1.0
+			return 0.0
+		"egg":
+			var half_w := 0.6 + 0.12 * v
+			return 1.0 if (u / half_w) * (u / half_w) + (v / 0.88) * (v / 0.88) < 1.0 else 0.0
+		"seed":
+			var su := (u + v) * 0.7071
+			var sv := (v - u) * 0.7071
+			return 1.0 if (su / 0.62) * (su / 0.62) + (sv / 0.38) * (sv / 0.38) < 1.0 else 0.0
+		"snowflake":
+			if r > 0.95:
+				return 0.0
+			if r < 0.18:
+				return 1.0
+			var a := atan2(v, u)
+			var nearest := roundf(a / (PI / 3.0)) * (PI / 3.0)
+			var off := absf(sin(a - nearest)) * r
+			if off < 0.08:
+				return 1.0
+			# Little branches two thirds of the way out.
+			return 1.0 if absf(r * cos(a - nearest) - 0.62) < 0.07 and off < 0.26 else 0.0
+		"blob":
+			return 1.0 if r < 0.72 + 0.12 * sin(atan2(v, u) * 3.0) else 0.0
+		"web":
+			if r > 0.95:
+				return 0.0
+			var spoke := absf(sin(atan2(v, u) * 4.0)) * r
+			return 1.0 if spoke < 0.05 or absf(fposmod(r, 0.3) - 0.15) < 0.035 else 0.0
+		"fang":
+			var t := (v + 0.9) / 1.8  # 0 at the wide top, 1 at the tip.
+			return 1.0 if t >= 0.0 and t <= 1.0 and absf(u) < 0.42 * (1.0 - t) else 0.0
+		"slash":
+			return 1.0 if r < 0.97 and Vector2(u - 0.22, v + 0.08).length() > 0.86 and v > -0.8 and v < 0.8 else 0.0
+		"swirl":
+			# Three spiral arms, fading toward the rim.
+			if r > 0.98 or r < 0.08:
+				return 0.0
+			var arm := fposmod(atan2(v, u) * 3.0 / TAU + r * 1.6, 1.0)
+			return (1.0 - smoothstep(0.0, 0.32, absf(arm - 0.5) * 2.0 - 0.35)) * (1.0 - r * 0.6)
+		"star", "spark", "blast":
+			var points := 4 if shape == "spark" else 5
 			var angle := atan2(v, u) + PI * 0.5
 			var k := cos(points * angle * 0.5)
 			var outer := 0.95 if shape == "star" else 1.0
-			var inner := 0.42 if shape == "star" else 0.22
+			var inner: float = { "star": 0.42, "spark": 0.22, "blast": 0.2 }[shape]
 			var limit := lerpf(inner, outer, absf(k) * absf(k))
 			return 1.0 if r < limit else 0.0
 	return clampf(1.0 - smoothstep(0.45, 1.0, r), 0.0, 1.0)
+
+
+## Rings around a grabbed Pokémon (see coil_fx.gd); `look` is tentacle / coil / vine / tongue / rock_coil.
+static func coil(look: String, _type_name: String, height: float) -> Node3D:
+	var fx: Node3D = preload("res://scripts/coil_fx.gd").new()
+	fx.call("setup", look, height)
+	return fx
+
+
+## Small up / down triangle (white, tinted by whoever uses it): stat change pop-ups.
+static func arrow_texture(up: bool) -> Texture2D:
+	if _arrows.has(up):
+		return _arrows[up]
+	var size := 32
+	var img := Image.create(size, size, false, Image.FORMAT_RGBA8)
+	for y in size:
+		for x in size:
+			var v := (y + 0.5) / size
+			if not up:
+				v = 1.0 - v
+			var half := v * 0.5  # Point at the top (up) or bottom (down).
+			var u := absf((x + 0.5) / size - 0.5)
+			var inside := u <= half and v > 0.12 and v < 0.95
+			img.set_pixel(x, y, Color(1, 1, 1, 1.0 if inside else 0.0))
+	var tex := ImageTexture.create_from_image(img)
+	_arrows[up] = tex
+	return tex
 
 
 ## Soft round dot used for particles without a shape.
