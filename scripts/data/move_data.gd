@@ -186,6 +186,18 @@ static func from_dict(move_id: String, d: Dictionary) -> MoveData:
 	return m
 
 
+## Rough damage to one target, for comparing supers: every shot and pellet, plus half
+## of any damage over time (burns, lingering zones), which is easier to escape.
+func estimated_damage() -> float:
+	if kind == "self":
+		return 0.0  # Heals, buffs, teleports.
+	var total := power * count * burst_count
+	if linger > 0.0:
+		total = power * linger * 0.5
+	total += float(effect.get("dps", 0.0)) * float(effect.get("duration", 0.0)) * float(effect.get("chance", 1.0)) * 0.5
+	return total
+
+
 ## Fraction of the power dealt on impact: grabs and vortexes deal the rest over time.
 func upfront_share() -> float:
 	if str(control.get("type", "")) in ["grab", "vortex"]:

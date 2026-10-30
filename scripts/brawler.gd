@@ -454,7 +454,7 @@ func current_super() -> MoveData:
 	if pick.begins_with("tmsuper_") and pick in Profile.stage_tm_supers(species.id):
 		# Shaped to this Pokémon's play style, and about as strong as its own super.
 		var shape: String = GameData.STYLE_SHAPES.get(species.style, "shot")
-		var move := GameData.scaled_move(pick + "_" + shape, tm_super_scale())
+		var move := GameData.scaled_move(pick + "_" + shape, tm_super_scale(GameData.get_move(pick + "_" + shape)))
 		if move:
 			return move
 	var own: MoveData = GameData.get_move(pick) if pick != "" and not pick.begins_with("tmsuper_") else null
@@ -463,10 +463,25 @@ func current_super() -> MoveData:
 
 ## TM supers hit softer on early stages: base forms 75%, middle stages 88%,
 ## single-stage lines 90%, final evolutions full power.
-func tm_super_scale() -> float:
+func tm_super_scale(tm: MoveData) -> float:
+	var r: Dictionary = GameData.rule("tm_super", {})
 	if species.evolves_to == "":
-		return 1.0 if species.stage > 1 else 0.9
-	return 0.75 if species.stage == 1 else 0.88
+		return 1.0 if species.stage > 1 else float(r.get("single_stage", 0.9))
+	# Earlier stages: a bit stronger than their own super, well short of the last stage's.
+	var base := species.stage == 1
+	var own := species.super_move.estimated_damage() if species.super_move else 0.0
+	var top := 0.0
+	for s in GameData.evolution_line(species.id):
+		if s.evolves_to == "" and s.super_move:
+			top = maxf(top, s.super_move.estimated_damage())
+	var full := tm.estimated_damage() if tm else 0.0
+	if full <= 0.0 or (own <= 0.0 and top <= 0.0):
+		return float(r.get("base_fallback", 0.6)) if base else float(r.get("mid_fallback", 0.8))
+	var cap := top * float(r.get("base_cap" if base else "mid_cap", 0.8))
+	var target := own * float(r.get("over_own", 1.2)) if own > 0.0 else cap * 0.8
+	if cap > 0.0:
+		target = minf(target, cap)
+	return clampf(target / full, float(r.get("min", 0.45)), float(r.get("base_max" if base else "mid_max", 0.9)))
 
 
 ## Front-view icon in this brawler's colours (shiny or normal).

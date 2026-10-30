@@ -244,6 +244,8 @@ func scaled_move(move_id: String, scale: float) -> MoveData:
 	if not _scaled_moves.has(key):
 		var d: Dictionary = (move_dicts[move_id] as Dictionary).duplicate(true)
 		d["power"] = float(d.get("power", 0.0)) * scale
+		if d.get("effect", {}) is Dictionary and (d["effect"] as Dictionary).has("dps"):
+			d["effect"]["dps"] = float(d["effect"]["dps"]) * scale
 		_scaled_moves[key] = MoveData.from_dict(move_id, d)
 	return _scaled_moves[key]
 

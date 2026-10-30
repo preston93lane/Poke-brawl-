@@ -217,5 +217,17 @@
 		"ally_ko_points": 3,
 		"shrine_hold": 20.0,
 		"shrine_cooldown": 30.0
+	},
+	"tm_super": {
+		"_comment": "TM supers on earlier stages: over_own x that stage's own super, at most base_cap / mid_cap x the final stage's super, between min and base_max / mid_max x full power (scripts/brawler.gd tm_super_scale). Single-stage Pokémon get single_stage; final stages full power.",
+		"over_own": 1.2,
+		"base_cap": 0.75,
+		"mid_cap": 0.9,
+		"min": 0.45,
+		"base_max": 0.85,
+		"mid_max": 0.92,
+		"single_stage": 0.9,
+		"base_fallback": 0.6,
+		"mid_fallback": 0.8
 	}
 }
