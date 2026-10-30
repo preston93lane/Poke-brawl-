@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 51,
 	"style": "tank_wave",
-	"stats": {"hp": 4250, "attack": 113, "defense": 86, "speed": 89},
+	"stats": {"hp": 4050, "attack": 113, "defense": 86, "speed": 89},
 	"super": "machop_super",
 	"gadget": "gadget_protect",
 	"evolve_level": 28,

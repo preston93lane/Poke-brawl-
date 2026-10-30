@@ -9,7 +9,7 @@
 	"poison_point": {"name": "Poison Point", "effect": "contact", "status": {"type": "poison", "chance": 0.3, "duration": 3.0, "dps": 120}, "status_type": "poison", "desc": "Close-range attackers may be poisoned (30%)"},
 	"effect_spore": {"name": "Effect Spore", "effect": "contact", "status": {"type": "stun", "chance": 0.15, "duration": 0.6}, "status_type": "grass", "desc": "Close-range attackers may fall asleep for a moment (15%)"},
 	"rough_skin": {"name": "Rough Skin", "effect": "contact", "recoil": 0.18, "desc": "Close-range attackers take 18% of the damage they deal"},
-	"sturdy": {"name": "Sturdy", "effect": "sturdy", "desc": "Once per life, survive a knockout hit with 1 HP"},
+	"sturdy": {"name": "Sturdy", "effect": "sturdy", "above": 0.25, "desc": "Once per life, survive a knockout hit with 1 HP (if you had over a quarter of your HP)"},
 	"regenerator": {"name": "Regenerator", "effect": "regen", "delay": -1.2, "rate": 0.25, "desc": "Out-of-combat healing starts 1.2 s sooner and is 25% faster"},
 	"intimidate": {"name": "Intimidate", "effect": "intimidate", "radius": 7.0, "attack": -0.2, "duration": 4.0, "desc": "When you spawn or evolve, lowers nearby enemies' Attack for 4 s"},
 	"swift_swim": {"name": "Swift Swim", "effect": "terrain_speed", "terrain": "water", "speed": 0.15, "desc": "15% faster next to water"},

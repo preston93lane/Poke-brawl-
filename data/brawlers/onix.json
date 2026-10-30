@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 73,
 	"style": "tank_wave",
-	"stats": {"hp": 3950, "attack": 102, "defense": 122, "speed": 103},
+	"stats": {"hp": 3750, "attack": 102, "defense": 122, "speed": 103},
 	"super": "onix_super",
 	"gadget": "gadget_protect",
 	"moves": [

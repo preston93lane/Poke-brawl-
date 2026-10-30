@@ -1808,7 +1808,7 @@ func take_damage(amount: float, source: Brawler = null, effectiveness := 1.0, cr
 		damage_by_team[source.team] = float(damage_by_team.get(source.team, 0.0)) + minf(amount, health)
 		if source != self:
 			source.damage_dealt += minf(amount, health)
-	if ability_effect() == "sturdy" and not _sturdy_used and amount >= health and health > 1.0:
+	if ability_effect() == "sturdy" and not _sturdy_used and amount >= health and health > max_health * float(_ability.get("above", 0.0)):
 		amount = health - 1.0  # Hangs on with 1 HP, once per life.
 		_sturdy_used = true
 		_spawn_floating_text("STURDY!", Color(1, 0.9, 0.5), 48, 2.4)

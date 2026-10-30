@@ -1929,9 +1929,16 @@ func _check_kits_in_match() -> void:
 
 	# Abilities.
 	t.set_build("", "sturdy", false)
-	t.health = 100.0
-	t.take_damage(5000.0, p)
+	t.health = t.max_health * 0.5
+	t.take_damage(t.max_health, p)
 	expect(not t.is_dead and is_equal_approx(t.health, 1.0), "Sturdy survives a knockout hit with 1 HP")
+	t._sturdy_used = false
+	t.health = t.max_health * 0.1
+	t.take_damage(t.max_health, p)
+	expect(t.is_dead, "Sturdy doesn't save you from low health")
+	t.respawn(main.arena.nearest_open(p.global_position + Vector3(0, 0, -2.5)))
+	t._protect_time = 0.0
+	t.max_health = 50000.0
 	t.health = t.max_health
 	var fire := GameData.get_move("charmander_main1")
 	t.set_build("", "", false)

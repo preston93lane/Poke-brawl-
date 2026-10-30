@@ -103,10 +103,10 @@ STYLES = {
 # Tuning from bot balance sims (tools/sim_balance.gd): (damage multiplier, health
 # multiplier) per style, pulling close-range styles down and ranged ones up.
 STYLE_TUNE = {
-    "tank_wave": (0.76, 0.85), "assassin": (0.7, 0.95), "spinner": (0.95, 1.0), "brawler": (0.93, 1.0),
-    "boomerang": (0.95, 1.0), "shotgun": (0.98, 1.0), "chain": (1.05, 1.0), "lasher": (1.1, 1.0),
-    "sniper": (1.1, 1.05), "thrower": (1.15, 1.05), "stream": (1.2, 1.05), "gunner": (1.15, 1.05),
-    "bouncer": (1.32, 1.05), "homing": (1.4, 1.05), "zone": (1.56, 1.08), "healer": (0.9, 0.95), "piercer": (0.95, 1.0),
+    "tank_wave": (0.72, 0.81), "assassin": (0.72, 0.95), "spinner": (0.95, 1.0), "brawler": (0.93, 1.0),
+    "boomerang": (0.95, 1.0), "shotgun": (0.98, 1.0), "chain": (1.05, 1.0), "lasher": (1.17, 1.0),
+    "sniper": (1.1, 1.05), "thrower": (1.15, 1.05), "stream": (1.3, 1.05), "gunner": (1.15, 1.05),
+    "bouncer": (1.32, 1.05), "homing": (1.5, 1.05), "zone": (1.7, 1.08), "healer": (0.88, 0.95), "piercer": (0.95, 1.0),
 }
 for _name, (_dps, _hp) in STYLE_TUNE.items():
     STYLES[_name]["dps"] *= _dps
