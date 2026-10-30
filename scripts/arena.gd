@@ -57,14 +57,38 @@ var _rock_material: Material
 var _crate_mesh: BoxMesh
 var _crate_material: Material
 var _breakable_mesh: Mesh
-var _crate_mesh_box: BoxMesh
+var _crate_mesh_box: Mesh
 ## Textures that can be turned any way without looking wrong (no planks, bricks or grid lines).
 const ROTATABLE := ["sand", "ice", "dark", "volcanic", "rock", "hedge", "boulder", "ice_block"]
 ## name -> number of variants (assets/tiles/<name>_v1.png...; tools/make_tile_variants.py).
 var _variant_counts := {}
 var _wall_materials := {}
-## Wall styles drawn as rounded, lumpy shapes (natural things); the rest stay as blocks.
+## Wall styles drawn as rounded, lumpy shapes (natural things); the rest are
+## blocks with rounded edges that join up with the walls next to them.
 const ORGANIC_WALLS := ["rock", "hedge", "ice_block", "cracked"]
+## How each wall texture is built and shaded (assets/shaders/tile_xray.gdshader):
+## radius = how round the exposed edges are; lip / lip_h = a ledge sticking out
+## round the top (how far, how tall); cap = texture on top (and on the ledge);
+## cap_tint; height_var = up to this much taller per tile; top / side = light on
+## the top and sides; edge = highlight on rounded edges; ao = dark base; moss.
+const WALL_STYLES := {
+	"brick": { "radius": 0.07, "lip": 0.045, "lip_h": 0.15, "cap": "gym_floor", "cap_tint": Color(0.74, 0.72, 0.7),
+		"height_var": 0.08, "top": 1.15, "side": 0.86, "moss": 0.55 },
+	"wood_wall": { "radius": 0.1, "lip": 0.03, "lip_h": 0.1, "cap": "wood", "cap_tint": Color(0.78, 0.68, 0.58),
+		"height_var": 0.12, "top": 1.12, "side": 0.86 },
+	"metal_wall": { "radius": 0.05, "lip": 0.025, "lip_h": 0.07, "cap": "metal", "cap_tint": Color(1.12, 1.12, 1.18),
+		"height_var": 0.0, "top": 1.1, "side": 0.88, "edge": 0.35, "ao": 0.3 },
+	"ice_block": { "cap_tint": Color(1.02, 1.05, 1.08), "top": 1.04, "side": 0.9, "ao": 0.22, "edge": 0.25 },
+	"crate": { "radius": 0.06, "height_var": 0.0, "top": 1.1, "side": 0.9 },
+	"hedge": { "cap_tint": Color(1.15, 1.22, 0.85), "top": 1.15, "side": 0.85, "ao": 0.45 },
+	"rock": { "cap_tint": Color(1.08, 1.06, 1.0), "moss": 0.5 },
+	"cracked": { "cap_tint": Color(1.06, 1.04, 1.0), "moss": 0.35 },
+	"boulder": { "cap_tint": Color(1.08, 1.06, 1.0), "moss": 0.4 },
+}
+## Rounded block meshes by "style:neighbour mask".
+static var _block_meshes := {}
+var _layer_textures := {}
+var _breakable_walls := true
 
 var _zone_cells := {}
 var _zone_material: StandardMaterial3D
@@ -89,6 +113,7 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 	var floor_tile := str(def.get("floor", "grass"))
 	var wall_tile := str(def.get("wall", "rock"))
 	var breakable_walls := bool(def.get("breakable_walls", true))
+	_breakable_walls = breakable_walls
 	liquid = str(def.get("liquid", "water"))
 	weather = str(def.get("weather", ""))
 	haze_color = Color.html(str(def["haze"])) if def.has("haze") else Color(0, 0, 0, 0)
@@ -109,7 +134,7 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 	var floor_shades := {}  # texture name -> Array[Color], one per tile
 	var rocks := {}  # wall texture variant -> Array[Transform3D]
 	var rock_shades := {}
-	var boulders: Array[Transform3D] = []
+	var rock_layers := {}  # shape -> Array[float], texture variant per copy
 	var grass: Array[Transform3D] = []
 	var trees: Array[Transform3D] = []
 	var zone: Array[Transform3D] = []
@@ -160,12 +185,15 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 					trees.append(Transform3D(tilt, base + tilt.y * TREE_SPRITE_SIZE.y * 0.5))
 				"#":
 					solid_cells[cell] = true
-					var wall_variant := _variant(wall_tile, cell)
-					if not rocks.has(wall_variant):
-						rocks[wall_variant] = []
-						rock_shades[wall_variant] = []
-					rock_shades[wall_variant].append(_shade(cell, 0.7))
-					rocks[wall_variant].append(Transform3D(_jitter(cell) if wall_tile in ORGANIC_WALLS else _turn(wall_tile, cell), center + Vector3(0, WALL_HEIGHT * 0.5, 0)))
+					# Grouped by shape (one MultiMesh each); the texture variant goes per copy.
+					var shape_key := "lump" if wall_tile in ORGANIC_WALLS else "%d:%d" % [_neighbour_mask(cell), _hidden_mask(cell)]
+					if not rocks.has(shape_key):
+						rocks[shape_key] = []
+						rock_shades[shape_key] = []
+						rock_layers[shape_key] = []
+					rock_shades[shape_key].append(_shade(cell, 0.7))
+					rock_layers[shape_key].append(float(_variant_index(wall_tile, cell)))
+					rocks[shape_key].append(Transform3D(_jitter(cell) if wall_tile in ORGANIC_WALLS else _wall_basis(wall_tile, cell), center + Vector3(0, WALL_HEIGHT * 0.5, 0)))
 				"B":
 					breakable_cells[cell] = "boulder"
 				"X":
@@ -244,21 +272,19 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 		var blob_mat := _tile_material("path_blob", false, false)
 		blob_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		_add_multimesh(floor_plane, blob_mat, path_blobs, false)
-	var block := BoxMesh.new()
-	block.size = Vector3(TILE, WALL_HEIGHT, TILE)
-	_crate_mesh_box = block
+	_crate_mesh_box = rounded_block("crate", 0)
 	var lump := lump_mesh(0.62, 0.1, 7)
 	# Let's Go maps: rock walls, cracked walls and boulders are Rock Smash rocks.
 	var rock_mesh: Mesh = ArenaArt.rock_mesh(0) if lets_go else null
 	var rock_mat: Material = ArenaArt.vertex_color_material() if lets_go else null
 	_rock_mesh = rock_mesh
 	_rock_material = rock_mat
-	for wall_variant: String in rocks:
+	for shape_key: String in rocks:
 		if lets_go and rocky:
-			_add_multimesh(rock_mesh, rock_mat, rocks[wall_variant])
+			_add_multimesh(rock_mesh, rock_mat, rocks[shape_key])
 		else:
-			_add_multimesh(lump if wall_tile in ORGANIC_WALLS else block, _wall_material(wall_variant), rocks[wall_variant], true, rock_shades[wall_variant])
-	_add_multimesh(rock_mesh if lets_go else block, rock_mat if lets_go else _wall_material("boulder"), boulders)
+			var shape: Mesh = lump if shape_key == "lump" else rounded_block(wall_tile, int(shape_key.get_slice(":", 0)), int(shape_key.get_slice(":", 1)))
+			_add_multimesh(shape, _wall_material(wall_tile, true), rocks[shape_key], true, rock_shades[shape_key], rock_layers[shape_key])
 	_breakable_mesh = lump
 	var materials := {
 		"cracked": rock_mat if lets_go else _wall_material("cracked"),
@@ -278,7 +304,7 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 		if lets_go and (kind in ["cracked", "boulder"] or (kind == "wall_style" and rocky)):
 			b.set_mesh(rock_mesh, _jitter(cell))
 		elif kind == "wall_style" and wall_tile not in ORGANIC_WALLS:
-			b.set_mesh(_crate_mesh_box, Basis())  # Brick / metal / wood walls stay blocky.
+			b.set_mesh(rounded_block(wall_tile, _neighbour_mask(cell)), _wall_basis(wall_tile, cell))
 
 	if lets_go:
 		var clumps: Array[Transform3D] = []
@@ -736,18 +762,22 @@ func _setup_grid(grid: AStarGrid2D, blocked: Dictionary) -> void:
 
 
 ## `colors` (optional, one per transform) tints each copy: used to shade tiles.
-func _add_multimesh(mesh: Mesh, material: Material, transforms: Array, shadows := true, colors: Array = []) -> MultiMeshInstance3D:
+## `layers` (optional): texture variant per copy (walls).
+func _add_multimesh(mesh: Mesh, material: Material, transforms: Array, shadows := true, colors: Array = [], layers: Array = []) -> MultiMeshInstance3D:
 	if transforms.is_empty():
 		return null
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.use_colors = not colors.is_empty()
+	mm.use_custom_data = not layers.is_empty()
 	mm.mesh = mesh
 	mm.instance_count = transforms.size()
 	for i in transforms.size():
 		mm.set_instance_transform(i, transforms[i])
 		if mm.use_colors:
 			mm.set_instance_color(i, colors[i])
+		if mm.use_custom_data:
+			mm.set_instance_custom_data(i, Color(float(layers[i]), 0, 0, 0))
 	var instance := MultiMeshInstance3D.new()
 	instance.multimesh = mm
 	instance.material_override = material
@@ -759,14 +789,184 @@ func _add_multimesh(mesh: Mesh, material: Material, transforms: Array, shadows :
 
 ## Wall / block material: the tile texture projected from three sides, and
 ## see-through when it hides your Pokémon.
-func _wall_material(tile_name: String) -> ShaderMaterial:
-	if _wall_materials.has(tile_name):
-		return _wall_materials[tile_name]
+## `tile_name` may be a variant ("brick_v2"). `per_copy`: the variant comes from
+## each MultiMesh copy instead (one material, and one draw, for every variant).
+func _wall_material(tile_name: String, per_copy := false) -> ShaderMaterial:
+	var key := tile_name + ("*" if per_copy else "")
+	if _wall_materials.has(key):
+		return _wall_materials[key]
+	var base := tile_name
+	var layer := 0
+	var m := RegEx.create_from_string("^(.*)_v(\\d+)$").search(tile_name)
+	if m:
+		base = m.get_string(1)
+		layer = int(m.get_string(2))
+	var style: Dictionary = WALL_STYLES.get(base, {})
 	var mat := ShaderMaterial.new()
 	mat.shader = WALL_SHADER
-	mat.set_shader_parameter("albedo_tex", load(TILE_DIR + tile_name + ".png"))
-	_wall_materials[tile_name] = mat
+	mat.set_shader_parameter("albedo_layers", _layers(base))
+	mat.set_shader_parameter("fixed_layer", -1.0 if per_copy else float(layer))
+	if style.has("cap"):
+		mat.set_shader_parameter("cap_tex", load(TILE_DIR + str(style["cap"]) + ".png"))
+		mat.set_shader_parameter("has_cap_tex", true)
+	mat.set_shader_parameter("cap_tint", style.get("cap_tint", Color(1.08, 1.08, 1.08)))
+	mat.set_shader_parameter("cap_band", float(style.get("lip_h", 0.0)))
+	mat.set_shader_parameter("half_height", WALL_HEIGHT * 0.5)
+	mat.set_shader_parameter("top_light", float(style.get("top", 1.12)))
+	mat.set_shader_parameter("side_light", float(style.get("side", 0.9)))
+	mat.set_shader_parameter("edge_light", float(style.get("edge", 0.2)))
+	mat.set_shader_parameter("base_ao", float(style.get("ao", 0.35)))
+	mat.set_shader_parameter("moss", float(style.get("moss", 0.0)))
+	_wall_materials[key] = mat
 	return mat
+
+
+## The texture and its variants as one texture array (layer 0 = original).
+func _layers(base: String) -> Texture2DArray:
+	if _layer_textures.has(base):
+		return _layer_textures[base]
+	var images: Array[Image] = []
+	var names: Array[String] = [base]
+	_variant(base, Vector2i.ZERO)  # Counts the variants.
+	for i in int(_variant_counts.get(base, 0)):
+		names.append("%s_v%d" % [base, i + 1])
+	for n in names:
+		var img := (load(TILE_DIR + n + ".png") as Texture2D).get_image()
+		if img.is_compressed():
+			img.decompress()
+		img.convert(Image.FORMAT_RGBA8)
+		if images.size() > 0 and img.get_size() != images[0].get_size():
+			img.resize(images[0].get_width(), images[0].get_height())
+		img.generate_mipmaps()
+		images.append(img)
+	var arr := Texture2DArray.new()
+	arr.create_from_images(images)
+	_layer_textures[base] = arr
+	return arr
+
+
+## Which texture variant a wall at `cell` uses (0 = the original).
+func _variant_index(tile_name: String, cell: Vector2i) -> int:
+	var picked := _variant(tile_name, cell)
+	return 0 if picked == tile_name else int(picked.get_slice("_v", picked.get_slice_count("_v") - 1))
+
+
+## Neighbours (same bits as _neighbour_mask) that are permanent walls: the sides
+## against them are never seen, so the mesh leaves them out.
+func _hidden_mask(cell: Vector2i) -> int:
+	var mask := 0
+	for entry: Array in [[Vector2i(1, 0), 1], [Vector2i(-1, 0), 2], [Vector2i(0, 1), 4], [Vector2i(0, -1), 8]]:
+		var n := cell + (entry[0] as Vector2i)
+		var inner := n.x > 1 and n.y > 1 and n.x < width - 2 and n.y < height - 2
+		if _char_at(n) == "#" and not (_breakable_walls and inner):
+			mask |= int(entry[1])
+	return mask
+
+
+## Which of the four neighbours are the same kind of wall: 1 east, 2 west, 4 south, 8 north.
+func _neighbour_mask(cell: Vector2i) -> int:
+	var own := _char_at(cell)
+	var mask := 0
+	for entry: Array in [[Vector2i(1, 0), 1], [Vector2i(-1, 0), 2], [Vector2i(0, 1), 4], [Vector2i(0, -1), 8]]:
+		if _char_at(cell + (entry[0] as Vector2i)) == own:
+			mask |= int(entry[1])
+	return mask
+
+
+## A little taller per tile (never shorter, so it always sits on the floor), for
+## styles with height_var: brick tops step up and down, wood looks hand-built.
+func _wall_basis(tile_name: String, cell: Vector2i) -> Basis:
+	var vary := float((WALL_STYLES.get(tile_name, {}) as Dictionary).get("height_var", 0.0))
+	return Basis.from_scale(Vector3(1.0, 1.0 + _cell_hash(cell, 53) * vary, 1.0))
+
+
+## A wall block with rounded edges, except on sides that join another wall
+## (`mask`: 1 east, 2 west, 4 south, 8 north), so a run of walls reads as one piece.
+## Styles with a lip get a ledge sticking out round the top. Centred like a
+## TILE x WALL_HEIGHT x TILE box. Cached per style and mask.
+## `hidden`: sides against a wall that never breaks, which are left out.
+static func rounded_block(style_name: String, mask: int, hidden := 0) -> ArrayMesh:
+	var key := "%s:%d:%d" % [style_name, mask, hidden]
+	if _block_meshes.has(key):
+		return _block_meshes[key]
+	var style: Dictionary = WALL_STYLES.get(style_name, {})
+	var r := float(style.get("radius", 0.06))
+	var lip := float(style.get("lip", 0.0))
+	var lip_h := float(style.get("lip_h", 0.0))
+	var hh := WALL_HEIGHT * 0.5
+	var half := TILE * 0.5
+	var lo := Vector3(-half if mask & 2 else -half + r, -hh, -half if mask & 8 else -half + r)
+	var hi := Vector3(half if mask & 1 else half - r, hh - r, half if mask & 4 else half - r)
+	var steps := 3
+	var across := PackedFloat32Array()  # x and z grid: only the curved bands need points
+	for k in steps + 1:
+		across.append(-half + r * k / steps)
+	for k in steps + 1:
+		across.append(half - r * (steps - k) / steps)
+	var up := PackedFloat32Array([-hh])
+	if lip > 0.0:
+		up.append(hh - lip_h - 0.004)
+		up.append(hh - lip_h)
+	for k in steps + 1:
+		up.append(hh - r * (steps - k) / steps)
+	var verts := PackedVector3Array()
+	var normals := PackedVector3Array()
+	var indices := PackedInt32Array()
+	# (normal, u axis, v axis) with u x v = normal; the floor side is never seen.
+	var faces := [[Vector3.RIGHT, Vector3.UP, Vector3.BACK], [Vector3.LEFT, Vector3.BACK, Vector3.UP],
+			[Vector3.UP, Vector3.BACK, Vector3.RIGHT], [Vector3.BACK, Vector3.RIGHT, Vector3.UP],
+			[Vector3.FORWARD, Vector3.UP, Vector3.RIGHT]]
+	var side_bits := { Vector3.RIGHT: 1, Vector3.LEFT: 2, Vector3.BACK: 4, Vector3.FORWARD: 8 }
+	for f: Array in faces:
+		var nrm: Vector3 = f[0]
+		if hidden & int(side_bits.get(nrm, 0)):
+			continue
+		var u: Vector3 = f[1]
+		var v: Vector3 = f[2]
+		var us := up if absf(u.y) > 0.5 else across
+		var vs := up if absf(v.y) > 0.5 else across
+		var depth := hh if absf(nrm.y) > 0.5 else half
+		var start := verts.size()
+		for i in us.size():
+			for j in vs.size():
+				var p := nrm * depth + u * us[i] + v * vs[j]
+				var inner := p.clamp(lo, hi)
+				var d := p - inner
+				var n := nrm
+				if d.length() > 0.00001:
+					n = d.normalized()
+					p = inner + n * r
+				if lip > 0.0 and p.y >= hh - lip_h - 0.001:
+					if not mask & 1 and p.x >= half - r - 0.001:
+						p.x += lip
+					if not mask & 2 and p.x <= -half + r + 0.001:
+						p.x -= lip
+					if not mask & 4 and p.z >= half - r - 0.001:
+						p.z += lip
+					if not mask & 8 and p.z <= -half + r + 0.001:
+						p.z -= lip
+				verts.append(p)
+				normals.append(n)
+		var cols := vs.size()
+		for i in us.size() - 1:
+			for j in cols - 1:
+				var a := start + i * cols + j
+				var b := a + cols
+				# Clockwise seen from outside (Godot's front faces).
+				indices.append_array([a, b + 1, b, a, a + 1, b + 1])
+	var colors := PackedColorArray()
+	colors.resize(verts.size())
+	colors.fill(Color.WHITE)
+	var arrays := []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = verts
+	arrays[Mesh.ARRAY_NORMAL] = normals
+	arrays[Mesh.ARRAY_COLOR] = colors
+	arrays[Mesh.ARRAY_INDEX] = indices
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	_block_meshes[key] = mesh
+	return mesh
 
 
 ## The texture to use for `tile_name` at `cell`: the original about 40% of the time,

@@ -40,6 +40,7 @@ func _ready() -> void:
 	await _check_fullscreen_button()
 	await _check_intro()
 	await _check_menu_fits()
+	_check_wall_blocks()
 	await _check_power_ups()
 	await _check_trainer_levels()
 	await _check_hazards()
@@ -1016,8 +1017,27 @@ func _check_all_arenas() -> void:
 		var path: PackedVector3Array = arena.find_path(main.teams[0][0].global_position, main.teams[1][0].global_position)
 		var ok: bool = not path.is_empty() and (mode == "showdown" or (arena.spawns[0].size() >= 3 and arena.spawns[1].size() >= 3))
 		expect(ok, "%s builds with spawns and a route between teams (%d steps)" % [arena_id, path.size()])
+		if arena_id == "viridian_gym":
+			# Brick walls: rounded blocks, one MultiMesh per shape with the texture variant per copy.
+			var walls := 0
+			for child in arena.get_children():
+				var mmi := child as MultiMeshInstance3D
+				if mmi and mmi.multimesh.use_custom_data and mmi.multimesh.mesh is ArrayMesh:
+					walls += mmi.multimesh.instance_count
+			expect(walls > 100, "brick walls are rounded blocks sharing materials (%d)" % walls)
 		main.queue_free()
 		await get_tree().process_frame
+
+
+func _check_wall_blocks() -> void:
+	print("Rounded wall blocks")
+	var alone := Arena.rounded_block("brick", 0)
+	var joined := Arena.rounded_block("brick", 3, 3)
+	expect(alone.get_faces().size() > 300, "a lone wall block has rounded edges (%d face verts)" % alone.get_faces().size())
+	expect(joined.get_faces().size() < alone.get_faces().size(), "sides against permanent walls are left out")
+	var box := alone.get_aabb()
+	expect(box.size.x > 1.0 and box.size.x < 1.2 and is_equal_approx(box.position.y, -Arena.WALL_HEIGHT * 0.5),
+			"brick's ledge sticks out a little and the block sits on the floor (%s)" % str(box))
 
 
 func _check_fullscreen_button() -> void:
