@@ -179,9 +179,14 @@
 		}
 	},
 	"hm": {
-		"_comment": "HM ability: recharge seconds after each use; Fly distance; Surf swim time; Flash blind and reveal time.",
+		"_comment": "HM ability: recharge seconds after each use; Fly distance; Surf swim time (only when it starts next to water); Strength throw distance, stun and bonus damage; Flash blind, reveal time and speed boost; Cut reveal time.",
 		"cooldown": 10.0,
-		"fly_distance": 6.0,
+		"fly_distance": 5.0,
+		"strength_throw": 4.0,
+		"strength_stun": 0.8,
+		"strength_bonus": 0.3,
+		"flash_speed": 0.3,
+		"cut_reveal": 3.0,
 		"surf_time": 4.0,
 		"flash_blind": 2.0,
 		"flash_reveal": 4.0

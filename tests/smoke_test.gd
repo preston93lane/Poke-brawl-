@@ -1356,6 +1356,68 @@ func _check_hms() -> void:
 	expect(p.global_position.distance_to(before) > 3.0 and not p._flying_hm, "Fly leaps several tiles (%.1f m)" % p.global_position.distance_to(before))
 	main.queue_free()
 	await get_tree().process_frame
+	await _check_hm_reworks()
+
+
+## Each HM's core effect works on an open map with no water, boulders or walls nearby.
+func _check_hm_reworks() -> void:
+	var main := await _start_match("pallet_pitch", "duel", "squirtle", ["geodude"])
+	await _freeze_all(main, main.enemy)
+	var p: Brawler = main.player
+	var t: Brawler = main.enemy
+	var reset := func() -> void:
+		p.global_position = main.arena.nearest_open(Vector3(0, 0, 3))
+		t.global_position = main.arena.nearest_open(p.global_position + Vector3(0, 0, -1.8))
+		t.health = t.max_health
+		t._clear_status()
+		t._debuffs.clear()
+		t._cc_immune = 0.0
+		t._was_controlled = false
+		p._hm_cooldown = 0.0
+	reset.call()
+	await get_tree().physics_frame
+	p.hm_id = "surf"
+	p.use_hm(t.global_position - p.global_position)
+	for i in 20:
+		await get_tree().physics_frame
+	expect(t.health < t.max_health and t._slow_time > 0.0, "Surf's wave hits and slows on a map without water")
+	reset.call()
+	await get_tree().physics_frame
+	p.hm_id = "strength"
+	var start := t.global_position
+	p.use_hm(t.global_position - p.global_position)
+	for i in 30:
+		await get_tree().physics_frame
+	expect(t.global_position.distance_to(start) > 2.5, "Strength throws the enemy (%.1f m)" % t.global_position.distance_to(start))
+	reset.call()
+	await get_tree().physics_frame
+	p.hm_id = "rock_smash"
+	var def := t.get_defense()
+	p.use_hm(t.global_position - p.global_position)
+	expect(t.get_defense() < def, "Rock Smash lowers Defense")
+	reset.call()
+	await get_tree().physics_frame
+	p.hm_id = "cut"
+	p.use_hm(t.global_position - p.global_position)
+	expect(t._dot_kind == "bleed" and t._dot_time > 0.0, "Cut makes the target bleed")
+	reset.call()
+	await get_tree().physics_frame
+	p.hm_id = "flash"
+	var speed := p.get_speed()
+	p.use_hm(Vector3.FORWARD)
+	expect(p.get_speed() > speed and t.is_blind(), "Flash blinds and speeds you up")
+	reset.call()
+	t._blind_time = 0.0
+	await get_tree().physics_frame
+	p.hm_id = "fly"
+	p.global_position = main.arena.nearest_open(t.global_position + Vector3(0, 0, 5.0))
+	await get_tree().physics_frame
+	p.use_hm(t.global_position - p.global_position)
+	for i in 40:
+		await get_tree().physics_frame
+	expect(is_equal_approx(t.health, t.max_health) and t._slow_time > 0.0, "Fly's landing slows (no damage)")
+	main.queue_free()
+	await get_tree().process_frame
 
 
 func _check_faint_stops_attacks() -> void:

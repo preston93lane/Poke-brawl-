@@ -1,9 +1,9 @@
 {
-	"_comment": "HM abilities (slot hm): used from the HM button, recharge after rules hm/cooldown seconds. Numbers are in the same scale as main attacks; the special parts (clearing grass, flying, swimming, pushing boulders, breaking walls) are in brawler.gd use_hm().",
-	"hm_cut": { "name": "Cut", "type": "normal", "slot": "hm", "kind": "melee", "power": 750, "reach": 2.2, "arc": 110 },
-	"hm_fly": { "name": "Fly", "type": "flying", "slot": "hm", "kind": "melee", "power": 500, "reach": 1.6, "arc": 360 },
-	"hm_surf": { "name": "Surf", "type": "water", "slot": "hm", "kind": "melee", "power": 650, "reach": 4.5, "arc": 70, "knockback": 2.5 },
-	"hm_strength": { "name": "Strength", "type": "normal", "slot": "hm", "kind": "melee", "power": 950, "reach": 1.9, "arc": 90, "knockback": 3.0 },
-	"hm_flash": { "name": "Flash", "type": "electric", "slot": "hm", "kind": "melee", "power": 0, "reach": 5.0, "arc": 360 },
-	"hm_rock_smash": { "name": "Rock Smash", "type": "fighting", "slot": "hm", "kind": "melee", "power": 600, "reach": 1.9, "arc": 90 }
+	"_comment": "HM abilities (slot hm): used from the HM button, recharge after rules hm/cooldown seconds. Each works on any map; the map part (clearing grass, swimming, pushing boulders, breaking walls) is a bonus. The special parts are in brawler.gd use_hm().",
+	"hm_cut": { "name": "Cut", "type": "normal", "slot": "hm", "kind": "melee", "power": 650, "range": 3.2, "arc": 110, "effect": {"type": "bleed", "chance": 1.0, "duration": 3.0, "dps": 120}, "desc": "Long slash through everything in front: bleeds, clears tall grass and reveals whoever was hiding in it" },
+	"hm_fly": { "name": "Fly", "type": "flying", "slot": "hm", "kind": "melee", "power": 0, "range": 2.0, "arc": 360, "effect": {"type": "slow", "chance": 1.0, "duration": 1.2, "amount": 0.4}, "desc": "Leap 5 m over walls and water (untouchable on the way up); the landing slows enemies next to you" },
+	"hm_surf": { "name": "Surf", "type": "water", "slot": "hm", "kind": "projectile", "power": 550, "range": 6.0, "speed": 10, "radius": 1.1, "pierce": true, "knockback": 2.0, "effect": {"type": "slow", "chance": 1.0, "duration": 1.5, "amount": 0.4}, "desc": "A wide wave that rolls 6 m, pushing enemies back and slowing them; next to water you ride it and swim for a few seconds" },
+	"hm_strength": { "name": "Strength", "type": "normal", "slot": "hm", "kind": "melee", "power": 700, "range": 2.2, "arc": 90, "desc": "Grab the nearest enemy in front and hurl it 4 m: into a wall or rock it's stunned and takes extra damage. Knocks the ball loose; still shoves boulders" },
+	"hm_flash": { "name": "Flash", "type": "electric", "slot": "hm", "kind": "melee", "power": 0, "range": 5.0, "arc": 360, "desc": "Blind and reveal enemies around you, and get a burst of speed" },
+	"hm_rock_smash": { "name": "Rock Smash", "type": "fighting", "slot": "hm", "kind": "melee", "power": 600, "range": 2.0, "arc": 90, "stat_change": {"defense": -0.3, "duration": 4.0}, "desc": "A punch that lowers Defense for 4 s, and smashes any wall or rock next to you" }
 }

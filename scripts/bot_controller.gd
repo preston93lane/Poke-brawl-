@@ -384,6 +384,8 @@ func _try_attack(dir: Vector3, dist: float) -> void:
 		return
 	if brawler.gadget_ready() and _try_gadget(dir, dist):
 		return
+	if brawler.hm_ready() and _try_hm(dir, dist):
+		return
 	var main := brawler.main_move
 	if not brawler.can_shoot():
 		return
@@ -456,6 +458,23 @@ func _try_gadget(dir: Vector3, dist: float) -> bool:
 ## Fires the super, as a Z-Move when that's charged.
 func _fire_super(aim: Vector3, dist := -1.0) -> bool:
 	return brawler.use_zmove(aim, dist) if brawler.zmove_ready() else brawler.use_super(aim, dist)
+
+
+## HMs (bots only carry one in balance simulations): each when it would land.
+func _try_hm(dir: Vector3, dist: float) -> bool:
+	var move := brawler.hm_move()
+	var line_of_sight := _has_line_of_sight(target.global_position)
+	match brawler.hm_id:
+		"fly":
+			if brawler.health < brawler.max_health * 0.4 and dist < 4.0:
+				return brawler.use_hm(-dir)  # Escape.
+			return false
+		"flash":
+			return dist <= move.reach and brawler.use_hm(dir)
+		"surf":
+			return line_of_sight and dist <= move.reach and brawler.use_hm(_lead_aim(move.speed, dist))
+		_:
+			return line_of_sight and dist <= move.reach + Brawler.BODY_RADIUS and brawler.use_hm(dir)
 
 
 func _try_super(dir: Vector3, dist: float, line_of_sight: bool) -> bool:

@@ -960,12 +960,12 @@ func _valid_move(s: SpeciesData, move_id: String) -> String:
 
 
 const HM_INFO := {
-	"cut": "slash in front and clear the tall grass there",
-	"fly": "leap over walls and water",
-	"surf": "a wave that pushes enemies back, and swim for a few seconds",
-	"strength": "a heavy shove; pushes boulders",
-	"flash": "reveal and blind enemies around you",
-	"rock_smash": "break the wall or rock in front of you",
+	"cut": "a long slash that bleeds and clears tall grass, revealing anyone hiding in it",
+	"fly": "leap 5 m over walls and water; the landing slows enemies next to you",
+	"surf": "a wide wave that pushes and slows; next to water you ride it and swim",
+	"strength": "hurl the nearest enemy 4 m (stunned if it hits a wall); knocks the ball loose; shoves boulders",
+	"flash": "blind and reveal enemies around you, and get a burst of speed",
+	"rock_smash": "a punch that lowers Defense, and smashes walls and rocks next to you",
 }
 
 

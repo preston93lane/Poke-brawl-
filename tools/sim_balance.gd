@@ -40,6 +40,11 @@ func _ready() -> void:
 		main.player.add_child(bot)
 		var build := Profile.bot_build(main.player.species.id, level)
 		main.player.set_build(str(build["gadget"]), str(build["ability"]), bool(build["z"]))
+		# Everyone carries a random HM their line can learn (so HMs can be compared).
+		for team: int in [0, 1]:
+			for b: Brawler in main.teams[team]:
+				var hms := Profile.hm_options(b.species.id)
+				b.hm_id = str(hms.pick_random()) if not hms.is_empty() else ""
 		main.legendaries.clear()
 		main._raid_done = true  # No raid legendary: it would skew the numbers.
 		var t := 0
@@ -53,7 +58,7 @@ func _ready() -> void:
 				f.store_line(JSON.stringify({ "family": GameData.family_root(b.species.id), "damage": b.damage_dealt,
 					"kills": b.kills, "deaths": b.deaths, "win": 1 if winner == team else (0 if winner == 1 - team else 0.5),
 					"minutes": minutes, "final": b.species.id, "ability": b.ability_id,
-					"gadget": b.gadget_move.id if b.gadget_move else "", "z": b.zmoves_used }))
+					"gadget": b.gadget_move.id if b.gadget_move else "", "z": b.zmoves_used, "hm": b.hm_id }))
 		f.flush()
 		main.queue_free()
 		await get_tree().process_frame

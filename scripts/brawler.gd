@@ -1144,21 +1144,25 @@ func use_hm(direction: Vector3) -> bool:
 	match hm_id:
 		"cut":
 			for other in _enemies_in_cone(dir, move.reach, move.arc):
+				var hidden := other.is_in_grass()
 				other.take_hit(self, move)
+				if hidden:
+					other._reveal_timer = float(GameData.rule("hm/cut_reveal", 3.0))
 			if arena:
-				arena.clear_grass(global_position + dir * 1.2, 1.4)
+				for d: float in [1.0, 2.0, 3.0]:
+					arena.clear_grass(global_position + dir * d, 1.2)
 			_show_melee_fx(dir, move)
+			MoveFx.melee(self, dir, move, [])
 		"surf":
-			for other in _enemies_in_cone(dir, move.reach, move.arc):
-				other.take_hit(self, move)
-				other.knock_from(global_position, move.knockback)
-			_surf_time = float(GameData.rule("hm/surf_time", 4.0))
-			collision_mask = walk_mask()
-			Vfx.burst(get_parent(), global_position + dir * 1.5 + Vector3(0, 0.4, 0), "water", 40, 1.0, 4.0)
+			# The wave works anywhere; next to water you also ride it and swim.
+			_on_attack(dir, move)
+			_spawn_projectile(move, dir)
+			if _water_within(2):
+				_surf_time = float(GameData.rule("hm/surf_time", 4.0))
+				collision_mask = walk_mask()
+			Vfx.burst(get_parent(), global_position + dir * 1.2 + Vector3(0, 0.4, 0), "water", 24, 0.8, 3.5)
 		"strength":
-			for other in _enemies_in_cone(dir, move.reach, move.arc):
-				other.take_hit(self, move)
-				other.knock_from(global_position, move.knockback)
+			_strength_throw(dir, move)
 			for b in Breakable.near(get_tree(), global_position + dir * 1.0, 0.8):
 				if arena:
 					arena.push_breakable(b, dir)
@@ -1169,11 +1173,13 @@ func use_hm(direction: Vector3) -> bool:
 			for b in Breakable.near(get_tree(), global_position + dir * 1.0, 0.7):
 				b.smash()
 			_show_melee_fx(dir, move)
+			MoveFx.melee(self, dir, move, _enemies_in_cone(dir, move.reach, move.arc))
 		"flash":
 			for other in enemies():
 				if other.global_position.distance_to(global_position) <= move.reach:
 					other.apply_blind(float(GameData.rule("hm/flash_blind", 2.0)))
 					other._reveal_timer = float(GameData.rule("hm/flash_reveal", 4.0))
+			apply_buff({ "speed": float(GameData.rule("hm/flash_speed", 0.3)), "duration": 2.5 })
 			_flash_fx(move.reach)
 		"fly":
 			_fly(dir, move)
@@ -1181,9 +1187,48 @@ func use_hm(direction: Vector3) -> bool:
 	return true
 
 
-## Fly: a leap over walls and water, landing on open ground with a small thump.
+## Strength: grab the nearest enemy in front and hurl it; slammed into something
+## solid it's stunned and takes extra damage. Bosses and immune Pokémon just take the hit.
+func _strength_throw(dir: Vector3, move: MoveData) -> void:
+	var targets := _enemies_in_cone(dir, move.reach, move.arc)
+	if targets.is_empty():
+		return
+	targets.sort_custom(func(a: Brawler, b: Brawler) -> bool:
+		return a.global_position.distance_to(global_position) < b.global_position.distance_to(global_position))
+	var target: Brawler = targets[0]
+	target.take_hit(self, move)
+	if target.is_dead:
+		return
+	if target.ball:
+		target.ball.drop()
+	if target.cc_immune() or target.invulnerable:
+		return
+	var away := target.global_position - global_position
+	away.y = 0.0
+	away = away.normalized() if away.length() > 0.05 else dir
+	target.carry(away, float(GameData.rule("hm/strength_throw", 4.0)), float(GameData.rule("hm/strength_stun", 0.8)),
+			float(GameData.rule("hm/strength_bonus", 0.3)), self, move)
+	target._spawn_floating_text("THROWN!", Color(1, 0.8, 0.5), 44, 2.3)
+
+
+## True when water is within `tiles` tiles (Surf only lets you swim from the shore).
+func _water_within(tiles: int) -> bool:
+	if arena == null:
+		return false
+	var c := arena.world_to_cell(global_position)
+	for dy in range(-tiles, tiles + 1):
+		for dx in range(-tiles, tiles + 1):
+			var y := c.y + dy
+			var x := c.x + dx
+			if y >= 0 and y < arena.rows.size() and x >= 0 and x < arena.rows[y].length() and arena.rows[y][x] == "~":
+				return true
+	return false
+
+
+## Fly: a leap over walls and water. Untouchable only on the way up; the landing slows
+## enemies right next to you (no damage).
 func _fly(dir: Vector3, move: MoveData) -> void:
-	var target := global_position + dir * float(GameData.rule("hm/fly_distance", 6.0))
+	var target := global_position + dir * float(GameData.rule("hm/fly_distance", 5.0))
 	if arena:
 		target = arena.nearest_open(target)
 	target.y = global_position.y
@@ -1194,6 +1239,7 @@ func _fly(dir: Vector3, move: MoveData) -> void:
 	var tween := create_tween()
 	tween.tween_property(self, "global_position", target, 0.45).set_trans(Tween.TRANS_SINE)
 	tween.parallel().tween_property(sprite, "position:y", sprite.position.y + 1.6, 0.22).set_ease(Tween.EASE_OUT)
+	tween.parallel().tween_callback(func() -> void: invulnerable = was_invulnerable).set_delay(0.22)
 	tween.chain().tween_property(sprite, "position:y", sprite.position.y, 0.2).set_ease(Tween.EASE_IN)
 	tween.finished.connect(func() -> void:
 		_flying_hm = false
@@ -1201,8 +1247,8 @@ func _fly(dir: Vector3, move: MoveData) -> void:
 		collision_mask = walk_mask()
 		for other in enemies():
 			if other.global_position.distance_to(global_position) <= move.reach:
-				other.take_hit(self, move)
-		Vfx.ring(get_parent(), global_position, move.reach, "flying", 40))
+				other._apply_effect(move.effect, self, move.type)
+		Vfx.ring(get_parent(), global_position, move.reach, "flying", 30))
 
 
 ## Push away from `origin` by `distance` metres (negative pulls toward it, stopping short).
@@ -1848,7 +1894,7 @@ func status_text() -> String:
 	if _blind_time > 0.0:
 		parts.append("BLIND")
 	if _dot_time > 0.0:
-		parts.append({ "burn": "BRN", "poison": "PSN", "leech": "SEED" }.get(_dot_kind, "DOT"))
+		parts.append({ "burn": "BRN", "poison": "PSN", "leech": "SEED", "bleed": "BLD" }.get(_dot_kind, "DOT"))
 	if _slow_time > 0.0 and _slow_type == "electric":
 		parts.append("PAR")
 	for stat in ["attack", "defense", "speed"]:
@@ -1871,7 +1917,7 @@ func status_chips() -> Array[Dictionary]:
 	if _blind_time > 0.0:
 		chips.append({ "text": "BLIND", "color": bad, "arrow": 0 })
 	if _dot_time > 0.0:
-		chips.append({ "text": { "burn": "BRN", "poison": "PSN", "leech": "SEED" }.get(_dot_kind, "DOT"), "color": bad, "arrow": 0 })
+		chips.append({ "text": { "burn": "BRN", "poison": "PSN", "leech": "SEED", "bleed": "BLD" }.get(_dot_kind, "DOT"), "color": bad, "arrow": 0 })
 	if _slow_time > 0.0 and _slow_type == "electric":
 		chips.append({ "text": "PAR", "color": bad, "arrow": 0 })
 	for stat in ["attack", "defense", "speed"]:
@@ -1900,7 +1946,7 @@ func _apply_effect(effect: Dictionary, source: Brawler, move_type := "") -> void
 		return
 	var kind := str(effect.get("type", ""))
 	match kind:
-		"burn", "poison", "leech":
+		"burn", "poison", "leech", "bleed":
 			_dot_kind = kind
 			_dot_time = float(effect.get("duration", 3.0))
 			_dot_dps = float(effect.get("dps", 100.0))

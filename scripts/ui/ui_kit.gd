@@ -192,7 +192,7 @@ static func move_summary(move: MoveData) -> String:
 	if move.knockback > 0.0 and move.kind == "melee" and move.slot == "gadget":
 		parts.append("knockback")
 	if not move.effect.is_empty():
-		var names := { "burn": "burn", "poison": "poison", "slow": "slow", "leech": "seeds: drains HP to you",
+		var names := { "burn": "burn", "poison": "poison", "slow": "slow", "leech": "seeds: drains HP to you", "bleed": "bleed",
 				"stun": "stun", "blind": "blind" }
 		var chance := roundi(float(move.effect.get("chance", 1.0)) * 100)
 		var effect_name: String = names.get(move.effect.get("type", ""), "effect")
