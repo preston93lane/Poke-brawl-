@@ -185,10 +185,10 @@
 		"strength_throw": 4.0,
 		"strength_stun": 0.8,
 		"strength_bonus": 0.3,
-		"flash_speed": 0.3,
+		"flash_speed": 0.2,
 		"cut_reveal": 3.0,
 		"surf_time": 4.0,
-		"flash_blind": 2.0,
+		"flash_blind": 1.5,
 		"flash_reveal": 4.0
 	},
 	"trainer": {

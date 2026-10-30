@@ -8,7 +8,7 @@ const MODES := {
 	"king_of_the_hill": { "button": "KING OF THE HILL", "title": "KING OF THE HILL 3v3", "blurb": "Hold the zone with only your team in it." },
 	"brawl_ball": { "button": "BRAWL BALL", "title": "BRAWL BALL 3v3", "blurb": "Kick the Poké Ball into their goal. First to 2." },
 	"candy_rush": { "button": "RARE CANDY RUSH", "title": "RARE CANDY RUSH 3v3", "blurb": "Grab 10 Rare Candies from the mine and hold them for 10 s." },
-	"showdown": { "button": "SHOWDOWN", "title": "SHOWDOWN", "blurb": "Everyone for themselves. Smash crates for power cubes. Last one standing wins." },
+	"showdown": { "button": "SHOWDOWN", "title": "SHOWDOWN", "blurb": "Free-for-all: smash crates for power cubes. Last one standing wins." },
 	"gym": { "button": "GYMS", "title": "GYM", "blurb": "Beat two trainers, then the Gym Leader, three matches in a row." },
 	"boss_raid": { "button": "BOSS RAID", "title": "BOSS RAID", "blurb": "Team up against a giant legendary. Dodge the red circles!" },
 }
@@ -142,32 +142,81 @@ func show_home() -> void:
 		row.add_child(b)
 	v.add_child(row)
 	_set_screen(v)
+	# A "?" in the corner opens How to Play; it opens by itself the very first time.
+	var help := UiKit.button("?  HOW TO PLAY", show_tutorial, 16)
+	help.add_theme_stylebox_override("normal", UiKit.box(Color(0, 0, 0, 0.35), 12, 8))
+	help.top_level = true  # Not laid out by the screen's margin container.
+	help.position = Vector2(24, 18)
+	_screen.add_child(help)
+	if not bool(Profile.data.get("tutorial_seen", false)) and not Profile.is_dev():
+		show_tutorial.call_deferred()
+
+
+func show_tutorial() -> void:
+	var t := Tutorial.new()
+	add_child(t)
 
 
 ## BATTLE: every game mode, plus the map maker.
 func show_battle_modes() -> void:
 	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 16)
+	v.add_theme_constant_override("separation", 10)
 	var top := HBoxContainer.new()
+	top.add_theme_constant_override("separation", 18)
 	top.add_child(UiKit.button("‹ BACK", show_home))
-	top.add_child(UiKit.label("   CHOOSE A MODE", 34, Color(1, 0.85, 0.25)))
+	top.add_child(UiKit.label("BATTLE", 34, Color(1, 0.85, 0.25)))
 	v.add_child(top)
-	var grid := GridContainer.new()
-	grid.columns = 3
-	grid.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	grid.add_theme_constant_override("h_separation", 14)
-	grid.add_theme_constant_override("v_separation", 14)
-	for mode_id: String in MODES:
-		if mode_id == "gym":
-			grid.add_child(_mode_card("GYMS", MODES[mode_id]["blurb"], show_gyms, Color(0.85, 0.5, 0.15)))
-			continue
-		if mode_id == "boss_raid":
-			grid.add_child(_mode_card("BOSS RAID", MODES[mode_id]["blurb"], show_bosses, Color(0.75, 0.25, 0.3)))
-			continue
-		grid.add_child(_mode_card(MODES[mode_id]["button"], MODES[mode_id]["blurb"], show_select.bind(mode_id), Color(0.22, 0.48, 0.9)))
-	grid.add_child(_mode_card("MAP MAKER", "Design your own arenas and test them.", show_map_editor, Color(0.35, 0.38, 0.5)))
-	v.add_child(grid)
+	var body := VBoxContainer.new()
+	body.add_theme_constant_override("separation", 8)
+	body.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+
+	body.add_child(UiKit.section_title("QUICK PLAY  ·  3v3 against bots"))
+	var quick := GridContainer.new()
+	quick.columns = 3
+	quick.add_theme_constant_override("h_separation", 12)
+	quick.add_theme_constant_override("v_separation", 12)
+	var icons := { "duel": _species_icon("pikachu"), "king_of_the_hill": _species_icon("machamp"),
+			"brawl_ball": UiKit.item_icon("poke_ball"), "candy_rush": UiKit.item_icon("rare_candy"), "showdown": _species_icon("gengar") }
+	for mode_id: String in ["duel", "king_of_the_hill", "brawl_ball", "candy_rush", "showdown"]:
+		var card := UiKit.card_button(str(MODES[mode_id]["button"]), str(MODES[mode_id]["blurb"]), icons[mode_id],
+				Color(0.22, 0.48, 0.9), show_select.bind(mode_id))
+		quick.add_child(card)
+	body.add_child(quick)
+
+	var lower := HBoxContainer.new()
+	lower.add_theme_constant_override("separation", 12)
+	var adventure := VBoxContainer.new()
+	adventure.add_theme_constant_override("separation", 8)
+	adventure.add_child(UiKit.section_title("ADVENTURE"))
+	var adv_row := HBoxContainer.new()
+	adv_row.add_theme_constant_override("separation", 12)
+	var badges := 0
+	for id in Profile.gym_ids():
+		if Profile.gym_clears(id, "normal") > 0 or Profile.gym_clears(id, "hard") > 0:
+			badges += 1
+	adv_row.add_child(UiKit.card_button("GYMS", str(MODES["gym"]["blurb"]), _species_icon("onix"), Color(0.85, 0.5, 0.15),
+			show_gyms, "%d / %d BADGES" % [badges, Profile.gym_ids().size()]))
+	var boss_wins := 0
+	for n in (Profile.data.get("stats", {}).get("boss_wins", {}) as Dictionary).values():
+		boss_wins += int(n)
+	adv_row.add_child(UiKit.card_button("BOSS RAID", str(MODES["boss_raid"]["blurb"]), _species_icon("zapdos"), Color(0.75, 0.25, 0.3),
+			show_bosses, "%d BOSS WIN%s" % [boss_wins, "" if boss_wins == 1 else "S"]))
+	adventure.add_child(adv_row)
+	lower.add_child(adventure)
+	var create := VBoxContainer.new()
+	create.add_theme_constant_override("separation", 8)
+	create.add_child(UiKit.section_title("CREATE"))
+	create.add_child(UiKit.card_button("MAP MAKER", "Design your own arenas and test them.", load("res://assets/tiles/brick.png"),
+			Color(0.35, 0.38, 0.5), show_map_editor))
+	lower.add_child(create)
+	body.add_child(lower)
+	v.add_child(body)
 	_set_screen(v)
+
+
+func _species_icon(id: String) -> Texture2D:
+	var s: SpeciesData = GameData.species.get(id)
+	return s.sprite if s else null
 
 
 ## The eight Kanto gyms, opening one after another.
@@ -559,6 +608,9 @@ func show_settings() -> void:
 		editor.change_scale(0.1)
 		update_size.call()))
 	top.add_child(UiKit.button("SWAP SIDES", func() -> void: editor.swap_sides()))
+	top.add_child(UiKit.button("HOW TO PLAY", func() -> void:
+		editor.save()
+		show_tutorial()))
 	top.add_child(UiKit.button("ABOUT & LEGAL", func() -> void:
 		editor.save()
 		show_about()))

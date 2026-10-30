@@ -1052,8 +1052,10 @@ func _check_intro() -> void:
 	tap.pressed = true
 	tap.position = Vector2(400, 300)
 	get_viewport().push_input(tap, true)
-	await get_tree().create_timer(2.0, true).timeout
-	expect(not get_tree().paused, "tapping skips the intro and starts the match")
+	await get_tree().create_timer(1.5, true).timeout
+	expect(get_tree().paused and main.intro_done(), "tapping skips the intro, then 3-2-1-GO plays")
+	await get_tree().create_timer(3.0, true).timeout
+	expect(not get_tree().paused, "the match starts after GO!")
 	main.queue_free()
 	await get_tree().process_frame
 

@@ -58,6 +58,11 @@ var _crate_mesh: BoxMesh
 var _crate_material: Material
 var _breakable_mesh: Mesh
 var _crate_mesh_box: BoxMesh
+## Textures that can be turned any way without looking wrong (no planks, bricks or grid lines).
+const ROTATABLE := ["sand", "ice", "dark", "volcanic", "rock", "hedge", "boulder", "ice_block"]
+## name -> number of variants (assets/tiles/<name>_v1.png...; tools/make_tile_variants.py).
+var _variant_counts := {}
+var _wall_materials := {}
 ## Wall styles drawn as rounded, lumpy shapes (natural things); the rest stay as blocks.
 const ORGANIC_WALLS := ["rock", "hedge", "ice_block", "cracked"]
 
@@ -101,7 +106,7 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 	var path_blobs: Array[Transform3D] = []
 
 	var floors := {}  # texture name -> Array[Transform3D]
-	var rocks: Array[Transform3D] = []
+	var rocks := {}  # wall texture variant -> Array[Transform3D]
 	var boulders: Array[Transform3D] = []
 	var grass: Array[Transform3D] = []
 	var trees: Array[Transform3D] = []
@@ -122,7 +127,7 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 			if (c == "G" and mode != "brawl_ball") or (c == "P" and mode != "showdown"):
 				c = "."
 			var center := cell_center(cell)
-			var floor_name := floor_tile
+			var floor_name := _variant(floor_tile, cell)
 			if floor_tile == "grass":
 				floor_name = "grass_%d" % posmod(x * 7 + y * 13 + (x * y) % 5, 3)  # Mix of variants.
 			if c == ".":
@@ -137,7 +142,7 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 				floor_name = "water"
 			if not floors.has(floor_name):
 				floors[floor_name] = []
-			floors[floor_name].append(Transform3D(Basis(), center))
+			floors[floor_name].append(Transform3D(_turn(floor_tile, cell), center))
 			if c == "#" and breakable_walls and x > 1 and y > 1 and x < width - 2 and y < height - 2:
 				# Inner walls break to supers (like Brawl Stars); the map's edge stays solid.
 				breakable_cells[cell] = "wall_style"
@@ -151,7 +156,10 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 					trees.append(Transform3D(tilt, base + tilt.y * TREE_SPRITE_SIZE.y * 0.5))
 				"#":
 					solid_cells[cell] = true
-					rocks.append(Transform3D(_jitter(cell) if wall_tile in ORGANIC_WALLS else Basis(), center + Vector3(0, WALL_HEIGHT * 0.5, 0)))
+					var wall_variant := _variant(wall_tile, cell)
+					if not rocks.has(wall_variant):
+						rocks[wall_variant] = []
+					rocks[wall_variant].append(Transform3D(_jitter(cell) if wall_tile in ORGANIC_WALLS else _turn(wall_tile, cell), center + Vector3(0, WALL_HEIGHT * 0.5, 0)))
 				"B":
 					breakable_cells[cell] = "boulder"
 				"X":
@@ -237,10 +245,11 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 	var rock_mat: Material = ArenaArt.vertex_color_material() if lets_go else null
 	_rock_mesh = rock_mesh
 	_rock_material = rock_mat
-	if lets_go and rocky:
-		_add_multimesh(rock_mesh, rock_mat, rocks)
-	else:
-		_add_multimesh(lump if wall_tile in ORGANIC_WALLS else block, _wall_material(wall_tile), rocks)
+	for wall_variant: String in rocks:
+		if lets_go and rocky:
+			_add_multimesh(rock_mesh, rock_mat, rocks[wall_variant])
+		else:
+			_add_multimesh(lump if wall_tile in ORGANIC_WALLS else block, _wall_material(wall_variant), rocks[wall_variant])
 	_add_multimesh(rock_mesh if lets_go else block, rock_mat if lets_go else _wall_material("boulder"), boulders)
 	_breakable_mesh = lump
 	var materials := {
@@ -251,9 +260,13 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 		"crate": _wall_material("crate"),
 	}
 	_crate_material = materials["crate"]
+	var variant_of := { "cracked": "cracked", "boulder": "boulder", "ice_block": "ice_block", "wall_style": wall_tile }
 	for cell: Vector2i in breakable_cells:
 		var kind: String = breakable_cells[cell]
-		var b := _add_breakable(cell, "crate" if kind == "crate" else "wall", materials[kind])
+		var material: Material = materials[kind]
+		if material is ShaderMaterial and (material as ShaderMaterial).shader == WALL_SHADER and variant_of.has(kind):
+			material = _wall_material(_variant(str(variant_of[kind]), cell))
+		var b := _add_breakable(cell, "crate" if kind == "crate" else "wall", material)
 		if lets_go and (kind in ["cracked", "boulder"] or (kind == "wall_style" and rocky)):
 			b.set_mesh(rock_mesh, _jitter(cell))
 		elif kind == "wall_style" and wall_tile not in ORGANIC_WALLS:
@@ -735,10 +748,37 @@ func _add_multimesh(mesh: Mesh, material: Material, transforms: Array, shadows :
 ## Wall / block material: the tile texture projected from three sides, and
 ## see-through when it hides your Pokémon.
 func _wall_material(tile_name: String) -> ShaderMaterial:
+	if _wall_materials.has(tile_name):
+		return _wall_materials[tile_name]
 	var mat := ShaderMaterial.new()
 	mat.shader = WALL_SHADER
 	mat.set_shader_parameter("albedo_tex", load(TILE_DIR + tile_name + ".png"))
+	_wall_materials[tile_name] = mat
 	return mat
+
+
+## The texture to use for `tile_name` at `cell`: the original about 40% of the time,
+## otherwise one of its variants. Fixed per cell, so a map always looks the same.
+func _variant(tile_name: String, cell: Vector2i) -> String:
+	if not _variant_counts.has(tile_name):
+		var n := 0
+		while ResourceLoader.exists("%s%s_v%d.png" % [TILE_DIR, tile_name, n + 1]):
+			n += 1
+		_variant_counts[tile_name] = n
+	var count: int = _variant_counts[tile_name]
+	if count == 0:
+		return tile_name
+	var h := posmod(cell.x * 73856093 ^ cell.y * 19349663, 1000)
+	if h < 400:
+		return tile_name
+	return "%s_v%d" % [tile_name, 1 + (h - 400) * count / 600]
+
+
+## A quarter-turn per cell for textures that look fine any way round.
+func _turn(tile_name: String, cell: Vector2i) -> Basis:
+	if tile_name not in ROTATABLE:
+		return Basis()
+	return Basis(Vector3.UP, float(posmod(cell.x * 31 + cell.y * 17 + cell.x * cell.y, 4)) * PI * 0.5)
 
 
 ## Tile material: one 64px texture per world unit, smooth filtering.

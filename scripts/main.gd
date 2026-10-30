@@ -158,11 +158,16 @@ func _ready() -> void:
 			GameData.match_settings = GymMode.settings_for(GameData.gym_run)  # Next round (or round 1 again).
 		get_tree().reload_current_scene())
 	hud.menu_requested.connect(func() -> void: get_tree().change_scene_to_file(MENU_SCENE))
+	hud.pause_requested.connect(pause)
 	_update_status()
 	if Profile.is_dev():
 		_add_dev_buttons()
 	if show_intro:
 		await _play_intro()
+		_intro_finished = true
+		get_tree().paused = true
+		await hud.countdown()
+		get_tree().paused = false
 
 
 ## Dev mode: shortcuts for testing (top left, under the scoreboard's edge).
@@ -180,6 +185,49 @@ func _add_dev_buttons() -> void:
 		b.modulate.a = 0.8
 		row.add_child(b)
 	hud.add_child(row)
+
+
+var _pause_menu: PauseMenu
+var _intro_finished := false
+
+
+func intro_done() -> bool:
+	return _intro_finished
+
+
+## Freezes the match behind the pause menu (the HUD's PAUSE button, or Esc / P).
+func pause() -> void:
+	if _pause_menu or round_over:
+		return
+	get_tree().paused = true
+	_pause_menu = PauseMenu.new()
+	_pause_menu.resumed.connect(_unpause)
+	_pause_menu.quit_requested.connect(func() -> void:
+		get_tree().paused = false
+		get_tree().change_scene_to_file(MENU_SCENE))
+	_pause_menu.help_requested.connect(func() -> void:
+		var help := Tutorial.new()
+		help.process_mode = Node.PROCESS_MODE_ALWAYS
+		hud.add_child(help))
+	hud.add_child(_pause_menu)
+
+
+func _unpause() -> void:
+	if _pause_menu:
+		_pause_menu.queue_free()
+		_pause_menu = null
+	get_tree().paused = false
+
+
+## Leaving a match mid-countdown or while paused must not leave the game frozen.
+func _exit_tree() -> void:
+	get_tree().paused = false
+
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	var key := event as InputEventKey
+	if key and key.pressed and not key.echo and key.physical_keycode in [KEY_ESCAPE, KEY_P] and _pause_menu == null:
+		pause()
 
 
 ## Pause everything while the team banners play.

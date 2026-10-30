@@ -17,6 +17,9 @@ func _ready() -> void:
 	if arena_id.begins_with("showcase"):
 		await _showcase(out_dir, arena_id.trim_prefix("showcase").trim_prefix(":").split(",", false))
 		return
+	if arena_id == "pause":
+		await _pause_shot(out_dir)
+		return
 	if arena_id.begins_with("move:"):
 		await _move_demo(arena_id.trim_prefix("move:"), out_dir)
 		return
@@ -211,6 +214,28 @@ func _move_demo(spec: String, out_dir: String) -> void:
 	get_tree().quit()
 
 
+## The 3-2-1 countdown and the pause menu.
+func _pause_shot(out_dir: String) -> void:
+	GameData.match_settings = { "mode": "duel", "arena": "pallet_pitch", "species": "pikachu", "level": 20 }
+	var main := MAIN_SCENE.instantiate()
+	main.show_intro = false
+	main.record_progress = false
+	add_child(main)
+	await get_tree().process_frame
+	main.hud.countdown()
+	for i in 20:
+		await get_tree().process_frame
+	get_viewport().get_texture().get_image().save_png("%s/countdown.png" % out_dir)
+	for i in 200:
+		await get_tree().process_frame
+	main.pause()
+	for i in 5:
+		await get_tree().process_frame
+	get_viewport().get_texture().get_image().save_png("%s/pause.png" % out_dir)
+	print("saved pause")
+	get_tree().quit()
+
+
 ## A gym's leader round (round 3), a few seconds in.
 func _gym_shot(gym_id: String, out_dir: String) -> void:
 	GymMode.start_run(gym_id, "normal", "", { "species": "squirtle" })
@@ -273,6 +298,14 @@ func _menu_shot(screen: String, out_dir: String) -> void:
 				await get_tree().process_frame
 				await get_tree().process_frame
 				get_viewport().get_texture().get_image().save_png("%s/menu_kit_%d.png" % [out_dir, y])
+		"tutorial":
+			var t := Tutorial.new()
+			menu.add_child(t)
+			for page in Tutorial.PAGES.size():
+				t._show(page)
+				for i in 3:
+					await get_tree().process_frame
+				get_viewport().get_texture().get_image().save_png("%s/tutorial_%d.png" % [out_dir, page])
 		"store":
 			menu.show_store("")
 		"bag":

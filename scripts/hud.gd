@@ -3,6 +3,7 @@ extends CanvasLayer
 
 signal restart_requested
 signal menu_requested
+signal pause_requested
 
 const SCOREBOARD := preload("res://scripts/ui/scoreboard.gd")
 
@@ -84,9 +85,9 @@ func _build_buttons() -> void:
 	add_child(_flash)
 	move_child(_flash, 0)
 	var kit_theme := UiKit.make_theme()
-	var menu := UiKit.button("MENU", func() -> void: menu_requested.emit(), 16)
+	var menu := UiKit.button("❚❚ PAUSE", func() -> void: pause_requested.emit(), 16)
 	menu.theme = kit_theme
-	menu.tooltip_text = "Back to menu"
+	menu.tooltip_text = "Pause"
 	menu.add_theme_stylebox_override("normal", UiKit.box(Color(0, 0, 0, 0.45), 12, 8))
 	menu.position = Vector2(56, 16)
 	add_child(menu)
@@ -237,6 +238,33 @@ func add_kill(killer: Brawler, victim: Brawler) -> void:
 func flash(color: Color) -> void:
 	_flash.color = Color(color, 0.35)
 	create_tween().tween_property(_flash, "color:a", 0.0, 0.6)
+
+
+## 3, 2, 1, GO! in the middle of the screen (the match is paused meanwhile).
+func countdown() -> void:
+	var l := Label.new()
+	l.process_mode = Node.PROCESS_MODE_ALWAYS
+	l.set_anchors_preset(Control.PRESET_FULL_RECT)
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	l.add_theme_font_size_override("font_size", 150)
+	l.add_theme_constant_override("outline_size", 24)
+	l.add_theme_color_override("font_outline_color", Color(0.05, 0.05, 0.12))
+	l.pivot_offset = get_viewport().get_visible_rect().size * 0.5
+	add_child(l)
+	for step in ["3", "2", "1", "GO!"]:
+		l.text = step
+		l.add_theme_color_override("font_color", Color(0.4, 1, 0.5) if step == "GO!" else Color(1, 0.85, 0.3))
+		l.scale = Vector2.ONE * 1.6
+		l.modulate.a = 1.0
+		var tween := create_tween().set_parallel()
+		tween.tween_property(l, "scale", Vector2.ONE, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		tween.tween_property(l, "modulate:a", 0.0, 0.25).set_delay(0.55)
+		tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+		await get_tree().create_timer(0.55 if step == "GO!" else 0.8, true).timeout
+		if not is_instance_valid(l):
+			return
+	l.queue_free()
 
 
 func announce(text: String) -> void:

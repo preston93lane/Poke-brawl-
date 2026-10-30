@@ -44,14 +44,79 @@ static func box(color: Color, radius := 14, margin := 12) -> StyleBoxFlat:
 	s.set_corner_radius_all(radius)
 	s.content_margin_left = margin + 4
 	s.content_margin_right = margin + 4
-	s.content_margin_top = margin * 0.6
-	s.content_margin_bottom = margin * 0.6
 	s.border_width_bottom = 5
+	# Centre text on the button's face, not face + bottom lip.
+	s.content_margin_top = margin * 0.6
+	s.content_margin_bottom = margin * 0.6 + s.border_width_bottom
 	s.border_color = color.darkened(0.4)
 	s.shadow_color = Color(0, 0, 0, 0.3)
 	s.shadow_size = 4
 	s.shadow_offset = Vector2(0, 3)
 	return s
+
+
+## A big menu card: icon on the left, title, a line or two of description and an
+## optional status line (progress, "NEW"...), all laid out inside the button.
+static func card_button(title: String, blurb: String, icon: Texture2D, color: Color, on_pressed: Callable,
+		status := "", size := Vector2(360, 118)) -> Button:
+	var b := Button.new()
+	b.custom_minimum_size = size
+	b.pressed.connect(on_pressed)
+	b.add_theme_stylebox_override("normal", box(color))
+	b.add_theme_stylebox_override("hover", box(color.lightened(0.12)))
+	b.add_theme_stylebox_override("pressed", box(color.darkened(0.15)))
+	b.add_theme_stylebox_override("disabled", box(Color(0.3, 0.3, 0.35)))
+	var margin := MarginContainer.new()
+	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
+	margin.offset_bottom = -5  # Above the bottom lip.
+	for side in ["left", "right"]:
+		margin.add_theme_constant_override("margin_" + side, 14)
+	margin.add_theme_constant_override("margin_top", 10)
+	margin.add_theme_constant_override("margin_bottom", 10)
+	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if icon:
+		var holder := PanelContainer.new()
+		var round := StyleBoxFlat.new()
+		round.bg_color = Color(0, 0, 0, 0.18)
+		round.set_corner_radius_all(40)
+		holder.add_theme_stylebox_override("panel", round)
+		holder.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var pic := sprite(icon, 64)
+		pic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		holder.add_child(pic)
+		row.add_child(holder)
+	var text := VBoxContainer.new()
+	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	text.alignment = BoxContainer.ALIGNMENT_CENTER
+	text.add_theme_constant_override("separation", 2)
+	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var t := label(title, 24)
+	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	text.add_child(t)
+	if blurb != "":
+		var d := label(blurb, 15, Color(1, 1, 1, 0.88))
+		d.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		d.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		text.add_child(d)
+	if status != "":
+		var st := label(status, 14, Color(1, 0.9, 0.4))
+		st.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		text.add_child(st)
+	row.add_child(text)
+	margin.add_child(row)
+	b.add_child(margin)
+	return b
+
+
+## A small heading for a group of cards.
+static func section_title(text: String) -> Label:
+	var l := label(text, 18, Color(1, 0.85, 0.3))
+	l.add_theme_constant_override("outline_size", 4)
+	return l
 
 
 static func label(text: String, size := 24, color := Color.WHITE) -> Label:
