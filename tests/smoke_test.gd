@@ -1368,7 +1368,7 @@ func _check_faint_stops_attacks() -> void:
 	var count_shots := func() -> int:
 		var n := 0
 		for node in main.arena.get_children():
-			if node is Projectile and not node.is_queued_for_deletion() and node.shooter == p:
+			if node is Projectile and not node.is_queued_for_deletion() and not node._done and node.shooter == p:
 				n += 1
 		return n
 	var shots: int = count_shots.call()

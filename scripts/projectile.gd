@@ -109,9 +109,8 @@ func _physics_process(delta: float) -> void:
 	# Shots fizzle out when whoever fired them faints.
 	if not is_instance_valid(shooter) or shooter.is_dead:
 		Vfx.burst(get_parent(), global_position, move.type, 6, 0.15, 2.0)
-		_detach_trail()
 		_done = true
-		queue_free()
+		_retire()
 		return
 	if move.lob:
 		_fly_lob(delta)
@@ -326,8 +325,7 @@ func _finish(effects := true) -> void:
 		var zone: Node3D = LINGER_ZONE.new()
 		zone.setup(shooter, move, Vector3(global_position.x, 0.0, global_position.z))
 		get_parent().add_child(zone)
-	_detach_trail()
-	queue_free()
+	_retire()
 
 
 func _exit_tree() -> void:
@@ -336,17 +334,21 @@ func _exit_tree() -> void:
 		_beam = null
 
 
-## Let the trail fade out on its own instead of vanishing with the projectile.
-func _detach_trail() -> void:
-	if _trail == null or get_parent() == null:
+## Spent: hide the shot but stay until its trail has faded where it is. (Moving the
+## trail to another parent would restart it, and Godot 4.3 draws a restarted
+## emitter's particles as black blobs.)
+func _retire() -> void:
+	mesh.visible = false
+	if _core:
+		_core.visible = false
+	if _halo:
+		_halo.visible = false
+	set_process(false)
+	if _trail == null:
+		queue_free()
 		return
-	var at := _trail.global_position
-	remove_child(_trail)
-	_trail.position = (get_parent() as Node3D).to_local(at)
-	get_parent().add_child(_trail)
-	_trail.global_position = at
 	_trail.emitting = false
-	get_tree().create_timer(_trail.lifetime + 0.2, false).timeout.connect(_trail.queue_free)
+	get_tree().create_timer(_trail.lifetime + 0.2, false).timeout.connect(queue_free)
 
 
 func _explode(radius: float) -> void:

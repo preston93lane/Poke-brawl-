@@ -120,7 +120,7 @@ static func trail(type_name: String, radius: float, look := {}) -> CPUParticles3
 	p.spread = 180.0
 	p.initial_velocity_min = 0.2
 	p.initial_velocity_max = 0.9
-	var k := clampf(radius / 0.3, 0.8, 2.5)
+	var k := clampf(sqrt(radius / 0.3), 0.8, 1.4)
 	p.scale_amount_min *= k
 	p.scale_amount_max *= k
 	if s.has("jitter"):
@@ -174,8 +174,8 @@ static func stream(type_name: String, look := {}) -> CPUParticles3D:
 	p.local_coords = false
 	p.direction = Vector3(0, 0, -1)
 	p.gravity = s["gravity"] * 0.3
-	p.scale_amount_min *= 1.3
-	p.scale_amount_max *= 1.6
+	p.scale_amount_min *= 1.05
+	p.scale_amount_max *= 1.15
 	p.emitting = false
 	return p
 
@@ -193,8 +193,8 @@ static func dust() -> CPUParticles3D:
 	p.gravity = Vector3(0, 0.6, 0)
 	p.initial_velocity_min = 0.2
 	p.initial_velocity_max = 0.5
-	p.scale_amount_min = 0.12
-	p.scale_amount_max = 0.2
+	p.scale_amount_min = 0.35
+	p.scale_amount_max = 0.55
 	p.emitting = false
 	return p
 
@@ -250,8 +250,10 @@ static func _base(type_name: String, amount: int, lifetime: float, look := {}) -
 	p.lifetime = lifetime
 	p.gravity = s["gravity"]
 	p.color_ramp = _gradient(type_name, look.get("colors", []))
-	p.scale_amount_min = s["size"] * 0.7
-	p.scale_amount_max = s["size"] * 1.2
+	# Sizes are multiples of the 1 m quad (big types like fire a bit bigger).
+	var k := sqrt(float(s["size"]) / 0.3)
+	p.scale_amount_min = 0.75 * k
+	p.scale_amount_max = 1.15 * k
 	p.scale_amount_curve = _shrink_curve()
 	p.damping_min = 1.0
 	p.damping_max = 3.0
@@ -289,6 +291,9 @@ static func _material(type_name: String, shape := "") -> StandardMaterial3D:
 	if s["add"]:
 		mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
 	mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	# Without this the billboard ignores each particle's scale, so emitters draw their
+	# unborn particles (zero scale, opaque black colour) as full-size black discs.
+	mat.billboard_keep_scale = true
 	mat.vertex_color_use_as_albedo = true
 	mat.albedo_texture = shape_texture(shape)
 	mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR  # Mipmapped sampling of small particles can come out black.
@@ -514,5 +519,5 @@ static func _shrink_curve() -> Curve:
 	if _shrink == null:
 		_shrink = Curve.new()
 		_shrink.add_point(Vector2(0, 1))
-		_shrink.add_point(Vector2(1, 0.25))
+		_shrink.add_point(Vector2(1, 0.45))
 	return _shrink
