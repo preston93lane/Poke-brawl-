@@ -38,6 +38,8 @@ func _ready() -> void:
 		var bot := BotController.new()
 		bot.set_difficulty("normal")
 		main.player.add_child(bot)
+		var build := Profile.bot_build(main.player.species.id, level)
+		main.player.set_build(str(build["gadget"]), str(build["ability"]), bool(build["z"]))
 		main.legendaries.clear()
 		main._raid_done = true  # No raid legendary: it would skew the numbers.
 		var t := 0
@@ -50,7 +52,8 @@ func _ready() -> void:
 			for b: Brawler in main.teams[team]:
 				f.store_line(JSON.stringify({ "family": GameData.family_root(b.species.id), "damage": b.damage_dealt,
 					"kills": b.kills, "deaths": b.deaths, "win": 1 if winner == team else (0 if winner == 1 - team else 0.5),
-					"minutes": minutes, "final": b.species.id }))
+					"minutes": minutes, "final": b.species.id, "ability": b.ability_id,
+					"gadget": b.gadget_move.id if b.gadget_move else "", "z": b.zmoves_used }))
 		f.flush()
 		main.queue_free()
 		await get_tree().process_frame

@@ -6,7 +6,7 @@
 	"sprite_scale": 1.104,
 	"sprite_height": 35,
 	"style": "tank_wave",
-	"stats": {"hp": 6000, "attack": 98, "defense": 74, "speed": 83},
+	"stats": {"hp": 5800, "attack": 98, "defense": 74, "speed": 83},
 	"super": "jigglypuff_super",
 	"gadget": "gadget_protect",
 	"evolve_level": 25,

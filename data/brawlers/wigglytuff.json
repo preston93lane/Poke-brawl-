@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 57,
 	"style": "tank_wave",
-	"stats": {"hp": 6550, "attack": 119, "defense": 88, "speed": 93},
+	"stats": {"hp": 6350, "attack": 119, "defense": 88, "speed": 93},
 	"super": "wigglytuff_super",
 	"gadget": "gadget_protect",
 	"evolves_from": "jigglypuff"

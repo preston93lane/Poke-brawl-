@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 44,
 	"style": "healer",
-	"stats": {"hp": 6050, "attack": 91, "defense": 93, "speed": 95},
+	"stats": {"hp": 5750, "attack": 91, "defense": 93, "speed": 95},
 	"super": "chansey_super",
 	"gadget": "gadget_heal_pulse",
 	"moves": [

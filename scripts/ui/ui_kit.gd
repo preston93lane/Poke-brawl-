@@ -123,6 +123,11 @@ static func stat_bar(stat: String, value: float) -> HBoxContainer:
 ## One-line description of a move's numbers: what it's good and bad at.
 static func move_summary(move: MoveData) -> String:
 	var parts: Array[String] = []
+	if move.desc != "":
+		parts.append(move.desc)
+		if move.power > 0.0 and move.kind != "self":
+			parts.append("Power %d" % move.power)
+		return " · ".join(parts)
 	if move.kind == "stream" or move.linger > 0.0:
 		parts.append("Power %d/s" % move.power)
 	elif move.power > 0.0 and move.kind != "self":
@@ -178,6 +183,14 @@ static func move_summary(move: MoveData) -> String:
 		parts.append("cures status")
 	if move.crit_chance > 0.0:
 		parts.append("%d%% crit" % roundi(move.crit_chance * 100))
+	if not move.stat_change.is_empty():
+		for stat in ["attack", "defense", "speed"]:
+			if float(move.stat_change.get(stat, 0.0)) < 0.0:
+				parts.append("lowers %s" % stat.capitalize())
+	if not move.control.is_empty():
+		parts.append({ "grab": "grabs", "tomb": "traps in rocks", "torrent": "sweeps away", "vortex": "leaves a whirl" }.get(str(move.control.get("type", "")), ""))
+	if move.knockback > 0.0 and move.kind == "melee" and move.slot == "gadget":
+		parts.append("knockback")
 	if not move.effect.is_empty():
 		var names := { "burn": "burn", "poison": "poison", "slow": "slow", "leech": "seeds: drains HP to you",
 				"stun": "stun", "blind": "blind" }

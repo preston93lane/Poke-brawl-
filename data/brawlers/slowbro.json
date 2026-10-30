@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 60,
 	"style": "tank_wave",
-	"stats": {"hp": 5200, "attack": 126, "defense": 117, "speed": 87},
+	"stats": {"hp": 5050, "attack": 126, "defense": 117, "speed": 87},
 	"super": "slowbro_super",
 	"gadget": "gadget_protect",
 	"evolves_from": "slowpoke"

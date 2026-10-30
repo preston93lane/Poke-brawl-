@@ -61,6 +61,8 @@ func _ready() -> void:
 	_check_camera_lead()
 	_check_move_looks()
 	await _check_controls()
+	_check_kit_data()
+	await _check_kits_in_match()
 	Engine.time_scale = 1.0
 	Profile.data = real_profile
 	Profile.save()
@@ -1836,6 +1838,9 @@ func _check_controls() -> void:
 			wall_dir = d
 			break
 	target.global_position = player.global_position
+	target._tomb_time = 0.0
+	target._was_controlled = false
+	target._cc_immune = 0.0  # Still immune from the grab above.
 	target.carry(wall_dir, 40.0, 1.0, 0.2, player, GameData.get_move("hydro_cannon"))
 	for i in 240:
 		await get_tree().physics_frame
@@ -1856,6 +1861,142 @@ func _check_controls() -> void:
 	for i in 40:
 		await get_tree().physics_frame
 	expect(target.global_position.distance_to(centre) < start - 0.3, "Fire Spin's vortex pulls enemies in")
+	main.queue_free()
+	await get_tree().physics_frame
+
+
+func _check_kit_data() -> void:
+	print("Kits: gadgets, Abilities, Z-Moves")
+	var missing: Array[String] = []
+	for s: SpeciesData in GameData.base_species():
+		var kit := GameData.kit(s.id)
+		var gadgets: Array = kit.get("gadgets", [])
+		var abilities: Array = kit.get("abilities", [])
+		var ok := gadgets.size() == 2 and abilities.size() == 2
+		for g in gadgets:
+			var m := GameData.get_move(str(g))
+			ok = ok and m != null and m.slot == "gadget"
+		for a in abilities:
+			ok = ok and GameData.abilities.has(str(a))
+		if not ok:
+			missing.append(s.id)
+	expect(missing.is_empty(), "every line has two gadgets and two Abilities (bad: %s)" % ", ".join(missing))
+	var z := GameData.z_move(GameData.get_species("charizard").super_move)
+	expect(z.display_name == "Inferno Overdrive" and z.power > GameData.get_species("charizard").super_move.power, "Charizard's Z-Move is a stronger Inferno Overdrive")
+	var old_dev: Variant = Profile.data.get("dev", false)
+	Profile.data["dev"] = false
+	var old_level := Profile.level_of("charmander")
+	Profile.set_level("charmander", 1)
+	expect(Profile.gadget_options("charmander").size() == 1 and Profile.ability_options("charmander").is_empty() and not Profile.zmove_unlocked("charmander"),
+			"a level 1 line has only its default gadget")
+	Profile.set_level("charmander", 30)
+	expect(Profile.gadget_options("charmander").size() == 3 and Profile.ability_options("charmander").size() == 1 and not Profile.zmove_unlocked("charmander"),
+			"level 30: both signature gadgets and the first Ability")
+	Profile.set_level("charmander", 50)
+	expect(Profile.ability_options("charmander").size() == 2 and Profile.zmove_unlocked("charmander"), "level 50: both Abilities and the Z-Move")
+	expect(Profile.chosen_gadget("charmander") == "gadget_ember_charge", "the first signature gadget is picked by default once unlocked")
+	Profile.set_level("charmander", old_level)
+	Profile.data["dev"] = old_dev
+
+
+func _check_kits_in_match() -> void:
+	print("Kits in a match")
+	var main := await _start_match("pallet_pitch", "duel", "charizard", ["geodude"])
+	await _freeze_all(main, main.enemy)
+	var p: Brawler = main.player
+	var t: Brawler = main.enemy
+	p.global_position = main.arena.nearest_open(Vector3(0, 0, 3))
+	t.global_position = main.arena.nearest_open(p.global_position + Vector3(0, 0, -2.5))
+	t.max_health = 50000.0
+	t.health = t.max_health
+	p.set_build("", "", false)
+	t.set_build("", "", false)
+	await get_tree().physics_frame
+
+	# Crowd-control immunity: after a stun ends, another can't land right away.
+	t._apply_effect({ "type": "stun", "duration": 0.3 }, p, "normal")
+	for i in 30:
+		await get_tree().physics_frame
+	t._apply_effect({ "type": "stun", "duration": 1.0 }, p, "normal")
+	expect(not t.is_stunned() and t.cc_immune(), "a second stun right after the first is blocked (immunity)")
+	expect(not t.can_be_grabbed(), "immune Pokémon can't be grabbed")
+	for i in 100:
+		await get_tree().physics_frame
+	t._apply_effect({ "type": "stun", "duration": 0.2 }, p, "normal")
+	expect(t.is_stunned(), "stuns land again once immunity wears off")
+	for i in 120:
+		await get_tree().physics_frame
+
+	# Abilities.
+	t.set_build("", "sturdy", false)
+	t.health = 100.0
+	t.take_damage(5000.0, p)
+	expect(not t.is_dead and is_equal_approx(t.health, 1.0), "Sturdy survives a knockout hit with 1 HP")
+	t.health = t.max_health
+	var fire := GameData.get_move("charmander_main1")
+	t.set_build("", "", false)
+	var plain: float = GameData.calc_damage(fire, p, t, t.incoming_mult(fire))["amount"]
+	t.set_build("", "thick_fat", false)
+	var fat: float = GameData.calc_damage(fire, p, t, t.incoming_mult(fire))["amount"]
+	expect(fat < plain * 0.8, "Thick Fat cuts Fire damage (%d vs %d)" % [fat, plain])
+	t.set_build("", "", false)
+	p.set_build("", "intimidate", false)
+	var atk := t.get_attack()
+	p._intimidate()
+	expect(t.get_attack() < atk, "Intimidate lowers nearby enemies' Attack")
+	t._debuffs.clear()
+	p.set_build("", "", false)
+
+	# Gadgets.
+	p.set_build("gadget_quick_claw", "", false)
+	p.ammo = 0.0
+	expect(p.use_gadget(Vector3.FORWARD) and p.ammo >= p.max_ammo(), "Quick Claw refills ammo")
+	p._gadget_timer = 0.0
+	p.set_build("gadget_ember_charge", "", false)
+	p.use_gadget(Vector3.FORWARD)
+	t._clear_status()
+	t.take_hit(p, p.main_move)
+	expect(t._dot_kind == "burn" and t._dot_time > 0.0, "Ember Charge makes attacks burn")
+	p._gadget_timer = 0.0
+	t._clear_status()
+	p.set_build("gadget_detect", "", false)
+	p.use_gadget(Vector3.FORWARD)
+	var t_pos := t.global_position
+	p.take_hit(t, t.main_move)
+	for i in 15:
+		await get_tree().physics_frame
+	expect(t.global_position.distance_to(t_pos) > 0.8, "Detect knocks back whoever hits you")
+	p._protect_time = 0.0
+	p._gadget_timer = 0.0
+	p.gadget_uses = 3
+	p.set_build("gadget_stealth_rock", "", false)
+	t.global_position = main.arena.nearest_open(Vector3(4, 0, 3))
+	var hp := t.health
+	p.use_gadget(Vector3.FORWARD)
+	for i in 45:
+		await get_tree().physics_frame
+	t.global_position = p.global_position
+	for i in 5:
+		await get_tree().physics_frame
+	expect(t.health < hp, "Stealth Rock springs on an enemy that steps on it")
+	t.global_position = main.arena.nearest_open(p.global_position + Vector3(0, 0, -2.5))
+	await get_tree().physics_frame
+
+	# Z-Move.
+	p.set_build("", "", true)
+	p.z_charge = 1.0
+	p.super_charge = 1.0
+	p._attack_lock = 0.0
+	var super_power := p.current_super().power
+	t.health = t.max_health
+	expect(p.use_zmove(t.global_position - p.global_position, 2.5), "a charged Z-Move fires")
+	expect(p._z_time > 0.0 and p.z_charge == 0.0 and p.super_charge == 0.0, "the Z-Move uses both meters and starts the boost")
+	expect(GameData.z_move(p.current_super()).power > super_power, "the Z-Move hits harder than the super")
+	var other: Brawler = main._spawn("charmander", 50, 0, false)
+	other.set_build("", "", true)
+	other.z_charge = 1.0
+	other.super_charge = 1.0
+	expect(not other.zmove_ready(), "base forms can't use Z-Moves")
 	main.queue_free()
 	await get_tree().physics_frame
 

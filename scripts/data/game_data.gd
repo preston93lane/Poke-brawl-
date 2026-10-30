@@ -13,6 +13,12 @@ var rules: Dictionary = {}
 var species: Dictionary = {}
 ## id -> MoveData
 var moves: Dictionary = {}
+## Line (base form id) -> { "gadgets": [2 ids], "abilities": [2 ids] } (data/kits.json).
+var kits: Dictionary = {}
+## Ability id -> definition (data/abilities.json).
+var abilities: Dictionary = {}
+var zmoves: Dictionary = {}
+var _z_cache: Dictionary = {}
 ## id -> the raw Dictionary each move was loaded from (for scaled copies).
 var move_dicts: Dictionary = {}
 var _scaled_moves: Dictionary = {}
@@ -93,6 +99,13 @@ func load_all() -> void:
 			var move := MoveData.from_dict(move_id, move_dicts[move_id])
 			_check_type(move.type, "moves/%s → %s" % [move_file, move_id])
 			moves[move_id] = move
+
+	kits = _load_json(DATA_DIR + "/kits.json")
+	kits.erase("_comment")
+	abilities = _load_json(DATA_DIR + "/abilities.json")
+	abilities.erase("_comment")
+	zmoves = _load_json(DATA_DIR + "/zmoves.json")
+	_z_cache.clear()
 
 	species.clear()
 	for file in _json_files(DATA_DIR + "/brawlers"):
@@ -180,7 +193,7 @@ func set_setting(key: String, value: Variant) -> void:
 ## Where the on-screen controls sit, as fractions of the screen (x right, y down),
 ## plus a size multiplier. "swapped" puts the move stick on the right.
 const DEFAULT_LAYOUT := {
-	"move": [0.18, 0.74], "aim": [0.82, 0.74], "gadget": [0.69, 0.86], "super": [0.67, 0.6], "hm": [0.93, 0.5],
+	"move": [0.18, 0.74], "aim": [0.82, 0.74], "gadget": [0.69, 0.86], "super": [0.67, 0.6], "hm": [0.93, 0.5], "zmove": [0.56, 0.52],
 	"scale": 1.0, "swapped": false,
 }
 
@@ -230,6 +243,62 @@ func _with_extras(d: Dictionary, extras: Dictionary) -> Dictionary:
 		for field: String in add:
 			merged[field] = add[field]
 	return merged
+
+
+## A line's kit (gadgets and Abilities); empty for unknown lines.
+func kit(species_id: String) -> Dictionary:
+	return kits.get(family_root(species_id), {})
+
+
+func ability(ability_id: String) -> Dictionary:
+	return abilities.get(ability_id, {})
+
+
+## The Z-Move version of a super: renamed after its type and powered up (rules.json
+## zmove), plus any per-move extras in data/zmoves.json. Cached per move object.
+func z_move(base: MoveData) -> MoveData:
+	if base == null:
+		return null
+	var key := base.get_instance_id()
+	if _z_cache.has(key):
+		return _z_cache[key]
+	var r: Dictionary = rule("zmove", {})
+	var z := base.copy()
+	z.id = base.id + "_z"
+	z.display_name = str(zmoves.get("names", {}).get(base.type, "Z-" + base.display_name))
+	var boost := float(r.get("power", 1.3))
+	z.power *= boost
+	if z.effect.has("dps"):
+		z.effect["dps"] = float(z.effect["dps"]) * boost
+	z.heal *= float(r.get("support", 1.5))
+	z.team_heal *= float(r.get("support", 1.5))
+	for stat in ["attack", "defense", "speed"]:
+		if z.buff.has(stat):
+			z.buff[stat] = float(z.buff[stat]) * float(r.get("support", 1.5))
+	var grow := float(r.get("size", 1.3))
+	match z.kind:
+		"projectile":
+			z.radius *= 1.2
+			z.explode_radius *= grow
+			z.reach *= float(r.get("range", 1.15))
+			z.pierce = z.pierce or z.explode_radius <= 0.0
+		"area":
+			z.area_radius *= grow
+		"dash":
+			z.dash_distance *= float(r.get("range", 1.15))
+			z.dash_pierce = true
+			if z.explode_radius <= 0.0:
+				z.explode_radius = float(r.get("dash_blast", 2.0))
+		"melee":
+			z.reach *= grow
+			z.arc = minf(360.0, z.arc + 40.0)
+	z.breaks_walls = z.power > 0.0
+	var extra: Dictionary = zmoves.get("moves", {}).get(base.display_name, {})
+	for field: String in extra:
+		var value: Variant = extra[field]
+		z.set(field, (value as Dictionary).duplicate(true) if value is Dictionary else value)
+	_z_cache[key] = z
+	return z
 
 
 func get_move(move_id: String) -> MoveData:

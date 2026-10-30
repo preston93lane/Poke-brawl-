@@ -425,10 +425,20 @@ func _heal_shot() -> void:
 			return
 
 
-## Gadgets: shields, heals and escapes when in trouble; speed to chase; smoke up close.
+## Gadgets: shields, heals and escapes when in trouble; speed to chase; smoke up close;
+## attack gadgets when the target is in reach; traps when someone is close behind.
 func _try_gadget(dir: Vector3, dist: float) -> bool:
-	var move := brawler.species.gadget_move
+	var move := brawler.gadget_move
 	var hurt := brawler.health < brawler.max_health * 0.45
+	if not move.trap.is_empty():
+		return dist < 3.5 and brawler.use_gadget(dir)
+	if not move.empower.is_empty():
+		return dist <= brawler.main_move.effective_reach() and brawler.ammo >= 1.0 and brawler.use_gadget(dir)
+	if move.refill_ammo:
+		return brawler.ammo < 1.0 and dist <= brawler.main_move.effective_reach() and brawler.use_gadget(dir)
+	if move.kind in ["projectile", "dash", "melee"]:
+		var line_of_sight := _has_line_of_sight(target.global_position)
+		return line_of_sight and dist <= move.effective_reach() + 0.3 and brawler.use_gadget(_lead_aim(move.speed, dist) if move.kind == "projectile" else dir)
 	if move.protect > 0.0:
 		return dist < 4.0 and hurt and brawler.use_gadget(dir)
 	if move.blink > 0.0:
@@ -439,8 +449,13 @@ func _try_gadget(dir: Vector3, dist: float) -> bool:
 		var chasing := brawler.main_move.is_close_range() and dist > preferred_range() + 1.5 and dist < 8.0
 		return (chasing or hurt) and brawler.use_gadget(dir)
 	if move.kind == "area":
-		return dist <= move.area_radius + 0.5 and brawler.use_gadget(dir)
+		return dist <= move.effective_reach() + 0.3 and brawler.use_gadget(dir, dist)
 	return false
+
+
+## Fires the super, as a Z-Move when that's charged.
+func _fire_super(aim: Vector3, dist := -1.0) -> bool:
+	return brawler.use_zmove(aim, dist) if brawler.zmove_ready() else brawler.use_super(aim, dist)
 
 
 func _try_super(dir: Vector3, dist: float, line_of_sight: bool) -> bool:
@@ -449,11 +464,11 @@ func _try_super(dir: Vector3, dist: float, line_of_sight: bool) -> bool:
 		var reach_ok := dist <= move.effective_reach() + 0.5
 		if reach_ok and (line_of_sight or move.lob or move.kind == "area"):
 			var aim := dir if move.kind != "projectile" else _lead_aim(move.speed, dist)
-			return brawler.use_super(aim, dist)
+			return _fire_super(aim, dist)
 		return false
 	# Heals, buffs and teleports: use when hurt, or right before a fight.
 	if brawler.health < brawler.max_health * 0.55 or (move.blink <= 0.0 and dist < 6.0):
-		return brawler.use_super(-dir if move.blink > 0.0 else dir)
+		return _fire_super(-dir if move.blink > 0.0 else dir)
 	return false
 
 

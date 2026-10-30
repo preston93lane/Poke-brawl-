@@ -124,12 +124,13 @@ func _showcase(out_dir: String, ids: PackedStringArray) -> void:
 
 
 ## A live bot match, every other frame saved as frame_0000.png... (turn into a clip with ffmpeg).
-## Arg: <arena>[,player,ally,ally,enemy,enemy,enemy][,frames]
+## Arg: <arena>[,player,ally,ally,enemy,enemy,enemy][,frames][,level]
 func _record(spec: String, out_dir: String) -> void:
 	var parts := spec.split(",")
 	var team: Array = parts.slice(1, 7) if parts.size() >= 7 else ["pikachu", "charmander", "squirtle", "onix", "geodude", "pidgeotto"]
 	var frames := int(parts[7]) if parts.size() > 7 else 240
-	GameData.match_settings = { "mode": "duel", "arena": parts[0], "species": team[0], "level": 20,
+	var level := int(parts[8]) if parts.size() > 8 else 20
+	GameData.match_settings = { "mode": "duel", "arena": parts[0], "species": team[0], "level": level,
 			"allies": [team[1], team[2]], "enemies": [team[3], team[4], team[5]], "difficulty": "normal" }
 	var main := MAIN_SCENE.instantiate()
 	main.show_intro = false
@@ -151,11 +152,13 @@ func _record(spec: String, out_dir: String) -> void:
 	get_tree().quit()
 
 
+## (move id "Z": the attacker's Z-Move.)
 ## One move used on a frozen target standing just in front of a wall (so pins
 ## and tombs show): move:<attacker>,<move id>[,<target>[,<arena>]]. Saves frames.
 func _move_demo(spec: String, out_dir: String) -> void:
 	var parts := spec.split(",")
-	var move := GameData.get_move(parts[1])
+	var z_demo := parts[1] == "Z"
+	var move := GameData.get_move(parts[1]) if not z_demo else null
 	var target_id := parts[2] if parts.size() > 2 else "geodude"
 	GameData.match_settings = { "mode": "duel", "arena": parts[3] if parts.size() > 3 else "pewter_gym", "species": parts[0], "level": 20,
 			"allies": ["pikachu", "pikachu"], "enemies": [target_id, "pikachu", "pikachu"], "difficulty": "normal" }
@@ -190,7 +193,13 @@ func _move_demo(spec: String, out_dir: String) -> void:
 		await get_tree().physics_frame
 	var f := 0
 	for step in 200:
-		if step == 10:
+		if step == 10 and z_demo:
+			player.set_build("", "", true)
+			player.z_charge = 1.0
+			player.super_charge = 1.0
+			player._attack_lock = 0.0
+			player.use_zmove(Vector3(0, 0, -1), 3.0)
+		elif step == 10:
 			player._on_attack(Vector3(0, 0, -1), move)
 			player._perform(move, Vector3(0, 0, -1), 3.0)
 			player._apply_support(move, Vector3(0, 0, -1))
@@ -252,6 +261,18 @@ func _menu_shot(screen: String, out_dir: String) -> void:
 			for i in 5:
 				await get_tree().process_frame
 			menu._details_scroll.scroll_vertical = 900
+		"kit":
+			Profile.data["dev"] = false
+			Profile.set_level("charmander", 50)
+			menu._species = GameData.species["charmander"]
+			menu.show_select("duel")
+			for i in 5:
+				await get_tree().process_frame
+			for y in [900, 1300, 1700]:
+				menu._details_scroll.scroll_vertical = y
+				await get_tree().process_frame
+				await get_tree().process_frame
+				get_viewport().get_texture().get_image().save_png("%s/menu_kit_%d.png" % [out_dir, y])
 		"store":
 			menu.show_store("")
 		"bag":

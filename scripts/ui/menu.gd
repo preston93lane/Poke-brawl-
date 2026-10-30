@@ -1021,9 +1021,7 @@ func _build_editor(s: SpeciesData) -> void:
 	_details.add_child(row)
 	_details.add_child(UiKit.move_card(GameData.get_move(_main)))
 
-	if s.gadget_move:
-		_details.add_child(_section("GADGET  (%d uses per match)" % int(GameData.rule("gadget/uses", 3))))
-		_details.add_child(UiKit.move_card(s.gadget_move))
+	_kit_editor(s)
 
 	_details.add_child(_section("SUPER  (pick per stage: its own, an earlier one, or a TM super)"))
 	for stage in GameData.evolution_line(s.id):
@@ -1082,6 +1080,126 @@ func _build_editor(s: SpeciesData) -> void:
 			branches.add_child(b)
 		_details.add_child(branches)
 
+
+
+## Gadget and Ability pickers (signature ones unlock with line level) and the Z-Move preview.
+func _kit_editor(s: SpeciesData) -> void:
+	var kit := GameData.kit(s.id)
+	var glevels: Array = GameData.rule("kits/gadget_levels", [10, 30])
+	var alevels: Array = GameData.rule("kits/ability_levels", [20, 40])
+	_details.add_child(_section("GADGET  (%d uses per match)" % int(GameData.rule("gadget/uses", 3))))
+	var options := Profile.gadget_options(s.id)
+	var picked := Profile.chosen_gadget(s.id)
+	var row := HFlowContainer.new()
+	var group := ButtonGroup.new()
+	var all_gadgets: Array = [s.gadget_move.id if s.gadget_move else ""]
+	all_gadgets.append_array(kit.get("gadgets", []))
+	for i in all_gadgets.size():
+		var id := str(all_gadgets[i])
+		var move := GameData.get_move(id)
+		if move == null:
+			continue
+		var unlocked := id in options
+		var text := move.display_name if unlocked else "%s (Lv %d)" % [move.display_name, int(glevels[mini(i - 1, glevels.size() - 1)])]
+		var b := _toggle(text, group, id == picked)
+		b.disabled = not unlocked
+		b.pressed.connect(func() -> void:
+			Profile.set_loadout(s.id, "gadget", id)
+			_editor_refresh.call())
+		row.add_child(b)
+	_details.add_child(row)
+	if GameData.get_move(picked):
+		_details.add_child(UiKit.move_card(GameData.get_move(picked)))
+
+	var abilities: Array = kit.get("abilities", [])
+	if abilities.is_empty():
+		return
+	_details.add_child(_section("ABILITY  (always on)"))
+	var a_options := Profile.ability_options(s.id)
+	var a_picked := Profile.chosen_ability(s.id)
+	var a_row := HFlowContainer.new()
+	var a_group := ButtonGroup.new()
+	for i in abilities.size():
+		var id := str(abilities[i])
+		var def := GameData.ability(id)
+		var unlocked := id in a_options
+		var text := str(def.get("name", id)) if unlocked else "%s (Lv %d)" % [def.get("name", id), int(alevels[mini(i, alevels.size() - 1)])]
+		var b := _toggle(text, a_group, id == a_picked)
+		b.disabled = not unlocked
+		b.pressed.connect(func() -> void:
+			Profile.set_loadout(s.id, "ability", id)
+			_editor_refresh.call())
+		a_row.add_child(b)
+	_details.add_child(a_row)
+	var shown := a_picked if a_picked != "" else str(abilities[0])
+	_details.add_child(_ability_card(shown, 0 if a_picked != "" else int(alevels[0])))
+	_zmove_preview(s, Profile.zmove_unlocked(s.id))
+
+
+## The Z-Move of each final stage's chosen super.
+func _zmove_preview(s: SpeciesData, unlocked: bool) -> void:
+	var finals: Array[SpeciesData] = []
+	for stage in GameData.evolution_line(s.id):
+		if stage.evolves_to == "" and not stage.legendary:
+			finals.append(stage)
+	if finals.is_empty():
+		return
+	var level := int(GameData.rule("kits/zmove_level", 50))
+	_details.add_child(_section("Z-MOVE  (final evolution; %s)" % ("charged by damage and supers, press Z" if unlocked else "unlocks at Lv %d" % level)))
+	for stage in finals:
+		var pick := Profile.chosen_super(stage.id)
+		var base: MoveData = stage.super_move
+		if pick.begins_with("tmsuper_"):
+			base = GameData.get_move(pick + "_" + str(GameData.STYLE_SHAPES.get(stage.style, "shot")))
+		elif pick != "":
+			base = GameData.get_move(pick)
+		var z := GameData.z_move(base)
+		var line := HBoxContainer.new()
+		line.add_child(UiKit.sprite(stage.sprite, 40))
+		line.add_child(UiKit.move_card(z, 0 if unlocked else level))
+		_details.add_child(line)
+
+
+func _ability_card(id: String, unlock_level := 0) -> PanelContainer:
+	var def := GameData.ability(id)
+	var card := PanelContainer.new()
+	card.add_theme_stylebox_override("panel", UiKit.box(Color(0.2, 0.2, 0.32), 10, 8))
+	var v := VBoxContainer.new()
+	var top := HBoxContainer.new()
+	top.add_theme_constant_override("separation", 8)
+	if unlock_level > 0:
+		top.add_child(UiKit.label("Lv%d" % unlock_level, 18, Color(1, 0.85, 0.4)))
+	top.add_child(UiKit.label(str(def.get("name", id)), 22))
+	top.add_child(UiKit.label("ABILITY", 16, Color(0.75, 0.75, 1.0)))
+	v.add_child(top)
+	var desc := UiKit.label(str(def.get("desc", "")), 16, Color(0.85, 0.88, 0.95))
+	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	v.add_child(desc)
+	card.add_child(v)
+	return card
+
+
+## Pokédex (all Pokémon): the line's gadgets, Abilities and Z-Move with unlock levels.
+func _kit_info(s: SpeciesData) -> void:
+	var kit := GameData.kit(s.id)
+	var glevels: Array = GameData.rule("kits/gadget_levels", [10, 30])
+	var alevels: Array = GameData.rule("kits/ability_levels", [20, 40])
+	_details.add_child(_section("GADGETS"))
+	if s.gadget_move:
+		_details.add_child(UiKit.move_card(s.gadget_move))
+	var gadgets: Array = kit.get("gadgets", [])
+	for i in gadgets.size():
+		var move := GameData.get_move(str(gadgets[i]))
+		if move:
+			_details.add_child(UiKit.move_card(move, int(glevels[mini(i, glevels.size() - 1)])))
+	var abilities: Array = kit.get("abilities", [])
+	if not abilities.is_empty():
+		_details.add_child(_section("ABILITIES"))
+		for i in abilities.size():
+			_details.add_child(_ability_card(str(abilities[i]), int(alevels[mini(i, alevels.size() - 1)])))
+	if s.evolves_to == "" and not s.legendary:
+		_details.add_child(_section("Z-MOVE"))
+		_details.add_child(UiKit.move_card(GameData.z_move(s.super_move), int(GameData.rule("kits/zmove_level", 50))))
 
 
 ## HMs: one or two per line; teach with an HM item, then pick the one to bring.
@@ -1226,9 +1344,7 @@ func _show_dex_entry(s: SpeciesData, keep_scroll := false) -> void:
 		return
 	_details.add_child(_section("SUPER  (this stage's own)"))
 	_details.add_child(UiKit.move_card(s.super_move))
-	if s.gadget_move:
-		_details.add_child(_section("GADGET"))
-		_details.add_child(UiKit.move_card(s.gadget_move))
+	_kit_info(s)
 	_details.add_child(_section("MAIN ATTACKS"))
 	var have := Profile.unlocked_mains(s.id)
 	for entry in s.learnset:

@@ -529,6 +529,75 @@ func super_choices(species_id: String) -> Dictionary:
 	return result
 
 
+# --- Kits: signature gadgets, Abilities, Z-Move (data/kits.json) ---------------
+
+## Gadgets this line can bring: the default one, plus its signature gadgets as they unlock.
+func gadget_options(species_id: String) -> Array[String]:
+	var result: Array[String] = []
+	var s: SpeciesData = GameData.species.get(GameData.family_root(species_id))
+	if s and s.gadget_move:
+		result.append(s.gadget_move.id)
+	var levels: Array = GameData.rule("kits/gadget_levels", [10, 30])
+	var gadgets: Array = GameData.kit(species_id).get("gadgets", [])
+	for i in gadgets.size():
+		if (is_dev() or level_of(species_id) >= int(levels[mini(i, levels.size() - 1)])) and GameData.moves.has(gadgets[i]):
+			result.append(str(gadgets[i]))
+	return result
+
+
+## The gadget to bring: your pick, else the first signature gadget once unlocked.
+func chosen_gadget(species_id: String) -> String:
+	var options := gadget_options(species_id)
+	var pick := str(loadout(species_id).get("gadget", ""))
+	if pick in options:
+		return pick
+	return options[1] if options.size() > 1 else (options[0] if not options.is_empty() else "")
+
+
+func ability_options(species_id: String) -> Array[String]:
+	var result: Array[String] = []
+	var levels: Array = GameData.rule("kits/ability_levels", [20, 40])
+	var list: Array = GameData.kit(species_id).get("abilities", [])
+	for i in list.size():
+		if is_dev() or level_of(species_id) >= int(levels[mini(i, levels.size() - 1)]):
+			result.append(str(list[i]))
+	return result
+
+
+func chosen_ability(species_id: String) -> String:
+	var options := ability_options(species_id)
+	var pick := str(loadout(species_id).get("ability", ""))
+	if pick in options:
+		return pick
+	return options[0] if not options.is_empty() else ""
+
+
+func zmove_unlocked(species_id: String) -> bool:
+	return is_dev() or level_of(species_id) >= int(GameData.rule("kits/zmove_level", 50))
+
+
+## A random build a bot of this line could have at `level` (same unlock levels as yours).
+static func bot_build(species_id: String, level: int) -> Dictionary:
+	var kit := GameData.kit(species_id)
+	var gadgets: Array = []
+	var glevels: Array = GameData.rule("kits/gadget_levels", [10, 30])
+	var list: Array = kit.get("gadgets", [])
+	for i in list.size():
+		if level >= int(glevels[mini(i, glevels.size() - 1)]):
+			gadgets.append(list[i])
+	var abilities: Array = []
+	var alevels: Array = GameData.rule("kits/ability_levels", [20, 40])
+	var alist: Array = kit.get("abilities", [])
+	for i in alist.size():
+		if level >= int(alevels[mini(i, alevels.size() - 1)]):
+			abilities.append(alist[i])
+	return {
+		"gadget": str(gadgets.pick_random()) if not gadgets.is_empty() else "",
+		"ability": str(abilities.pick_random()) if not abilities.is_empty() else "",
+		"z": level >= int(GameData.rule("kits/zmove_level", 50)),
+	}
+
+
 func owns_tm_super(super_id: String) -> bool:
 	return has_tm("tm_" + super_id.trim_prefix("tmsuper_"))
 

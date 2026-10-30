@@ -18,6 +18,7 @@ var aim_stick: VirtualJoystick
 var gadget_button: TouchButton
 var hm_button: TouchButton
 var super_button: TouchButton
+var z_button: TouchButton
 
 var _buffered := ""
 var _buffer_time := 0.0
@@ -36,6 +37,8 @@ func _ready() -> void:
 	super_button.aim_released.connect(_on_super_aimed)
 	if hm_button:
 		hm_button.pressed.connect(func() -> void: _try("hm"))
+	if z_button:
+		z_button.pressed.connect(func() -> void: _try("zmove"))
 
 
 func _physics_process(delta: float) -> void:
@@ -80,6 +83,11 @@ func _physics_process(delta: float) -> void:
 	super_button.label = brawler.current_super().display_name.to_upper()
 	if hm_button and hm_button.visible:
 		hm_button.set_cooldown(brawler.hm_cooldown_ratio())
+	if z_button:
+		z_button.visible = brawler.z_available()
+		if z_button.visible:
+			z_button.set_charge(brawler.z_charge)
+			z_button.label = "Z-MOVE" if brawler.z_charge < 1.0 or brawler.super_charge >= 1.0 else "Z: NEED SUPER"
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -96,6 +104,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			_try("super")
 		KEY_Q:
 			_try("hm")
+		KEY_R:
+			_try("zmove")
 
 
 ## Streams fire while held, except while carrying the Brawl Ball (then it's a kick).
@@ -139,6 +149,8 @@ func _perform(action: String) -> bool:
 			return _do_super()
 		"hm":
 			return _do_hm()
+		"zmove":
+			return _do_super(true)
 	return false
 
 
@@ -220,17 +232,24 @@ func _auto_target(reach: float) -> Brawler:
 
 ## Gadgets aim with the right stick if it's held; teleports go away from the nearest enemy.
 func _do_gadget() -> bool:
-	var move := brawler.species.gadget_move
+	var move := brawler.gadget_move
 	if move == null:
 		return false
 	var dir := brawler.facing
+	var distance := -1.0
 	if aim_stick.output != Vector2.ZERO:
 		dir = _to_world(aim_stick.output)
+		distance = aim_stick.output.length() * move.reach
 	elif move.blink > 0.0:
 		var threat := brawler.find_nearest_enemy(10.0)
 		if threat:
 			dir = brawler.global_position - threat.global_position
-	return brawler.use_gadget(dir)
+	elif move.kind != "self":
+		var target := _auto_target(move.effective_reach())
+		if target:
+			dir = _predict(target, move)
+			distance = Vector2(dir.x, dir.z).length()
+	return brawler.use_gadget(dir, distance)
 
 
 ## HMs aim with the right stick if it's held, else at the nearest enemy (Fly and
@@ -258,10 +277,10 @@ func _on_super_aimed(output: Vector2) -> void:
 
 
 ## Aimed with the right stick if it's held, otherwise at the best visible enemy.
-func _do_super() -> bool:
+func _do_super(z := false) -> bool:
 	var dir := brawler.facing
 	var distance := -1.0
-	var move := brawler.current_super()
+	var move := GameData.z_move(brawler.current_super()) if z else brawler.current_super()
 	if aim_stick.output != Vector2.ZERO:
 		dir = _to_world(aim_stick.output)
 		distance = aim_stick.output.length() * move.reach
@@ -272,7 +291,7 @@ func _do_super() -> bool:
 			distance = Vector2(dir.x, dir.z).length()
 			if move.blink > 0.0:
 				dir = -dir  # Teleport away from danger by default.
-	return brawler.use_super(dir, distance)
+	return brawler.use_zmove(dir, distance) if z else brawler.use_super(dir, distance)
 
 
 ## The camera never rotates around Y, so screen right = +X and screen down = +Z.

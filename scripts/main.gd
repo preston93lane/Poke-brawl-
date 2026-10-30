@@ -118,6 +118,7 @@ func _ready() -> void:
 	player_controller.gadget_button = hud.gadget_button
 	player_controller.super_button = hud.super_button
 	player_controller.hm_button = hud.hm_button
+	player_controller.z_button = hud.z_button
 	hud.set_hm(player.hm_move())
 	player.add_child(player_controller)
 
@@ -278,6 +279,12 @@ func _spawn(species_id: String, level: int, team: int, is_player: bool, main_id 
 		brawler.super_choices = Profile.super_choices(species_id)
 		if player_hm in Profile.learned_hms(species_id):
 			brawler.hm_id = player_hm
+		brawler.set_build(Profile.chosen_gadget(species_id), Profile.chosen_ability(species_id), Profile.zmove_unlocked(species_id))
+	else:
+		var build := Profile.bot_build(species_id, level)
+		var legendary: bool = GameData.species[species_id].legendary
+		brawler.set_build(str(build["gadget"]), str(build["ability"]), bool(build["z"]) and not legendary)
+	brawler.z_activated.connect(_on_z_activated)
 	# The player picks shiny in the menu; bots are shiny once in a while.
 	brawler.shiny = (player_shiny and Profile.has_shiny(species_id)) if is_player else randf() < float(GameData.rule("shiny_chance", 0.06))
 	_spawn_index[brawler] = teams[team].size()
@@ -408,7 +415,15 @@ func _on_brawler_died(victim: Brawler, killer: Brawler) -> void:
 
 func _refresh_hud_moves() -> void:
 	_hud_main = player.main_move
-	hud.set_moves(player.main_move, player.species.gadget_move)
+	hud.set_moves(player.main_move, player.gadget_move)
+
+
+## Z-Moves get the screen: their name in big letters, and a flash when it's yours.
+func _on_z_activated(brawler: Brawler, move: MoveData) -> void:
+	hud.announce("%s: %s!" % [brawler.species.display_name.to_upper(), move.display_name.to_upper()])
+	if brawler == player:
+		hud.flash(GameData.type_color(move.type))
+	camera.shake(0.3)
 
 
 func _on_brawler_evolved(brawler: Brawler, from_name: String) -> void:

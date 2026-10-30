@@ -3,10 +3,11 @@ extends Control
 ## buttons to where your thumbs like them. Saved to GameData settings and used
 ## by the HUD in every match.
 
-const LABELS := { "move": "MOVE", "aim": "ATTACK", "gadget": "GADGET", "super": "SUPER", "hm": "HM" }
+const LABELS := { "move": "MOVE", "aim": "ATTACK", "gadget": "GADGET", "super": "SUPER", "hm": "HM", "zmove": "Z" }
 const COLORS := {
 	"move": Color(0.85, 0.9, 1.0), "aim": Color(1, 0.85, 0.3),
 	"gadget": Color(0.4, 0.9, 0.6), "super": Color(1, 0.75, 0.15), "hm": Color(0.75, 0.6, 1.0),
+	"zmove": Color(1, 0.9, 0.4),
 }
 
 var layout: Dictionary = {}
@@ -59,7 +60,7 @@ func _gui_input(event: InputEvent) -> void:
 		if mb.pressed:
 			_dragging = ""
 			# Buttons sit on top of the sticks, so check them first.
-			for key in ["hm", "gadget", "super", "aim", "move"]:
+			for key in ["zmove", "hm", "gadget", "super", "aim", "move"]:
 				if mb.position.distance_to(_center(key)) <= _radius(key):
 					_dragging = key
 					_grab_offset = _center(key) - mb.position
@@ -98,7 +99,7 @@ func _draw() -> void:
 	draw_string(font, Vector2(0, size.y * 0.3 - 10), "Drag the controls. Each stick works anywhere on its half of the screen (below this line).",
 			HORIZONTAL_ALIGNMENT_CENTER, size.x, 18, Color(1, 1, 1, 0.75))
 	draw_line(Vector2(0, size.y * 0.3), Vector2(size.x, size.y * 0.3), Color(1, 1, 1, 0.2), 2.0)
-	for key in ["move", "aim", "gadget", "super", "hm"]:
+	for key in ["move", "aim", "gadget", "super", "hm", "zmove"]:
 		var c := _center(key)
 		var r := _radius(key)
 		var color: Color = COLORS[key]

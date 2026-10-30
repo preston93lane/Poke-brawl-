@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 53,
 	"style": "healer",
-	"stats": {"hp": 2900, "attack": 125, "defense": 116, "speed": 111},
+	"stats": {"hp": 2750, "attack": 125, "defense": 116, "speed": 111},
 	"super": "mr_mime_super",
 	"gadget": "gadget_heal_pulse",
 	"moves": [

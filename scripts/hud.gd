@@ -17,6 +17,8 @@ var _summary: Control
 @onready var super_button: TouchButton = $SuperButton
 ## HM ability button (made in code; hidden unless an HM is equipped).
 var hm_button: TouchButton
+var z_button: TouchButton
+var _flash: ColorRect
 @onready var matchup_label: Label = $Matchup
 @onready var status_label: Label = $Status
 @onready var announcement: Label = $Announcement
@@ -67,6 +69,20 @@ func _build_buttons() -> void:
 	hm_button.visible = false
 	add_child(hm_button)
 	move_child(hm_button, super_button.get_index() + 1)
+	z_button = TouchButton.new()
+	z_button.label = "Z-MOVE"
+	z_button.color = Color(1.0, 0.82, 0.25)
+	z_button.icon_type = "super"
+	z_button.display = "charge"
+	z_button.visible = false
+	add_child(z_button)
+	move_child(z_button, super_button.get_index() + 1)
+	_flash = ColorRect.new()
+	_flash.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_flash.color = Color(1, 1, 1, 0)
+	add_child(_flash)
+	move_child(_flash, 0)
 	var kit_theme := UiKit.make_theme()
 	var menu := UiKit.button("MENU", func() -> void: menu_requested.emit(), 16)
 	menu.theme = kit_theme
@@ -115,7 +131,8 @@ func apply_layout(layout: Dictionary) -> void:
 	var swapped := bool(layout.get("swapped", false))
 	_place_stick(move_stick, layout["move"], 0.5 if swapped else 0.0, scale)
 	_place_stick(aim_stick, layout["aim"], 0.0 if swapped else 0.5, scale)
-	for entry in [[gadget_button, layout["gadget"]], [super_button, layout["super"]], [hm_button, layout.get("hm", [0.93, 0.5])]]:
+	for entry in [[gadget_button, layout["gadget"]], [super_button, layout["super"]], [hm_button, layout.get("hm", [0.93, 0.5])],
+			[z_button, layout.get("zmove", [0.56, 0.52])]]:
 		var button: TouchButton = entry[0]
 		var at: Array = entry[1]
 		var half := 55.0 * scale
@@ -216,6 +233,12 @@ func add_kill(killer: Brawler, victim: Brawler) -> void:
 	_scoreboard.add_kill(killer, victim)
 
 
+## A quick tinted flash over the whole screen (your Z-Move).
+func flash(color: Color) -> void:
+	_flash.color = Color(color, 0.35)
+	create_tween().tween_property(_flash, "color:a", 0.0, 0.6)
+
+
 func announce(text: String) -> void:
 	announcement.text = text
 	if _announce_tween:
@@ -240,6 +263,7 @@ func show_result(result_name: String, rows: Array[Dictionary] = [], stat_name :=
 	gadget_button.set_enabled(false)
 	super_button.set_enabled(false)
 	hm_button.set_enabled(false)
+	z_button.set_enabled(false)
 	result_title.text = { "victory": "VICTORY!", "defeat": "DEFEAT", "draw": "DRAW" }.get(result_name, "DRAW")
 	result_title.modulate = { "victory": Color(1.0, 0.85, 0.2), "defeat": Color(1.0, 0.35, 0.3) }.get(result_name, Color(0.8, 0.85, 1.0))
 	result_hint.visible = subtitle != ""

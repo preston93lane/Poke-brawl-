@@ -92,6 +92,11 @@ func start() -> void:
 		ace.hp_scale = float(rules.get("ace_hp_hard" if str(run["difficulty"]) == "hard" else "ace_hp", 1.5))
 		ace.refresh_stats()
 		ace.health = ace.max_health
+		# The leader's ace has its line's first Ability and a Z-Move half charged.
+		var abilities: Array = GameData.kit(ace.species.id).get("abilities", [])
+		ace.set_build("", str(abilities[0]) if not abilities.is_empty() else "", true)
+		ace.z_any_stage = true
+		ace.z_charge = float(rules.get("ace_z_charge", 0.5))
 		for child in ace.get_children():
 			if child is BotController:
 				(child as BotController).set_difficulty("hard")

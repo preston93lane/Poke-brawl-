@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 40,
 	"style": "healer",
-	"stats": {"hp": 3500, "attack": 103, "defense": 94, "speed": 89},
+	"stats": {"hp": 3350, "attack": 103, "defense": 94, "speed": 89},
 	"super": "clefairy_super",
 	"gadget": "gadget_heal_pulse",
 	"evolve_level": 25,

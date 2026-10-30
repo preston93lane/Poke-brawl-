@@ -553,5 +553,10 @@
 				"chance": 0.4
 			}
 		}
+	},
+	"Heal Pulse": {
+		"gadget": {
+			"team_heal": 0.2
+		}
 	}
 }

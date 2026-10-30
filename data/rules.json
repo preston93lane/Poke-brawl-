@@ -229,5 +229,25 @@
 		"single_stage": 0.9,
 		"base_fallback": 0.6,
 		"mid_fallback": 0.8
-	}
+	},
+	"kits": {
+		"_comment": "Line level needed for each signature gadget, Ability and the Z-Move (data/kits.json, data/abilities.json, data/zmoves.json).",
+		"gadget_levels": [10, 30],
+		"ability_levels": [20, 40],
+		"zmove_level": 50
+	},
+	"zmove": {
+		"_comment": "Z-Move meter: fills from damage dealt (charge = this x the super's charge) and per super used; activating gives a short boost and fires the powered-up super. power/size/range/support multiply the super.",
+		"charge": 3.0,
+		"per_super": 0.15,
+		"boost_time": 5.0,
+		"boost_speed": 0.15,
+		"boost_damage": 0.1,
+		"power": 1.3,
+		"size": 1.3,
+		"range": 1.15,
+		"support": 1.5,
+		"dash_blast": 2.0
+	},
+	"cc_immunity": 1.5
 }

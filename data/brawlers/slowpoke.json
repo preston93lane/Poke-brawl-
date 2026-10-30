@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 44,
 	"style": "tank_wave",
-	"stats": {"hp": 4950, "attack": 106, "defense": 92, "speed": 81},
+	"stats": {"hp": 4800, "attack": 106, "defense": 92, "speed": 81},
 	"super": "slowpoke_super",
 	"gadget": "gadget_protect",
 	"evolve_level": 37,

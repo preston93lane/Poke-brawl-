@@ -115,6 +115,19 @@ var stat_change: Dictionary = {}
 ##   "duration" s ("pull" m/s), dealing "share" of the power over that time.
 var control: Dictionary = {}
 
+# Signature gadgets (data/moves/gadgets.json)
+## { "time": s, "power": damage multiplier, "effect": status added } for your main attacks.
+var empower: Dictionary = {}
+## { "radius": m, "life": s }: a hidden trap at your feet that springs on the first enemy.
+var trap: Dictionary = {}
+## Metres whoever hits you is knocked back while this move's shield is up (Detect).
+var counter := 0.0
+var refill_ammo := false
+## Area strikes that land again this many more times (Z Thunder).
+var repeat := 0
+## Card text that replaces the generated summary.
+var desc := ""
+
 
 static func from_dict(move_id: String, d: Dictionary) -> MoveData:
 	var m := MoveData.new()
@@ -183,6 +196,24 @@ static func from_dict(move_id: String, d: Dictionary) -> MoveData:
 	m.stat_change = stat_value if stat_value is Dictionary else {}
 	var control_value: Variant = d.get("control", {})
 	m.control = control_value if control_value is Dictionary else {}
+	var empower_value: Variant = d.get("empower", {})
+	m.empower = empower_value if empower_value is Dictionary else {}
+	var trap_value: Variant = d.get("trap", {})
+	m.trap = trap_value if trap_value is Dictionary else {}
+	m.counter = float(d.get("counter", 0.0))
+	m.refill_ammo = bool(d.get("refill_ammo", false))
+	m.repeat = int(d.get("repeat", 0))
+	m.desc = str(d.get("desc", ""))
+	return m
+
+
+## A copy (dictionaries copied too), for building variants such as Z-Moves.
+func copy() -> MoveData:
+	var m := MoveData.new()
+	for p in get_property_list():
+		if int(p["usage"]) & PROPERTY_USAGE_SCRIPT_VARIABLE:
+			var value: Variant = get(p["name"])
+			m.set(p["name"], (value as Dictionary).duplicate(true) if value is Dictionary else value)
 	return m
 
 

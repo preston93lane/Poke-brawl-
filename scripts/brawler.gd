@@ -6,6 +6,7 @@ extends CharacterBody3D
 
 signal died(victim: Brawler, killer: Brawler)
 signal evolved(brawler: Brawler, from_name: String)
+signal z_activated(brawler: Brawler, move: MoveData)
 
 const PROJECTILE_SCENE := preload("res://scenes/projectile.tscn")
 ## Horizontal hit radius used by melee checks and shots (a little generous, like Brawl Stars).
@@ -43,6 +44,36 @@ var main_move: MoveData
 ## Index of the chosen variant, kept when evolving (each stage's own version).
 var main_index := 0
 var gadget_uses := 3
+## The gadget this match: a line's signature gadget (data/kits.json) or the default one.
+var gadget_move: MoveData
+## Equipped Ability (data/abilities.json), "" = none.
+var ability_id := ""
+var _ability: Dictionary = {}
+## Z-Move: final evolutions only (z_any_stage lets gym aces use it at any stage).
+var z_enabled := false
+var z_any_stage := false
+var z_charge := 0.0
+var _z_time := 0.0
+var _z_firing := false
+var _z_aura: CPUParticles3D
+## Seconds left immune to stuns, grabs, pins and tombs (after one ends).
+var _cc_immune := 0.0
+var _was_controlled := false
+## Gadget empower (Ember Charge, Charge): main attacks hit harder / add a status.
+var _empower: Dictionary = {}
+var _empower_time := 0.0
+## Detect: knockback on whoever hits you while shielded.
+var _counter := 0.0
+var _sturdy_used := false
+var _speed_boost := 0.0
+var _speed_boost_tick := 0.0
+var _shed_timer := 0.0
+## Pressure: our super charges slower while this runs.
+var _pressure_time := 0.0
+var _pressure_mult := 1.0
+var _terrain_timer := 0.0
+var _on_terrain := false
+var _traps: Array[Node] = []
 
 var max_health := 3000.0
 var attack := 100.0
@@ -65,6 +96,8 @@ var is_legendary := false
 var size_scale := 1.0
 ## Supers used this match (daily challenges).
 var supers_used := 0
+## Z-Moves used this match (balance simulations).
+var zmoves_used := 0
 ## Multiplies the damage this brawler deals (raid bosses hit softer than their size suggests).
 var damage_scale := 1.0
 ## Multiplies max HP (a gym leader's ace); kept through evolving and Power Ups.
@@ -238,6 +271,7 @@ func setup(species_id: String, p_level: int, p_team: int, p_is_player: bool, p_a
 	is_player = p_is_player
 	arena = p_arena
 	main_move = _pick_move("main", main_id)
+	gadget_move = species.gadget_move
 	var options := available_moves("main")
 	main_index = maxi(0, options.find(main_move))
 	gadget_uses = int(GameData.rule("gadget/uses", 3))
@@ -255,6 +289,7 @@ func _ready() -> void:
 	_apply_loadout_visuals()
 	health = max_health
 	ammo = max_ammo()
+	_intimidate.call_deferred()
 
 
 func _physics_process(delta: float) -> void:
@@ -350,7 +385,7 @@ func get_speed() -> float:
 	if _windup_time > 0.0:
 		return 0.0  # Planted while winding up a slam.
 	var slow := 1.0 - _slow_amount if _slow_time > 0.0 else 1.0
-	return move_speed * _stat_multiplier("speed") * slow
+	return move_speed * (_stat_multiplier("speed") + _ability_speed() + (float(GameData.rule("zmove/boost_speed", 0.15)) if _z_time > 0.0 else 0.0)) * slow
 
 
 ## Apply an item from data/items.json. Boosts last until you faint.
@@ -393,6 +428,182 @@ func protect(seconds: float) -> void:
 func _buff(stat: String) -> float:
 	var b: Dictionary = _buffs.get(stat, {})
 	return float(b.get("amount", 0.0)) if float(b.get("time", 0.0)) > 0.0 else 0.0
+
+
+# --- Builds: gadget, Ability, Z-Move --------------------------------------------
+
+## Equips a gadget (move id, "" = keep the default), an Ability ("" = none) and the Z-Move.
+func set_build(gadget_id: String, p_ability: String, p_z: bool) -> void:
+	var g := GameData.get_move(gadget_id) if gadget_id != "" else null
+	if g and g.slot == "gadget":
+		gadget_move = g
+	ability_id = p_ability if GameData.abilities.has(p_ability) else ""
+	_ability = GameData.ability(ability_id)
+	z_enabled = p_z
+
+
+func ability_effect() -> String:
+	return str(_ability.get("effect", ""))
+
+
+## True when the Z-Move can be used at this stage (final evolutions, or aces).
+func z_available() -> bool:
+	return z_enabled and (species.evolves_to == "" or z_any_stage)
+
+
+func zmove_ready() -> bool:
+	return z_available() and z_charge >= 1.0 and super_ready()
+
+
+## Fires the Z-Move: the powered-up super, plus a few seconds of extra speed and damage.
+func use_zmove(direction: Vector3, distance := -1.0) -> bool:
+	if not zmove_ready():
+		return false
+	var move := GameData.z_move(current_super())
+	_z_firing = true
+	var fired := use_super(direction, distance)
+	_z_firing = false
+	if not fired:
+		return false
+	z_charge = 0.0
+	zmoves_used += 1
+	_z_time = float(GameData.rule("zmove/boost_time", 5.0))
+	if _z_aura == null:
+		_z_aura = Vfx.aura(move.type)
+		_z_aura.amount = 18
+		add_child(_z_aura)
+	_z_aura.emitting = true
+	MoveFx.decal(get_parent(), global_position, "star", Color(GameData.type_color(move.type), 0.8), 3.0, 0.6, 1.6)
+	z_activated.emit(self, move)
+	return true
+
+
+## Extra speed from the Ability (terrain, Speed Boost).
+func _ability_speed() -> float:
+	if _ability.has("speed_bonus"):
+		return float(_ability["speed_bonus"])
+	match ability_effect():
+		"terrain_speed":
+			return float(_ability.get("speed", 0.15)) if _on_terrain else 0.0
+		"speed_boost":
+			return _speed_boost
+	return 0.0
+
+
+## Damage multiplier from our Ability, gadget empower and Z boost when we hit `target` with `move`.
+func outgoing_mult(move: MoveData, target: Brawler) -> float:
+	var m := 1.0
+	match ability_effect():
+		"pinch":
+			if move.type == str(_ability.get("type", "")) and health <= max_health * float(_ability.get("below", 0.34)):
+				m += float(_ability.get("bonus", 0.2))
+		"technician":
+			if move.count > 1 or move.burst_count > 1:
+				m += float(_ability.get("bonus", 0.12))
+		"sniper":
+			if target and Vector2(target.global_position.x - global_position.x, target.global_position.z - global_position.z).length() > float(_ability.get("distance", 5.0)):
+				m += float(_ability.get("bonus", 0.12))
+		"iron_fist":
+			if move.is_close_range() and str(MoveLook.of(move).get("melee", "")) == "punch":
+				m += float(_ability.get("bonus", 0.15))
+		"guts":
+			if has_status():
+				m += float(_ability.get("bonus", 0.2))
+		"hustle":
+			m += float(_ability.get("bonus", 0.12))
+	if _empower_time > 0.0 and move.slot == "main":
+		m *= float(_empower.get("power", 1.0))
+	if _z_time > 0.0:
+		m *= 1.0 + float(GameData.rule("zmove/boost_damage", 0.1))
+	return m
+
+
+## Damage multiplier from our Ability when we're hit by `move` (Thick Fat, Levitate).
+func incoming_mult(move: MoveData) -> float:
+	if ability_effect() == "resist" and move.type in (_ability.get("types", []) as Array):
+		return float(_ability.get("mult", 1.0))
+	return 1.0
+
+
+## Static, Flame Body, Poison Point, Effect Spore, Rough Skin: close-range attackers pay.
+func _contact(attacker: Brawler, move: MoveData, amount: float) -> void:
+	if ability_effect() != "contact" or not move.is_close_range() or not is_instance_valid(attacker) or attacker == self or attacker.is_dead:
+		return
+	if _ability.has("recoil"):
+		attacker.take_damage(amount * float(_ability["recoil"]), self)
+	if _ability.has("status"):
+		attacker._apply_effect(_ability["status"], self, str(_ability.get("status_type", "")))
+
+
+## Intimidate: lower nearby enemies' Attack (on spawn and evolution).
+func _intimidate() -> void:
+	if ability_effect() != "intimidate" or not is_inside_tree():
+		return
+	for other in enemies():
+		if other.global_position.distance_to(global_position) <= float(_ability.get("radius", 6.0)):
+			other.apply_stat_change({ "attack": float(_ability.get("attack", -0.15)), "duration": float(_ability.get("duration", 4.0)) })
+
+
+func _reload_mult() -> float:
+	return 1.0 - float(_ability.get("reload", 0.0)) if ability_effect() == "hustle" else 1.0
+
+
+## Ticks for Abilities, gadget empower, Z boost and crowd-control immunity.
+func _tick_kit(delta: float) -> void:
+	var controlled := is_stunned() or _tomb_time > 0.0 or (_knock_time > 0.0 and not _pin.is_empty())
+	if _was_controlled and not controlled:
+		_cc_immune = float(GameData.rule("cc_immunity", 1.5))
+	_was_controlled = controlled
+	_cc_immune = maxf(0.0, _cc_immune - delta)
+	_empower_time = maxf(0.0, _empower_time - delta)
+	_pressure_time = maxf(0.0, _pressure_time - delta)
+	if _protect_time <= 0.0:
+		_counter = 0.0
+	if _z_time > 0.0:
+		_z_time -= delta
+		if _z_time <= 0.0 and _z_aura:
+			_z_aura.emitting = false
+	match ability_effect():
+		"speed_boost":
+			if _regen_timer < 3.0:
+				_speed_boost_tick += delta
+				if _speed_boost_tick >= float(_ability.get("every", 2.0)):
+					_speed_boost_tick = 0.0
+					_speed_boost = minf(float(_ability.get("cap", 0.15)), _speed_boost + float(_ability.get("step", 0.03)))
+			else:
+				_speed_boost = 0.0
+				_speed_boost_tick = 0.0
+		"shed_skin":
+			_shed_timer += delta
+			if _shed_timer >= float(_ability.get("every", 3.0)):
+				_shed_timer = 0.0
+				if has_status() and randf() < float(_ability.get("chance", 0.35)):
+					_clear_status()
+					_spawn_floating_text("SHED SKIN", Color(0.8, 1, 0.8), 40, 2.2)
+		"terrain_speed":
+			_terrain_timer -= delta
+			if _terrain_timer <= 0.0:
+				_terrain_timer = 0.25
+				_on_terrain = is_in_grass() if str(_ability.get("terrain", "")) == "grass" else _near_water()
+	if _empower_time > 0.0 and randf() < delta * 6.0:
+		Vfx.burst(get_parent(), global_position + Vector3(0, 0.8, 0), gadget_move.type if gadget_move else "normal", 2, 0.3, 1.0)
+
+
+func _near_water() -> bool:
+	if arena == null:
+		return false
+	var c := arena.world_to_cell(global_position)
+	for dy in range(-1, 2):
+		for dx in range(-1, 2):
+			var y := c.y + dy
+			var x := c.x + dx
+			if y >= 0 and y < arena.rows.size() and x >= 0 and x < arena.rows[y].length() and arena.rows[y][x] == "~":
+				return true
+	return false
+
+
+func cc_immune() -> bool:
+	return _cc_immune > 0.0 or is_legendary
 
 
 func _debuff(stat: String) -> float:
@@ -572,6 +783,7 @@ func evolve() -> bool:
 	Vfx.burst(get_parent(), global_position + Vector3(0, 1, 0), "fairy", 30, 0.6, 3.0)
 	_pop = 0.3
 	evolved.emit(self, from_name)
+	_intimidate()
 	return true
 
 
@@ -656,11 +868,19 @@ func respawn(spawn_position: Vector3) -> void:
 	_knock_time = 0.0
 	_pin = {}
 	_tomb_time = 0.0
+	_cc_immune = 0.0
+	_sturdy_used = false
+	_empower_time = 0.0
+	_speed_boost = 0.0
+	_z_time = 0.0
+	if _z_aura:
+		_z_aura.emitting = false
 	_clear_status()
 	_buffs.clear()
 	_debuffs.clear()
 	_last_attacker = null
 	shadow.scale = Vector3.ONE
+	_intimidate.call_deferred()
 
 
 # --- Attacks ---------------------------------------------------------------
@@ -761,7 +981,7 @@ func _perform(move: MoveData, direction: Vector3, distance: float) -> void:
 
 
 func gadget_ready() -> bool:
-	return not _busy() and species.gadget_move != null and gadget_uses > 0 and _gadget_timer <= 0.0
+	return not _busy() and gadget_move != null and gadget_uses > 0 and _gadget_timer <= 0.0
 
 
 ## 0 when the gadget is ready, 1 right after using it (stays 1 when out of uses).
@@ -771,17 +991,17 @@ func gadget_cooldown_ratio() -> float:
 	return _gadget_timer / maxf(0.01, float(GameData.rule("gadget/cooldown", 4.0)))
 
 
-func use_gadget(direction: Vector3) -> bool:
+func use_gadget(direction: Vector3, distance := -1.0) -> bool:
 	if not gadget_ready():
 		return false
-	var move := species.gadget_move
+	var move := gadget_move
 	direction = _flat_direction(direction)
 	gadget_uses -= 1
 	_gadget_timer = float(GameData.rule("gadget/cooldown", 4.0))
 	_spawn_floating_text(move.display_name.to_upper(), Color(0.6, 1.0, 0.8), 60, 2.4)
 	if move.kind != "self":
 		_on_attack(direction, move)
-		_perform(move, direction, 0.0)
+		_perform(move, direction, distance)
 	_apply_support(move, direction)
 	return true
 
@@ -794,10 +1014,12 @@ func add_super_charge(damage_dealt: float) -> void:
 	var sup := current_super()
 	if sup == null or damage_dealt <= 0.0:
 		return
-	if sup.charge_hits > 0:
-		super_charge = minf(1.0, super_charge + 1.0 / sup.charge_hits)  # Counted in hits (Assassins).
-	else:
-		super_charge = minf(1.0, super_charge + damage_dealt / sup.charge_damage())
+	var gain := 1.0 / sup.charge_hits if sup.charge_hits > 0 else damage_dealt / sup.charge_damage()  # Assassins count hits.
+	if _pressure_time > 0.0:
+		gain *= _pressure_mult
+	super_charge = minf(1.0, super_charge + gain)
+	if z_available() and _z_time <= 0.0:
+		z_charge = minf(1.0, z_charge + gain / float(GameData.rule("zmove/charge", 3.0)))
 
 
 ## `distance` is where area and lobbed supers land (clamped to their range); < 0 = max range.
@@ -805,6 +1027,10 @@ func use_super(direction: Vector3, distance := -1.0) -> bool:
 	if not super_ready():
 		return false
 	var move := current_super()
+	if _z_firing:
+		move = GameData.z_move(move)
+	elif z_available() and _z_time <= 0.0:
+		z_charge = minf(1.0, z_charge + float(GameData.rule("zmove/per_super", 0.15)))
 	direction = _flat_direction(direction)
 	super_charge = 0.0
 	supers_used += 1
@@ -886,6 +1112,8 @@ func _melee_swing(move: MoveData, direction: Vector3) -> void:
 			if not other.is_dead:
 				_start_grab(other, move)
 			continue
+		if move.control.get("multi", false) and not other.cc_immune():
+			other._stun_time = maxf(other._stun_time, float(move.control.get("duration", 1.3)))  # Z coil: holds everyone.
 		other.take_hit(self, move)
 		other.knock_from(global_position, move.knockback)
 	Breakable.hit_cone(get_tree(), global_position, direction, move.reach, move.arc, self, move)
@@ -1072,6 +1300,21 @@ func _area_strike(move: MoveData, center: Vector3) -> void:
 	if is_dead:
 		fx.queue_free()  # Fainted before it landed: it fizzles.
 		return
+	_land_area(move, center)
+	var mat := fx.material_override as StandardMaterial3D
+	mat.albedo_color.a = 0.4
+	var tween := fx.create_tween()
+	tween.tween_property(mat, "albedo_color:a", 0.0, 0.45)
+	tween.tween_callback(fx.queue_free)
+	for i in move.repeat:  # Z Thunder: strikes again.
+		await get_tree().create_timer(0.5, false, true).timeout
+		if not is_inside_tree() or is_dead:
+			return
+		_land_area(move, center)
+
+
+func _land_area(move: MoveData, center: Vector3) -> void:
+	var parent := get_parent()
 	for node in get_tree().get_nodes_in_group("brawlers"):
 		var other := node as Brawler
 		if other == null or other.team == team or other.is_dead:
@@ -1087,11 +1330,6 @@ func _area_strike(move: MoveData, center: Vector3) -> void:
 	Vfx.ring(parent, center, move.area_radius, move.type, 22, look)
 	Vfx.burst(parent, center + Vector3(0, 0.3, 0), move.type, 10, move.area_radius * 0.5, 3.0, look)
 	MoveFx.area(parent, center, move.area_radius, move)
-	var mat := fx.material_override as StandardMaterial3D
-	mat.albedo_color.a = 0.4
-	var tween := fx.create_tween()
-	tween.tween_property(mat, "albedo_color:a", 0.0, 0.45)
-	tween.tween_callback(fx.queue_free)
 
 
 ## Vortex moves leave a whirl where they land (vortex_zone.gd).
@@ -1107,8 +1345,22 @@ func spawn_vortex(move: MoveData, center: Vector3, radius: float) -> void:
 func _apply_support(move: MoveData, direction: Vector3) -> void:
 	if move.cleanse:
 		_clear_status()
+	if move.blink > 0.0 and move.protect > 0.0:
+		_blink(direction, move.blink)  # Dig: burrow first, then resurface shielded.
+		protect(move.protect)
+		Vfx.burst(get_parent(), global_position + Vector3(0, 0.3, 0), "ground", 16, 0.5, 3.0)
+		move = move.copy()
+		move.blink = 0.0
 	if move.protect > 0.0:
 		protect(move.protect)
+		_counter = move.counter
+	if not move.empower.is_empty():
+		_empower = move.empower
+		_empower_time = float(move.empower.get("time", 4.0))
+	if move.refill_ammo:
+		ammo = max_ammo()
+	if not move.trap.is_empty():
+		_lay_trap(move)
 	if move.blink > 0.0:
 		_blink(direction, move.blink)
 	if move.heal > 0.0:
@@ -1130,6 +1382,22 @@ func _apply_support(move: MoveData, direction: Vector3) -> void:
 			if other.global_position.distance_to(global_position) <= radius and has_line_of_sight_to(other):
 				other.apply_blind(float(move.blind.get("duration", 3.0)))
 		_flash_fx(radius)
+
+
+## Stealth Rock, Toxic Spikes, Sticky Web: a hidden trap at your feet (two at a time).
+func _lay_trap(move: MoveData) -> void:
+	var trap := TrapZone.new()
+	trap.setup(self, move, Vector3(global_position.x, 0.0, global_position.z))
+	get_parent().add_child(trap)
+	var live: Array[Node] = []
+	for t in _traps:
+		if is_instance_valid(t):
+			live.append(t)
+	_traps = live
+	_traps.append(trap)
+	while _traps.size() > 2:
+		var oldest: Node = _traps.pop_front()
+		oldest.queue_free()
 
 
 func _blink(direction: Vector3, distance: float) -> void:
@@ -1155,6 +1423,8 @@ func apply_buff(buff: Dictionary) -> void:
 ## A move's stat changes on whoever it hits: drops refresh (the bigger one wins), and pop up once.
 func apply_stat_change(change: Dictionary) -> void:
 	if is_dead or change.is_empty() or randf() >= float(change.get("chance", 1.0)):
+		return
+	if ability_effect() == "clear_body":
 		return
 	var duration := float(change.get("duration", 3.0))
 	for stat in ["attack", "defense", "speed"]:
@@ -1313,7 +1583,7 @@ func is_holding() -> bool:
 
 
 func can_be_grabbed() -> bool:
-	return not is_dead and not is_legendary and not invulnerable and not is_protected() and not is_grabbed() and not is_holding()
+	return not is_dead and not cc_immune() and not invulnerable and not is_protected() and not is_grabbed() and not is_holding()
 
 
 ## Side effects of a move's `control` on the Pokémon it just hit (grabs start in _melee_swing,
@@ -1323,7 +1593,7 @@ func _apply_control(move: MoveData, attacker: Brawler, multiplier: float) -> voi
 		return
 	match str(move.control.get("type", "")):
 		"tomb":
-			if _tomb_time <= 0.0 and not is_legendary:
+			if _tomb_time <= 0.0 and not cc_immune():
 				entomb(str(move.control.get("look", "rock")), float(move.control.get("duration", 2.5)))
 		"torrent":
 			if is_legendary or is_grabbed() or multiplier <= 0.0:
@@ -1357,7 +1627,8 @@ func _pinned() -> void:
 	var pin := _pin
 	_pin = {}
 	_knock_time = 0.0
-	_stun_time = maxf(_stun_time, float(pin["time"]))
+	if not cc_immune():
+		_stun_time = maxf(_stun_time, float(pin["time"]))
 	_spawn_floating_text("PINNED!", Color(0.6, 0.85, 1.0), 48, 2.3)
 	Vfx.burst(get_parent(), global_position + Vector3(0, 0.7, 0), "water", 26, 0.5, 4.0)
 	var attacker := pin["attacker"] as Brawler
@@ -1490,15 +1761,23 @@ func _process_grabbed(delta: float) -> void:
 ## Hit by a move: applies the damage formula, type matchups and side effects.
 ## Regular moves charge the attacker's super; draining moves heal the attacker.
 func take_hit(attacker: Brawler, move: MoveData, multiplier := 1.0) -> void:
-	if is_dead or invulnerable or is_protected():
+	if is_dead or invulnerable:
+		return
+	if is_protected():
+		if _counter > 0.0 and is_instance_valid(attacker) and attacker != self and multiplier >= 0.5:
+			attacker.knock_from(global_position, _counter)  # Detect.
+			_spawn_floating_text("COUNTER!", Color(1, 0.7, 0.4), 44, 2.3)
+			_counter = 0.0
 		return
 	if move.power <= 0.0:
-		_apply_effect(move.effect, attacker)  # Pure status moves (Smokescreen).
+		_apply_effect(move.effect, attacker, move.type)  # Pure status moves (Smokescreen, Charm).
+		apply_stat_change(move.stat_change)
 		return
 	if move.bonus_vs_status > 1.0 and has_status():
 		multiplier *= move.bonus_vs_status
 	if is_instance_valid(attacker):
-		multiplier *= attacker.power_bonus()
+		multiplier *= attacker.power_bonus() * attacker.outgoing_mult(move, self)
+	multiplier *= incoming_mult(move)
 	var result: Dictionary = GameData.calc_damage(move, attacker, self, multiplier)
 	if multiplier >= 0.5:  # Skip the tiny per-tick stream hits.
 		MoveFx.impact(get_parent(), global_position + Vector3(0, 0.9, 0), MoveLook.of(move), 0.45 if move.slot == "main" else 0.7)
@@ -1509,6 +1788,12 @@ func take_hit(attacker: Brawler, move: MoveData, multiplier := 1.0) -> void:
 			attacker.add_super_charge(amount)
 		if move.drain > 0.0:
 			attacker.heal(amount * move.drain)
+		if attacker.ability_effect() == "pressure":
+			_pressure_time = float(attacker._ability.get("duration", 3.0))
+			_pressure_mult = float(attacker._ability.get("mult", 0.7))
+		_contact(attacker, move, amount)
+		if attacker._empower_time > 0.0 and move.slot == "main" and not is_dead:
+			_apply_effect(attacker._empower.get("effect", {}), attacker, move.type)
 	if not is_dead and not (is_instance_valid(attacker) and attacker._grab_target == self):
 		_apply_effect(move.effect, attacker, move.type)
 		apply_stat_change(move.stat_change)
@@ -1523,6 +1808,10 @@ func take_damage(amount: float, source: Brawler = null, effectiveness := 1.0, cr
 		damage_by_team[source.team] = float(damage_by_team.get(source.team, 0.0)) + minf(amount, health)
 		if source != self:
 			source.damage_dealt += minf(amount, health)
+	if ability_effect() == "sturdy" and not _sturdy_used and amount >= health and health > 1.0:
+		amount = health - 1.0  # Hangs on with 1 HP, once per life.
+		_sturdy_used = true
+		_spawn_floating_text("STURDY!", Color(1, 0.9, 0.5), 48, 2.4)
 	_pop = 0.86
 	if is_holding():
 		_grab_hurt += amount
@@ -1594,11 +1883,20 @@ func status_chips() -> Array[Dictionary]:
 		chips.append({ "text": "+PP", "color": Color(0.6, 1, 0.8), "arrow": 0 })
 	if _invisible_time > 0.0:
 		chips.append({ "text": "HIDDEN", "color": Color(0.8, 0.8, 1), "arrow": 0 })
+	if _cc_immune > 0.0:
+		chips.append({ "text": "IMMUNE", "color": Color(0.75, 0.9, 1.0), "arrow": 0 })
+	if _z_time > 0.0:
+		chips.append({ "text": "Z", "color": Color(1, 0.85, 0.3), "arrow": 0 })
 	return chips
 
 
 func _apply_effect(effect: Dictionary, source: Brawler, move_type := "") -> void:
-	if effect.is_empty() or randf() >= float(effect.get("chance", 1.0)):
+	if effect.is_empty():
+		return
+	var chance := float(effect.get("chance", 1.0))
+	if is_instance_valid(source) and source.ability_effect() == "serene_grace":
+		chance *= float(source._ability.get("mult", 2.0))
+	if randf() >= chance:
 		return
 	var kind := str(effect.get("type", ""))
 	match kind:
@@ -1617,7 +1915,12 @@ func _apply_effect(effect: Dictionary, source: Brawler, move_type := "") -> void
 			_slow_amount = clampf(float(effect.get("amount", 0.4)), 0.0, 0.9)
 			_slow_type = move_type
 		"stun":
-			_stun_time = maxf(_stun_time, float(effect.get("duration", 1.5)))
+			if cc_immune():
+				return
+			var duration := float(effect.get("duration", 1.5))
+			if ability_effect() == "inner_focus":
+				duration *= float(_ability.get("mult", 0.6))
+			_stun_time = maxf(_stun_time, duration)
 		"blind":
 			apply_blind(float(effect.get("duration", 2.0)))
 
@@ -1630,6 +1933,7 @@ func _clear_status() -> void:
 
 
 func _tick_timers(delta: float) -> void:
+	_tick_kit(delta)
 	_gadget_timer = maxf(0.0, _gadget_timer - delta)
 	_attack_lock = maxf(0.0, _attack_lock - delta)
 	_windup_time = maxf(0.0, _windup_time - delta)
@@ -1653,12 +1957,17 @@ func _tick_timers(delta: float) -> void:
 		_debuffs[stat]["time"] = float(_debuffs[stat]["time"]) - delta
 	if main_move.kind == "stream":
 		if not is_streaming() and _stream_idle >= STREAM_REFILL_DELAY:
-			ammo = minf(max_ammo(), ammo + delta / main_move.reload)
+			ammo = minf(max_ammo(), ammo + delta / main_move.reload * _reload_mult())
 	elif ammo < max_ammo():
-		ammo = minf(max_ammo(), ammo + delta / main_move.reload)
+		ammo = minf(max_ammo(), ammo + delta / main_move.reload * _reload_mult())
 	_regen_timer += delta
-	if regenerates and _regen_timer >= float(GameData.rule("regen_delay", 3.0)) and health < max_health:
-		health = minf(max_health, health + max_health * float(GameData.rule("regen_rate", 0.13)) * delta)
+	var regen_delay := float(GameData.rule("regen_delay", 3.0))
+	var regen_rate := float(GameData.rule("regen_rate", 0.13))
+	if ability_effect() == "regen":
+		regen_delay += float(_ability.get("delay", 0.0))
+		regen_rate *= 1.0 + float(_ability.get("rate", 0.0))
+	if regenerates and _regen_timer >= regen_delay and health < max_health:
+		health = minf(max_health, health + max_health * regen_rate * delta)
 
 
 func _tick_status(delta: float) -> void:
@@ -1980,6 +2289,8 @@ func _update_sprite(delta: float) -> void:
 	tint.a = 0.55 if faded else 1.0
 	if is_stunned():
 		tint = tint.darkened(0.25)
+	if _z_time > 0.0:  # Z boost: a golden glow that pulses.
+		tint = tint.lerp(Color(1, 0.92, 0.55, tint.a), 0.25 + 0.15 * sin(Time.get_ticks_msec() * 0.012))
 	sprite.modulate = tint
 	_update_auras(hidden)
 
