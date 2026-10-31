@@ -620,8 +620,11 @@ func _check_attack_mechanics() -> void:
 	_reset_target(second, base + forward * 3.0 + Vector3(2.0, 0, 0))
 	await get_tree().physics_frame
 	shooter._perform(GameData.get_move("pikachu_main1"), forward, -1.0)
-	await get_tree().create_timer(0.6, false, true).timeout
-	expect(target.health < target.max_health and second.health < second.max_health, "chain lightning hits a second enemy")
+	await get_tree().create_timer(0.35, false, true).timeout
+	expect(target.health < target.max_health and is_equal_approx(second.health, second.max_health),
+			"chain lightning sticks to the first enemy before jumping")
+	await get_tree().create_timer(0.8, false, true).timeout
+	expect(second.health < second.max_health, "...then flies over to a second enemy nearby")
 	second.queue_free()
 
 	# Boomerang: goes out and comes back, hitting on both legs.

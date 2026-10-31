@@ -254,7 +254,7 @@ func _check_brawlers() -> void:
 			target.take_hit(shooter, move, _distance_multiplier() * move.upfront_share())
 			_knock(target)
 			if move.chain > 0:
-				_chain_from(target)
+				ChainBolt.start(shooter, move, target)
 			if not _vortex_spawned:
 				_vortex_spawned = true
 				shooter.spawn_vortex(move, target.global_position, 2.2)
@@ -275,38 +275,6 @@ func _knock(target: Brawler) -> void:
 		target.knock_from(target.global_position - direction, move.knockback)
 	elif move.knockback < 0.0 and is_instance_valid(shooter):
 		target.knock_from(shooter.global_position, move.knockback)
-
-
-## Lightning jumps to the next-nearest enemies, a little weaker each time.
-func _chain_from(first: Brawler) -> void:
-	var current := first
-	var struck: Array[Brawler] = [first]
-	var mult := 1.0
-	for i in move.chain:
-		var best: Brawler = null
-		var best_dist := move.chain_range
-		for node in get_tree().get_nodes_in_group("brawlers"):
-			var other := node as Brawler
-			if other == null or other.team == team or other.is_dead or other in struck:
-				continue
-			var dist := _flat(other.global_position - current.global_position).length()
-			if dist <= best_dist and Brawler.clear_between(self, current.global_position, other.global_position):
-				best_dist = dist
-				best = other
-		if best == null:
-			return
-		mult *= 0.8
-		struck.append(best)
-		_hit.append(best)
-		_zap(current.global_position, best.global_position)
-		best.take_hit(shooter, move, mult)
-		current = best
-
-
-func _zap(a: Vector3, b: Vector3) -> void:
-	var to := b + Vector3(0, 0.9, 0)
-	Vfx.lightning(get_parent(), a + Vector3(0, 0.9, 0), to, move.type)
-	Vfx.burst(get_parent(), to, move.type, 8, 0.2, 2.5)
 
 
 func _finish(effects := true) -> void:

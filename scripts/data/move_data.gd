@@ -86,9 +86,10 @@ var returns := false
 var distance_bonus := 1.0
 ## HP healed on teammates the shot passes through (healers).
 var heal_allies := 0.0
-## Extra enemies the hit jumps to, each within chain_range of the last.
+## Extra enemies the hit jumps to, each within chain_range of the last: the spark
+## clings to each target briefly, then flies to the next (chain_bolt.gd).
 var chain := 0
-var chain_range := 3.5
+var chain_range := 4.5
 ## How fast (radians / s) the shot turns toward the nearest enemy.
 var homing := 0.0
 ## Melee: seconds the user plants and telegraphs the swing before it lands (Frank's super).

@@ -193,6 +193,10 @@ func _move_demo(spec: String, out_dir: String) -> void:
 			b.global_position = Vector3(30, 0, 30)  # Out of the way.
 	target.global_position = wall_front + Vector3(0, 0, 0.6)
 	player.global_position = wall_front + Vector3(0, 0, 3.6)
+	if move and move.chain > 0:
+		# Two more enemies beside the target for the chain to jump to.
+		main.teams[1][1].global_position = target.global_position + Vector3(2.6, 0, 0.4)
+		main.teams[1][2].global_position = target.global_position + Vector3(5.0, 0, 0.0)
 	player.facing = Vector3(0, 0, -1)
 	main.camera.snap_to_target()
 	for i in 20:
