@@ -223,6 +223,13 @@
 		"shrine_hold": 20.0,
 		"shrine_cooldown": 30.0
 	},
+	"dash_hop": {
+		"_comment": "Leaping dashes (Mortis-like): these play styles hop through the air instead of sliding, at speed x the move's dash speed; height in metres for main attacks and supers (scripts/brawler.gd _start_dash).",
+		"styles": ["assassin"],
+		"speed": 0.72,
+		"height": 0.75,
+		"super_height": 1.1
+	},
 	"tm_super": {
 		"_comment": "TM supers on earlier stages: over_own x that stage's own super, at most base_cap / mid_cap x the final stage's super, between min and base_max / mid_max x full power (scripts/brawler.gd tm_super_scale). Single-stage Pokémon get single_stage; final stages full power.",
 		"over_own": 1.2,

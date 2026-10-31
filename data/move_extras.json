@@ -1,5 +1,8 @@
 {
 	"_comment": "Extra fields added to every move with this name (by slot: main / super / any), on top of data/moves/*.json, so those files can be regenerated. stat_change: stat drops (negative) on hit. control: grab / tomb / torrent / vortex (see scripts/data/move_data.gd).",
+	"Leech Life": {"main": {"power": 330, "effect": {"type": "leech", "chance": 1.0, "duration": 3.0, "dps": 115}}},
+	"Leech Seed": {"main": {"power": 260, "linger": 0.0, "effect": {"type": "leech", "chance": 1.0, "duration": 3.0, "dps": 110}}},
+	"Dream Eater": {"super": {"drain": 0.4}},
 	"Bind": {
 		"super": {
 			"control": {

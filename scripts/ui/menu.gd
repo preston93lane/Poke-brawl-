@@ -1122,7 +1122,8 @@ func _build_editor(s: SpeciesData) -> void:
 			choices.add_child(locked)
 		super_row.add_child(choices)
 		_details.add_child(super_row)
-		var card := UiKit.move_card(GameData.get_move(picked) if picked != "" else stage.super_move)
+		# The card shows what this stage really gets (TM supers are scaled per stage).
+		var card := UiKit.move_card(GameData.stage_super(stage, picked, Profile.stage_tm_supers(stage.id)))
 		_details.add_child(card)
 	var tm_note := UiKit.label("Greyed-out TM supers: buy the TM in the Poké Mart or find it in a Poké Ball. Each type's TMs work for Pokémon of that type (per stage).", 15, Color(0.75, 0.8, 0.9))
 	tm_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -1219,12 +1220,7 @@ func _zmove_preview(s: SpeciesData, unlocked: bool) -> void:
 	var level := int(GameData.rule("kits/zmove_level", 50))
 	_details.add_child(_section("Z-MOVE  (final evolution; %s)" % ("charged by damage and supers, press Z" if unlocked else "unlocks at Lv %d" % level)))
 	for stage in finals:
-		var pick := Profile.chosen_super(stage.id)
-		var base: MoveData = stage.super_move
-		if pick.begins_with("tmsuper_"):
-			base = GameData.get_move(pick + "_" + str(GameData.STYLE_SHAPES.get(stage.style, "shot")))
-		elif pick != "":
-			base = GameData.get_move(pick)
+		var base := GameData.stage_super(stage, Profile.chosen_super(stage.id), Profile.stage_tm_supers(stage.id))
 		var z := GameData.z_move(base)
 		var line := HBoxContainer.new()
 		line.add_child(UiKit.sprite(stage.sprite, 40))

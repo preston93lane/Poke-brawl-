@@ -7,7 +7,7 @@
 	"gadget_thunder_wave": {"name": "Thunder Wave", "type": "electric", "slot": "gadget", "kind": "projectile", "power": 100, "range": 7.0, "speed": 18, "radius": 0.45, "effect": {"type": "stun", "chance": 1.0, "duration": 0.8}},
 	"gadget_charge": {"name": "Charge", "type": "electric", "slot": "gadget", "kind": "self", "empower": {"time": 5.0, "power": 1.3, "effect": {"type": "slow", "chance": 0.4, "duration": 0.8, "amount": 0.4}}, "desc": "For 5 s your attacks hit 30% harder and may paralyze"},
 	"gadget_spore": {"name": "Spore", "type": "grass", "slot": "gadget", "kind": "area", "power": 0, "range": 5.0, "area_radius": 2.0, "effect": {"type": "stun", "chance": 1.0, "duration": 1.0}},
-	"gadget_leech_seed": {"name": "Leech Seed", "type": "grass", "slot": "gadget", "kind": "projectile", "power": 100, "range": 7.5, "speed": 12, "radius": 0.45, "effect": {"type": "leech", "chance": 1.0, "duration": 6.0, "dps": 120}},
+	"gadget_leech_seed": {"name": "Leech Seed", "type": "grass", "slot": "gadget", "kind": "projectile", "power": 100, "range": 7.5, "speed": 12, "radius": 0.45, "effect": {"type": "leech", "chance": 1.0, "duration": 3.0, "dps": 150}},
 	"gadget_icy_wind": {"name": "Icy Wind", "type": "ice", "slot": "gadget", "kind": "melee", "power": 300, "range": 4.0, "arc": 70, "effect": {"type": "slow", "chance": 1.0, "duration": 2.0, "amount": 0.5}},
 	"gadget_mist": {"name": "Mist", "type": "ice", "slot": "gadget", "kind": "self", "cleanse": true, "heal": 0.1, "protect": 0.6, "desc": "Cures status, heals 10% and shields you for 0.6 s"},
 	"gadget_detect": {"name": "Detect", "type": "fighting", "slot": "gadget", "kind": "self", "protect": 0.8, "counter": 2.5, "desc": "Shield for 0.8 s; whoever hits you is knocked back"},

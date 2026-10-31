@@ -54,7 +54,7 @@ Every `.json` file in `data/moves/` is loaded; ids must be unique across them.
 | `kind` | all | `melee` (arc swipe), `dash` (lunge, hits first enemy), `projectile`, `stream` (continuous cone while the stick is held), `area` (strike a circle), `self` (no attack, just the extras below) |
 | `power` | all | Base damage before attack/defense, STAB, type and crit (per second for streams and lingering zones) |
 | `crit_chance` | all | 0–1; crits deal `rules.crit_multiplier` |
-| `effect` | all | Optional: `{ "type": "burn"/"poison"/"leech", "chance", "duration", "dps" }` (leech heals whoever planted it), `{ "type": "slow", "chance", "duration", "amount" }`, `{ "type": "stun", ... "duration" }` (can't move or attack) or `{ "type": "blind", ... "duration" }` |
+| `effect` | all | Optional: `{ "type": "burn"/"poison"/"leech", "chance", "duration", "dps" }` (leech drains `dps` for `duration` seconds and heals whoever planted it; each hit adds another stack, up to 5), `{ "type": "slow", "chance", "duration", "amount" }`, `{ "type": "stun", ... "duration" }` (can't move or attack) or `{ "type": "blind", ... "duration" }` |
 | `ammo`, `reload` | main | Ammo bars and seconds to reload one (every main attack kind uses ammo) |
 | `range`, `arc` | melee | Reach in metres, swing width in degrees (360 = spin) |
 | `dash_distance`, `dash_speed` | dash | How far and fast the lunge goes |
@@ -77,7 +77,7 @@ Every `.json` file in `data/moves/` is loaded; ids must be unique across them.
 | `knockback` | melee, dash, projectile, area | Metres targets are pushed away (negative pulls them toward you) |
 | `power`, `range`, `arc`, `tank`, `reload` | stream | Damage **per second** while firing, reach, cone width in degrees, seconds of fire from a full tank, seconds to refill it. Effect `chance` is rolled every 0.15 s tick, so keep it small |
 | `range`, `area_radius`, `area_delay` | area | How far away the circle can land (0 = around you), its size, and a delay before it hits |
-| `drain` | all | Heal this fraction of the damage dealt |
+| `drain` | all | Heal this fraction of the damage dealt, instantly (big hits: Giga Drain, assassin lunges). For a steal over time use a `leech` effect |
 | `heal`, `team_heal`, `support_radius` | super, gadget | Heal yourself / allies within `support_radius` by a fraction of max HP |
 | `protect` | super, gadget | Seconds of damage immunity |
 | `buff` | super, gadget | `{ "attack": 0.3, "defense": 0.5, "speed": 0.4, "duration": 4, "allies": true }` |

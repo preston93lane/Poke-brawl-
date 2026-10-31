@@ -41,6 +41,8 @@ func _ready() -> void:
 	await _check_intro()
 	await _check_menu_fits()
 	_check_wall_blocks()
+	_check_super_scaling()
+	await _check_leech_drain()
 	await _check_power_ups()
 	await _check_trainer_levels()
 	await _check_hazards()
@@ -1027,6 +1029,67 @@ func _check_all_arenas() -> void:
 			expect(walls > 100, "brick walls are rounded blocks sharing materials (%d)" % walls)
 		main.queue_free()
 		await get_tree().process_frame
+
+
+## Every line: supers get stronger as it evolves, and TM supers hit softer on
+## earlier stages (in matches and on the build screen alike).
+func _check_super_scaling() -> void:
+	print("Supers scale up with evolution")
+	var bad: Array[String] = []
+	var checked := 0
+	for base in GameData.base_species():
+		var line := GameData.evolution_line(base.id)
+		if line.size() < 2:
+			continue
+		var final_stage: SpeciesData = line.back()
+		for stage in line:
+			if stage == final_stage or stage.evolves_to == "":
+				continue
+			var own := stage.super_move.estimated_damage()
+			if own > 0.0 and own > final_stage.super_move.estimated_damage():
+				bad.append("%s's own super (%d) beats %s's (%d)" % [stage.id, own, final_stage.id, final_stage.super_move.estimated_damage()])
+			var allowed := Profile.stage_tm_supers(stage.id)
+			for tm in allowed:
+				if tm not in Profile.stage_tm_supers(final_stage.id):
+					continue
+				var early := GameData.stage_super(stage, tm, allowed)
+				var late := GameData.stage_super(final_stage, tm, Profile.stage_tm_supers(final_stage.id))
+				checked += 1
+				if early.power >= late.power:
+					bad.append("%s %s %d vs %s %d" % [stage.id, tm, early.power, final_stage.id, late.power])
+	expect(bad.is_empty() and checked > 50, "every TM super is weaker on earlier stages (%d checked) %s" % [checked, ", ".join(bad.slice(0, 6))])
+	var bulba := GameData.stage_super(GameData.species["bulbasaur"], "tmsuper_leaf_storm", Profile.stage_tm_supers("bulbasaur"))
+	var venu := GameData.stage_super(GameData.species["venusaur"], "tmsuper_leaf_storm", Profile.stage_tm_supers("venusaur"))
+	expect(bulba.power < venu.power * 0.8, "Leaf Storm: Bulbasaur %d, Venusaur %d" % [bulba.power, venu.power])
+	for id in ["withdraw", "flash", "teleport", "defense_curl", "agility", "bulk_up", "hypnosis"]:
+		var m := GameData.get_move(id)
+		expect(m.power >= 650, "%s does real damage now (%d)" % [id, m.power])
+	var seed := GameData.get_move("leech_seed")
+	var seed_total := seed.power + float(seed.effect["dps"]) * float(seed.effect["duration"])
+	expect(seed_total >= 1100.0, "Leech Seed: a hit plus a drain, %d in all" % seed_total)
+	# Scaled TM supers that have no status effect must still scale (this used to fail silently).
+	var gi := GameData.stage_super(GameData.species["pidgeotto"], "tmsuper_giga_impact", Profile.stage_tm_supers("pidgeotto"))
+	expect(gi.display_name == "Giga Impact", "an equipped TM super is used on a middle stage (%s)" % gi.display_name)
+
+
+func _check_leech_drain() -> void:
+	print("Leech drain stacks")
+	var main := await _start_match("pallet_pitch", "duel", "bulbasaur", ["squirtle"])
+	var me: Brawler = main.player
+	var foe: Brawler = main.teams[1][0]
+	await _freeze_all(main)
+	me.health = me.max_health * 0.5
+	var seed := GameData.get_move("leech_seed")
+	foe._apply_effect(seed.effect, me, "grass")
+	foe._apply_effect(seed.effect, me, "grass")
+	expect(foe.leech_stacks() == 2, "two seeds make two stacks")
+	var foe_hp := foe.health
+	var my_hp := me.health
+	for i in 70:
+		await get_tree().physics_frame
+	expect(foe.health < foe_hp - 400.0 and me.health > my_hp + 300.0, "the seeds drain the target and heal the planter (%d taken, %d healed)" % [foe_hp - foe.health, me.health - my_hp])
+	main.queue_free()
+	await get_tree().process_frame
 
 
 func _check_wall_blocks() -> void:

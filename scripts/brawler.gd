@@ -23,6 +23,7 @@ const SHEET_PIXEL_SIZE := 0.0253
 ## Pokémon are drawn this much bigger than their sheet size (easier to tell apart on a phone).
 const VISUAL_SCALE := 1.6
 const DOT_TICK := 0.5
+const MAX_LEECH_STACKS := 5
 ## Physics layers that stop walking and teleports: world + water.
 const MOVE_BLOCK_MASK := 1 | 8 | 16
 ## Rock Tomb rocks: they block walking (swimmers too) but not shots or sight.
@@ -188,9 +189,14 @@ var _last_attacker: Brawler
 var _dot_time := 0.0
 var _dot_dps := 0.0
 var _dot_tick := 0.0
-## "burn", "poison" or "leech" (leech heals whoever planted it).
+## "burn", "poison" or "bleed" (leech has its own stacks below).
 var _dot_kind := ""
 var _dot_source: Brawler
+## Leech Seed / Leech Life: each hit adds a stack that drains `dps` for `time`
+## seconds and heals whoever planted it (like Crow's poison, but stealing).
+## [{ "source": Brawler, "dps": float, "time": float }], up to MAX_LEECH_STACKS.
+var _leeches: Array[Dictionary] = []
+var _leech_tick := 0.0
 var _slow_time := 0.0
 var _slow_amount := 0.0
 var _blind_time := 0.0
@@ -211,6 +217,10 @@ var _dash_trail: CPUParticles3D
 var _dash_time := 0.0
 var _dash_dir := Vector3.ZERO
 var _dash_move: MoveData
+## Leaping dashes (assassins, like Mortis): a visible hop, a bit slower than a charge.
+var _dash_speed := 0.0
+var _dash_total := 0.0
+var _dash_hop := 0.0
 var _dash_hit: Array[Brawler] = []
 var _ghost_timer := 0.0
 ## Little puffs of dust kicked up while running (one cheap emitter per Pokémon).
@@ -661,38 +671,11 @@ func _pick_move(slot: String, move_id: String) -> MoveData:
 
 ## The super in use: an equipped TM super, or this stage's own.
 func current_super() -> MoveData:
-	var pick := str(super_choices.get(species.id, ""))
-	if pick.begins_with("tmsuper_") and pick in Profile.stage_tm_supers(species.id):
-		# Shaped to this Pokémon's play style, and about as strong as its own super.
-		var shape: String = GameData.STYLE_SHAPES.get(species.style, "shot")
-		var move := GameData.scaled_move(pick + "_" + shape, tm_super_scale(GameData.get_move(pick + "_" + shape)))
-		if move:
-			return move
-	var own: MoveData = GameData.get_move(pick) if pick != "" and not pick.begins_with("tmsuper_") else null
-	return own if own else species.super_move
+	return GameData.stage_super(species, str(super_choices.get(species.id, "")), Profile.stage_tm_supers(species.id))
 
 
-## TM supers hit softer on early stages: base forms 75%, middle stages 88%,
-## single-stage lines 90%, final evolutions full power.
 func tm_super_scale(tm: MoveData) -> float:
-	var r: Dictionary = GameData.rule("tm_super", {})
-	if species.evolves_to == "":
-		return 1.0 if species.stage > 1 else float(r.get("single_stage", 0.9))
-	# Earlier stages: a bit stronger than their own super, well short of the last stage's.
-	var base := species.stage == 1
-	var own := species.super_move.estimated_damage() if species.super_move else 0.0
-	var top := 0.0
-	for s in GameData.evolution_line(species.id):
-		if s.evolves_to == "" and s.super_move:
-			top = maxf(top, s.super_move.estimated_damage())
-	var full := tm.estimated_damage() if tm else 0.0
-	if full <= 0.0 or (own <= 0.0 and top <= 0.0):
-		return float(r.get("base_fallback", 0.6)) if base else float(r.get("mid_fallback", 0.8))
-	var cap := top * float(r.get("base_cap" if base else "mid_cap", 0.8))
-	var target := own * float(r.get("over_own", 1.2)) if own > 0.0 else cap * 0.8
-	if cap > 0.0:
-		target = minf(target, cap)
-	return clampf(target / full, float(r.get("min", 0.45)), float(r.get("base_max" if base else "mid_max", 0.9)))
+	return GameData.tm_super_scale(species, tm)
 
 
 ## Front-view icon in this brawler's colours (shiny or normal).
@@ -1293,7 +1276,16 @@ func _enemies_in_cone(direction: Vector3, reach: float, arc: float) -> Array[Bra
 func _start_dash(move: MoveData, direction: Vector3) -> void:
 	_dash_move = move
 	_dash_dir = direction
-	_dash_time = move.dash_distance / move.dash_speed
+	var hop: Dictionary = GameData.rule("dash_hop", {})
+	_dash_hop = 0.0
+	_dash_speed = move.dash_speed
+	if species.style in (hop.get("styles", ["assassin"]) as Array):
+		_dash_hop = float(hop.get("super_height" if move.slot == "super" else "height", 0.8))
+		_dash_speed *= float(hop.get("speed", 0.72))
+		Vfx.burst(get_parent(), global_position + Vector3(0, 0.15, 0), "normal", 8, 0.3, 2.0)
+		_pop = 0.8  # Crouch before the leap.
+	_dash_time = move.dash_distance / _dash_speed
+	_dash_total = _dash_time
 	_dash_hit.clear()
 	_dash_broke.clear()
 	if _dash_trail:
@@ -1503,7 +1495,7 @@ func _process_dash(delta: float) -> void:
 			_dash_broke.append(b)
 			if not b.take_attack(self, _dash_move):
 				_dash_time = 0.0
-	velocity = _dash_dir * _dash_move.dash_speed
+	velocity = _dash_dir * _dash_speed
 	move_and_slide()
 	for other in enemies():
 		if other in _dash_hit:
@@ -1522,6 +1514,10 @@ func _process_dash(delta: float) -> void:
 	if _dash_time <= 0.0:
 		if _dash_trail:
 			_dash_trail.emitting = false
+		if _dash_hop > 0.0:
+			_dash_hop = 0.0
+			_pop = 0.82  # Squash on landing, with a puff of dust.
+			Vfx.burst(get_parent(), global_position + Vector3(0, 0.15, 0), "normal", 10, 0.4, 2.2)
 		if _dash_move.explode_radius > 0.0:
 			_slam(_dash_move)
 
@@ -1880,7 +1876,7 @@ func take_damage(amount: float, source: Brawler = null, effectiveness := 1.0, cr
 
 
 func has_status() -> bool:
-	return _dot_time > 0.0 or _slow_time > 0.0 or _stun_time > 0.0 or _blind_time > 0.0
+	return _dot_time > 0.0 or not _leeches.is_empty() or _slow_time > 0.0 or _stun_time > 0.0 or _blind_time > 0.0
 
 
 func status_text() -> String:
@@ -1895,6 +1891,8 @@ func status_text() -> String:
 		parts.append("BLIND")
 	if _dot_time > 0.0:
 		parts.append({ "burn": "BRN", "poison": "PSN", "leech": "SEED", "bleed": "BLD" }.get(_dot_kind, "DOT"))
+	if not _leeches.is_empty():
+		parts.append("SEED" + ("×%d" % _leeches.size() if _leeches.size() > 1 else ""))
 	if _slow_time > 0.0 and _slow_type == "electric":
 		parts.append("PAR")
 	for stat in ["attack", "defense", "speed"]:
@@ -1918,6 +1916,8 @@ func status_chips() -> Array[Dictionary]:
 		chips.append({ "text": "BLIND", "color": bad, "arrow": 0 })
 	if _dot_time > 0.0:
 		chips.append({ "text": { "burn": "BRN", "poison": "PSN", "leech": "SEED", "bleed": "BLD" }.get(_dot_kind, "DOT"), "color": bad, "arrow": 0 })
+	if not _leeches.is_empty():
+		chips.append({ "text": "SEED" + ("×%d" % _leeches.size() if _leeches.size() > 1 else ""), "color": Color(0.6, 1, 0.5), "arrow": 0 })
 	if _slow_time > 0.0 and _slow_type == "electric":
 		chips.append({ "text": "PAR", "color": bad, "arrow": 0 })
 	for stat in ["attack", "defense", "speed"]:
@@ -1946,7 +1946,11 @@ func _apply_effect(effect: Dictionary, source: Brawler, move_type := "") -> void
 		return
 	var kind := str(effect.get("type", ""))
 	match kind:
-		"burn", "poison", "leech", "bleed":
+		"leech":
+			_leeches.append({ "source": source, "dps": float(effect.get("dps", 150.0)), "time": float(effect.get("duration", 3.5)) })
+			if _leeches.size() > MAX_LEECH_STACKS:
+				_leeches.pop_front()
+		"burn", "poison", "bleed":
 			_dot_kind = kind
 			_dot_time = float(effect.get("duration", 3.0))
 			_dot_dps = float(effect.get("dps", 100.0))
@@ -1973,6 +1977,7 @@ func _apply_effect(effect: Dictionary, source: Brawler, move_type := "") -> void
 
 func _clear_status() -> void:
 	_dot_time = 0.0
+	_leeches.clear()
 	_slow_time = 0.0
 	_blind_time = 0.0
 	_stun_time = 0.0
@@ -2018,6 +2023,7 @@ func _tick_timers(delta: float) -> void:
 
 func _tick_status(delta: float) -> void:
 	_slow_time = maxf(0.0, _slow_time - delta)
+	_tick_leeches(delta)
 	if _dot_time <= 0.0:
 		_dot_tick = 0.0
 		return
@@ -2030,6 +2036,33 @@ func _tick_status(delta: float) -> void:
 		take_damage(_dot_dps * DOT_TICK, source)
 		if _dot_kind == "leech" and source:
 			source.heal(amount)
+
+
+## Every stack drains its share each tick and heals its planter by what it took.
+func _tick_leeches(delta: float) -> void:
+	if _leeches.is_empty():
+		_leech_tick = 0.0
+		return
+	_leech_tick += delta
+	var ticking := _leech_tick >= DOT_TICK
+	if ticking:
+		_leech_tick -= DOT_TICK
+	for i in range(_leeches.size() - 1, -1, -1):
+		var stack: Dictionary = _leeches[i]
+		if ticking and not is_dead:
+			var source: Brawler = stack["source"] if is_instance_valid(stack["source"]) else null
+			var amount := float(stack["dps"]) * DOT_TICK
+			var before := health
+			take_damage(amount, source)
+			if source and not source.is_dead:
+				source.heal(before - health, source)
+		stack["time"] = float(stack["time"]) - delta
+		if float(stack["time"]) <= 0.0:
+			_leeches.remove_at(i)
+
+
+func leech_stacks() -> int:
+	return _leeches.size()
 
 
 func _tick_stream(delta: float) -> void:
@@ -2326,6 +2359,8 @@ func _update_sprite(delta: float) -> void:
 		tint = Color(1, 0.45, 0.45)
 	elif _dot_time > 0.0:
 		tint = { "burn": Color(1, 0.75, 0.55), "poison": Color(0.85, 0.65, 1), "leech": Color(0.7, 1, 0.6) }.get(_dot_kind, Color.WHITE)
+	elif not _leeches.is_empty():
+		tint = Color(0.7, 1, 0.6)
 	elif _slow_time > 0.0:
 		tint = Color(1, 1, 0.6)
 	elif _buff("defense") > 0.0:
@@ -2358,6 +2393,11 @@ func _animate(delta: float) -> void:
 	else:
 		_anim_phase += delta * 2.6
 		squash = 1.0 + sin(_anim_phase) * 0.025  # Idle breathing.
+	if _dash_time > 0.0 and _dash_hop > 0.0:
+		# Leaping dash: an arc through the air, stretched tall at the top.
+		var t := clampf(1.0 - _dash_time / maxf(_dash_total, 0.01), 0.0, 1.0)
+		lift += sin(t * PI) * _dash_hop
+		squash = 1.0 + sin(t * PI) * 0.12
 	if flying:
 		lift += 0.9 + sin(Time.get_ticks_msec() * 0.003) * 0.15
 	elif can_swim and arena != null and arena.is_water(global_position):
@@ -2517,7 +2557,7 @@ func _update_auras(hidden: bool) -> void:
 	var active := {
 		"fire": _dot_time > 0.0 and _dot_kind == "burn",
 		"poison": _dot_time > 0.0 and _dot_kind == "poison",
-		"grass": _dot_time > 0.0 and _dot_kind == "leech",
+		"grass": not _leeches.is_empty(),
 		"electric": _slow_time > 0.0,
 		"psychic": _stun_time > 0.0,
 		"flying": _blind_time > 0.0,

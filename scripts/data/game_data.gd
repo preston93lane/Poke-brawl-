@@ -313,10 +313,47 @@ func scaled_move(move_id: String, scale: float) -> MoveData:
 	if not _scaled_moves.has(key):
 		var d: Dictionary = (move_dicts[move_id] as Dictionary).duplicate(true)
 		d["power"] = float(d.get("power", 0.0)) * scale
-		if d.get("effect", {}) is Dictionary and (d["effect"] as Dictionary).has("dps"):
-			d["effect"]["dps"] = float(d["effect"]["dps"]) * scale
+		var effect: Variant = d.get("effect")
+		if effect is Dictionary and (effect as Dictionary).has("dps"):
+			effect["dps"] = float(effect["dps"]) * scale
 		_scaled_moves[key] = MoveData.from_dict(move_id, d)
 	return _scaled_moves[key]
+
+
+## The super `stage` uses with `pick` chosen (a TM super, an earlier stage's super,
+## or "" for its own). TM supers are shaped to its play style and scaled to its
+## stage (tm_super_scale). `allowed`: the TM supers this stage may use.
+func stage_super(stage: SpeciesData, pick: String, allowed: Array[String]) -> MoveData:
+	if pick.begins_with("tmsuper_") and pick in allowed:
+		var shaped := pick + "_" + str(STYLE_SHAPES.get(stage.style, "shot"))
+		var move := scaled_move(shaped, tm_super_scale(stage, get_move(shaped)))
+		if move:
+			return move
+	var own: MoveData = get_move(pick) if pick != "" and not pick.begins_with("tmsuper_") else null
+	return own if own else stage.super_move
+
+
+## TM supers hit softer on earlier stages: a bit stronger than that stage's own
+## super, well short of the final stage's (rules.json tm_super). Final
+## evolutions get full power, single-stage lines rules "single_stage".
+func tm_super_scale(stage: SpeciesData, tm: MoveData) -> float:
+	var r: Dictionary = rule("tm_super", {})
+	if stage.evolves_to == "":
+		return 1.0 if stage.stage > 1 else float(r.get("single_stage", 0.9))
+	var base := stage.stage == 1
+	var own := stage.super_move.estimated_damage() if stage.super_move else 0.0
+	var top := 0.0
+	for s in evolution_line(stage.id):
+		if s.evolves_to == "" and s.super_move:
+			top = maxf(top, s.super_move.estimated_damage())
+	var full := tm.estimated_damage() if tm else 0.0
+	if full <= 0.0 or (own <= 0.0 and top <= 0.0):
+		return float(r.get("base_fallback", 0.6)) if base else float(r.get("mid_fallback", 0.8))
+	var cap := top * float(r.get("base_cap" if base else "mid_cap", 0.8))
+	var target := own * float(r.get("over_own", 1.2)) if own > 0.0 else cap * 0.8
+	if cap > 0.0:
+		target = minf(target, cap)
+	return clampf(target / full, float(r.get("min", 0.45)), float(r.get("base_max" if base else "mid_max", 0.9)))
 
 
 ## TM supers by type: type -> [base id] (tmsuper_fire_blast...).
