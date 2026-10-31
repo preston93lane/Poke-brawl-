@@ -138,7 +138,7 @@ def super_template(style, f, type_):
         "stream": dict(kind="area", power=1300 * f, range=4.0, area_radius=3.0, effect=eff),
         "healer": dict(kind="self", heal=0.35, team_heal=0.45, support_radius=6.5, cleanse=True),
         "boomerang": dict(kind="projectile", power=450 * f, count=3, spread=40, returns=True, range=7.0, speed=11, radius=0.45),
-        "chain": dict(kind="area", power=1200 * f, range=6.0, area_radius=3.0, effect={"type": "stun", "chance": 1.0, "duration": 0.8}),
+        "chain": dict(kind="area", power=1080 * f, range=6.0, area_radius=3.0, effect={"type": "stun", "chance": 1.0, "duration": 0.8}),
         "zone": dict(kind="projectile", power=508 * f, lob=True, range=7.5, speed=9, linger=5.0, linger_radius=3.2),
         "homing": dict(kind="projectile", power=260 * f, count=6, spread=120, range=7.0, speed=10, radius=0.4),
         # Frank-style: an aimed 90-degree slam in front, not a full circle.

@@ -285,7 +285,7 @@
 	"jynx_main1": {"name": "Ice Orbs", "type": "ice", "slot": "main", "kind": "projectile", "count": 2, "spread": 24, "range": 7.0, "speed": 10, "ammo": 3, "reload": 1.7, "power": 440},
 	"jynx_main2": {"name": "Lovely Kiss", "type": "psychic", "slot": "main", "kind": "projectile", "count": 3, "spread": 36, "range": 6.5, "speed": 10, "ammo": 3, "reload": 2.0, "effect": {"type": "slow", "chance": 0.15, "duration": 1.0, "amount": 0.3}, "power": 380},
 	"jynx_main3": {"name": "Blizzard Orb", "type": "ice", "slot": "main", "kind": "projectile", "radius": 0.5, "explode_radius": 1.3, "range": 7.5, "speed": 9, "ammo": 3, "reload": 2.2, "power": 1050},
-	"electabuzz_super": {"name": "Electro Field", "type": "electric", "slot": "super", "kind": "area", "power": 1440, "range": 6.0, "area_radius": 3.0, "effect": {"type": "stun", "chance": 1.0, "duration": 0.8}},
+	"electabuzz_super": {"name": "Electro Field", "type": "electric", "slot": "super", "kind": "area", "power": 1296, "range": 6.0, "area_radius": 3.0, "effect": {"type": "stun", "chance": 1.0, "duration": 0.8}},
 	"electabuzz_main1": {"name": "Thunder Punch", "type": "electric", "slot": "main", "kind": "projectile", "range": 7.0, "speed": 16, "ammo": 3, "reload": 1.6, "chain": 2, "power": 480},
 	"electabuzz_main2": {"name": "Thunderbolt", "type": "electric", "slot": "main", "kind": "projectile", "range": 7.0, "speed": 16, "ammo": 3, "reload": 1.9, "chain": 3, "power": 480},
 	"electabuzz_main3": {"name": "Thunder", "type": "electric", "slot": "main", "kind": "projectile", "range": 7.0, "speed": 15, "ammo": 3, "reload": 2.1, "chain": 4, "effect": {"type": "slow", "chance": 0.2, "duration": 1.2, "amount": 0.4}, "power": 460},

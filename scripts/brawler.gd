@@ -1502,7 +1502,9 @@ func _process_dash(delta: float) -> void:
 			continue
 		var to := other.global_position - global_position
 		to.y = 0.0
-		if to.length() <= BODY_RADIUS * 2.0 + 0.3:
+		# A leap swoops down on targets a little off its line.
+		var reach := float(GameData.rule("dash_hop/reach", 0.45)) if _dash_hop > 0.0 else 0.0
+		if to.length() <= BODY_RADIUS * 2.0 + 0.3 + reach:
 			_dash_hit.append(other)
 			if _dash_move.explode_radius <= 0.0:
 				other.take_hit(self, _dash_move)

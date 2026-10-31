@@ -224,9 +224,10 @@
 		"shrine_cooldown": 30.0
 	},
 	"dash_hop": {
-		"_comment": "Leaping dashes (Mortis-like): these play styles hop through the air instead of sliding, at speed x the move's dash speed; height in metres for main attacks and supers (scripts/brawler.gd _start_dash).",
+		"_comment": "Leaping dashes (Mortis-like): these play styles hop through the air instead of sliding, at speed x the move's dash speed, catching targets up to reach metres further from their path; height in metres for main attacks and supers (scripts/brawler.gd _start_dash).",
 		"styles": ["assassin"],
-		"speed": 0.8,
+		"speed": 0.85,
+		"reach": 0.45,
 		"height": 0.75,
 		"super_height": 1.1
 	},
