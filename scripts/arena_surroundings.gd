@@ -10,7 +10,8 @@ extends RefCounted
 ## Nothing here blocks or collides: it's all looks.
 
 const CROWD_SHADER := preload("res://assets/shaders/crowd.gdshader")
-const CROWD_TEXTURE := preload("res://assets/crowd/trainers.png")
+## Loaded when needed (not preloaded), so a fresh checkout parses before it is imported.
+const CROWD_TEXTURE_PATH := "res://assets/crowd/trainers.png"
 ## Each look is one row of CROWD_CELL-pixel frames (tools/make_crowd.py); one
 ## sprite pixel is 5 cm in the world, so fans stand about as tall as a Pokémon.
 const CROWD_CELL := Vector2(28, 34)
@@ -103,7 +104,8 @@ static func _stadium(arena: Arena, arena_id: String, tilt: Basis) -> void:
 static func _crowd(arena: Arena, spots: Array[Transform3D], rng: RandomNumberGenerator) -> void:
 	if spots.is_empty():
 		return
-	var looks := maxi(1, int(CROWD_TEXTURE.get_height() / CROWD_CELL.y))
+	var crowd_texture: Texture2D = load(CROWD_TEXTURE_PATH)
+	var looks := maxi(1, int(crowd_texture.get_height() / CROWD_CELL.y))
 	var quad := QuadMesh.new()
 	quad.size = SPECTATOR_SIZE
 	var mm := MultiMesh.new()
@@ -116,7 +118,7 @@ static func _crowd(arena: Arena, spots: Array[Transform3D], rng: RandomNumberGen
 		mm.set_instance_custom_data(i, Color(float(rng.randi_range(0, looks - 1)), rng.randf(), rng.randf(), 0))
 	var mat := ShaderMaterial.new()
 	mat.shader = CROWD_SHADER
-	mat.set_shader_parameter("atlas", CROWD_TEXTURE)
+	mat.set_shader_parameter("atlas", crowd_texture)
 	mat.set_shader_parameter("looks", float(looks))
 	mat.set_shader_parameter("excitement", 0.6)
 	var crowd := MultiMeshInstance3D.new()
