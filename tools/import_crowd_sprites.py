@@ -7,7 +7,8 @@ figures apart and saves each one to assets/crowd/fan/<sheet>_<n>.png.
 
 Then run tools/make_crowd.py, which packs these together with our own drawn
 spectators into assets/crowd/trainers.png. Credit the artists in the game's
-About & Legal screen (scripts/ui/menu.gd CREDITS).
+About & Legal screen (scripts/ui/menu.gd CREDITS) and the README. The current
+ones are by Sira Gone (@insoffnio on Instagram).
 """
 import os, sys
 import numpy as np

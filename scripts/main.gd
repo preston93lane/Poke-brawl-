@@ -141,7 +141,9 @@ func _ready() -> void:
 		mode_logic.start()
 
 	var half := arena.world_size() * 0.5
-	var x_limit := maxf(0.0, half.x - 14.0)
+	# Like Brawl Stars, the whole width of the pitch (and what's beside it) is in
+	# view, so the camera only pans sideways on unusually wide custom maps.
+	var x_limit := maxf(0.0, half.x - 17.0)
 	var z_limit := maxf(0.0, half.y - 9.0)
 	# The far edge can scroll a few tiles further, so its back wall clears the
 	# scoreboard (the decorations past it fill the view).

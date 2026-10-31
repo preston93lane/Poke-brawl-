@@ -4,8 +4,8 @@ extends VBoxContainer
 ## (or edit and save over a built-in map). Saved maps show up in every mode
 ## they support and can be tested straight away.
 
-const WIDTH := 36
-const HEIGHT := 48
+const WIDTH := 30
+const HEIGHT := 42
 ## [char, label, colour on the editor grid]
 const PALETTE := [
 	[".", "FLOOR", Color(0, 0, 0, 0)],

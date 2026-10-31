@@ -163,10 +163,10 @@ def trainer(look, cheering):
         # Arms thrown up either side of the head (drawn last so the head can't hide them).
         cv.rect(cx - 7, 14, cx - 5, 15, top)
         cv.rect(cx + 4, 14, cx + 6, 15, top)
-        cv.rect(cx - 9, 4, cx - 8, 15, top)
-        cv.rect(cx + 7, 4, cx + 8, 15, top)
-        cv.rect(cx - 9, 2, cx - 8, 3, skin, False)
-        cv.rect(cx + 7, 2, cx + 8, 3, skin, False)
+        cv.rect(cx - 9, 10, cx - 8, 15, top)
+        cv.rect(cx + 7, 10, cx + 8, 15, top)
+        cv.rect(cx - 9, 8, cx - 8, 9, skin, False)
+        cv.rect(cx + 7, 8, cx + 8, 9, skin, False)
     return cv.image()
 
 

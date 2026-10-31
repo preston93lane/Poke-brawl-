@@ -12,14 +12,14 @@ extends RefCounted
 const CROWD_SHADER := preload("res://assets/shaders/crowd.gdshader")
 const CROWD_TEXTURE := preload("res://assets/crowd/trainers.png")
 ## Each look is one row of CROWD_CELL-pixel frames (tools/make_crowd.py); one
-## sprite pixel is 2.5 cm in the world.
+## sprite pixel is 5 cm in the world, so fans stand about as tall as a Pokémon.
 const CROWD_CELL := Vector2(28, 34)
-const SPECTATOR_SIZE := CROWD_CELL * 0.025
+const SPECTATOR_SIZE := CROWD_CELL * 0.05
 
 ## Stand tiers: how many, how deep and how much higher each one is.
-const TIERS := 4
-const TIER_DEPTH := 0.95
-const TIER_RISE := 0.42
+const TIERS := 3
+const TIER_DEPTH := 1.5
+const TIER_RISE := 0.7
 ## Gap between the map's edge and the first tier.
 const STAND_GAP := 0.7
 
@@ -74,11 +74,11 @@ static func _stadium(arena: Arena, arena_id: String, tilt: Basis) -> void:
 			var seat_size := Vector3(size.x, 0.08, size.z) - Vector3(absf(out.x), 0, absf(out.z)) * TIER_DEPTH * 0.45
 			_box(st, centre + out * TIER_DEPTH * 0.12 + Vector3(0, top + 0.04, 0), seat_size, seat.darkened(0.25 if i % 2 else 0.0))
 			# Spectators along the step (most seats taken).
-			var count := int(reach * 2.0 / 0.52)
+			var count := int(reach * 2.0 / 0.9)
 			for k in count:
 				if rng.randf() > 0.72:
 					continue
-				var t := -reach + (k + 0.5) * (reach * 2.0 / count) + rng.randf_range(-0.08, 0.08)
+				var t := -reach + (k + 0.5) * (reach * 2.0 / count) + rng.randf_range(-0.12, 0.12)
 				var at := along * t + out * (near + TIER_DEPTH * 0.55) + Vector3(0, top + 0.08 + SPECTATOR_SIZE.y * 0.5, 0)
 				spots.append(Transform3D(tilt, at))
 		# A wall behind the top tier closes the stands off.

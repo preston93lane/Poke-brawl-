@@ -16,6 +16,7 @@ func _ready() -> void:
 	# the real one is put back at the end.
 	var real_profile: Dictionary = Profile.data.duplicate(true)
 	Profile.data = Profile.blank()
+	_load_test_arenas()
 	for base in GameData.base_species():
 		Profile.data["unlocked"].append(base.id)
 	_check_data()
@@ -71,6 +72,16 @@ func _ready() -> void:
 	Profile.save()
 	print("SMOKE TEST: %s" % ("PASS" if failures == 0 else "FAIL (%d)" % failures))
 	get_tree().quit(1 if failures > 0 else 0)
+
+
+## Tests that place Pokémon on particular tiles use the original 36x48 versions of
+## a few maps (tests/fixtures/arenas/test_*.json), so the real maps can change size
+## or layout without moving every hand-picked spot.
+func _load_test_arenas() -> void:
+	var dir := "res://tests/fixtures/arenas/"
+	for file in DirAccess.get_files_at(dir):
+		if file.ends_with(".json"):
+			GameData.arenas[file.get_basename()] = JSON.parse_string(FileAccess.get_file_as_string(dir + file))
 
 
 func expect(condition: bool, message: String) -> void:
@@ -140,7 +151,7 @@ func _start_match(arena_id: String, mode: String, player_species: String, enemie
 
 func _check_battle() -> void:
 	print("Battle 3v3")
-	var main := await _start_match("route_1", "duel", "charmander", ["bulbasaur"])
+	var main := await _start_match("test_route_1", "duel", "charmander", ["bulbasaur"])
 	var player: Brawler = main.player
 	var enemy: Brawler = main.enemy
 	expect(main.teams[0].size() == 3 and main.teams[1].size() == 3, "teams are 3v3")
@@ -185,7 +196,7 @@ func _check_battle() -> void:
 ## Fire every Pokémon's super next to an enemy and check something happened.
 func _check_supers() -> void:
 	print("Supers")
-	var main := await _start_match("boulder_gym", "duel", "pikachu", ["squirtle"])
+	var main := await _start_match("test_boulder_gym", "duel", "pikachu", ["squirtle"])
 	var target: Brawler = main.enemy
 	for team: int in [0, 1]:
 		for other: Brawler in main.teams[team]:
@@ -231,7 +242,7 @@ func _check_supers() -> void:
 
 func _check_movement() -> void:
 	print("Movement")
-	var main := await _start_match("route_1", "duel", "squirtle", [])
+	var main := await _start_match("test_route_1", "duel", "squirtle", [])
 	var arena: Arena = main.arena
 	for team: int in [0, 1]:
 		for b: Brawler in main.teams[team]:
@@ -264,7 +275,7 @@ func _check_movement() -> void:
 ## Shots, swipes and streams must not go through walls; streams drain and refill a tank.
 func _check_walls_and_streams() -> void:
 	print("Walls and streams")
-	var main := await _start_match("boulder_gym", "duel", "charmander", ["bulbasaur"])
+	var main := await _start_match("test_boulder_gym", "duel", "charmander", ["bulbasaur"])
 	var arena: Arena = main.arena
 	var target: Brawler = main.enemy
 	for team: int in [0, 1]:
@@ -314,7 +325,7 @@ func _check_walls_and_streams() -> void:
 
 func _check_king_of_the_hill() -> void:
 	print("King of the hill")
-	for arena_id in ["boulder_gym", "dragons_den"]:
+	for arena_id in ["test_boulder_gym", "dragons_den"]:
 		var main := await _start_match(arena_id, "king_of_the_hill", "dratini", [])
 		expect(main.mode == "king_of_the_hill" and main.arena.has_zone(), "%s supports king of the hill" % arena_id)
 		Engine.time_scale = 4.0
@@ -442,7 +453,7 @@ func _freeze_all(main: Node, keep: Brawler = null) -> void:
 
 func _check_legendaries_and_items() -> void:
 	print("Legendaries, items, spawn protection, animation")
-	var main := await _start_match("route_1", "duel", "charmander", ["squirtle"], true)
+	var main := await _start_match("test_route_1", "duel", "charmander", ["squirtle"], true)
 	await _freeze_all(main, main.enemy)
 	var player: Brawler = main.player
 	var enemy: Brawler = main.enemy
@@ -524,7 +535,7 @@ func _check_legendaries_and_items() -> void:
 
 func _check_shrine() -> void:
 	print("Shrine control")
-	var main := await _start_match("boulder_gym", "king_of_the_hill", "geodude", [])
+	var main := await _start_match("test_boulder_gym", "king_of_the_hill", "geodude", [])
 	await _freeze_all(main)
 	main.player._protect_time = 0.0
 	main.player.position = main.arena.zone_center
@@ -540,7 +551,7 @@ func _check_shrine() -> void:
 func _check_menu_settings() -> void:
 	print("Menu settings")
 	GameData.match_settings = {
-		"mode": "king_of_the_hill", "arena": "route_1", "species": "squirtle", "level": 2,
+		"mode": "king_of_the_hill", "arena": "test_route_1", "species": "squirtle", "level": 2,
 		"main": "squirtle_main1", "allies": ["abra"], "enemies": ["dratini", "pikachu"], "bot_level": 2,
 	}
 	var main := MAIN_SCENE.instantiate()
@@ -579,7 +590,7 @@ func _reset_target(target: Brawler, at: Vector3) -> void:
 
 func _check_attack_mechanics() -> void:
 	print("Attack mechanics")
-	var setup := await _duel_setup("boulder_gym", "bulbasaur")
+	var setup := await _duel_setup("test_boulder_gym", "bulbasaur")
 	var main: Node = setup[0]
 	var shooter: Brawler = setup[1]
 	var target: Brawler = setup[2]
@@ -711,7 +722,7 @@ func _check_attack_mechanics() -> void:
 
 func _check_gadgets_and_branches() -> void:
 	print("Gadgets and branching evolutions")
-	var setup := await _duel_setup("route_1", "eevee")
+	var setup := await _duel_setup("test_route_1", "eevee")
 	var main: Node = setup[0]
 	var player: Brawler = setup[1]
 	var uses := player.gadget_uses
@@ -757,7 +768,7 @@ func _check_gadgets_and_branches() -> void:
 
 func _check_swimming_and_gaps() -> void:
 	print("Swimming and narrow gaps")
-	var main := await _start_match("dragons_den", "duel", "charmander", [])
+	var main := await _start_match("test_dragons_den", "duel", "charmander", [])
 	await _freeze_all(main)
 	var arena: Arena = main.arena
 	var player: Brawler = main.player
@@ -815,7 +826,7 @@ func _check_swimming_and_gaps() -> void:
 
 func _check_breakable_walls() -> void:
 	print("Breakable walls")
-	var main := await _start_match("boulder_gym", "duel", "geodude", [])
+	var main := await _start_match("test_boulder_gym", "duel", "geodude", [])
 	await _freeze_all(main)
 	var arena: Arena = main.arena
 	var wall: Breakable = null
@@ -842,7 +853,7 @@ func _check_breakable_walls() -> void:
 
 func _check_brawl_ball() -> void:
 	print("Brawl Ball")
-	var main := await _start_match("pallet_pitch", "brawl_ball", "machop", [])
+	var main := await _start_match("test_pallet_pitch", "brawl_ball", "machop", [])
 	await _freeze_all(main)
 	var arena: Arena = main.arena
 	var ball: Ball = main.mode_logic.ball
@@ -871,7 +882,7 @@ func _check_brawl_ball() -> void:
 
 func _check_candy_rush() -> void:
 	print("Rare Candy Rush")
-	var main := await _start_match("route_1", "candy_rush", "pikachu", [])
+	var main := await _start_match("test_route_1", "candy_rush", "pikachu", [])
 	await _freeze_all(main, main.enemy)
 	var logic: Node = main.mode_logic
 	var player: Brawler = main.player
@@ -961,7 +972,7 @@ func _check_settings_and_map_maker() -> void:
 	layout["move"] = [0.8, 0.75]
 	layout["aim"] = [0.2, 0.75]
 	GameData.set_setting("layout", layout)
-	var main := await _start_match("route_1", "duel", "charmander", [])
+	var main := await _start_match("test_route_1", "duel", "charmander", [])
 	expect(is_equal_approx(main.hud.move_stick.anchor_left, 0.5) and is_equal_approx(main.hud.aim_stick.anchor_left, 0.0), "saved control layout is used in matches")
 	main.queue_free()
 	await get_tree().process_frame
@@ -979,11 +990,11 @@ func _check_settings_and_map_maker() -> void:
 	editor.mirror = "quad"
 	editor.brush = "X"
 	editor.paint(Vector2i(5, 10))
-	expect(editor.cell(Vector2i(30, 10)) == "X" and editor.cell(Vector2i(5, 37)) == "X" and editor.cell(Vector2i(30, 37)) == "X", "quadrant mirroring paints all four corners")
+	expect(editor.cell(Vector2i(24, 10)) == "X" and editor.cell(Vector2i(5, 31)) == "X" and editor.cell(Vector2i(24, 31)) == "X", "quadrant mirroring paints all four corners")
 	editor.mirror = "vertical"
 	editor.brush = "1"
 	editor.paint(Vector2i(10, 40))
-	expect(editor.cell(Vector2i(10, 7)) == "2" and editor.cell(Vector2i(25, 40)) == ".", "top/bottom mirroring flips spawns to the other team only")
+	expect(editor.cell(Vector2i(10, 1)) == "2" and editor.cell(Vector2i(19, 40)) == ".", "top/bottom mirroring flips spawns to the other team only")
 	editor._name_edit.text = "Smoke Test Arena"
 	editor.floor_tile = "sand"
 	editor.wall_tile = "brick"
@@ -1077,7 +1088,7 @@ func _check_super_scaling() -> void:
 
 func _check_leech_drain() -> void:
 	print("Leech drain stacks")
-	var main := await _start_match("pallet_pitch", "duel", "bulbasaur", ["squirtle"])
+	var main := await _start_match("test_pallet_pitch", "duel", "bulbasaur", ["squirtle"])
 	var me: Brawler = main.player
 	var foe: Brawler = main.teams[1][0]
 	await _freeze_all(main)
@@ -1112,7 +1123,7 @@ func _check_fullscreen_button() -> void:
 	var view := get_viewport().get_visible_rect().size
 	var rect: Rect2 = Rect2(fs._button.position, fs._button.size)
 	expect(rect.end.x <= view.x and rect.position.x > view.x - 70 and rect.position.y < 20, "full screen button sits in the top-right corner (%s)" % rect)
-	var main := await _start_match("route_1", "duel", "pikachu", [])
+	var main := await _start_match("test_route_1", "duel", "pikachu", [])
 	var scoreboard_panel := Rect2(view.x * 0.5 - 150 - 3 * 54 - 12, 10, 300 + 2 * (3 * 54 + 12), 62)
 	expect(not rect.intersects(scoreboard_panel), "it doesn't cover the scoreboard")
 	expect(not rect.intersects(Rect2(main.hud.super_button.get_global_rect())) and not rect.intersects(Rect2(main.hud.gadget_button.get_global_rect())), "or the buttons")
@@ -1179,7 +1190,7 @@ func _check_menu_fits() -> void:
 
 func _check_power_ups() -> void:
 	print("Power Ups and evolving heals")
-	var main := await _start_match("route_1", "duel", "tauros", [])
+	var main := await _start_match("test_route_1", "duel", "tauros", [])
 	var tauros: Brawler = main.player
 	var hp := tauros.max_health
 	tauros.health = tauros.max_health * 0.5
@@ -1200,7 +1211,7 @@ func _check_trainer_levels() -> void:
 	print("Trainer levels and fast evolving")
 	expect(GameData.get_species("charmander").evolve_level == 16 and GameData.get_species("charmeleon").evolve_level == 36, "main-series evolve levels loaded")
 	expect(GameData.family_root("charizard") == "charmander", "Charizard's line is Charmander's")
-	var main := await _start_match("route_1", "duel", "charmander", [])
+	var main := await _start_match("test_route_1", "duel", "charmander", [])
 	var p: Brawler = main.player
 	expect(p.trainer_level == Profile.level_of("charmander"), "the player gets their profile level")
 	p.trainer_level = 1
@@ -1217,7 +1228,7 @@ func _check_trainer_levels() -> void:
 	expect(p.species.id == "charizard", "level 36 evolves Charmeleon after 2 KOs")
 	main.queue_free()
 	await get_tree().process_frame
-	main = await _start_match("route_1", "duel", "tauros", [])
+	main = await _start_match("test_route_1", "duel", "tauros", [])
 	var t: Brawler = main.player
 	t.trainer_level = 20
 	expect(t.kills_needed() == 2, "first Power Up is fast at level 20")
@@ -1392,7 +1403,7 @@ func _check_progression() -> void:
 	Profile.buy("rare_candy", 0)
 	expect(Profile.cant_buy("rare_candy", 0) == "Sold out", "common slots sell 3 a day")
 	expect(Profile.buy("great_ball", 1) and Profile.cant_buy("great_ball", 1) == "Sold out", "rare slots sell once a day")
-	var main := await _start_match("route_1", "duel", "charmander", [])
+	var main := await _start_match("test_route_1", "duel", "charmander", [])
 	expect(main.player.attack > GameData.get_species("charmander").attack * 1.2, "vitamins boost stats in a match")
 	main.queue_free()
 	await get_tree().process_frame
@@ -1416,7 +1427,7 @@ func _check_progression() -> void:
 
 func _check_hms() -> void:
 	print("HMs")
-	var main := await _start_match("route_1", "duel", "charmander", [])
+	var main := await _start_match("test_route_1", "duel", "charmander", [])
 	await _freeze_all(main)
 	var arena: Arena = main.arena
 	var p: Brawler = main.player
@@ -1460,7 +1471,7 @@ func _check_hms() -> void:
 
 ## Each HM's core effect works on an open map with no water, boulders or walls nearby.
 func _check_hm_reworks() -> void:
-	var main := await _start_match("pallet_pitch", "duel", "squirtle", ["geodude"])
+	var main := await _start_match("test_pallet_pitch", "duel", "squirtle", ["geodude"])
 	await _freeze_all(main, main.enemy)
 	var p: Brawler = main.player
 	var t: Brawler = main.enemy
@@ -1521,7 +1532,7 @@ func _check_hm_reworks() -> void:
 
 func _check_faint_stops_attacks() -> void:
 	print("Fainting stops attacks")
-	var main := await _start_match("route_1", "duel", "squirtle", [])
+	var main := await _start_match("test_route_1", "duel", "squirtle", [])
 	await _freeze_all(main)
 	var p: Brawler = main.player
 	p.position = main.arena.cell_center(Vector2i(18, 30))
@@ -1572,7 +1583,7 @@ func _check_text_boxes() -> void:
 
 func _check_tm_super_shapes() -> void:
 	print("TM super shapes")
-	var main := await _start_match("route_1", "duel", "charmander", [])
+	var main := await _start_match("test_route_1", "duel", "charmander", [])
 	var p: Brawler = main.player
 	Profile._add_tm("tm_fire_blast")
 	p.super_choices = { "charmander": "tmsuper_fire_blast" }
@@ -1794,7 +1805,7 @@ func _check_no_mew_bots() -> void:
 
 func _check_mvp() -> void:
 	print("MVP")
-	var main := await _start_match("route_1", "duel", "charmander", [])
+	var main := await _start_match("test_route_1", "duel", "charmander", [])
 	var all: Array[Brawler] = []
 	for t: int in main.teams:
 		for b: Brawler in main.teams[t]:
@@ -1816,7 +1827,7 @@ func _check_mvp() -> void:
 	expect(mvp == all[0], "KOs and KO ratio beat raw damage for MVP")
 	main.queue_free()
 	await get_tree().process_frame
-	main = await _start_match("pallet_pitch", "brawl_ball", "charmander", [])
+	main = await _start_match("test_pallet_pitch", "brawl_ball", "charmander", [])
 	all.clear()
 	for t: int in main.teams:
 		for b: Brawler in main.teams[t]:
@@ -1837,7 +1848,7 @@ func _check_mvp() -> void:
 
 func _check_boss_no_heal() -> void:
 	print("Battle legendaries never heal")
-	var main := await _start_match("route_1", "duel", "charmander", [])
+	var main := await _start_match("test_route_1", "duel", "charmander", [])
 	var boss: Brawler = main.spawn_raid_boss()
 	await get_tree().physics_frame
 	boss._protect_time = 0.0
@@ -1861,7 +1872,7 @@ func _check_boss_no_heal() -> void:
 
 func _check_slam_windup() -> void:
 	print("Telegraphed slam")
-	var setup := await _duel_setup("route_1", "snorlax")
+	var setup := await _duel_setup("test_route_1", "snorlax")
 	var main: Node = setup[0]
 	var snorlax: Brawler = setup[1]
 	var target: Brawler = setup[2]
@@ -1943,7 +1954,7 @@ func _check_move_looks() -> void:
 
 func _check_controls() -> void:
 	print("Grabs, tombs, torrents, vortexes, stat drops")
-	var main := await _start_match("pallet_pitch", "duel", "tangela", ["geodude"])
+	var main := await _start_match("test_pallet_pitch", "duel", "tangela", ["geodude"])
 	await _freeze_all(main, main.enemy)
 	var player: Brawler = main.player
 	var target: Brawler = main.enemy
@@ -2066,7 +2077,7 @@ func _check_kit_data() -> void:
 
 func _check_kits_in_match() -> void:
 	print("Kits in a match")
-	var main := await _start_match("pallet_pitch", "duel", "charizard", ["geodude"])
+	var main := await _start_match("test_pallet_pitch", "duel", "charizard", ["geodude"])
 	await _freeze_all(main, main.enemy)
 	var p: Brawler = main.player
 	var t: Brawler = main.enemy

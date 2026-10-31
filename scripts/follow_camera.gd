@@ -3,7 +3,7 @@ extends Camera3D
 ## Brawl Stars style camera: fixed tilt, never rotates, smoothly follows the target.
 
 @export_range(20.0, 85.0) var pitch_degrees := 60.0
-@export var distance := 23.0
+@export var distance := 26.5
 @export var follow_speed := 6.0
 ## Look this far ahead of the target (toward the enemy side, up the screen), so you
 ## stand in the bottom quarter of the screen and see more of what's in front.

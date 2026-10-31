@@ -569,7 +569,7 @@ const CREDITS := [
 	["Battle sprites", "Animated Pokémon Mystery Dungeon sprites from PMD SpriteCollab (sprites.pmdcollab.org), CC BY-NC 4.0. Original sprites © Spike Chunsoft; artists listed below."],
 	["Menu pictures", "Pokémon Black/White sprites from the PokeAPI sprites collection (© Nintendo / Creatures Inc. / GAME FREAK inc.)."],
 	["Fonts", "Lilita One by Juan Montoreano, SIL Open Font License 1.1."],
-	["Stadium crowd", "Spectators drawn for this game, plus fan-made trainer sprites shared with the project (artists to be credited here)."],
+	["Stadium crowd", "Spectators drawn for this game, plus fan-made trainer sprites by Sira Gone (@insoffnio on Instagram), used with thanks."],
 	["Everything else", "Maps, 3D models, effects, item icons and sounds are made for this game (procedurally generated)."]
 ]
 const LEGAL := "Pokémon and all related names, characters, sprites, music and other assets are © Nintendo, Creatures Inc. and GAME FREAK inc. Pokémon Mystery Dungeon © Spike Chunsoft. Poké Brawl is a free, non-commercial fan project. It is not affiliated with or endorsed by Nintendo, Creatures Inc., GAME FREAK inc., The Pokémon Company or Spike Chunsoft. It is not for sale, no money is made from it, and it contains no ads or purchases with real money. If you are a rights holder and want something removed, open an issue on the GitHub repository and it will be taken down."
