@@ -3,15 +3,18 @@ extends RefCounted
 ## Decorations outside the play area, so the edges of the screen show a place
 ## instead of empty ground (arena "surroundings" in data/arenas/*.json):
 ## - "stadium" (gyms, Elite Four): tiered stands round the map in the gym's type
-##   colour, packed with a cheering crowd (one MultiMesh, assets/shaders/crowd.gdshader).
+##   colour, packed with a cheering crowd (one MultiMesh, assets/shaders/crowd.gdshader;
+##   our own spectators plus fan-made ones, packed by tools/make_crowd.py).
 ## - "ship" (S.S. Anne): white railings on the deck's edge, the hull dropping to
 ##   the sea, a pointed bow, and a wooden dock alongside.
 ## Nothing here blocks or collides: it's all looks.
 
 const CROWD_SHADER := preload("res://assets/shaders/crowd.gdshader")
 const CROWD_TEXTURE := preload("res://assets/crowd/trainers.png")
-const CROWD_LOOKS := 16
-const SPECTATOR_SIZE := Vector2(0.5, 0.7)
+## Each look is one row of CROWD_CELL-pixel frames (tools/make_crowd.py); one
+## sprite pixel is 2.5 cm in the world.
+const CROWD_CELL := Vector2(28, 34)
+const SPECTATOR_SIZE := CROWD_CELL * 0.025
 
 ## Stand tiers: how many, how deep and how much higher each one is.
 const TIERS := 4
@@ -100,6 +103,7 @@ static func _stadium(arena: Arena, arena_id: String, tilt: Basis) -> void:
 static func _crowd(arena: Arena, spots: Array[Transform3D], rng: RandomNumberGenerator) -> void:
 	if spots.is_empty():
 		return
+	var looks := maxi(1, int(CROWD_TEXTURE.get_height() / CROWD_CELL.y))
 	var quad := QuadMesh.new()
 	quad.size = SPECTATOR_SIZE
 	var mm := MultiMesh.new()
@@ -109,11 +113,11 @@ static func _crowd(arena: Arena, spots: Array[Transform3D], rng: RandomNumberGen
 	mm.instance_count = spots.size()
 	for i in spots.size():
 		mm.set_instance_transform(i, spots[i])
-		mm.set_instance_custom_data(i, Color(float(rng.randi_range(0, CROWD_LOOKS - 1)), rng.randf(), rng.randf(), 0))
+		mm.set_instance_custom_data(i, Color(float(rng.randi_range(0, looks - 1)), rng.randf(), rng.randf(), 0))
 	var mat := ShaderMaterial.new()
 	mat.shader = CROWD_SHADER
 	mat.set_shader_parameter("atlas", CROWD_TEXTURE)
-	mat.set_shader_parameter("looks", float(CROWD_LOOKS))
+	mat.set_shader_parameter("looks", float(looks))
 	mat.set_shader_parameter("excitement", 0.6)
 	var crowd := MultiMeshInstance3D.new()
 	crowd.name = "Crowd"

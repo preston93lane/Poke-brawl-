@@ -6,16 +6,21 @@ up cheering).
 
     python3 tools/make_crowd.py   ->   assets/crowd/trainers.png
 
-scripts/arena_surroundings.gd and assets/shaders/crowd.gdshader use it; the
-number of looks there must match LOOKS here.
+The sheet also packs in the fan-made spectators from assets/crowd/fan/
+(tools/import_crowd_sprites.py). Every look is one row of CELL-sized frames,
+feet on the bottom edge; fan sprites have one pose, so their "cheer" frame is
+the same figure hopping up. scripts/arena_surroundings.gd reads the row count
+from the sheet's height (CELL must match its CROWD_CELL).
 """
-import os, random
+import glob, os, random
 from PIL import Image
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 OUT = os.path.join(ROOT, "assets", "crowd", "trainers.png")
 W, H = 20, 28
 LOOKS = 16
+CELL = (28, 34)
+FAN = os.path.join(ROOT, "assets", "crowd", "fan")
 
 SKIN = [(252, 216, 176), (240, 196, 150), (214, 160, 112), (168, 112, 72), (124, 82, 52)]
 HAIR = [(52, 40, 36), (112, 64, 32), (232, 196, 88), (200, 72, 48), (72, 72, 96), (236, 236, 240),
@@ -167,11 +172,22 @@ def trainer(look, cheering):
 
 def main():
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
-    img = Image.new("RGBA", (W * 2, H * LOOKS), (0, 0, 0, 0))
+    rows = []
     for look in range(LOOKS):
-        img.paste(trainer(look, False), (0, look * H))
-        img.paste(trainer(look, True), (W, look * H))
+        rows.append((trainer(look, False), trainer(look, True), 0))
+    for path in sorted(glob.glob(os.path.join(FAN, "*.png"))):
+        fig = Image.open(path).convert("RGBA")
+        if fig.width > CELL[0] or fig.height > CELL[1] - 2:
+            fig = fig.crop((0, 0, min(fig.width, CELL[0]), min(fig.height, CELL[1] - 2)))
+        rows.append((fig, fig, 2))  # Cheering = a 2-pixel hop.
+    img = Image.new("RGBA", (CELL[0] * 2, CELL[1] * len(rows)), (0, 0, 0, 0))
+    for r, (idle, cheer, hop) in enumerate(rows):
+        for f, fig in enumerate((idle, cheer)):
+            x = f * CELL[0] + (CELL[0] - fig.width) // 2
+            y = r * CELL[1] + CELL[1] - fig.height - (hop if f == 1 else 0)
+            img.paste(fig, (x, y), fig)
     img.save(OUT)
+    print("%d looks" % len(rows))
     print("saved", OUT)
 
 
