@@ -5,7 +5,7 @@ shader_type spatial;
 render_mode unshaded, cull_disabled;
 
 uniform sampler2D atlas : source_color, filter_nearest;
-uniform float looks = 10.0;
+uniform float looks = 16.0;
 uniform float excitement = 1.0;
 
 varying flat float row;

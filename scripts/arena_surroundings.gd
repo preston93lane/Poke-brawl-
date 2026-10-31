@@ -10,8 +10,8 @@ extends RefCounted
 
 const CROWD_SHADER := preload("res://assets/shaders/crowd.gdshader")
 const CROWD_TEXTURE := preload("res://assets/crowd/trainers.png")
-const CROWD_LOOKS := 10
-const SPECTATOR_SIZE := Vector2(0.5, 0.67)
+const CROWD_LOOKS := 16
+const SPECTATOR_SIZE := Vector2(0.5, 0.7)
 
 ## Stand tiers: how many, how deep and how much higher each one is.
 const TIERS := 4
