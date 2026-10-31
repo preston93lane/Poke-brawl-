@@ -33,7 +33,7 @@ func _ready() -> void:
 	resume.custom_minimum_size.y = 64
 	resume.add_theme_stylebox_override("normal", UiKit.box(Color(0.25, 0.65, 0.35)))
 	v.add_child(resume)
-	v.add_child(_toggle("HAZE & BLUR", "haze_blur"))
+	v.add_child(_toggle("HAZE", "haze_blur"))
 	v.add_child(_toggle("AIM ASSIST", "aim_assist"))
 	v.add_child(UiKit.button("HOW TO PLAY", func() -> void: help_requested.emit(), 22))
 	var quit := UiKit.button("QUIT TO MENU", func() -> void: quit_requested.emit(), 22)

@@ -1,6 +1,7 @@
 {
 	"_comment": "The S.S. Anne's deck: the open sea on both sides (Water and Flying types can go overboard), cabins and cargo crates for cover, lifeboat tarps to hide under. Railings and cabin walls break to supers.",
 	"name": "S.S. Anne",
+	"surroundings": "ship",
 	"floor": "wood",
 	"wall": "wood_wall",
 	"liquid": "water",

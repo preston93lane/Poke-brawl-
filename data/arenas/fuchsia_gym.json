@@ -1,6 +1,7 @@
 {
 	"_comment": "Generated from a mirrored design; edit it in the map maker. Koga's maze of thin walls: lots of corners to fight around and short sight lines (good for assassins).",
 	"name": "Fuchsia Gym",
+	"surroundings": "stadium",
 	"floor": "wood",
 	"wall": "wood_wall",
 	"raid_boss": "moltres",

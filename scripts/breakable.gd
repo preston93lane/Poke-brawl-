@@ -40,9 +40,11 @@ func setup(p_cell: Vector2i, p_kind: String, mesh: Mesh, material: Material, p_m
 	add_child(shape)
 
 
-func set_mesh(mesh: Mesh, basis_value: Basis) -> void:
+func set_mesh(mesh: Mesh, basis_value: Basis, material: Material = null) -> void:
 	_mesh.mesh = mesh
 	_mesh.basis = basis_value
+	if material:
+		_mesh.material_override = material
 
 
 ## Twist / resize the visible mesh (the collider stays one tile).

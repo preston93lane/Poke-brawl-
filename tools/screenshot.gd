@@ -17,6 +17,9 @@ func _ready() -> void:
 	if arena_id.begins_with("showcase"):
 		await _showcase(out_dir, arena_id.trim_prefix("showcase").trim_prefix(":").split(",", false))
 		return
+	if arena_id.begins_with("top:"):
+		await _top_shot(arena_id.trim_prefix("top:"), out_dir)
+		return
 	if arena_id == "results":
 		await _results_shot(out_dir)
 		return
@@ -368,6 +371,15 @@ func _menu_shot(screen: String, out_dir: String) -> void:
 				await get_tree().process_frame
 			menu._species = GameData.species["scyther"]
 			menu._refresh_select_details()
+		"vitamins":
+			Profile.data["dev"] = false
+			Profile.data["unlocked"] = ["charmander", "pidgey", "rattata", "geodude"]
+			Profile._give("protein", 2)
+			Profile._give("hp_up", 1)
+			menu.show_pokedex("charmander", "mine")
+			for i in 3:
+				await get_tree().process_frame
+			menu._details_scroll.scroll_vertical = 99999
 		"dex_build":
 			Profile.data["dev"] = false
 			Profile.data["unlocked"] = ["charmander", "pidgey", "rattata", "geodude"]
@@ -418,4 +430,29 @@ func _results_shot(out_dir: String) -> void:
 			await get_tree().process_frame
 		get_viewport().get_texture().get_image().save_png("%s/results_%d.png" % [out_dir, t])
 	print("saved results")
+	get_tree().quit()
+
+
+## Your Pokémon at the far (top) edge of a map: is the back wall clear of the scoreboard?
+func _top_shot(arena_id: String, out_dir: String) -> void:
+	var main := MAIN_SCENE.instantiate()
+	main.show_intro = false
+	main.arena_id = arena_id
+	main.player_species = "pikachu"
+	main.record_progress = false
+	add_child(main)
+	for i in 10:
+		await get_tree().physics_frame
+	for b: Brawler in main.teams[0] + main.teams[1]:
+		for c in b.get_children():
+			if c is BotController or c is PlayerController:
+				c.queue_free()
+	var arena: Arena = main.arena
+	var spot := arena.nearest_open(Vector3(0, 0, -arena.world_size().y * 0.5 + 2.5))
+	main.player.global_position = spot
+	main.camera.snap_to_target()
+	for i in 30:
+		await get_tree().physics_frame
+	get_viewport().get_texture().get_image().save_png("%s/top_%s.png" % [out_dir, arena_id])
+	print("saved top")
 	get_tree().quit()

@@ -1,6 +1,7 @@
 {
 	"_comment": "Generated from a mirrored design; edit it in the map maker. Blaine's volcano: lava pools only Fire and Flying types can walk through; rock cover around them. Fire vents (F) erupt every few seconds; Fire types don't mind.",
 	"name": "Cinnabar Gym",
+	"surroundings": "stadium",
 	"floor": "volcanic",
 	"wall": "rock",
 	"liquid": "lava",

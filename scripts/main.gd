@@ -143,7 +143,10 @@ func _ready() -> void:
 	var half := arena.world_size() * 0.5
 	var x_limit := maxf(0.0, half.x - 14.0)
 	var z_limit := maxf(0.0, half.y - 9.0)
-	camera.follow_limits = Rect2(-x_limit, -z_limit, x_limit * 2.0, z_limit * 2.0)
+	# The far edge can scroll a few tiles further, so its back wall clears the
+	# scoreboard (the decorations past it fill the view).
+	var z_far := z_limit + 3.5
+	camera.follow_limits = Rect2(-x_limit, -z_far, x_limit * 2.0, z_limit + z_far)
 	camera.field_half = half.y
 	camera.target = player
 	camera.snap_to_target()
@@ -351,7 +354,7 @@ func spawn_position(b: Brawler) -> Vector3:
 	return arena.spawn_point(b.team, _spawn_index[b])
 
 
-## Light haze and soft edge blur over the 3D view, under the HUD (Settings can turn it off).
+## Light haze over the far side of the 3D view, under the HUD (Settings can turn it off).
 func _add_haze() -> void:
 	var layer := CanvasLayer.new()
 	layer.name = "Haze"
@@ -421,6 +424,7 @@ func _physics_process(delta: float) -> void:
 
 
 func _on_brawler_died(victim: Brawler, killer: Brawler) -> void:
+	ArenaSurroundings.cheer(arena)
 	if round_over:
 		return
 	if victim == raid_boss:

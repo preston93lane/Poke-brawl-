@@ -89,6 +89,13 @@ const WALL_STYLES := {
 static var _block_meshes := {}
 var _layer_textures := {}
 var _breakable_walls := true
+## What's built outside the play area (rules: arena "surroundings"): "stadium"
+## (stands and a cheering crowd), "ship" (the deck at sea) or "" (open ground).
+var surroundings := ""
+## Ship maps: the sea sits this far below the deck.
+const SHIP_WATER_DROP := 0.55
+## How far below the floor the water is drawn (0 except on ships). Swimmers sink with it.
+var water_drop := 0.0
 
 var _zone_cells := {}
 var _zone_material: StandardMaterial3D
@@ -114,6 +121,10 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 	var wall_tile := str(def.get("wall", "rock"))
 	var breakable_walls := bool(def.get("breakable_walls", true))
 	_breakable_walls = breakable_walls
+	surroundings = str(def.get("surroundings", ""))
+	var ship := surroundings == "ship"
+	water_drop = SHIP_WATER_DROP if ship else 0.0
+	var railings: Array[Vector2i] = []
 	liquid = str(def.get("liquid", "water"))
 	weather = str(def.get("weather", ""))
 	haze_color = Color.html(str(def["haze"])) if def.has("haze") else Color(0, 0, 0, 0)
@@ -167,10 +178,12 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 				path_blobs.append(Transform3D(Basis(Vector3.UP, turn).scaled(Vector3(spread, 1, spread)), center + Vector3(0, 0.008, 0)))
 			elif c == "~":
 				floor_name = "water"
+			elif ship and c in ["#", "X"] and _ship_edge(cell) == "hidden":
+				floor_name = "water"  # Walls standing in the sea are invisible: just the edge of the map.
 			if not floors.has(floor_name):
 				floors[floor_name] = []
 				floor_shades[floor_name] = []
-			floors[floor_name].append(Transform3D(_turn(floor_tile, cell), center))
+			floors[floor_name].append(Transform3D(_turn(floor_tile, cell), center - Vector3(0, water_drop if floor_name == "water" else 0.0, 0)))
 			floor_shades[floor_name].append(_shade(cell))
 			if c == "#" and breakable_walls and x > 1 and y > 1 and x < width - 2 and y < height - 2:
 				# Inner walls break to supers (like Brawl Stars); the map's edge stays solid.
@@ -185,6 +198,11 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 					trees.append(Transform3D(tilt, base + tilt.y * TREE_SPRITE_SIZE.y * 0.5))
 				"#":
 					solid_cells[cell] = true
+					var edge := _ship_edge(cell) if ship else ""
+					if edge == "railing":
+						railings.append(cell)
+					if edge != "":
+						continue
 					# Grouped by shape (one MultiMesh each); the texture variant goes per copy.
 					var shape_key := "lump" if wall_tile in ORGANIC_WALLS else "%d:%d" % [_neighbour_mask(cell), _hidden_mask(cell)]
 					if not rocks.has(shape_key):
@@ -303,6 +321,9 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 		var b := _add_breakable(cell, "crate" if kind == "crate" else "wall", material)
 		if lets_go and (kind in ["cracked", "boulder"] or (kind == "wall_style" and rocky)):
 			b.set_mesh(rock_mesh, _jitter(cell))
+		if ship and _ship_edge(cell) == "railing":
+			b.set_mesh(ArenaSurroundings.railing_mesh(_railing_mask(cell)), Basis(), ArenaSurroundings.painted_material())
+			railings.append(cell)
 		elif kind == "wall_style" and wall_tile not in ORGANIC_WALLS:
 			b.set_mesh(rounded_block(wall_tile, _neighbour_mask(cell)), _wall_basis(wall_tile, cell))
 
@@ -358,7 +379,16 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 	outside.mesh = outside_plane
 	outside.material_override = outside_mat
 	outside.position.y = -0.03
+	if ship:
+		outside.material_override = _water_material()
+		outside.position.y = -water_drop - 0.01
+	elif surroundings == "stadium":
+		var arena_floor := _tile_material(floor_tile if floor_tile != "grass" else "gym_floor")
+		arena_floor.albedo_color = Color(0.62, 0.62, 0.66)
+		arena_floor.uv1_scale = Vector3(160, 160, 1)
+		outside.material_override = arena_floor
 	add_child(outside)
+	ArenaSurroundings.build(self, arena_id, tilt, railings)
 
 
 func _add_breakable(cell: Vector2i, kind: String, material: Material) -> Breakable:
@@ -849,6 +879,39 @@ func _layers(base: String) -> Texture2DArray:
 func _variant_index(tile_name: String, cell: Vector2i) -> int:
 	var picked := _variant(tile_name, cell)
 	return 0 if picked == tile_name else int(picked.get_slice("_v", picked.get_slice_count("_v") - 1))
+
+
+## Ship maps: a wall or railing on the deck's edge. "railing" if it borders the
+## sea (or the map's edge) and the deck; "hidden" if it only borders the sea (an
+## invisible edge in the water); "" for walls on the deck (cabins).
+func _ship_edge(cell: Vector2i) -> String:
+	if _char_at(cell) not in ["#", "X"]:
+		return ""
+	var sea := false
+	var deck := false
+	for dy in [-1, 0, 1]:
+		for dx in [-1, 0, 1]:
+			if dx == 0 and dy == 0:
+				continue
+			var n := cell + Vector2i(dx, dy)
+			var c := _char_at(n) if n.x >= 0 and n.y >= 0 and n.x < width and n.y < height else ""
+			if c == "" or c == "~":
+				if dx == 0 or dy == 0:
+					sea = true
+			elif c not in ["#", "X"]:
+				deck = true
+	if not sea:
+		return ""
+	return "railing" if deck else "hidden"
+
+
+## Which neighbours are also railings (1 east, 2 west, 4 south, 8 north), so the rails join up.
+func _railing_mask(cell: Vector2i) -> int:
+	var mask := 0
+	for entry: Array in [[Vector2i(1, 0), 1], [Vector2i(-1, 0), 2], [Vector2i(0, 1), 4], [Vector2i(0, -1), 8]]:
+		if _ship_edge(cell + (entry[0] as Vector2i)) == "railing":
+			mask |= int(entry[1])
+	return mask
 
 
 ## Neighbours (same bits as _neighbour_mask) that are permanent walls: the sides

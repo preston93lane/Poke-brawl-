@@ -2403,7 +2403,7 @@ func _animate(delta: float) -> void:
 	if flying:
 		lift += 0.9 + sin(Time.get_ticks_msec() * 0.003) * 0.15
 	elif can_swim and arena != null and arena.is_water(global_position):
-		lift -= 0.22  # Swimming: sit low in the water.
+		lift -= 0.22 + arena.water_drop  # Swimming: sit low in the water (lower on ships, where the sea is below the deck).
 	_pop = move_toward(_pop, 1.0, delta * 3.5)
 	var sx := _pop / sqrt(squash)
 	var sy := _pop * squash

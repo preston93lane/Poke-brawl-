@@ -1,6 +1,7 @@
 {
 	"_comment": "Generated from a mirrored design; edit it in the map maker. Giovanni's arena: winding brick walls like the spin-tile maze, boulders to smash, sand everywhere.",
 	"name": "Viridian Gym",
+	"surroundings": "stadium",
 	"floor": "sand",
 	"wall": "brick",
 	"raid_boss": "zapdos",

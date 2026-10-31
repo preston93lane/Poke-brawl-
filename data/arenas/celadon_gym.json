@@ -1,6 +1,7 @@
 {
 	"_comment": "Generated from a mirrored design; edit it in the map maker. Erika's flower garden: hedges and trees, lots of bushes on the flanks for ambushes, an open lawn in the middle.",
 	"name": "Celadon Gym",
+	"surroundings": "stadium",
 	"floor": "grass",
 	"wall": "hedge",
 	"raid_boss": "zapdos",

@@ -1,6 +1,7 @@
 {
 	"_comment": "Generated from a mirrored design; edit it in the map maker. Elite Four: a grand hall with water channels and dragon-statue pillars; long lanes for sharpshooters.",
 	"name": "Lance's Dragon Hall",
+	"surroundings": "stadium",
 	"floor": "gym_floor",
 	"wall": "rock",
 	"raid_boss": "zapdos",

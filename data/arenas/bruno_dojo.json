@@ -1,6 +1,7 @@
 {
 	"_comment": "Generated from a mirrored design; edit it in the map maker. Elite Four: an open fighting ring with sturdy pillars and boulders; goals for Brawl Ball.",
 	"name": "Bruno's Dojo",
+	"surroundings": "stadium",
 	"floor": "wood",
 	"wall": "wood_wall",
 	"raid_boss": "moltres",

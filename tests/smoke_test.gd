@@ -1906,12 +1906,15 @@ func _check_camera_lead() -> void:
 	cam.field_half = 22.0
 	dummy.global_position = Vector3(0, 0, 10)
 	var own: Vector3 = cam._desired_position()
-	dummy.global_position = Vector3(0, 0, -20)
+	dummy.global_position = Vector3(0, 0, -13)
 	var enemy: Vector3 = cam._desired_position()
 	var pitch := deg_to_rad(cam.pitch_degrees)
 	var own_focus := own.z - cos(pitch) * cam.distance - 10.0
-	var enemy_focus := enemy.z - cos(pitch) * cam.distance + 20.0
+	var enemy_focus := enemy.z - cos(pitch) * cam.distance + 13.0
 	expect(own_focus < 0.0 and enemy_focus > 0.0, "the camera looks ahead in your half and back toward your side in theirs (%.1f, %.1f)" % [own_focus, enemy_focus])
+	dummy.global_position = Vector3(0, 0, -21)
+	var edge_focus := cam._desired_position().z - cos(pitch) * cam.distance + 21.0
+	expect(edge_focus < 0.0, "...but at the far edge it looks ahead again, so the back rows clear the scoreboard (%.1f)" % edge_focus)
 	cam.queue_free()
 	dummy.queue_free()
 

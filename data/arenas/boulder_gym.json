@@ -1,6 +1,7 @@
 {
 	"_comment": "Legend: . floor, , path, \" tall grass (hide), T tree and # rock wall (permanent), X cracked wall and B boulder (breakable: supers smash them), ~ water (Water/Flying types walk on it), 1/2 team spawns, Z king-of-the-hill zone, G Brawl Ball goal, S Showdown spawn, P Showdown power-cube crate. raid_boss = Battle legendary; guardian = King of the Hill shrine legendary; modes = only these modes (omit for all that fit).",
 	"name": "Boulder Gym",
+	"surroundings": "stadium",
 	"floor": "gym_floor",
 	"raid_boss": "moltres",
 	"guardian": "regirock",

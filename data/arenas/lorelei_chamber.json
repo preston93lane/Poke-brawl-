@@ -1,6 +1,7 @@
 {
 	"_comment": "Generated from a mirrored design; edit it in the map maker. Elite Four: frozen floor, breakable ice blocks everywhere (supers reshape the map), icy pools.",
 	"name": "Lorelei's Ice Chamber",
+	"surroundings": "stadium",
 	"floor": "ice",
 	"wall": "ice_block",
 	"raid_boss": "articuno",

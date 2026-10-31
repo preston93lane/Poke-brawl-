@@ -1,6 +1,7 @@
 {
 	"_comment": "Generated from a mirrored design; edit it in the map maker. Misty's pool: water lanes that swimmers cut across and throwers lob over, narrow walkways between.",
 	"name": "Cerulean Gym",
+	"surroundings": "stadium",
 	"floor": "pool",
 	"wall": "brick",
 	"raid_boss": "articuno",

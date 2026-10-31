@@ -1,6 +1,7 @@
 {
 	"_comment": "Generated from a mirrored design; edit it in the map maker. Sabrina's warp rooms: a 3x3 grid of rooms with doorways; breakable panels open shortcuts. Warp pads (O) send you to the pad mirrored through the middle of the map.",
 	"name": "Saffron Gym",
+	"surroundings": "stadium",
 	"floor": "psychic",
 	"wall": "metal_wall",
 	"raid_boss": "articuno",

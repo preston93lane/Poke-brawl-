@@ -48,6 +48,9 @@ func _desired_position() -> Vector3:
 	# Own half: look ahead. Enemy half (negative z): ease the look back toward your side.
 	var into_enemy := clampf(-target.global_position.z / maxf(1.0, field_half), 0.0, 1.0)
 	var look := lerpf(lead, -lead, smoothstep(0.0, 1.0, into_enemy))
+	# Right at the far edge, stop looking back so the last rows aren't under the scoreboard.
+	var to_far_edge := field_half + target.global_position.z
+	look = lerpf(look, lead * 0.5, 1.0 - smoothstep(2.0, 8.0, to_far_edge))
 	var focus := target.global_position + Vector3(0, 0, -look)
 	focus.x = clampf(focus.x, follow_limits.position.x, follow_limits.end.x)
 	focus.z = clampf(focus.z, follow_limits.position.y, follow_limits.end.y)

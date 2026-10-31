@@ -648,11 +648,11 @@ func show_settings() -> void:
 	var haze := Button.new()
 	haze.toggle_mode = true
 	haze.button_pressed = bool(GameData.setting("haze_blur", true))
-	haze.text = "HAZE & BLUR: ON" if haze.button_pressed else "HAZE & BLUR: OFF"
+	haze.text = "HAZE: ON" if haze.button_pressed else "HAZE: OFF"
 	haze.add_theme_font_size_override("font_size", 20)
 	haze.toggled.connect(func(on: bool) -> void:
 		GameData.set_setting("haze_blur", on)
-		haze.text = "HAZE & BLUR: ON" if on else "HAZE & BLUR: OFF")
+		haze.text = "HAZE: ON" if on else "HAZE: OFF")
 	top.add_child(haze)
 	if Profile.is_dev():
 		top.add_child(UiKit.button("DEV TOOLS", show_dev))
@@ -1310,32 +1310,61 @@ func _hm_picker(s: SpeciesData) -> Control:
 const VITAMIN_NAMES := { "hp": "HP Up", "attack": "Protein", "defense": "Iron", "speed": "Carbos" }
 
 
-## Vitamins: give them from the bag, switch up to 10 on.
+const VITAMIN_INFO := { "hp": "Raises max HP", "attack": "Raises Attack: harder-hitting moves",
+		"defense": "Raises Defense: takes less damage", "speed": "Raises Speed: moves faster" }
+
+
+## Vitamins: give them from the bag, switch up to 10 on. Each vitamin is its own
+## card (icon, what it boosts, counts, buttons) with gaps between them, so a
+## finger can't land on the wrong one.
 func _vitamin_box(s: SpeciesData) -> Control:
 	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 10)
 	var max_active := int(Profile.econ("vitamins/max_active", 10))
 	box.add_child(_section("VITAMINS  %d / %d ON  (+3%% each, half after 5 in a stat)" % [Profile.active_vitamin_total(s.id), max_active]))
 	var bonus := Profile.vitamin_bonus(s.id)
 	var v := Profile.vitamins(s.id)
 	for stat in Profile.STATS:
-		var row := HBoxContainer.new()
 		var item: String = { "hp": "hp_up", "attack": "protein", "defense": "iron", "speed": "carbos" }[stat]
-		var label := UiKit.label("%s  %d on / %d given  (+%d%%)" % [VITAMIN_NAMES[stat], int(v["active"].get(stat, 0)), int(v["given"].get(stat, 0)),
-				roundi(float(bonus[stat]) * 100.0)], 17)
-		label.custom_minimum_size.x = 330
-		row.add_child(label)
-		row.add_child(UiKit.button("−", func() -> void:
+		var card := PanelContainer.new()
+		card.add_theme_stylebox_override("panel", UiKit.box(Color(0.16, 0.18, 0.3), 10, 8))
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 14)
+		var icon := UiKit.item_icon(item)
+		if icon:
+			var pic := TextureRect.new()
+			pic.texture = icon
+			pic.custom_minimum_size = Vector2(44, 44)
+			pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			pic.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			row.add_child(pic)
+		var text := VBoxContainer.new()
+		text.add_theme_constant_override("separation", 0)
+		text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		text.add_child(UiKit.label("%s   %d on / %d given  (+%d%%)" % [VITAMIN_NAMES[stat], int(v["active"].get(stat, 0)),
+				int(v["given"].get(stat, 0)), roundi(float(bonus[stat]) * 100.0)], 18))
+		text.add_child(UiKit.label(str(VITAMIN_INFO[stat]), 14, Color(0.75, 0.82, 0.95)))
+		row.add_child(text)
+		var minus := UiKit.button("−", func() -> void:
 			Profile.change_active_vitamin(s.id, stat, -1)
-			_editor_refresh.call(), 16))
-		row.add_child(UiKit.button("+", func() -> void:
+			_editor_refresh.call(), 18)
+		var plus := UiKit.button("+", func() -> void:
 			Profile.change_active_vitamin(s.id, stat, 1)
-			_editor_refresh.call(), 16))
+			_editor_refresh.call(), 18)
+		for b in [minus, plus]:
+			(b as Button).custom_minimum_size = Vector2(52, 44)
+			(b as Button).size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		row.add_child(minus)
+		row.add_child(plus)
 		var give := UiKit.button("GIVE (%d in bag)" % Profile.count(item), func() -> void:
 			Profile.give_vitamin(s.id, item)
 			_editor_refresh.call(), 16)
+		give.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		give.disabled = Profile.count(item) <= 0 or not Profile.is_unlocked(s.id)
 		row.add_child(give)
-		box.add_child(row)
+		card.add_child(row)
+		box.add_child(card)
 	return box
 
 
