@@ -103,7 +103,7 @@ STYLES = {
 # Tuning from bot balance sims (tools/sim_balance.gd): (damage multiplier, health
 # multiplier) per style, pulling close-range styles down and ranged ones up.
 STYLE_TUNE = {
-    "tank_wave": (0.72, 0.81), "assassin": (0.8, 0.95), "spinner": (0.95, 1.0), "brawler": (1.0, 1.0),
+    "tank_wave": (0.72, 0.81), "assassin": (0.8, 1.03), "spinner": (0.95, 1.0), "brawler": (1.0, 1.0),
     "boomerang": (0.95, 1.0), "shotgun": (0.98, 1.0), "chain": (1.05, 1.0), "lasher": (1.26, 1.0),
     "sniper": (1.1, 1.05), "thrower": (1.15, 1.05), "stream": (1.3, 1.05), "gunner": (1.15, 1.05),
     "bouncer": (1.32, 1.05), "homing": (1.5, 1.05), "zone": (1.7, 1.08), "healer": (0.88, 0.95), "piercer": (0.95, 1.0),

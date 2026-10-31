@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 61,
 	"style": "assassin",
-	"stats": {"hp": 3150, "attack": 132, "defense": 112, "speed": 107},
+	"stats": {"hp": 3400, "attack": 132, "defense": 112, "speed": 107},
 	"super": "kabutops_super",
 	"gadget": "gadget_agility",
 	"evolves_from": "kabuto"

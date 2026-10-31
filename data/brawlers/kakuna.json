@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 39,
 	"style": "assassin",
-	"stats": {"hp": 4050, "attack": 99, "defense": 82, "speed": 89},
+	"stats": {"hp": 4375, "attack": 99, "defense": 82, "speed": 89},
 	"super": "kakuna_super",
 	"gadget": "gadget_agility",
 	"evolves_from": "weedle",

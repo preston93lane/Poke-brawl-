@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 69,
 	"style": "assassin",
-	"stats": {"hp": 2750, "attack": 131, "defense": 109, "speed": 110},
+	"stats": {"hp": 2975, "attack": 131, "defense": 109, "speed": 110},
 	"super": "hitmonlee_super",
 	"gadget": "gadget_agility",
 	"moves": [

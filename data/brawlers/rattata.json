@@ -6,7 +6,7 @@
 	"sprite_scale": 1.0,
 	"sprite_height": 43,
 	"style": "assassin",
-	"stats": {"hp": 2750, "attack": 104, "defense": 81, "speed": 104},
+	"stats": {"hp": 2975, "attack": 104, "defense": 81, "speed": 104},
 	"super": "rattata_super",
 	"gadget": "gadget_agility",
 	"evolve_level": 20,
