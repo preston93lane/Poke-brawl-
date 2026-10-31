@@ -103,7 +103,7 @@ STYLES = {
 # Tuning from bot balance sims (tools/sim_balance.gd): (damage multiplier, health
 # multiplier) per style, pulling close-range styles down and ranged ones up.
 STYLE_TUNE = {
-    "tank_wave": (0.72, 0.81), "assassin": (0.72, 0.95), "spinner": (0.95, 1.0), "brawler": (0.93, 1.0),
+    "tank_wave": (0.72, 0.81), "assassin": (0.76, 0.95), "spinner": (0.95, 1.0), "brawler": (0.93, 1.0),
     "boomerang": (0.95, 1.0), "shotgun": (0.98, 1.0), "chain": (1.05, 1.0), "lasher": (1.17, 1.0),
     "sniper": (1.1, 1.05), "thrower": (1.15, 1.05), "stream": (1.3, 1.05), "gunner": (1.15, 1.05),
     "bouncer": (1.32, 1.05), "homing": (1.5, 1.05), "zone": (1.7, 1.08), "healer": (0.88, 0.95), "piercer": (0.95, 1.0),
@@ -128,22 +128,22 @@ def super_template(style, f, type_):
     t = {
         "shotgun": dict(kind="dash", power=1320 * f, dash_distance=6.0, dash_speed=18, dash_pierce=True, knockback=3.0),
         "sniper": dict(kind="projectile", power=1600 * f, range=10.0, speed=20, radius=0.6, pierce=True),
-        "gunner": dict(kind="projectile", power=150 * f, burst_count=10, burst_interval=0.06, range=8.0, speed=16, pierce=True),
-        "bouncer": dict(kind="projectile", power=300 * f, count=5, spread=50, bounces=2, range=7.0, speed=12, radius=0.4),
+        "gunner": dict(kind="projectile", power=162 * f, burst_count=10, burst_interval=0.06, range=8.0, speed=16, pierce=True),
+        "bouncer": dict(kind="projectile", power=324 * f, count=5, spread=50, bounces=2, range=7.0, speed=12, radius=0.4),
         "thrower": dict(kind="projectile", power=1500 * f, lob=True, range=7.5, speed=9, explode_radius=3.0),
         "brawler": dict(kind="dash", power=1320 * f, dash_distance=6.0, dash_speed=16, explode_radius=2.2),
         "assassin": dict(kind="dash", power=1400 * f, dash_distance=6.0, dash_speed=22, dash_pierce=True, drain=0.5, charge_hits=4),
-        "spinner": dict(kind="area", power=1300 * f, range=0.0, area_radius=3.8, effect={"type": "slow", "chance": 1.0, "duration": 1.5, "amount": 0.5}),
+        "spinner": dict(kind="area", power=1430 * f, range=0.0, area_radius=3.8, effect={"type": "slow", "chance": 1.0, "duration": 1.5, "amount": 0.5}),
         "lasher": dict(kind="melee", power=1260 * f, range=6.0, arc=50, knockback=-5.0, effect={"type": "stun", "chance": 1.0, "duration": 0.6}),
         "stream": dict(kind="area", power=1300 * f, range=4.0, area_radius=3.0, effect=eff),
         "healer": dict(kind="self", heal=0.35, team_heal=0.45, support_radius=6.5, cleanse=True),
         "boomerang": dict(kind="projectile", power=450 * f, count=3, spread=40, returns=True, range=7.0, speed=11, radius=0.45),
-        "chain": dict(kind="area", power=1320 * f, range=6.0, area_radius=3.0, effect={"type": "stun", "chance": 1.0, "duration": 0.8}),
+        "chain": dict(kind="area", power=1200 * f, range=6.0, area_radius=3.0, effect={"type": "stun", "chance": 1.0, "duration": 0.8}),
         "zone": dict(kind="projectile", power=508 * f, lob=True, range=7.5, speed=9, linger=5.0, linger_radius=3.2),
         "homing": dict(kind="projectile", power=260 * f, count=6, spread=120, range=7.0, speed=10, radius=0.4),
         # Frank-style: an aimed 90-degree slam in front, not a full circle.
         "tank_wave": dict(kind="melee", power=1200 * f, range=4.5, arc=90, windup=0.6, effect={"type": "stun", "chance": 1.0, "duration": 1.0}),
-        "piercer": dict(kind="projectile", power=1700 * f, range=10.0, speed=20, radius=0.9, pierce=True),
+        "piercer": dict(kind="projectile", power=1530 * f, range=10.0, speed=20, radius=0.9, pierce=True),
     }[style]
     return {k: (round(v) if k == "power" else v) for k, v in t.items() if v is not None}
 
