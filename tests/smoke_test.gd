@@ -797,6 +797,17 @@ func _check_swimming_and_gaps() -> void:
 		swimmer.move_input = Vector2.ZERO
 		expect(swimmer.can_swim and arena.is_water(swimmer.global_position), "%s walks out onto the water" % swimmer_id)
 		swimmer.queue_free()
+	# Carrying HM Surf lets any Pokémon swim.
+	var surfer: Brawler = main._spawn("charmander", 1, 0, false)
+	surfer.hm_id = "surf"
+	surfer.refresh_stats()
+	surfer.position = arena.cell_center(Vector2i(7, 19))
+	await get_tree().physics_frame
+	surfer.move_input = Vector2(1, 0)
+	await get_tree().create_timer(0.7, false, true).timeout
+	surfer.move_input = Vector2.ZERO
+	expect(surfer.can_swim and arena.is_water(surfer.global_position), "a Pokémon carrying HM Surf walks out onto the water")
+	surfer.queue_free()
 	var swim_path: PackedVector3Array = arena.find_path(arena.cell_center(Vector2i(10, 18)), arena.cell_center(Vector2i(10, 21)), true)
 	var walk_path: PackedVector3Array = arena.find_path(arena.cell_center(Vector2i(10, 18)), arena.cell_center(Vector2i(10, 21)))
 	expect(swim_path.size() > 0 and swim_path.size() < walk_path.size(), "swimmers path straight over the pond (%d vs %d steps)" % [swim_path.size(), walk_path.size()])
@@ -821,6 +832,21 @@ func _check_swimming_and_gaps() -> void:
 	bot.queue_free()
 	expect(arrived, "bots path through Dragon's Den's centre (ended %.1f m away)" % walker.global_position.distance_to(goal))
 	main.queue_free()
+	await get_tree().process_frame
+
+	# SS Anne: swimmers climb over the railing into the sea; walkers stay on deck.
+	var ship := await _start_match("ss_anne", "duel", "charmander", [])
+	await _freeze_all(ship)
+	for id in ["charmander", "squirtle"]:
+		var b: Brawler = ship.player if id == "charmander" else ship._spawn(id, 1, 0, false)
+		b.position = ship.arena.cell_center(Vector2i(5, 10))
+		await get_tree().physics_frame
+		b.move_input = Vector2(-1, 0)
+		await get_tree().create_timer(2.0, false, true).timeout
+		b.move_input = Vector2.ZERO
+		var in_sea: bool = ship.arena.is_water(b.global_position)
+		expect(in_sea if id == "squirtle" else not in_sea, "%s %s the ship's railing" % [id, "swims over" if id == "squirtle" else "is stopped by"])
+	ship.queue_free()
 	await get_tree().process_frame
 
 

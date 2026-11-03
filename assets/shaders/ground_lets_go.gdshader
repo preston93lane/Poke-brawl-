@@ -12,6 +12,8 @@ uniform vec3 grass_dark : source_color = vec3(0.22, 0.42, 0.14);
 uniform vec3 dirt : source_color = vec3(0.82, 0.62, 0.38);
 uniform vec3 dirt_edge : source_color = vec3(0.56, 0.40, 0.24);
 uniform vec3 shore : source_color = vec3(0.80, 0.70, 0.50);
+// Brawl Stars style checkerboard: every other tile a shade darker, so the layout reads at a glance.
+uniform float checker = 0.075;
 
 varying vec3 world_pos;
 
@@ -69,6 +71,8 @@ void fragment() {
 	col = mix(col, shore * (0.92 + 0.1 * fine), smoothstep(0.12, 0.35, s.g) * (1.0 - path) * 0.9);
 	col = mix(col, shore * 0.7, smoothstep(0.45, 0.6, s.g));
 	col *= 1.0 - smoothstep(0.1, 0.7, s.b) * 0.3;
+	vec2 tile = floor(p + map_size * 0.5);
+	col *= 1.0 - checker * mod(tile.x + tile.y, 2.0) * (1.0 - path * 0.5);
 
 	ALBEDO = col;
 	ROUGHNESS = 0.95;

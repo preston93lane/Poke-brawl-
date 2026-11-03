@@ -252,18 +252,35 @@ func countdown() -> void:
 	l.add_theme_color_override("font_outline_color", Color(0.05, 0.05, 0.12))
 	l.pivot_offset = get_viewport().get_visible_rect().size * 0.5
 	add_child(l)
+	var tween: Tween
 	for step in ["3", "2", "1", "GO!"]:
+		# The last number's fade ends right as the next one shows: stop it, or it
+		# keeps fading the new number out (that's how "2" went missing).
+		if tween:
+			tween.kill()
 		l.text = step
 		l.add_theme_color_override("font_color", Color(0.4, 1, 0.5) if step == "GO!" else Color(1, 0.85, 0.3))
 		l.scale = Vector2.ONE * 1.6
 		l.modulate.a = 1.0
-		var tween := create_tween().set_parallel()
+		# Time each number from when it is first on screen, and keep it up for a few
+		# frames at least: a slow frame (shaders warming up on a phone just after
+		# the intro) used to eat the whole of "2" before it was ever drawn.
+		await get_tree().process_frame
+		if not is_instance_valid(l):
+			return
+		# The pop and fade start then too, so a hitch can't fade it out unseen.
+		tween = create_tween().set_parallel()
 		tween.tween_property(l, "scale", Vector2.ONE, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		tween.tween_property(l, "modulate:a", 0.0, 0.25).set_delay(0.55)
 		tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
-		await get_tree().create_timer(0.55 if step == "GO!" else 0.8, true).timeout
-		if not is_instance_valid(l):
-			return
+		var started := Time.get_ticks_msec()
+		var frames := 0
+		var hold_ms := 550 if step == "GO!" else 800
+		while Time.get_ticks_msec() - started < hold_ms or frames < 6:
+			await get_tree().process_frame
+			frames += 1
+			if not is_instance_valid(l):
+				return
 	l.queue_free()
 
 

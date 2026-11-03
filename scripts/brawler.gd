@@ -24,8 +24,8 @@ const SHEET_PIXEL_SIZE := 0.0253
 const VISUAL_SCALE := 1.6
 const DOT_TICK := 0.5
 const MAX_LEECH_STACKS := 5
-## Physics layers that stop walking and teleports: world + water.
-const MOVE_BLOCK_MASK := 1 | 8 | 16
+## Physics layers that stop walking and teleports: world + ship railings + water + Rock Tomb.
+const MOVE_BLOCK_MASK := 1 | 4 | 8 | 16
 ## Rock Tomb rocks: they block walking (swimmers too) but not shots or sight.
 const TOMB_LAYER := 16
 const WATER_LAYER := 8
@@ -109,7 +109,7 @@ var regenerates := true
 var invulnerable := false
 ## Hovers above the ground and flies over walls.
 var flying := false
-## Water and Flying types walk over water tiles.
+## Water and Flying types, and Pokémon carrying HM Surf, walk over water tiles.
 var can_swim := false
 ## Uses the shiny colours (set before it enters the tree).
 var shiny := false
@@ -722,7 +722,8 @@ func refresh_stats() -> void:
 
 func _apply_species() -> void:
 	var crosses := "fire" if arena != null and arena.liquid == "lava" else "water"
-	can_swim = flying or species.has_type(crosses) or species.has_type("flying")
+	# Water types (Fire on lava maps), Flying types, and anyone carrying HM Surf (water only).
+	can_swim = flying or species.has_type(crosses) or species.has_type("flying") or (hm_id == "surf" and crosses == "water")
 	collision_mask = walk_mask()
 	var growth := 1.0 + float(GameData.rule("evolution/power_up_bonus", 0.12)) * power_ups
 	var vit := func(stat: String) -> float: return float(vitamin_bonus.get(stat, 0.0))
@@ -2476,10 +2477,24 @@ func _animate_pmd(delta: float, moving: bool, tilt: float, lift: float) -> void:
 	var dip := 0.0
 	var bottoms: Array = a.get("bottoms", [])
 	if row < bottoms.size() and col < (bottoms[row] as Array).size():
-		dip = maxf(0.0, float(bottoms[row][col]) - feet)
+		var bottom := float(bottoms[row][col])
+		dip = maxf(0.0, bottom - feet)
+		# Frames drawn higher than the walk cycle's feet (idle breathing, hurt, many
+		# sheets' idle sit several pixels up) would hover over the shadow: plant them.
+		if bottom < feet and not _hovers():
+			feet = bottom
 	sprite.offset = Vector2(0, feet + dip)
 	sprite.position = Vector3(0, 0.05 + lift, dip * sprite.pixel_size) + _sprite_nudge
 	sprite.basis = Basis(Vector3.RIGHT, tilt) * Basis.from_scale(Vector3(_pop, _pop, 1.0))
+
+
+## Pokémon that hover in their own art (ghosts, Magnemite, Koffing, flyers...): their
+## frames keep their height instead of being planted on the ground.
+const HOVERING := ["gastly", "haunter", "koffing", "weezing", "magnemite", "magneton", "porygon", "celebi", "mew"]
+
+
+func _hovers() -> bool:
+	return flying or species.has_type("flying") or species.id in HOVERING or bool(_ability.get("floats", false))
 
 
 func _play_anim(anim: String, max_hold: float) -> void:

@@ -115,6 +115,7 @@ godot --headless --path . res://tests/smoke_test.tscn
 - **Battle sprites:** animated Pokémon Mystery Dungeon sprites from [PMD SpriteCollab](https://sprites.pmdcollab.org/) ([GitHub](https://github.com/PMDCollab/SpriteCollab)), CC BY-NC 4.0. Original sprites © Spike Chunsoft; each Pokémon's artists are listed in `assets/pmd/credits.json` and in the game under Settings → About & Legal. Downloaded by `tools/import_pmd_sprites.py`.
 - **Menu pictures:** Pokémon Black/White sprites from the PokeAPI sprites collection (© Nintendo / Creatures Inc. / GAME FREAK inc.).
 - **Fonts:** Lilita One by Juan Montoreano, SIL Open Font License 1.1.
+- **Rocks, bushes and scattered plants:** [Stylized Nature MegaKit](https://quaternius.com/packs/stylizednaturemegakit.html) by Quaternius (CC0), copied into `assets/models/nature/` by `tools/import_nature_models.py` and loaded by `scripts/nature_kit.gd`.
 - **Stadium crowd:** spectators drawn for this game by `tools/make_crowd.py`, plus fan-made trainer sprites shared with the project (`assets/crowd/fan/`, imported by `tools/import_crowd_sprites.py`); drawn by Sira Gone ([@insoffnio](https://www.instagram.com/insoffnio/) on Instagram), used with thanks.
 - **Everything else:** Maps, 3D models, effects, item icons and sounds are made for this game (procedurally generated).
 

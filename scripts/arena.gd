@@ -20,9 +20,12 @@ const GRASS_HEIGHT := 0.95
 const TREE_SPRITE_SIZE := Vector2(1.75, 2.2)
 const GRASS_SHADER := preload("res://assets/shaders/grass_sway.gdshader")
 const WATER_SHADER := preload("res://assets/shaders/water.gdshader")
+const ROUND_WATER_SHADER := preload("res://assets/shaders/water_round.gdshader")
 const WALL_SHADER := preload("res://assets/shaders/tile_xray.gdshader")
 const WORLD_LAYER := 1
 const WATER_LAYER := 8
+## Ship railings: they stop walkers, but swimmers climb over into the sea and shots fly over.
+const RAIL_LAYER := 4
 const TILE_DIR := "res://assets/tiles/"
 
 var arena_name := ""
@@ -72,14 +75,14 @@ const ORGANIC_WALLS := ["rock", "hedge", "ice_block", "cracked"]
 ## cap_tint; height_var = up to this much taller per tile; top / side = light on
 ## the top and sides; edge = highlight on rounded edges; ao = dark base; moss.
 const WALL_STYLES := {
-	"brick": { "radius": 0.07, "lip": 0.045, "lip_h": 0.15, "cap": "gym_floor", "cap_tint": Color(0.74, 0.72, 0.7),
+	"brick": { "radius": 0.2, "lip": 0.045, "lip_h": 0.15, "cap": "gym_floor", "cap_tint": Color(0.74, 0.72, 0.7),
 		"height_var": 0.08, "top": 1.15, "side": 0.86, "moss": 0.55 },
-	"wood_wall": { "radius": 0.1, "lip": 0.03, "lip_h": 0.1, "cap": "wood", "cap_tint": Color(0.78, 0.68, 0.58),
+	"wood_wall": { "radius": 0.2, "lip": 0.03, "lip_h": 0.1, "cap": "wood", "cap_tint": Color(0.78, 0.68, 0.58),
 		"height_var": 0.12, "top": 1.12, "side": 0.86 },
-	"metal_wall": { "radius": 0.05, "lip": 0.025, "lip_h": 0.07, "cap": "metal", "cap_tint": Color(1.12, 1.12, 1.18),
+	"metal_wall": { "radius": 0.16, "lip": 0.025, "lip_h": 0.07, "cap": "metal", "cap_tint": Color(1.12, 1.12, 1.18),
 		"height_var": 0.0, "top": 1.1, "side": 0.88, "edge": 0.35, "ao": 0.3 },
 	"ice_block": { "cap_tint": Color(1.02, 1.05, 1.08), "top": 1.04, "side": 0.9, "ao": 0.22, "edge": 0.25 },
-	"crate": { "radius": 0.06, "height_var": 0.0, "top": 1.1, "side": 0.9 },
+	"crate": { "radius": 0.18, "height_var": 0.0, "top": 1.1, "side": 0.9 },
 	"hedge": { "cap_tint": Color(1.15, 1.22, 0.85), "top": 1.15, "side": 0.85, "ao": 0.45 },
 	"rock": { "cap_tint": Color(1.08, 1.06, 1.0), "moss": 0.5 },
 	"cracked": { "cap_tint": Color(1.06, 1.04, 1.0), "moss": 0.35 },
@@ -133,6 +136,9 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 	# The blended Let's Go ground replaces grass floors; themed floors (gym tiles,
 	# wood, ice...) keep their textures but get the 3D grass, trees and rocks.
 	var art_ground := lets_go and floor_tile == "grass"
+	# Tiled floors draw water as one round-edged pool plane over the floor (see
+	# _round_water); the blended Let's Go ground and the ship's sea do their own.
+	var round_water := not art_ground and not ship
 	var dark_map := floor_tile == "dark"
 	var rocky := wall_tile in ["rock", "cracked"]
 	var art_cells := { "path": {}, "grass": {} }
@@ -176,7 +182,7 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 				var turn := float(posmod(x * 37 + y * 11, 12)) * PI / 6.0
 				var spread := 1.35 + float(posmod(x * 5 + y * 3, 4)) * 0.06
 				path_blobs.append(Transform3D(Basis(Vector3.UP, turn).scaled(Vector3(spread, 1, spread)), center + Vector3(0, 0.008, 0)))
-			elif c == "~":
+			elif c == "~" and not round_water:
 				floor_name = "water"
 			elif ship and c in ["#", "X"] and _ship_edge(cell) == "hidden":
 				floor_name = "water"  # Walls standing in the sea are invisible: just the edge of the map.
@@ -184,7 +190,7 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 				floors[floor_name] = []
 				floor_shades[floor_name] = []
 			floors[floor_name].append(Transform3D(_turn(floor_tile, cell), center - Vector3(0, water_drop if floor_name == "water" else 0.0, 0)))
-			floor_shades[floor_name].append(_shade(cell))
+			floor_shades[floor_name].append(_shade(cell) * _checker(cell))
 			if c == "#" and breakable_walls and x > 1 and y > 1 and x < width - 2 and y < height - 2:
 				# Inner walls break to supers (like Brawl Stars); the map's edge stays solid.
 				breakable_cells[cell] = "wall_style"
@@ -205,6 +211,11 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 						continue
 					# Grouped by shape (one MultiMesh each); the texture variant goes per copy.
 					var shape_key := "lump" if wall_tile in ORGANIC_WALLS else "%d:%d" % [_neighbour_mask(cell), _hidden_mask(cell)]
+					# Natural walls are real models: round boulders and leafy bushes.
+					if rocky:
+						shape_key = "nk_rock:%d" % _nature_variant(cell, NatureKit.ROCKS.size())
+					elif wall_tile == "hedge":
+						shape_key = "nk_bush:%d" % _nature_variant(cell, NatureKit.BUSHES.size())
 					if not rocks.has(shape_key):
 						rocks[shape_key] = []
 						rock_shades[shape_key] = []
@@ -249,12 +260,23 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 					_zone_cells[cell] = true
 					zone.append(Transform3D(Basis(), center + Vector3(0, 0.02, 0)))
 
-	_build_colliders(solid_cells, WORLD_LAYER, TREE_COLLIDER_HEIGHT)
+	var rail_cells := {}
+	if ship:
+		for cell: Vector2i in solid_cells.keys() + breakable_cells.keys():
+			if _ship_edge(cell) == "railing":
+				rail_cells[cell] = true
+	var hard_cells := solid_cells.duplicate()
+	for cell: Vector2i in rail_cells:
+		hard_cells.erase(cell)
+	_build_colliders(hard_cells, WORLD_LAYER, TREE_COLLIDER_HEIGHT)
+	_build_colliders(rail_cells, RAIL_LAYER, 1.0)
 	_build_colliders(water_cells, WATER_LAYER, 1.0)
-	var path_blocked := solid_cells.duplicate()
+	var path_blocked := hard_cells.duplicate()
 	for cell: Vector2i in breakable_cells:
 		path_blocked[cell] = true
-	_build_pathfinding(path_blocked, water_cells)
+	for cell: Vector2i in rail_cells:
+		path_blocked.erase(cell)
+	_build_pathfinding(path_blocked, water_cells, rail_cells)
 	for team: int in spawns:
 		if spawns[team].is_empty():
 			spawns[team].append(Vector3(0, 0, (height * 0.5 - 3.0) * (1.0 if team == 0 else -1.0)))
@@ -286,6 +308,9 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 	else:
 		_add_multimesh(floor_plane, _edge_shadow_material(), _edge_shadows(solid_cells, water_cells), false)
 
+	if round_water and not water_cells.is_empty():
+		add_child(_round_water(water_cells))
+
 	if not path_blobs.is_empty() and not art_ground:
 		var blob_mat := _tile_material("path_blob", false, false)
 		blob_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -298,7 +323,10 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 	_rock_mesh = rock_mesh
 	_rock_material = rock_mat
 	for shape_key: String in rocks:
-		if lets_go and rocky:
+		if shape_key.begins_with("nk_"):
+			var model := _nature_wall(shape_key)
+			_add_multimesh(model, null, rocks[shape_key], true, rock_shades[shape_key])
+		elif lets_go and rocky:
 			_add_multimesh(rock_mesh, rock_mat, rocks[shape_key])
 		else:
 			var shape: Mesh = lump if shape_key == "lump" else rounded_block(wall_tile, int(shape_key.get_slice(":", 0)), int(shape_key.get_slice(":", 1)))
@@ -319,10 +347,14 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 		if material is ShaderMaterial and (material as ShaderMaterial).shader == WALL_SHADER and variant_of.has(kind):
 			material = _wall_material(_variant(str(variant_of[kind]), cell))
 		var b := _add_breakable(cell, "crate" if kind == "crate" else "wall", material)
-		if lets_go and (kind in ["cracked", "boulder"] or (kind == "wall_style" and rocky)):
-			b.set_mesh(rock_mesh, _jitter(cell))
+		if kind in ["cracked", "boulder"] or (kind == "wall_style" and rocky):
+			# Breakable rocks: the same boulders in a warmer, sandier colour.
+			var boulder := NatureKit.mesh(NatureKit.ROCKS[_nature_variant(cell, NatureKit.ROCKS.size())], NATURE_WALL_WIDTH * 0.9,
+					WALL_HEIGHT * 0.95, -WALL_HEIGHT * 0.5, BREAKABLE_ROCK_TINT)
+			b.set_mesh(boulder, _jitter(cell), boulder.surface_get_material(0))
 		if ship and _ship_edge(cell) == "railing":
 			b.set_mesh(ArenaSurroundings.railing_mesh(_railing_mask(cell)), Basis(), ArenaSurroundings.painted_material())
+			b.collision_layer = RAIL_LAYER  # Swimmers climb over it, like the fixed railings.
 			railings.append(cell)
 		elif kind == "wall_style" and wall_tile not in ORGANIC_WALLS:
 			b.set_mesh(rounded_block(wall_tile, _neighbour_mask(cell)), _wall_basis(wall_tile, cell))
@@ -400,6 +432,25 @@ func _add_breakable(cell: Vector2i, kind: String, material: Material) -> Breakab
 		b.set_mesh_basis(_jitter(cell))
 	add_child(b)
 	return b
+
+
+## Rock and bush walls are a little wider than a tile, so neighbours overlap
+## into one natural ridge instead of a row of separate blocks.
+const NATURE_WALL_WIDTH := 1.45
+const BREAKABLE_ROCK_TINT := Color(1.12, 0.98, 0.82)
+
+
+func _nature_variant(cell: Vector2i, count: int) -> int:
+	return posmod(cell.x * 7 + cell.y * 13 + (cell.x * cell.y) % 5, count)
+
+
+## The model for a "nk_rock:<n>" / "nk_bush:<n>" wall group, sitting on the
+## ground like the wall box it replaces.
+func _nature_wall(shape_key: String) -> ArrayMesh:
+	var n := int(shape_key.get_slice(":", 1))
+	if shape_key.begins_with("nk_bush"):
+		return NatureKit.mesh(NatureKit.BUSHES[n], NATURE_WALL_WIDTH * 0.95, WALL_HEIGHT * 1.1, -WALL_HEIGHT * 0.5)
+	return NatureKit.mesh(NatureKit.ROCKS[n], NATURE_WALL_WIDTH, WALL_HEIGHT * 1.05, -WALL_HEIGHT * 0.5)
 
 
 ## A small random twist and size change per tile, so neighbouring rounded walls
@@ -526,8 +577,9 @@ func block_goal_sides() -> void:
 				continue
 			cells.erase(cell)
 			var b := _add_breakable(cell, "wall", _rock_material if _rock_material else _wall_material("boulder"))
-			if _rock_mesh:
-				b.set_mesh(_rock_mesh, _jitter(cell))
+			var boulder := NatureKit.mesh(NatureKit.ROCKS[_nature_variant(cell, NatureKit.ROCKS.size())], NATURE_WALL_WIDTH * 0.9,
+					WALL_HEIGHT * 0.95, -WALL_HEIGHT * 0.5, BREAKABLE_ROCK_TINT)
+			b.set_mesh(boulder, _jitter(cell), boulder.surface_get_material(0))
 			rows[cell.y] = rows[cell.y].substr(0, cell.x) + "B" + rows[cell.y].substr(cell.x + 1)
 			_astar.set_point_solid(cell)
 			_swim_astar.set_point_solid(cell)
@@ -714,6 +766,36 @@ func _edge_shadow_material() -> StandardMaterial3D:
 	return mat
 
 
+## Water (or lava) with round shores: a smooth mask, one pixel per tile scaled up
+## with cubic filtering, so straight shores stay on the tile edge and corners round off.
+func _round_water(water_cells: Dictionary) -> MeshInstance3D:
+	const RES := 8
+	var img := Image.create(width + 2, height + 2, false, Image.FORMAT_L8)
+	for cell: Vector2i in water_cells:
+		img.set_pixel(cell.x + 1, cell.y + 1, Color.WHITE)
+	# A one-tile margin keeps the cubic filter from wrapping round the map's edges.
+	img.resize((width + 2) * RES, (height + 2) * RES, Image.INTERPOLATE_CUBIC)
+	img = img.get_region(Rect2i(RES, RES, width * RES, height * RES))
+	var mat := ShaderMaterial.new()
+	mat.shader = ROUND_WATER_SHADER
+	mat.set_shader_parameter("mask", ImageTexture.create_from_image(img))
+	mat.set_shader_parameter("map_size", world_size())
+	mat.set_shader_parameter("water_tex", load(TILE_DIR + ("lava.png" if liquid == "lava" else "water.png")))
+	if liquid == "lava":
+		mat.set_shader_parameter("lava", true)
+		mat.set_shader_parameter("deep", Color(0.85, 0.22, 0.04))
+		mat.set_shader_parameter("shallow", Color(1.0, 0.55, 0.12))
+		mat.set_shader_parameter("rim", Color(0.32, 0.16, 0.12))
+	var plane := PlaneMesh.new()
+	plane.size = world_size()
+	var water := MeshInstance3D.new()
+	water.mesh = plane
+	water.material_override = mat
+	water.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	water.position.y = 0.03
+	return water
+
+
 func _water_material() -> ShaderMaterial:
 	var mat := ShaderMaterial.new()
 	mat.shader = WATER_SHADER
@@ -763,9 +845,10 @@ func _row_free(cells: Dictionary, used: Dictionary, x: int, y: int, w: int) -> b
 	return true
 
 
-func _build_pathfinding(solid_cells: Dictionary, water_cells: Dictionary) -> void:
+func _build_pathfinding(solid_cells: Dictionary, water_cells: Dictionary, rail_cells := {}) -> void:
 	var walk_blocked := solid_cells.duplicate()
 	walk_blocked.merge(water_cells)
+	walk_blocked.merge(rail_cells)
 	_setup_grid(_astar, walk_blocked)
 	_setup_grid(_swim_astar, solid_cells)
 
@@ -960,7 +1043,7 @@ static func rounded_block(style_name: String, mask: int, hidden := 0) -> ArrayMe
 	var half := TILE * 0.5
 	var lo := Vector3(-half if mask & 2 else -half + r, -hh, -half if mask & 8 else -half + r)
 	var hi := Vector3(half if mask & 1 else half - r, hh - r, half if mask & 4 else half - r)
-	var steps := 3
+	var steps := 5  # Enough bands that the bigger curves look smooth.
 	var across := PackedFloat32Array()  # x and z grid: only the curved bands need points
 	for k in steps + 1:
 		across.append(-half + r * k / steps)
@@ -1057,6 +1140,15 @@ func _shade(cell: Vector2i, amount := 1.0) -> Color:
 	var k := 1.0 + ((patch - 0.5) * 0.2 + each * 0.07) * amount
 	var warm := (_smooth_noise(Vector2(cell) / 6.0, 47) - 0.5) * 0.06 * amount
 	return Color(k * (1.0 + warm), k, k * (1.0 - warm))
+
+
+## Brawl Stars style checkerboard: every other floor tile a shade darker.
+const CHECKER := 0.075
+
+
+func _checker(cell: Vector2i) -> Color:
+	var k := 1.0 - CHECKER * float(posmod(cell.x + cell.y, 2))
+	return Color(k, k, k, 1.0)
 
 
 func _cell_hash(cell: Vector2i, seed: int) -> float:

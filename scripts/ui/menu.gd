@@ -569,6 +569,7 @@ const CREDITS := [
 	["Battle sprites", "Animated Pokémon Mystery Dungeon sprites from PMD SpriteCollab (sprites.pmdcollab.org), CC BY-NC 4.0. Original sprites © Spike Chunsoft; artists listed below."],
 	["Menu pictures", "Pokémon Black/White sprites from the PokeAPI sprites collection (© Nintendo / Creatures Inc. / GAME FREAK inc.)."],
 	["Fonts", "Lilita One by Juan Montoreano, SIL Open Font License 1.1."],
+	["Rocks and bushes", "Stylized Nature MegaKit by Quaternius (quaternius.com), CC0."],
 	["Stadium crowd", "Spectators drawn for this game, plus fan-made trainer sprites by Sira Gone (@insoffnio on Instagram), used with thanks."],
 	["Everything else", "Maps, 3D models, effects, item icons and sounds are made for this game (procedurally generated)."]
 ]
