@@ -4,10 +4,10 @@ extends RefCounted
 ## (medium on phones and tablets, high on computers). Everything that costs
 ## frame time asks here.
 ##
-##              shadows            grass     detail   particles  3D resolution  bots think
-##   high       2 cascades, 50 m   swaying   full     100%       100%           every 2nd frame
-##   medium     1 pass, 35 m       still     full     75%        100%           every 2nd frame
-##   low        off (blob shadows) still     simpler  50%        75%            every 3rd frame
+##              shadows                 grass     detail   particles  3D height  bots think
+##   high       2 cascades, 50 m        swaying   full     100%       1080 px    every 2nd frame
+##   medium     1 pass, solid things    still     full     75%        860 px     every 2nd frame
+##   low        off (blob shadows)      still     simpler  50%        640 px     every 3rd frame
 
 const LEVELS := ["auto", "low", "medium", "high"]
 
@@ -41,8 +41,17 @@ static func particle_mult() -> float:
 	return { "low": 0.5, "medium": 0.75 }.get(level(), 1.0)
 
 
-static func render_scale() -> float:
-	return 0.75 if level() == "low" else 1.0
+## The 3D scene's height in pixels at most (menus and buttons stay sharp at
+## the screen's own resolution). Phones have 2-3x more pixels than the game's
+## 720p layout, and drawing the 3D world at that size was the biggest cost.
+static func max_3d_height() -> float:
+	return { "low": 640.0, "medium": 860.0 }.get(level(), 1080.0)
+
+
+static func render_scale(window_height := 0.0) -> float:
+	if window_height <= 0.0:
+		window_height = float(DisplayServer.window_get_size().y)
+	return clampf(max_3d_height() / maxf(1.0, window_height), 0.25, 1.0)
 
 
 static func bot_think_every() -> int:
@@ -70,7 +79,8 @@ static func apply_sun(sun: DirectionalLight3D) -> void:
 static func apply_viewport(vp: Viewport) -> void:
 	if vp == null:
 		return
-	vp.scaling_3d_scale = render_scale()
+	# A SubViewport (the town) already renders at layout size, not screen pixels.
+	vp.scaling_3d_scale = render_scale(float((vp as SubViewport).size.y) if vp is SubViewport else 0.0)
 	vp.msaa_3d = Viewport.MSAA_DISABLED if is_low() else Viewport.MSAA_2X
 
 

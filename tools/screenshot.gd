@@ -9,6 +9,10 @@ const MAIN_SCENE := preload("res://scenes/main.tscn")
 
 func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
+	# Optional "q=low|medium|high" first: graphics level for the shots.
+	if args.size() > 0 and args[0].begins_with("q="):
+		GameData.settings["graphics"] = args[0].trim_prefix("q=")
+		args = args.slice(1)
 	var arena_id := args[0] if args.size() > 0 else "route_1"
 	var out_dir := args[1] if args.size() > 1 else "user://shots"
 	if arena_id.begins_with("menu:"):

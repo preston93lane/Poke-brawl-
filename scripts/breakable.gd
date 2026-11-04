@@ -92,6 +92,7 @@ func _hide_copy() -> void:
 
 func _ready() -> void:
 	add_to_group("breakables")
+	set_process(false)  # Only ticks while shaking (a map has a couple of hundred of these).
 
 
 func _process(delta: float) -> void:
@@ -102,10 +103,12 @@ func _process(delta: float) -> void:
 		_shake = maxf(0.0, _shake - delta)
 		_mesh.position.x = randf_range(-1, 1) * _shake * 0.4
 		_mesh.position.z = randf_range(-1, 1) * _shake * 0.4
-		if _shake <= 0.0 and _batch:
-			_mesh.position.x = 0.0
-			_mesh.position.z = 0.0
-			join_batch(_batch, _batch_index)
+		if _shake <= 0.0:
+			set_process(false)
+			if _batch:
+				_mesh.position.x = 0.0
+				_mesh.position.z = 0.0
+				join_batch(_batch, _batch_index)
 
 
 ## Hit by `move`. Walls only break to supers; crates lose HP to anything.
@@ -118,6 +121,7 @@ func take_attack(attacker: Brawler, move: MoveData, multiplier := 1.0) -> bool:
 			smash()
 			return true
 		_shake = 0.12
+		set_process(true)
 		return false
 	if not is_instance_valid(attacker) or move.power <= 0.0:
 		return false
@@ -125,6 +129,7 @@ func take_attack(attacker: Brawler, move: MoveData, multiplier := 1.0) -> bool:
 			* float(GameData.rule("damage_scale", 1.0)) * attacker.power_bonus()
 	hp -= amount
 	_shake = 0.18
+	set_process(true)
 	if hp <= 0.0:
 		smash()
 		return true

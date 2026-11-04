@@ -91,6 +91,7 @@ func _ready() -> void:
 	mode_rules = GameData.rule("modes/" + mode, {})
 	Quality.apply_sun(get_node_or_null("Sun") as DirectionalLight3D)
 	Quality.apply_viewport(get_viewport())
+	get_tree().root.size_changed.connect(func() -> void: Quality.apply_viewport(get_viewport()))
 	arena.build(arena_id, camera.pitch_degrees, mode)
 	if bool(GameData.setting("haze_blur", true)) and not Quality.is_low():
 		_add_haze()

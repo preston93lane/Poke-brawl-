@@ -2375,7 +2375,8 @@ func _check_graphics_levels() -> void:
 		var main := await _start_match("test_route_1", "duel", "charmander", [])
 		var sun := main.get_node("Sun") as DirectionalLight3D
 		expect(sun.shadow_enabled == (level != "low"), "%s graphics: shadows %s" % [level, "on" if level != "low" else "off"])
-		expect(is_equal_approx(get_viewport().scaling_3d_scale, 0.75 if level == "low" else 1.0), "%s graphics: 3D resolution" % level)
+		expect(is_equal_approx(get_viewport().scaling_3d_scale, Quality.render_scale()), "%s graphics: 3D resolution (%.2f)" % [level, get_viewport().scaling_3d_scale])
+		expect(is_equal_approx(Quality.render_scale(2400.0), Quality.max_3d_height() / 2400.0), "%s graphics: a tall phone screen renders 3D at %d px high" % [level, Quality.max_3d_height()])
 		main.queue_free()
 		await get_tree().process_frame
 	GameData.settings["graphics"] = before
