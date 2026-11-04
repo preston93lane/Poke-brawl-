@@ -337,6 +337,24 @@ func _menu_shot(screen: String, out_dir: String) -> void:
 			menu.show_corner({ "corner": "slots", "corner_voltorb": "voltorb", "corner_prizes": "prizes" }[screen])
 			for i in 30:
 				await get_tree().process_frame
+		"town":
+			Profile.data["tutorial_seen"] = true
+			menu.show_home()
+			for i in 60:
+				await get_tree().process_frame
+			var town: TownWorld = menu._screen.get_child(0).world
+			get_viewport().get_texture().get_image().save_png("%s/town_start.png" % out_dir)
+			# Walk to the Pokémon Center door and show the ENTER prompt.
+			town.player.global_position = town.doors["center"] + Vector3(0.3, 0, 0.5)
+			town.camera.snap_to_target()
+			for i in 30:
+				await get_tree().process_frame
+			get_viewport().get_texture().get_image().save_png("%s/town_center.png" % out_dir)
+			if not town.trainers.is_empty():
+				town.player.global_position = (town.trainers[0]["walker"] as Node3D).global_position + Vector3(1.0, 0, 0.8)
+				town.camera.snap_to_target()
+				for i in 30:
+					await get_tree().process_frame
 		"trainer":
 			Profile.data["money"] = 3000
 			menu.show_trainer(Town.wandering()[1])

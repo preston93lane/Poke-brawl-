@@ -28,6 +28,17 @@ The web build uses Godot's Compatibility renderer, so lighting is slightly simpl
 
 ## How it plays
 
+- **The town:** home is a small Kanto town you walk around (`scripts/town/`, laid out by `tools/build_town_map.py`).
+  Walk into a door to go inside (rules in `scripts/data/town.gd`, numbers in `data/town.json`):
+  - **Battle Arena:** every mode, Gyms and Boss Raids, and the **Trainer Tower** (floor after floor, checkpoints every 5).
+  - **Trainers in town:** a new set every 3 hours, each a type specialist with 1–3 stars. Battle them for fun or bet ₽
+    (win double plus a bonus; three lost bets in a row caps bets for a while).
+  - **Pokémon Center:** each line has 5 energy and every match uses one. Rested lines earn ×1.5 XP and money, tired ones ×0.5
+    (they never fight worse). Energy comes back over time, faster while resting here, or Nurse Joy heals it for ₽.
+  - **Poké Mart** (the daily store), **Department Store** (one-match drinks and a daily TM counter), **Game Corner** (slots,
+    Voltorb Flip and a prize counter, using coins won in matches or bought with ₽; never real money), **Day Care**
+    (a parked line gets 40% of the XP you earn with others), **Pewter Museum** (your records and trainer cards) and the
+    **Trainer Outfitter** (your trainer's style and colours).
 - The game opens on a menu: **Battle**, **King of the Hill**, **Brawl Ball**, **Rare Candy Rush**, **Showdown** or **Pokédex**. Then pick your Pokémon, level,
   moves, opponent and arena. Running `scenes/main.tscn` directly in the editor uses the **Main** node's Inspector values instead.
 - After every attack there's a short delay before you can attack again. Heavy moves have longer delays.

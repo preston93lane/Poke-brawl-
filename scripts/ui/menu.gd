@@ -81,7 +81,15 @@ func _ready() -> void:
 
 # --- Screens ---------------------------------------------------------------
 
+## Home is the town: walk your trainer round to the buildings.
 func show_home() -> void:
+	_set_screen(TownView.make(self), "town")
+	if not bool(Profile.data.get("tutorial_seen", false)) and not Profile.is_dev():
+		show_tutorial.call_deferred()
+
+
+## Everything at a glance (the ☰ button in town): trainer road, modes and every building.
+func show_overview() -> void:
 	var v := VBoxContainer.new()
 	v.alignment = BoxContainer.ALIGNMENT_CENTER
 	v.add_theme_constant_override("separation", 16)
@@ -156,14 +164,16 @@ func show_home() -> void:
 	v.add_child(row)
 	v.add_child(_building_row())
 	_set_screen(v, "home")
+	var to_town := UiKit.button("‹ TOWN", show_home, 18)
+	to_town.top_level = true
+	to_town.position = Vector2(24, 70)
+	_screen.add_child(to_town)
 	# A "?" in the corner opens How to Play; it opens by itself the very first time.
 	var help := UiKit.button("?  HOW TO PLAY", show_tutorial, 16)
 	help.add_theme_stylebox_override("normal", UiKit.box(Color(0, 0, 0, 0.35), 12, 8))
 	help.top_level = true  # Not laid out by the screen's margin container.
 	help.position = Vector2(24, 18)
 	_screen.add_child(help)
-	if not bool(Profile.data.get("tutorial_seen", false)) and not Profile.is_dev():
-		show_tutorial.call_deferred()
 
 
 ## Every town building as a button (the town map's doors lead to the same screens).
@@ -1776,11 +1786,13 @@ func _set_screen(content: Control, kind := "") -> void:
 		_screen.queue_free()
 	var margin := MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
-	# Extra side margin keeps buttons clear of the iPhone notch in landscape.
-	margin.add_theme_constant_override("margin_left", 56)
-	margin.add_theme_constant_override("margin_right", 56)
-	margin.add_theme_constant_override("margin_top", 20)
-	margin.add_theme_constant_override("margin_bottom", 20)
+	# Extra side margin keeps buttons clear of the iPhone notch in landscape (the
+	# town fills the screen and keeps its own buttons clear).
+	var edge := 0 if kind == "town" else 1
+	margin.add_theme_constant_override("margin_left", 56 * edge)
+	margin.add_theme_constant_override("margin_right", 56 * edge)
+	margin.add_theme_constant_override("margin_top", 20 * edge)
+	margin.add_theme_constant_override("margin_bottom", 20 * edge)
 	margin.add_child(content)
 	_screen = margin
 	add_child(margin)

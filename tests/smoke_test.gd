@@ -59,6 +59,7 @@ func _ready() -> void:
 	_check_starter_order()
 	_check_no_mew_bots()
 	await _check_town()
+	await _check_town_hub()
 	await _check_mvp()
 	await _check_boss_no_heal()
 	await _check_slam_windup()
@@ -1197,7 +1198,7 @@ func _check_menu_fits() -> void:
 	screens.append(["pokédex", func() -> void: menu.show_pokedex("mewtwo")])
 	screens.append(["settings", func() -> void: menu.show_settings()])
 	screens.append(["map maker", func() -> void: menu.show_map_editor()])
-	screens.append(["home", func() -> void: menu.show_home()])
+	screens.append(["overview", func() -> void: menu.show_overview()])
 	screens.append(["bag", func() -> void: menu.show_bag()])
 	screens.append(["store", func() -> void: menu.show_store("")])
 	screens.append(["starter", func() -> void: menu._set_screen(TrainerScreens.starter(menu))])
@@ -2312,4 +2313,52 @@ func _check_town() -> void:
 	expect(Town.tower_trainer(5)["class"] == "cooltrainer", "every fifth floor is an Ace Trainer")
 	Town.now_override = 0.0
 	Profile.data = saved
+	await get_tree().process_frame
+
+
+## The walkable town: every building has a door you can walk into, and the
+## trainers in town can be talked to.
+func _check_town_hub() -> void:
+	print("Town hub")
+	var menu := MENU_SCENE.instantiate()
+	add_child(menu)
+	await get_tree().process_frame
+	Profile.data["tutorial_seen"] = true
+	menu.show_home()
+	for i in 5:
+		await get_tree().process_frame
+	var view: TownView = menu._screen.get_child(0)
+	var town := view.world
+	expect(town.doors.size() == TownScreens.BUILDINGS.size(), "every building has a door (%d)" % town.doors.size())
+	expect(town.player != null and town.partner != null, "your trainer and partner Pokémon are in town")
+	# Walk up into the Pokémon Center's door: in you go.
+	town.player.global_position = town.doors["center"] + Vector3(0, 0, 1.0)
+	town.player.move_input = Vector2(0, -1)
+	var got := { "entered": "", "talked": {} }  # Lambdas copy locals, so share a dictionary.
+	town.enter_requested.connect(func(id: String) -> void: got["entered"] = id)
+	for i in 90:
+		await get_tree().physics_frame
+		if got["entered"] != "":
+			break
+	var entered: String = got["entered"]
+	if is_instance_valid(town):
+		town.player.move_input = Vector2.ZERO
+	expect(entered == "center", "walking into a door enters the building (%s)" % entered)
+	await get_tree().process_frame
+	expect(menu._screen_kind == "center", "the Pokémon Center screen opens")
+	menu.show_home()
+	for i in 5:
+		await get_tree().process_frame
+	view = menu._screen.get_child(0)
+	town = view.world
+	expect(town.player.global_position.distance_to(town.doors["center"]) < 1.5, "coming out, you're back at the Center's door")
+	if not town.trainers.is_empty():
+		town.talk_requested.connect(func(t: Dictionary) -> void: got["talked"] = t)
+		town.player.global_position = (town.trainers[0]["walker"] as Node3D).global_position + Vector3(0.9, 0, 0.6)
+		for i in 5:
+			await get_tree().process_frame
+		town.interact()
+		expect(not (got["talked"] as Dictionary).is_empty(), "you can talk to a trainer in town")
+	TownWorld.last_door = ""
+	menu.queue_free()
 	await get_tree().process_frame

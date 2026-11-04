@@ -32,12 +32,12 @@ const PAGES := [
 		"Ability: a passive bonus (unlocks at Lv 20 and 40). Gadgets unlock at Lv 10 and 30.",
 		"Types matter: super-effective hits deal more and show '!'. Status and stat drops show next to the health bar.",
 	]],
-	["FINDING YOUR WAY AROUND", "home", [
-		"BATTLE: every mode: Battle, King of the Hill, Brawl Ball, Rare Candy Rush, Showdown, Gyms, Boss Raids.",
-		"CHALLENGES: daily tasks and the weekly shiny hunt.",
-		"POKéDEX: your Pokémon. Tap one to edit its build (moves, super, gadget, Ability, HM, vitamins).",
-		"PROFILE: your stats, favourite Pokémon and gym badges. ACCOUNT saves to the cloud; SETTINGS has the controls.",
-		"A red dot on a button means something new is waiting there.",
+	["YOUR TOWN", "home", [
+		"Home is a town: walk with the stick (or WASD) and walk into a door, or tap ENTER, to go inside.",
+		"BATTLE ARENA: every mode, Gyms and Boss Raids, plus the Trainer Tower. Trainers around town will battle you, with a bet if you like.",
+		"POKéMON CENTER: every match uses some energy. Rested Pokémon earn more; rest tired ones here or try someone else.",
+		"Also: Poké Mart, Department Store (drinks for a match), Game Corner, Day Care, Museum and the Outfitter for your trainer's look.",
+		"CHALLENGES, BAG and POKéDEX are at the top; ☰ shows everything at once. A red dot or ! means something new.",
 	]],
 	["THE BAG", "bag", [
 		"Poké Balls from matches: open them for money, Rare Candy, vitamins, TMs, HMs and even new Pokémon.",
