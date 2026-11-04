@@ -209,7 +209,12 @@ static func share_xp(played: String, xp: int) -> Dictionary:
 # --- Department Store ------------------------------------------------------------
 
 static func drinks() -> Dictionary:
-	return cfg("drinks", {})
+	var out := {}
+	var all: Dictionary = cfg("drinks", {})
+	for id: String in all:
+		if all[id] is Dictionary:
+			out[id] = all[id]
+	return out
 
 
 static func buy_drink(id: String) -> bool:
@@ -384,6 +389,14 @@ static func finish_voltorb(cleared: bool, coins_won: int, flipped: int) -> void:
 	Profile.save()
 
 
+## Walking away from a Voltorb Flip round: keep its coins, same level.
+static func quit_voltorb(coins_won: int) -> void:
+	var stats := _save_dict("corner_stats")
+	_add_coins(coins_won)
+	stats["won"] = int(stats.get("won", 0)) + coins_won
+	Profile.save()
+
+
 static func prizes() -> Array:
 	return cfg("game_corner/prizes", [])
 
@@ -495,10 +508,18 @@ static func wandering() -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
 	var classes: Array = (cfg("classes", {}) as Dictionary).keys()
 	classes.sort()
+	# A different kind of trainer each, in a fresh order every slot.
+	var order := RandomNumberGenerator.new()
+	order.seed = hash("trainers:%d" % slot)
+	for i in range(classes.size() - 1, 0, -1):
+		var j := order.randi() % (i + 1)
+		var tmp: Variant = classes[i]
+		classes[i] = classes[j]
+		classes[j] = tmp
 	for i in int(cfg("trainers/per_slot", 4)):
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("trainer:%d:%d" % [slot, i])
-		var class_id: String = classes[rng.randi() % classes.size()]
+		var class_id: String = classes[i % classes.size()]
 		var weights: Array = cfg("trainers/star_weights", [50, 35, 15])
 		var roll := rng.randi() % 100
 		var stars := 1

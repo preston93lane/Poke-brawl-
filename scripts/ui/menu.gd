@@ -50,6 +50,10 @@ var _start_button: Button
 var _screen_kind := ""
 ## Equipped HM for the selected line.
 var _hm := ""
+## Department Store drink to use next match ("" = none).
+var _drink := ""
+## A trainer battle waiting for you to pick your Pokémon: { trainer, stake, floor }.
+var _pending_trainer := {}
 
 
 func _ready() -> void:
@@ -150,6 +154,7 @@ func show_home() -> void:
 			UiKit.news_dot(b, Profile.count_balls() if entry[3] == "bag" else 0)
 		row.add_child(b)
 	v.add_child(row)
+	v.add_child(_building_row())
 	_set_screen(v, "home")
 	# A "?" in the corner opens How to Play; it opens by itself the very first time.
 	var help := UiKit.button("?  HOW TO PLAY", show_tutorial, 16)
@@ -159,6 +164,20 @@ func show_home() -> void:
 	_screen.add_child(help)
 	if not bool(Profile.data.get("tutorial_seen", false)) and not Profile.is_dev():
 		show_tutorial.call_deferred()
+
+
+## Every town building as a button (the town map's doors lead to the same screens).
+func _building_row() -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 8)
+	for id: String in ["arena", "center", "mart", "dept", "corner", "daycare", "museum", "outfitter"]:
+		var b: Dictionary = TownScreens.BUILDINGS[id]
+		var button := UiKit.button(str(b["title"]).replace("POKéMON ", "POKé ").replace("DEPARTMENT", "DEPT.").replace("TRAINER ", ""), enter_building.bind(id), 15)
+		button.custom_minimum_size = Vector2(128, 50)
+		button.add_theme_stylebox_override("normal", UiKit.box(b["color"]))
+		row.add_child(button)
+	return row
 
 
 func show_tutorial() -> void:
@@ -468,7 +487,60 @@ func show_account(message := "") -> void:
 
 func show_store(message := "") -> void:
 	Profile.mark_seen("store")
-	_set_screen(TrainerScreens.store(self, message), "store")
+	_set_screen(TownScreens.mart(self, message), "store")
+
+
+# --- Town buildings (scripts/ui/town_screens.gd) ---------------------------------
+
+func show_center(message := "") -> void:
+	_set_screen(TownScreens.center(self, message), "center")
+
+
+func show_dept(message := "") -> void:
+	_set_screen(TownScreens.dept(self, message), "dept")
+
+
+func show_corner(tab := "slots", message := "") -> void:
+	_set_screen(TownScreens.corner(self, tab, message), "corner")
+
+
+func show_daycare(message := "") -> void:
+	_set_screen(TownScreens.daycare(self, message), "daycare")
+
+
+func show_museum() -> void:
+	_set_screen(TownScreens.museum(self), "museum")
+
+
+func show_outfitter(message := "") -> void:
+	_set_screen(TownScreens.outfitter(self, message), "outfitter")
+
+
+func show_arena() -> void:
+	_set_screen(TownScreens.arena(self), "arena")
+
+
+func show_trainer(t: Dictionary) -> void:
+	_set_screen(TownScreens.trainer(self, t), "trainer")
+
+
+## Opens a building by id (the town's doors use this).
+func enter_building(id: String) -> void:
+	match id:
+		"center": show_center()
+		"mart": show_store()
+		"dept": show_dept()
+		"corner": show_corner()
+		"daycare": show_daycare()
+		"museum": show_museum()
+		"outfitter": show_outfitter()
+		"arena": show_arena()
+
+
+## A trainer battle (wandering trainer, or Trainer Tower `floor`): pick your Pokémon next.
+func start_trainer_battle(t: Dictionary, stake: int, floor := 0) -> void:
+	_pending_trainer = { "trainer": t, "stake": stake, "floor": floor }
+	show_select(str(t["mode"]))
 
 
 func _unlocked_count() -> int:
@@ -501,7 +573,11 @@ func show_select(mode: String) -> void:
 	root.add_theme_constant_override("separation", 12)
 	var top := HBoxContainer.new()
 	var back: Callable = show_battle_modes
-	if mode == "boss_raid":
+	if not _pending_trainer.is_empty():
+		back = func() -> void:
+			_pending_trainer = {}
+			show_home()
+	elif mode == "boss_raid":
 		back = show_bosses
 	elif mode == "gym":
 		back = show_gym.bind(_gym)
@@ -512,6 +588,12 @@ func show_select(mode: String) -> void:
 	elif mode == "gym":
 		title.text = "%s  —  %s%s" % [str(GameData.arenas.get(_gym, {}).get("name", _gym)).to_upper(), _gym_difficulty.to_upper(),
 				"  ·  pick a %s type" % _gym_type.capitalize() if _gym_type != "" else ""]
+	if not _pending_trainer.is_empty():
+		var tr: Dictionary = _pending_trainer["trainer"]
+		var tower_floor := int(_pending_trainer["floor"])
+		title.text = ("TRAINER TOWER  —  FLOOR %d  vs. %s %s" % [tower_floor, tr["class_name"], tr["name"]]) if tower_floor > 0 \
+				else "vs. %s %s  %s%s" % [tr["class_name"], tr["name"], "★".repeat(int(tr["stars"])),
+				"  ·  BET %d ₽" % int(_pending_trainer["stake"]) if int(_pending_trainer["stake"]) > 0 else ""]
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	# Long blurbs shorten with "…" instead of pushing the START button off screen.
@@ -944,6 +1026,40 @@ func _filter_row(title: String, options: Array, getter: Callable, setter: Callab
 
 # --- Select screen details -------------------------------------------------
 
+## Energy for this line (Pokémon Center) and a Department Store drink for the match.
+func _energy_and_drink(s: SpeciesData) -> Control:
+	var box := VBoxContainer.new()
+	if Town.energy_applies():
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 10)
+		row.add_child(UiKit.label("ENERGY", 18, Color(1, 0.9, 0.5)))
+		row.add_child(TownScreens._pips(s.id))
+		var note := "Tired: half XP and money. Rest it at the Pokémon Center!" if Town.is_tired(s.id) \
+				else "Rested: ×%.1f XP and money this match" % float(Town.cfg("energy/rested_mult", 1.5))
+		row.add_child(UiKit.label(note, 16, Color(1, 0.55, 0.45) if Town.is_tired(s.id) else Color(0.7, 1, 0.75)))
+		box.add_child(row)
+	var owned: Array[String] = []
+	for id: String in Town.drinks():
+		if Profile.count(id) > 0:
+			owned.append(id)
+	if not owned.is_empty():
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 6)
+		row.add_child(UiKit.label("DRINK", 18, Color(1, 0.9, 0.5)))
+		var group := ButtonGroup.new()
+		var none := _toggle("NONE", group, _drink == "" or _drink not in owned)
+		none.pressed.connect(func() -> void: _drink = "")
+		row.add_child(none)
+		for id in owned:
+			var d: Dictionary = Town.drinks()[id]
+			var b := _toggle("%s ×%d" % [d["name"], Profile.count(id)], group, _drink == id)
+			b.tooltip_text = str(d["desc"])
+			b.pressed.connect(func() -> void: _drink = id)
+			row.add_child(b)
+		box.add_child(row)
+	return box
+
+
 func _refresh_select_details() -> void:
 	var keep_scroll := _details_scroll.scroll_vertical
 	_clear(_details)
@@ -972,7 +1088,9 @@ func _refresh_select_details() -> void:
 	_allies.clear()
 	_enemies.clear()
 
-	if _mode != "gym":  # Gyms use the difficulty picked on the gym screen.
+	_details.add_child(_energy_and_drink(s))
+
+	if _mode != "gym" and _pending_trainer.is_empty():  # Gyms and trainers set their own difficulty.
 		_details.add_child(_section("BOT DIFFICULTY"))
 		var difficulty_row := HBoxContainer.new()
 		var difficulty_group := ButtonGroup.new()
@@ -982,7 +1100,7 @@ func _refresh_select_details() -> void:
 			difficulty_row.add_child(b)
 		_details.add_child(difficulty_row)
 
-	if _mode not in ["boss_raid", "gym"]:  # The boss / gym picks the arena.
+	if _mode not in ["boss_raid", "gym"] and _pending_trainer.is_empty():  # The boss / gym / trainer picks the arena.
 		_details.add_child(_section("ARENA  (random by default; pick one to play a challenge's map)"))
 		var arenas := HFlowContainer.new()
 		var arena_group := ButtonGroup.new()
@@ -1384,7 +1502,13 @@ func _start_match() -> void:
 		"enemies": _enemies.duplicate(),
 		"difficulty": _difficulty,
 	}
-	if _mode == "gym":
+	GameData.match_settings["drink"] = _drink if Profile.count(_drink) > 0 else ""
+	_drink = ""
+	if not _pending_trainer.is_empty():
+		var p := _pending_trainer
+		_pending_trainer = {}
+		GameData.match_settings = Town.start_trainer((p["trainer"] as Dictionary).duplicate(true), GameData.match_settings, int(p["stake"]), int(p["floor"]))
+	elif _mode == "gym":
 		GameData.match_settings = GymMode.start_run(_gym, _gym_difficulty, _gym_type, GameData.match_settings)
 	if _mode == "boss_raid":
 		GameData.match_settings["boss"] = _boss

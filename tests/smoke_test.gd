@@ -1205,6 +1205,12 @@ func _check_menu_fits() -> void:
 	screens.append(["battle modes", func() -> void: menu.show_battle_modes()])
 	screens.append(["challenges", func() -> void: menu.show_challenges()])
 	screens.append(["profile", func() -> void: menu.show_profile()])
+	for building: String in TownScreens.BUILDINGS:
+		screens.append([building, func() -> void: menu.enter_building(building)])
+	for tab in ["voltorb", "prizes", "coins"]:
+		screens.append(["game corner " + tab, func() -> void: menu.show_corner(tab)])
+	screens.append(["trainer", func() -> void: menu.show_trainer(Town.wandering()[0])])
+	screens.append(["trainer battle select", func() -> void: menu.start_trainer_battle(Town.tower_trainer(3), 0, 3)])
 	for entry in screens:
 		entry[1].call()
 		for i in 3:

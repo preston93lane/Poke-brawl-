@@ -319,6 +319,29 @@ func _menu_shot(screen: String, out_dir: String) -> void:
 				get_viewport().get_texture().get_image().save_png("%s/tutorial_%d.png" % [out_dir, page])
 		"store":
 			menu.show_store("")
+		"center", "dept", "daycare", "museum", "outfitter", "arena":
+			Profile.data["money"] = 25000
+			for f in ["charmander", "squirtle", "pidgey", "rattata", "geodude"]:
+				if f not in Profile.data["unlocked"]:
+					Profile.data["unlocked"].append(f)
+			for k in 6:
+				Town.use_energy("charmander")
+			Town.use_energy("squirtle")
+			Town.check_in("squirtle")
+			Town.deposit("geodude")
+			menu.enter_building(screen)
+			for i in 30:
+				await get_tree().process_frame
+		"corner", "corner_voltorb", "corner_prizes":
+			Profile.data["coins"] = 1500
+			menu.show_corner({ "corner": "slots", "corner_voltorb": "voltorb", "corner_prizes": "prizes" }[screen])
+			for i in 30:
+				await get_tree().process_frame
+		"trainer":
+			Profile.data["money"] = 3000
+			menu.show_trainer(Town.wandering()[1])
+			for i in 30:
+				await get_tree().process_frame
 		"bag":
 			menu.show_bag()
 		"battle":

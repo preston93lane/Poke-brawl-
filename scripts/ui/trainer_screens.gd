@@ -153,10 +153,11 @@ class BallIcon extends Control:
 
 
 ## Store: six slots that change every day, with daily limits per kind of item.
-static func store(menu: Node, message := "") -> Control:
+static func store(menu: Node, message := "", framed := false) -> Control:
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 12)
-	v.add_child(_top(menu, "POKé MART  ·  new stock every day"))
+	if not framed:
+		v.add_child(_top(menu, "POKé MART  ·  new stock every day"))
 	if message != "":
 		v.add_child(UiKit.label(message, 22, Color(0.6, 1, 0.6)))
 	var grid := GridContainer.new()
@@ -169,7 +170,7 @@ static func store(menu: Node, message := "") -> Control:
 		var slot: Dictionary = slots[index]
 		var item := str(slot["item"])
 		var card := VBoxContainer.new()
-		card.custom_minimum_size = Vector2(250, 150)
+		card.custom_minimum_size = Vector2(205 if framed else 250, 150)
 		var rarity := str(slot["rarity"])
 		card.add_child(UiKit.label(rarity.to_upper(), 14, Color(1, 1, 1, 0.7)))
 		var name_label := UiKit.label(Profile.item_name(item), 24)
@@ -193,7 +194,7 @@ static func store(menu: Node, message := "") -> Control:
 		caps.append("%s %d" % [category.replace("_", " "), Profile.daily_cap(category)])
 	var rules_label := UiKit.label("Common items: 3 a day, uncommon: 2, rare and featured: 1. Each buy of the same item costs 25% more until tomorrow. Also capped per day: " + ", ".join(caps), 16, Color(0.75, 0.8, 0.9))
 	rules_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	rules_label.custom_minimum_size.x = 600
+	rules_label.custom_minimum_size.x = 520 if framed else 600
 	v.add_child(rules_label)
 	return UiKit.scroll(v)
 
