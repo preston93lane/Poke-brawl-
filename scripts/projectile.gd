@@ -344,6 +344,8 @@ func _explode(radius: float) -> void:
 func _spawn_explosion_fx(radius: float) -> void:
 	var fx := MeshInstance3D.new()
 	var sphere := SphereMesh.new()
+	sphere.radial_segments = 16
+	sphere.rings = 8
 	sphere.radius = radius
 	sphere.height = radius * 2.0
 	fx.mesh = sphere

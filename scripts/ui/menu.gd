@@ -748,6 +748,7 @@ func show_settings() -> void:
 		GameData.set_setting("haze_blur", on)
 		haze.text = "HAZE: ON" if on else "HAZE: OFF")
 	top.add_child(haze)
+	top.add_child(Quality.cycle_button())
 	if Profile.is_dev():
 		top.add_child(UiKit.button("DEV TOOLS", show_dev))
 	if not Profile.is_dev():

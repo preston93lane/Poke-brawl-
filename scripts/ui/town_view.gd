@@ -25,13 +25,14 @@ func _ready() -> void:
 	add_child(container)
 	var viewport := SubViewport.new()
 	viewport.own_world_3d = true
-	viewport.msaa_3d = Viewport.MSAA_2X
+	Quality.apply_viewport(viewport)
 	container.add_child(viewport)
 	world = TownWorld.new()
 	viewport.add_child(world)
 	world.prompt_changed.connect(_on_prompt)
 	world.enter_requested.connect(func(id: String) -> void: menu.enter_building(id))
 	world.talk_requested.connect(func(t: Dictionary) -> void: menu.show_trainer(t))
+	NatureKit.warm.call_deferred(get_tree())
 
 	stick = VirtualJoystick.new()
 	stick.set_anchors_preset(Control.PRESET_FULL_RECT)

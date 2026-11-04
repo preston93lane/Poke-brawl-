@@ -325,7 +325,7 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 	for shape_key: String in rocks:
 		if shape_key.begins_with("nk_"):
 			var model := _nature_wall(shape_key)
-			_add_multimesh(model, null, rocks[shape_key], true, rock_shades[shape_key])
+			_add_multimesh(model, null, rocks[shape_key], Quality.casts_shadow("bush" if shape_key.begins_with("nk_bush") else "rock"), rock_shades[shape_key])
 		elif lets_go and rocky:
 			_add_multimesh(rock_mesh, rock_mat, rocks[shape_key])
 		else:
@@ -363,12 +363,12 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 		var clumps: Array[Transform3D] = []
 		for t: Transform3D in grass:
 			clumps.append(Transform3D(t.basis.scaled(Vector3(1.12, 1.0, 1.12)), t.origin))
-		_grass_mm = _add_multimesh(ArenaArt.grass_mesh(), ArenaArt.grass_material(dark_map), clumps)
+		_grass_mm = _add_multimesh(ArenaArt.grass_mesh(), ArenaArt.grass_material(dark_map), clumps, false)
 		var tree_transforms: Array[Transform3D] = []
 		for cell in tree_cells:
 			var size := 0.95 + ArenaArt._hash(cell, 41) * 0.25
 			tree_transforms.append(Transform3D(Basis(Vector3.UP, ArenaArt._hash(cell, 42) * TAU).scaled(Vector3(size, size * (0.95 + ArenaArt._hash(cell, 43) * 0.15), size)), cell_center(cell)))
-		_add_multimesh(ArenaArt.tree_mesh(dark_map), ArenaArt.vertex_color_material(), tree_transforms)
+		_add_multimesh(ArenaArt.tree_mesh(dark_map), ArenaArt.vertex_color_material(), tree_transforms, Quality.casts_shadow("tree"))
 		if art_ground:
 			for node in ArenaArt.decorations(self, open_cells):
 				add_child(node)
@@ -376,7 +376,7 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 		var grass_mat := ShaderMaterial.new()
 		grass_mat.shader = GRASS_SHADER
 		grass_mat.set_shader_parameter("blades", load(TILE_DIR + "tall_grass.png"))
-		_grass_mm = _add_multimesh(_bush_mesh(), grass_mat, grass)
+		_grass_mm = _add_multimesh(_bush_mesh(), grass_mat, grass, false)
 		var tree_quad := QuadMesh.new()
 		tree_quad.size = TREE_SPRITE_SIZE
 		var tree_mat := _tile_material("tree", false, true)
@@ -420,6 +420,7 @@ func build(arena_id: String, sprite_tilt_degrees: float, p_mode := "duel") -> vo
 		arena_floor.uv1_scale = Vector3(160, 160, 1)
 		outside.material_override = arena_floor
 	add_child(outside)
+	batch_breakables()
 	ArenaSurroundings.build(self, arena_id, tilt, railings)
 
 
@@ -467,6 +468,8 @@ func _jitter(cell: Vector2i) -> Basis:
 ## `cubeness` 0 = ball, 1 = box; `bumps` = how uneven the surface is.
 static func lump_mesh(cubeness: float, bumps: float, variant: int) -> ArrayMesh:
 	var sphere := SphereMesh.new()
+	sphere.radial_segments = 16
+	sphere.rings = 8
 	sphere.radius = 0.5
 	sphere.height = 1.0
 	sphere.radial_segments = 20
@@ -532,6 +535,7 @@ func push_breakable(b: Breakable, direction: Vector3) -> bool:
 	for node in get_tree().get_nodes_in_group("brawlers"):
 		if world_to_cell((node as Node3D).global_position) == to:
 			return false
+	b.unbatch()  # It's on the move: draw it on its own from now on.
 	var old := b.cell
 	var old_char := _char_at(old)
 	rows[old.y] = rows[old.y].substr(0, old.x) + "." + rows[old.y].substr(old.x + 1)
@@ -583,6 +587,36 @@ func block_goal_sides() -> void:
 			rows[cell.y] = rows[cell.y].substr(0, cell.x) + "B" + rows[cell.y].substr(cell.x + 1)
 			_astar.set_point_solid(cell)
 			_swim_astar.set_point_solid(cell)
+	batch_breakables()
+
+
+## Draws every still, unbatched breakable that shares a mesh and material with
+## others as one MultiMesh (see Breakable.join_batch): far fewer draw calls.
+func batch_breakables() -> void:
+	var groups := {}
+	for node in get_children():
+		var b := node as Breakable
+		if b == null or b.is_broken or b._batch != null or b.mesh_instance().mesh == null:
+			continue
+		var key := b.mesh_key()
+		if not groups.has(key):
+			groups[key] = []
+		groups[key].append(b)
+	for key: String in groups:
+		var list: Array = groups[key]
+		if list.size() < 2:
+			continue
+		var first: Breakable = list[0]
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.mesh = first.mesh_instance().mesh
+		mm.instance_count = list.size()
+		var inst := MultiMeshInstance3D.new()
+		inst.multimesh = mm
+		inst.material_override = first.mesh_instance().material_override
+		add_child(inst)
+		for i in list.size():
+			(list[i] as Breakable).join_batch(mm, i)
 
 
 ## A breakable tile was destroyed: the ground there is open now.
@@ -1043,7 +1077,7 @@ static func rounded_block(style_name: String, mask: int, hidden := 0) -> ArrayMe
 	var half := TILE * 0.5
 	var lo := Vector3(-half if mask & 2 else -half + r, -hh, -half if mask & 8 else -half + r)
 	var hi := Vector3(half if mask & 1 else half - r, hh - r, half if mask & 4 else half - r)
-	var steps := 5  # Enough bands that the bigger curves look smooth.
+	var steps := 3
 	var across := PackedFloat32Array()  # x and z grid: only the curved bands need points
 	for k in steps + 1:
 		across.append(-half + r * k / steps)

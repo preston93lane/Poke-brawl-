@@ -19,6 +19,8 @@ func setup(look: String, height: float) -> void:
 	var width := clampf(height * 0.42, 0.35, 0.8)
 	for i in 2:
 		var torus := TorusMesh.new()
+		torus.rings = 28
+		torus.ring_segments = 8
 		torus.inner_radius = width * 0.84
 		torus.outer_radius = width
 		torus.rings = 12

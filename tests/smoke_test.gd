@@ -60,6 +60,7 @@ func _ready() -> void:
 	_check_no_mew_bots()
 	await _check_town()
 	await _check_town_hub()
+	await _check_graphics_levels()
 	await _check_mvp()
 	await _check_boss_no_heal()
 	await _check_slam_windup()
@@ -2362,3 +2363,20 @@ func _check_town_hub() -> void:
 	TownWorld.last_door = ""
 	menu.queue_free()
 	await get_tree().process_frame
+
+
+## Settings → GRAPHICS: low turns the sun's shadows off and lowers the 3D
+## resolution; medium keeps cheaper shadows; the setting is restored afterwards.
+func _check_graphics_levels() -> void:
+	print("Graphics levels")
+	var before := str(GameData.setting("graphics", "auto"))
+	for level in ["low", "medium", "high"]:
+		GameData.settings["graphics"] = level
+		var main := await _start_match("test_route_1", "duel", "charmander", [])
+		var sun := main.get_node("Sun") as DirectionalLight3D
+		expect(sun.shadow_enabled == (level != "low"), "%s graphics: shadows %s" % [level, "on" if level != "low" else "off"])
+		expect(is_equal_approx(get_viewport().scaling_3d_scale, 0.75 if level == "low" else 1.0), "%s graphics: 3D resolution" % level)
+		main.queue_free()
+		await get_tree().process_frame
+	GameData.settings["graphics"] = before
+	Quality.apply_viewport(get_viewport())

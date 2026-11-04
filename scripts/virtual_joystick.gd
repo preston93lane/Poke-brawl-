@@ -115,11 +115,8 @@ func _draw() -> void:
 	var active := is_active()
 	var c := _center
 	# Base: translucent dark well with a bright rim.
-	draw_circle(c, radius + 6.0, Color(0, 0, 0, 0.18))
-	for i in 6:
-		var t := float(i) / 6.0
-		draw_circle(c, radius * (1.0 - t * 0.5), Color(color.darkened(0.7), (0.22 if active else 0.14) * (1.0 - t * 0.5)))
-	draw_arc(c, radius, 0.0, TAU, 64, Color(color, 0.75 if active else 0.4), 5.0, true)
+	UiKit.draw_stick_well(self, c, radius, color, active)
+	draw_arc(c, radius, 0.0, TAU, 48, Color(color, 0.75 if active else 0.4), 5.0, true)
 	if active and _knob.length() > radius * 0.15:
 		# Highlight the rim in the direction you're pushing.
 		var a := _knob.angle()

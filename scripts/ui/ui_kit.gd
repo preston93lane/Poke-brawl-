@@ -353,20 +353,77 @@ static func scroll(child: Control) -> ScrollContainer:
 
 # --- Drawing helpers for HUD widgets ---------------------------------------
 
+## Cached pictures of the layered circles below: drawing a stack of 6-9
+## see-through circles every frame cost a draw call per layer and painted the
+## same pixels over and over (slow on phones); now each is one textured quad.
+const CIRCLE_TEX := 96
+static var _circle_cache := {}
+
+
+## A square texture of circles drawn in order. Each layer: [centre offset in radii
+## (-1..1 from the middle), radius in radii, colour].
+static func _layered_texture(key: String, layers: Array) -> ImageTexture:
+	if _circle_cache.has(key):
+		return _circle_cache[key]
+	var n := CIRCLE_TEX
+	var img := Image.create(n, n, false, Image.FORMAT_RGBA8)
+	var half := n * 0.5
+	for y in n:
+		for x in n:
+			var p := Vector2((x + 0.5 - half) / half, (y + 0.5 - half) / half)
+			var out := Color(0, 0, 0, 0)
+			for layer: Array in layers:
+				var d := p.distance_to(layer[0]) - float(layer[1])
+				var cover := clampf(0.5 - d * half, 0.0, 1.0)  # About one pixel of smooth edge.
+				if cover <= 0.0:
+					continue
+				var c: Color = layer[2]
+				var a := c.a * cover
+				var keep := out.a * (1.0 - a)
+				var total := a + keep
+				if total > 0.0:
+					out = Color((c.r * a + out.r * keep) / total, (c.g * a + out.g * keep) / total, (c.b * a + out.b * keep) / total, total)
+			img.set_pixel(x, y, out)
+	var tex := ImageTexture.create_from_image(img)
+	_circle_cache[key] = tex
+	return tex
+
+
+static func _draw_circle_tex(ci: CanvasItem, tex: Texture2D, center: Vector2, radius: float, alpha := 1.0) -> void:
+	ci.draw_texture_rect(tex, Rect2(center - Vector2(radius, radius), Vector2(radius, radius) * 2.0), false, Color(1, 1, 1, alpha))
+
+
 ## Shaded disc: darker rim, lighter top-left, like a glossy button.
 static func draw_shaded_circle(ci: CanvasItem, center: Vector2, radius: float, color: Color, alpha := 1.0) -> void:
-	var steps := 9
-	for i in steps:
-		var t := float(i) / steps
-		var r := radius * (1.0 - t * 0.85)
-		var c := color.darkened(0.35 * (1.0 - t)).lerp(color.lightened(0.35), t * t)
-		ci.draw_circle(center - Vector2(radius, radius) * 0.18 * t, r, Color(c, alpha))
+	var key := "shaded:" + color.to_html()
+	if not _circle_cache.has(key):
+		var layers := []
+		var steps := 9
+		for i in steps:
+			var t := float(i) / steps
+			var c := color.darkened(0.35 * (1.0 - t)).lerp(color.lightened(0.35), t * t)
+			layers.append([-Vector2(1, 1) * 0.18 * t, 1.0 - t * 0.85, Color(c, 1.0)])
+		_layered_texture(key, layers)
+	_draw_circle_tex(ci, _circle_cache[key], center, radius, alpha)
 
 
 ## Soft drop shadow under a round widget.
 static func draw_drop_shadow(ci: CanvasItem, center: Vector2, radius: float) -> void:
-	ci.draw_circle(center + Vector2(0, radius * 0.1), radius * 1.04, Color(0, 0, 0, 0.28))
-	ci.draw_circle(center + Vector2(0, radius * 0.06), radius * 1.0, Color(0, 0, 0, 0.22))
+	var tex := _layered_texture("shadow", [[Vector2(0, 0.1 / 1.04), 1.0, Color(0, 0, 0, 0.28)], [Vector2(0, 0.06 / 1.04), 1.0 / 1.04, Color(0, 0, 0, 0.22)]])
+	_draw_circle_tex(ci, tex, center, radius * 1.04)
+
+
+## The well under a joystick: a faint shadow and soft rings darkening inwards.
+static func draw_stick_well(ci: CanvasItem, center: Vector2, radius: float, color: Color, active: bool) -> void:
+	var outer := radius + 6.0
+	var key := "well:%s:%s" % [color.to_html(), active]
+	if not _circle_cache.has(key):
+		var layers := [[Vector2.ZERO, 1.0, Color(0, 0, 0, 0.18)]]
+		for i in 6:
+			var t := float(i) / 6.0
+			layers.append([Vector2.ZERO, radius * (1.0 - t * 0.5) / outer, Color(color.darkened(0.7), (0.22 if active else 0.14) * (1.0 - t * 0.5))])
+		_layered_texture(key, layers)
+	_draw_circle_tex(ci, _circle_cache[key], center, outer)
 
 
 ## Filled pie from 12 o'clock clockwise covering `ratio` (0..1).

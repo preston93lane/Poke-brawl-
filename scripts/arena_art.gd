@@ -104,6 +104,8 @@ static func grass_mesh() -> ArrayMesh:
 static func grass_material(dark := false) -> ShaderMaterial:
 	var mat := ShaderMaterial.new()
 	mat.shader = LEAFY_SHADER
+	if not Quality.grass_sways():
+		mat.set_shader_parameter("sway", 0.0)  # Still grass on low / medium graphics.
 	if dark:
 		mat.set_shader_parameter("tint", Color(0.42, 0.5, 0.55))
 	return mat
@@ -207,8 +209,9 @@ static func _add_cylinder(st: SurfaceTool, base: Vector3, r_top: float, r_bottom
 
 ## Lumpy ball with smooth normals and a bottom-to-top colour gradient.
 static func _add_blob(st: SurfaceTool, center: Vector3, radius: float, variant: int, low: Color, high: Color) -> void:
-	var rings := 7
-	var segs := 12
+	# Fewer facets on low graphics (they're small on screen anyway).
+	var rings := 5 if Quality.is_low() else 7
+	var segs := 8 if Quality.is_low() else 12
 	var points := []
 	for r in rings + 1:
 		var row := []
@@ -244,6 +247,8 @@ static func vertex_color_material() -> ShaderMaterial:
 ## replace it: flat faces, grey-brown with darker cracks between facets.
 static func rock_mesh(variant: int) -> ArrayMesh:
 	var sphere := SphereMesh.new()
+	sphere.radial_segments = 16
+	sphere.rings = 8
 	sphere.radius = 0.5
 	sphere.height = 1.0
 	sphere.radial_segments = 9

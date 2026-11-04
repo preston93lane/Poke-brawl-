@@ -190,6 +190,8 @@ static func _house(root: Node3D, fw: float, fd: float, s: Dictionary) -> void:
 			if absf(cx) < 0.9:
 				continue
 			var col := CylinderMesh.new()
+			col.radial_segments = 20
+			col.rings = 1
 			col.top_radius = 0.22
 			col.bottom_radius = 0.26
 			col.height = hgt
@@ -207,11 +209,15 @@ static func _house(root: Node3D, fw: float, fd: float, s: Dictionary) -> void:
 static func fountain() -> Node3D:
 	var root := Node3D.new()
 	var base := CylinderMesh.new()
+	base.radial_segments = 20
+	base.rings = 1
 	base.top_radius = 0.55
 	base.bottom_radius = 0.7
 	base.height = 1.0
 	_part(root, base, Color(0.85, 0.83, 0.8), Vector3(0, 0.5, 0))
 	var top := SphereMesh.new()
+	top.radial_segments = 16
+	top.rings = 8
 	top.radius = 0.6
 	top.height = 0.6
 	top.is_hemisphere = true
@@ -220,11 +226,15 @@ static func fountain() -> Node3D:
 	var bottom := _part(root, top, Color(0.97, 0.97, 0.95), Vector3(0, 1.62, 0))
 	bottom.rotation.x = PI
 	var band := CylinderMesh.new()
+	band.radial_segments = 20
+	band.rings = 1
 	band.top_radius = 0.61
 	band.bottom_radius = 0.61
 	band.height = 0.1
 	_part(root, band, Color(0.15, 0.15, 0.2), Vector3(0, 1.62, 0))
 	var button := CylinderMesh.new()
+	button.radial_segments = 20
+	button.rings = 1
 	button.top_radius = 0.17
 	button.bottom_radius = 0.17
 	button.height = 0.12
@@ -236,6 +246,8 @@ static func fountain() -> Node3D:
 ## The Battle Arena: a round stadium with a big entrance arch, banners and flags.
 static func _arena(root: Node3D, fw: float, fd: float) -> void:
 	var bowl := CylinderMesh.new()
+	bowl.radial_segments = 20
+	bowl.rings = 1
 	bowl.top_radius = 0.5
 	bowl.bottom_radius = 0.5
 	bowl.height = 3.2
@@ -243,6 +255,8 @@ static func _arena(root: Node3D, fw: float, fd: float) -> void:
 	var body := _part(root, bowl, Color(0.92, 0.9, 0.86), Vector3(0, 1.6, -0.2))
 	body.scale = Vector3(fw - 0.4, 1, fd - 0.6)
 	var rim := CylinderMesh.new()
+	rim.radial_segments = 20
+	rim.rings = 1
 	rim.top_radius = 0.5
 	rim.bottom_radius = 0.5
 	rim.height = 0.55
@@ -261,6 +275,8 @@ static func _arena(root: Node3D, fw: float, fd: float) -> void:
 		var ang := PI * (0.15 + 0.14 * k)
 		var p := Vector3(cos(ang) * (fw * 0.5 - 0.3), 3.6, -sin(ang) * (fd * 0.5 - 0.4) - 0.2)
 		var pole := CylinderMesh.new()
+		pole.radial_segments = 20
+		pole.rings = 1
 		pole.top_radius = 0.05
 		pole.bottom_radius = 0.05
 		pole.height = 1.6

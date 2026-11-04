@@ -18,6 +18,11 @@ var is_broken := false
 
 var _mesh: MeshInstance3D
 var _shake := 0.0
+## Drawn as one copy in a shared MultiMesh (Arena.batch_breakables) while it sits
+## still: one draw call for every rock of the same shape instead of one each. It
+## takes its own mesh back while shaking, and for good when it moves or breaks.
+var _batch: MultiMesh
+var _batch_index := -1
 
 
 func setup(p_cell: Vector2i, p_kind: String, mesh: Mesh, material: Material, p_max_hp := 3000.0) -> void:
@@ -41,6 +46,7 @@ func setup(p_cell: Vector2i, p_kind: String, mesh: Mesh, material: Material, p_m
 
 
 func set_mesh(mesh: Mesh, basis_value: Basis, material: Material = null) -> void:
+	unbatch()
 	_mesh.mesh = mesh
 	_mesh.basis = basis_value
 	if material:
@@ -49,7 +55,39 @@ func set_mesh(mesh: Mesh, basis_value: Basis, material: Material = null) -> void
 
 ## Twist / resize the visible mesh (the collider stays one tile).
 func set_mesh_basis(basis_value: Basis) -> void:
+	unbatch()
 	_mesh.basis = basis_value
+
+
+## The visible mesh, its material and where it sits (for batching).
+func mesh_key() -> String:
+	return "%d:%d" % [_mesh.mesh.get_instance_id() if _mesh.mesh else 0, _mesh.material_override.get_instance_id() if _mesh.material_override else 0]
+
+
+func mesh_instance() -> MeshInstance3D:
+	return _mesh
+
+
+func join_batch(mm: MultiMesh, index: int) -> void:
+	_batch = mm
+	_batch_index = index
+	mm.set_instance_transform(index, (global_transform if is_inside_tree() else transform) * _mesh.transform)
+	_mesh.visible = false
+
+
+## Back to drawing itself (before moving, or for good).
+func unbatch() -> void:
+	if _batch:
+		_hide_copy()
+		_batch = null
+		_batch_index = -1
+	if _mesh:
+		_mesh.visible = true
+
+
+func _hide_copy() -> void:
+	if _batch and _batch_index >= 0:
+		_batch.set_instance_transform(_batch_index, Transform3D(Basis.from_scale(Vector3.ZERO), global_position))
 
 
 func _ready() -> void:
@@ -58,9 +96,16 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	if _shake > 0.0:
+		if _batch and not _mesh.visible:
+			_hide_copy()
+			_mesh.visible = true
 		_shake = maxf(0.0, _shake - delta)
 		_mesh.position.x = randf_range(-1, 1) * _shake * 0.4
 		_mesh.position.z = randf_range(-1, 1) * _shake * 0.4
+		if _shake <= 0.0 and _batch:
+			_mesh.position.x = 0.0
+			_mesh.position.z = 0.0
+			join_batch(_batch, _batch_index)
 
 
 ## Hit by `move`. Walls only break to supers; crates lose HP to anything.
@@ -90,6 +135,7 @@ func smash() -> void:
 	if is_broken:
 		return
 	is_broken = true
+	unbatch()
 	collision_layer = 0
 	var parent := get_parent()
 	var at := global_position + Vector3(0, 0.6, 0)

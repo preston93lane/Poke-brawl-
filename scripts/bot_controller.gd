@@ -66,7 +66,28 @@ func set_difficulty(level: String) -> void:
 	plant_time = preset[4]
 
 
+## Bots make decisions every few physics frames (Quality.bot_think_every), each on
+## its own frame, with the time since their last decision: far cheaper and just
+## as sharp (a person reacts in about a tenth of a second). Streams keep firing
+## every frame.
+var _frame_phase := randi() % 6
+var _pending_delta := 0.0
+
+
 func _physics_process(delta: float) -> void:
+	_pending_delta += delta
+	if _stream_time > 0.0:
+		_stream_time -= delta
+		if not brawler.stream(_stream_aim):
+			_stream_time = 0.0
+	if (Engine.get_physics_frames() + _frame_phase) % Quality.bot_think_every() != 0 and not brawler.is_dead:
+		return
+	var step := _pending_delta
+	_pending_delta = 0.0
+	_think(step)
+
+
+func _think(delta: float) -> void:
 	if start_delay > 0.0:
 		start_delay -= delta
 		return
@@ -76,11 +97,6 @@ func _physics_process(delta: float) -> void:
 		_path.clear()
 		_stream_time = 0.0
 		return
-
-	if _stream_time > 0.0:
-		_stream_time -= delta
-		if not brawler.stream(_stream_aim):
-			_stream_time = 0.0
 
 	if _unstick_timer > 0.0:
 		_unstick_timer -= delta

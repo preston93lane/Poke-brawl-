@@ -89,8 +89,10 @@ func _ready() -> void:
 		push_error("Main: unknown species '%s'. Available: %s" % [player_species, ", ".join(GameData.species.keys())])
 		return
 	mode_rules = GameData.rule("modes/" + mode, {})
+	Quality.apply_sun(get_node_or_null("Sun") as DirectionalLight3D)
+	Quality.apply_viewport(get_viewport())
 	arena.build(arena_id, camera.pitch_degrees, mode)
-	if bool(GameData.setting("haze_blur", true)):
+	if bool(GameData.setting("haze_blur", true)) and not Quality.is_low():
 		_add_haze()
 	if mode == "king_of_the_hill" and not arena.has_zone():
 		push_warning("Arena '%s' has no Z tiles; switching to battle" % arena_id)
@@ -182,12 +184,45 @@ func _ready() -> void:
 	_update_status()
 	if Profile.is_dev():
 		_add_dev_buttons()
+	_warm_up_effects()
 	if show_intro:
+		for i in 2:
+			await get_tree().process_frame  # Let the warm-up effects draw once.
 		await _play_intro()
 		_intro_finished = true
 		get_tree().paused = true
 		await hud.countdown()
 		get_tree().paused = false
+
+
+## Phones compile each kind of effect the first time it's drawn, which used to
+## hitch the match the first time someone threw fire, got hit, levelled up...
+## Here one of each kind is drawn, hidden under the ground in front of the
+## camera, while the intro banners play.
+func _warm_up_effects() -> void:
+	if player == null:
+		return
+	var at := player.global_position + Vector3(0, -3.0, 0)
+	var shapes: Array[String] = ["", "dot", "chunk", "crescent", "petals", "bolt", "drop"]
+	for type_name: String in GameData._type_colors:
+		Vfx.burst(arena, at, type_name, 2, 0.1, 0.5)
+		Vfx.ring(arena, at, 0.5, type_name, 2)
+		var core := Vfx.core_sprite(type_name, 0.3)
+		var trail := Vfx.trail(type_name, 0.2)
+		for node: Node3D in [core, trail]:
+			if node:
+				arena.add_child(node)
+				node.global_position = at
+				get_tree().create_timer(0.6, true).timeout.connect(node.queue_free)
+	for shape in shapes:
+		Vfx.burst(arena, at, "normal", 2, 0.1, 0.5, { "shape": shape } if shape != "" else {})
+	# Damage numbers and floating text use a 3D label.
+	var label := Label3D.new()
+	label.text = "123"
+	label.outline_size = 8
+	arena.add_child(label)
+	label.global_position = at
+	get_tree().create_timer(0.6, true).timeout.connect(label.queue_free)
 
 
 ## A Department Store drink picked before the match: used up now, lasts the match.

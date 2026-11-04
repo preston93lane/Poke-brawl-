@@ -83,8 +83,7 @@ func _environment() -> void:
 	sun.transform = Transform3D(Basis(Vector3(0.8192, -0.4698, 0.329), Vector3(0, 0.5736, 0.8192), Vector3(-0.5736, -0.671, 0.4698)), Vector3(0, 10, 0))
 	sun.light_color = Color(1, 0.96, 0.88)
 	sun.light_energy = 1.2
-	sun.shadow_enabled = true
-	sun.directional_shadow_max_distance = 50.0
+	Quality.apply_sun(sun)
 	add_child(sun)
 
 

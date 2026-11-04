@@ -2230,6 +2230,8 @@ func show_super_aim(direction: Vector3, amount: float) -> void:
 		var disc := _super_aim.mesh as CylinderMesh
 		if disc == null:
 			disc = CylinderMesh.new()
+			disc.radial_segments = 20
+			disc.rings = 1
 			disc.height = 0.03
 			_super_aim.mesh = disc
 		disc.top_radius = radius
@@ -2260,6 +2262,8 @@ func hide_aim() -> void:
 
 func _build_static_visuals() -> void:
 	var shadow_mesh := CylinderMesh.new()
+	shadow_mesh.radial_segments = 20
+	shadow_mesh.rings = 1
 	shadow_mesh.top_radius = 0.5
 	shadow_mesh.bottom_radius = 0.5
 	shadow_mesh.height = 0.02
@@ -2268,6 +2272,8 @@ func _build_static_visuals() -> void:
 	shadow.position.y = 0.02
 
 	var ring_mesh := TorusMesh.new()
+	ring_mesh.rings = 28
+	ring_mesh.ring_segments = 8
 	ring_mesh.inner_radius = 0.6
 	ring_mesh.outer_radius = 0.72
 	team_ring.mesh = null  # No team ring either; health bar colours show teams.
@@ -2324,6 +2330,8 @@ func _apply_loadout_visuals() -> void:
 		aim_indicator.mesh = lane
 	elif r.lob:
 		var disc := CylinderMesh.new()
+		disc.radial_segments = 20
+		disc.rings = 1
 		var radius := maxf(r.explode_radius, r.linger_radius)
 		disc.top_radius = maxf(0.8, radius)
 		disc.bottom_radius = disc.top_radius
@@ -2523,6 +2531,8 @@ func _set_anim(anim: String) -> void:
 	sprite.pixel_size = pmd_pixel_size()
 	if shadow.mesh == null:
 		var disc := CylinderMesh.new()
+		disc.radial_segments = 20
+		disc.rings = 1
 		disc.top_radius = 1.0
 		disc.bottom_radius = 1.0
 		disc.height = 0.01
@@ -2560,6 +2570,8 @@ func _update_shield(hidden: bool) -> void:
 		return
 	if _shield == null:
 		var sphere := SphereMesh.new()
+		sphere.radial_segments = 16
+		sphere.rings = 8
 		sphere.radius = 0.95
 		sphere.height = 1.9
 		_shield = MeshInstance3D.new()
@@ -2607,6 +2619,8 @@ func _show_melee_fx(direction: Vector3, move: MoveData) -> void:
 ## Flat disc marking an area attack; returned so the caller can fade it.
 func _area_fx(parent: Node, center: Vector3, move: MoveData) -> MeshInstance3D:
 	var disc := CylinderMesh.new()
+	disc.radial_segments = 20
+	disc.rings = 1
 	disc.top_radius = move.area_radius
 	disc.bottom_radius = move.area_radius
 	disc.height = 0.04
@@ -2621,6 +2635,8 @@ func _area_fx(parent: Node, center: Vector3, move: MoveData) -> MeshInstance3D:
 
 func _flash_fx(radius: float) -> void:
 	var sphere := SphereMesh.new()
+	sphere.radial_segments = 16
+	sphere.rings = 8
 	sphere.radius = radius
 	sphere.height = radius * 2.0
 	var fx := MeshInstance3D.new()

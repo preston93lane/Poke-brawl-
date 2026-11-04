@@ -93,6 +93,8 @@ func _strikes(count: int) -> void:
 func _strike_at(at: Vector3, radius: float) -> void:
 	var disc := MeshInstance3D.new()
 	var mesh := CylinderMesh.new()
+	mesh.radial_segments = 20
+	mesh.rings = 1
 	mesh.top_radius = radius
 	mesh.bottom_radius = radius
 	mesh.height = 0.02

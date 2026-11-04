@@ -77,6 +77,8 @@ func _setup_body() -> void:
 
 func _add_shadow(radius: float) -> void:
 	var disc := CylinderMesh.new()
+	disc.radial_segments = 20
+	disc.rings = 1
 	disc.top_radius = radius
 	disc.bottom_radius = radius
 	disc.height = 0.01

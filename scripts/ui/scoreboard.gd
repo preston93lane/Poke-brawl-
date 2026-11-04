@@ -222,11 +222,17 @@ func _feed_row(center: Vector2, killer: Brawler, victim: Brawler, alpha: float) 
 	draw_texture_rect(victim.portrait(), vr, false, Color(0.6, 0.6, 0.6, alpha))
 
 
+var _boxes := {}
+
+
 func _box(rect: Rect2, color: Color, radius: int) -> void:
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = color
-	sb.set_corner_radius_all(radius)
-	draw_style_box(sb, rect)
+	var key := color.to_rgba32() * 31 + radius
+	if not _boxes.has(key):
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = color
+		sb.set_corner_radius_all(radius)
+		_boxes[key] = sb
+	draw_style_box(_boxes[key], rect)
 
 
 func _text(font: Font, pos: Vector2, width: float, text: String, size_px: int, color: Color) -> void:

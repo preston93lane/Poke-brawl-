@@ -22,6 +22,8 @@ func start() -> void:
 func _build_mine() -> void:
 	_mine_fx = MeshInstance3D.new()
 	var hole := CylinderMesh.new()
+	hole.radial_segments = 20
+	hole.rings = 1
 	hole.top_radius = 0.75
 	hole.bottom_radius = 0.75
 	hole.height = 0.06
@@ -33,6 +35,8 @@ func _build_mine() -> void:
 	main.arena.add_child(_mine_fx)
 	var rim := MeshInstance3D.new()
 	var torus := TorusMesh.new()
+	torus.rings = 28
+	torus.ring_segments = 8
 	torus.inner_radius = 0.72
 	torus.outer_radius = 0.95
 	rim.mesh = torus

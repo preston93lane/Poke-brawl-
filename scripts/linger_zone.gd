@@ -21,6 +21,8 @@ func setup(p_shooter: Brawler, p_move: MoveData, center: Vector3) -> void:
 
 func _ready() -> void:
 	var disc := CylinderMesh.new()
+	disc.radial_segments = 20
+	disc.rings = 1
 	disc.top_radius = move.linger_radius
 	disc.bottom_radius = move.linger_radius
 	disc.height = 0.04

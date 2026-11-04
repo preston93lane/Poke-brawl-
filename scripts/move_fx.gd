@@ -265,6 +265,8 @@ static func _falling(parent: Node, at: Vector3, look: Dictionary, delay: float) 
 ## A column of light or flame rising from the ground.
 static func _pillar(parent: Node, center: Vector3, radius: float, bright: Color, mid: Color) -> void:
 	var cyl := CylinderMesh.new()
+	cyl.radial_segments = 20
+	cyl.rings = 1
 	cyl.top_radius = radius * 0.3
 	cyl.bottom_radius = radius * 0.5
 	cyl.height = 2.6
@@ -288,6 +290,8 @@ static func _pillar(parent: Node, center: Vector3, radius: float, bright: Color,
 ## A bright flash sphere and a shockwave ring (explosions, Hyper Beam).
 static func _nova(parent: Node, center: Vector3, radius: float, color: Color) -> void:
 	var sphere := SphereMesh.new()
+	sphere.radial_segments = 16
+	sphere.rings = 8
 	sphere.radius = radius * 0.7
 	sphere.height = radius * 1.4
 	sphere.radial_segments = 16

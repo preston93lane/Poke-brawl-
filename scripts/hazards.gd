@@ -63,6 +63,8 @@ func _add_vent(cell: Vector2i) -> void:
 	var pos := arena.cell_center(cell)
 	var disk := MeshInstance3D.new()
 	var mesh := CylinderMesh.new()
+	mesh.radial_segments = 20
+	mesh.rings = 1
 	mesh.top_radius = 0.42
 	mesh.bottom_radius = 0.48
 	mesh.height = 0.08
@@ -134,6 +136,8 @@ func _pair_warps() -> void:
 func _add_pad(cell: Vector2i) -> void:
 	var pad := MeshInstance3D.new()
 	var torus := TorusMesh.new()
+	torus.rings = 28
+	torus.ring_segments = 8
 	torus.inner_radius = 0.3
 	torus.outer_radius = 0.46
 	pad.mesh = torus
@@ -149,6 +153,8 @@ func _add_pad(cell: Vector2i) -> void:
 	pad.position = arena.cell_center(cell) + Vector3(0, 0.05, 0)
 	var core := MeshInstance3D.new()
 	var disk := CylinderMesh.new()
+	disk.radial_segments = 20
+	disk.rings = 1
 	disk.top_radius = 0.3
 	disk.bottom_radius = 0.3
 	disk.height = 0.02
@@ -220,6 +226,8 @@ func _tick_lightning(delta: float) -> void:
 func _warn_strike(at: Vector3) -> void:
 	var disk := MeshInstance3D.new()
 	var mesh := CylinderMesh.new()
+	mesh.radial_segments = 20
+	mesh.rings = 1
 	var radius := float(_rule("lightning/radius", 1.5))
 	mesh.top_radius = radius
 	mesh.bottom_radius = radius

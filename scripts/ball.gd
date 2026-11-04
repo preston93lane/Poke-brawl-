@@ -27,6 +27,8 @@ func _ready() -> void:
 	add_to_group("ball")
 	_mesh = MeshInstance3D.new()
 	var sphere := SphereMesh.new()
+	sphere.radial_segments = 16
+	sphere.rings = 8
 	sphere.radius = RADIUS
 	sphere.height = RADIUS * 2.0
 	_mesh.mesh = sphere
@@ -37,6 +39,8 @@ func _ready() -> void:
 	add_child(_mesh)
 	_shadow = MeshInstance3D.new()
 	var disc := CylinderMesh.new()
+	disc.radial_segments = 20
+	disc.rings = 1
 	disc.top_radius = RADIUS
 	disc.bottom_radius = RADIUS
 	disc.height = 0.02

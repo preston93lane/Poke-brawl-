@@ -27,6 +27,8 @@ func _ready() -> void:
 	_sprite.shaded = false
 	add_child(_sprite)
 	var ring := TorusMesh.new()
+	ring.rings = 28
+	ring.ring_segments = 8
 	ring.inner_radius = 0.38
 	ring.outer_radius = 0.5
 	_glow = MeshInstance3D.new()

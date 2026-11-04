@@ -10,6 +10,11 @@ func _process(_delta: float) -> void:
 
 
 func _draw() -> void:
+	_draw_bars()
+	_flush_text()
+
+
+func _draw_bars() -> void:
 	var camera := get_viewport().get_camera_3d()
 	if camera == null:
 		return
@@ -136,17 +141,35 @@ func _draw_status(brawler: Brawler, font: Font, at: Vector2) -> void:
 		at.x += 4
 
 
+## Rounded boxes are reused (a new StyleBox per bar per frame was a lot of garbage).
+var _boxes := {}
+## Text waits until every bar's shapes are drawn, then goes out in one go: all
+## the outlines, then all the letters. Switching between shapes and text for
+## each Pokémon broke the draw batching (dozens of extra draw calls a frame).
+var _texts: Array = []
+
+
 func _round_rect(rect: Rect2, color: Color, radius: int) -> void:
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = color
-	sb.set_corner_radius_all(radius)
-	draw_style_box(sb, rect)
+	var key := color.to_rgba32() * 31 + radius
+	if not _boxes.has(key):
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = color
+		sb.set_corner_radius_all(radius)
+		_boxes[key] = sb
+	draw_style_box(_boxes[key], rect)
 
 
 func _text(font: Font, pos: Vector2, width: float, text: String, size: int, color: Color,
 		align := HORIZONTAL_ALIGNMENT_CENTER) -> void:
-	draw_string_outline(font, pos, text, align, width, size, 5, Color.BLACK)
-	draw_string(font, pos, text, align, width, size, color)
+	_texts.append([font, pos, text, align, width, size, color])
+
+
+func _flush_text() -> void:
+	for t: Array in _texts:
+		draw_string_outline(t[0], t[1], t[2], t[3], t[4], t[5], 5, Color.BLACK)
+	for t: Array in _texts:
+		draw_string(t[0], t[1], t[2], t[3], t[4], t[5], t[6])
+	_texts.clear()
 
 
 func _draw_ammo(brawler: Brawler, origin: Vector2) -> void:

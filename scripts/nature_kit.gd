@@ -13,6 +13,17 @@ const BUSHES := ["Bush_Common", "Bush_Common_Flowers"]
 const PEBBLES := ["Pebble_Round_1", "Pebble_Round_2", "Pebble_Round_3"]
 
 static var _cache := {}
+## Loaded model files, kept so later arenas don't load them again.
+static var _scenes := {}
+
+
+## Loads every model ahead of time, one per frame (the town does this while you
+## walk about, so the first battle starts quicker).
+static func warm(tree: SceneTree) -> void:
+	for name: String in ROCKS + BUSHES:
+		if not _scenes.has(name):
+			_scenes[name] = load(DIR + name + ".gltf")
+			await tree.process_frame
 
 
 ## The model `name`, its base on y = `base_y`, centred, scaled so its footprint
@@ -21,7 +32,9 @@ static func mesh(name: String, width: float, height := 0.0, base_y := 0.0, tint 
 	var key := "%s|%.3f|%.3f|%.3f|%s" % [name, width, height, base_y, tint.to_html()]
 	if _cache.has(key):
 		return _cache[key]
-	var scene := load(DIR + name + ".gltf") as PackedScene
+	if not _scenes.has(name):
+		_scenes[name] = load(DIR + name + ".gltf")
+	var scene := _scenes[name] as PackedScene
 	if scene == null:
 		return null
 	var root := scene.instantiate()
