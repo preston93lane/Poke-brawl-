@@ -451,6 +451,18 @@ func _reward_chips(r: Dictionary) -> Array[Control]:
 		out.append(_chip("Milestone: %s" % m, Color(0.55, 0.35, 0.8)))
 	for e: String in r.get("extras", []):
 		out.append(_chip(e, Color(0.35, 0.38, 0.5)))
+	# Town: rested / tired, Game Corner coins, Day Care XP.
+	var energy_mult := float(r.get("energy_mult", 1.0))
+	if energy_mult > 1.0:
+		out.append(_chip("RESTED ×%.1f" % energy_mult, Color(0.25, 0.6, 0.4)))
+	elif energy_mult < 1.0:
+		out.append(_chip("TIRED ×%.1f  (rest at the Pokémon Center)" % energy_mult, Color(0.7, 0.35, 0.3)))
+	if int(r.get("coins", 0)) > 0:
+		out.append(_chip("+%d coins" % int(r["coins"]), Color(0.75, 0.25, 0.35)))
+	var daycare: Dictionary = r.get("daycare", {})
+	for family: String in daycare:
+		if GameData.species.has(family):
+			out.append(_chip("Day Care: %s +%d XP" % [GameData.species[family].display_name, int(daycare[family])], Color(0.6, 0.45, 0.25)))
 	for d: String in r.get("dailies", []):
 		out.append(_chip(d, Color(0.45, 0.3, 0.75)))
 	return out
