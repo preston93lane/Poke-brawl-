@@ -77,6 +77,12 @@ var _hud_main: MoveData
 @onready var hud: Hud = $HUD
 
 
+## Trainer battles (wandering trainers, Trainer Tower): see Town.start_trainer.
+var trainer: Dictionary = {}
+## Department Store drink used this match ("" = none).
+var drink := ""
+
+
 func _ready() -> void:
 	_apply_match_settings()
 	if not GameData.species.has(player_species):
@@ -121,6 +127,7 @@ func _ready() -> void:
 	player_controller.z_button = hud.z_button
 	hud.set_hm(player.hm_move())
 	player.add_child(player_controller)
+	_apply_drink()
 
 	if mode == "showdown":
 		# Everyone for themselves: each opponent is its own team.
@@ -159,7 +166,15 @@ func _ready() -> void:
 	_refresh_hud_moves()
 	hud.set_teams(teams)
 	hud.restart_requested.connect(func() -> void:
-		if mode == "gym" and not GameData.gym_run.is_empty():
+		if not trainer.is_empty():
+			if int(trainer.get("floor", 0)) <= 0:
+				get_tree().change_scene_to_file(MENU_SCENE)  # A wandering trainer: back to town.
+				return
+			var picks: Dictionary = GameData.match_settings.duplicate()
+			picks.erase("trainer")
+			picks["drink"] = ""
+			GameData.match_settings = Town.start_trainer(Town.tower_trainer(Town.tower_floor()), picks, 0, Town.tower_floor())
+		elif mode == "gym" and not GameData.gym_run.is_empty():
 			GameData.match_settings = GymMode.settings_for(GameData.gym_run)  # Next round (or round 1 again).
 		get_tree().reload_current_scene())
 	hud.menu_requested.connect(func() -> void: get_tree().change_scene_to_file(MENU_SCENE))
@@ -173,6 +188,23 @@ func _ready() -> void:
 		get_tree().paused = true
 		await hud.countdown()
 		get_tree().paused = false
+
+
+## A Department Store drink picked before the match: used up now, lasts the match.
+func _apply_drink() -> void:
+	if drink == "" or not record_progress or not Town.use_drink(drink):
+		drink = ""
+		return
+	var d: Dictionary = Town.drinks().get(drink, {})
+	if d.has("hp"):
+		player._hp_bonus += float(d["hp"])
+		player.refresh_stats()
+		player.health = player.max_health
+	if d.has("speed"):
+		player._boosts["speed"] = float(player._boosts.get("speed", 0.0)) + float(d["speed"])
+	if d.has("super"):
+		player.super_gain_mult = 1.0 + float(d["super"])
+	hud.announce(str(d.get("name", "")).to_upper() + "!")
 
 
 ## Dev mode: shortcuts for testing (top left, under the scoreboard's edge).
@@ -248,6 +280,9 @@ func _play_intro() -> void:
 	var title: String = MODE_TITLES.get(mode, mode.to_upper())
 	if mode == "gym" and not GameData.gym_run.is_empty():
 		title = GymMode.round_title(GameData.gym_run)
+	elif not trainer.is_empty():
+		title = ("TRAINER TOWER  ·  FLOOR %d" % int(trainer["floor"])) if int(trainer.get("floor", 0)) > 0 \
+				else "%s  %s" % [str(trainer.get("name", "")).to_upper(), "★".repeat(int(trainer.get("stars", 1)))]
 	elif mode == "boss_raid" and mode_logic.get("boss"):
 		title = "BOSS RAID  ·  %s" % str(mode_logic.get("tier").get("name", "")).to_upper()
 	await intro.play(allies, others, title, arena.arena_name)
@@ -270,6 +305,8 @@ func _apply_match_settings() -> void:
 	ally_team = PackedStringArray(s.get("allies", []))
 	enemy_team = PackedStringArray(s.get("enemies", []))
 	bot_difficulty = str(s.get("difficulty", bot_difficulty))
+	trainer = s.get("trainer", {})
+	drink = str(s.get("drink", ""))
 
 
 ## `chosen` padded to `count` with random base forms not already on the team.
@@ -300,9 +337,15 @@ func _fill_team(chosen: PackedStringArray, count: int, taken: Array) -> Array[St
 func _spawn_bot(species_id: String, team: int) -> Brawler:
 	# Bots play at your line's level, with a random unlocked main attack and as
 	# many vitamins as you have active (spread at random), so it stays fair.
-	var options := GameData.get_species(species_id).moves_for("main", player_level)
+	# Trainers' Pokémon are a few levels above yours (and tougher).
+	var level := player_level
+	if team != 0 and not trainer.is_empty():
+		level = mini(player_level + int(trainer.get("level_bonus", 0)), Profile.max_level())
+	var options := GameData.get_species(species_id).moves_for("main", level)
 	var main_id: String = options.pick_random().id if not options.is_empty() else ""
-	var brawler := _spawn(species_id, player_level, team, false, main_id)
+	var brawler := _spawn(species_id, level, team, false, main_id)
+	if team != 0 and not trainer.is_empty():
+		brawler.hp_scale = float(trainer.get("hp_scale", 1.0))
 	var active := {}
 	for i in Profile.active_vitamin_total(player_species):
 		var stat: String = Profile.STATS.pick_random()
@@ -648,6 +691,15 @@ func end_round(result_name: String, subtitle := "") -> void:
 			"goals": player.goals, "supers": player.supers_used, "final_stage": player.species.stage > 1 and player.species.evolves_to == "",
 			"types": player.species.types,
 		})
+	if not trainer.is_empty() and record_progress:
+		var t_end := Town.finish_trainer(trainer, result_name)
+		subtitle = str(t_end.get("text", subtitle))
+		if not rewards.is_empty():
+			rewards["money"] = int(rewards["money"]) + int(t_end["money"])
+		if int(trainer.get("floor", 0)) > 0:
+			hud.set_rematch_text("NEXT FLOOR ›" if result_name == "victory" else "TRY FLOOR %d" % int(t_end["floor"]))
+		else:
+			hud.set_rematch_text("BACK TO TOWN")
 	if mode == "gym":
 		var gym_end: Dictionary = mode_logic.call("finish", result_name)
 		subtitle = str(gym_end.get("subtitle", subtitle))

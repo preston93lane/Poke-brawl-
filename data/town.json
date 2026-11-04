@@ -1,0 +1,113 @@
+{
+	"_comment": "The town hub's buildings (scripts/data/town.gd). Times in minutes, money in Pokédollars, coins are Game Corner coins.",
+	"energy": {
+		"_comment": "Each Pokémon line has max pips; every match uses one. With energy left a match pays rested_mult XP and money; at zero the line is tired and pays tired_mult (it still fights normally). Pips come back by themselves every regen_minutes, every center_minutes while resting at the Pokémon Center, and one for every match you play with someone else while it rests there. Trainers with fewer than min_lines unlocked lines never get tired.",
+		"max": 5,
+		"rested_mult": 1.5,
+		"tired_mult": 0.5,
+		"regen_minutes": 60,
+		"center_minutes": 15,
+		"center_beds": 3,
+		"heal_price": 150,
+		"min_lines": 4
+	},
+	"daycare": {
+		"_comment": "The Pokémon left at the Day Care gets share of the XP you earn with others. A second spot costs second_slot_price.",
+		"share": 0.4,
+		"second_slot_price": 5000
+	},
+	"drinks": {
+		"_comment": "Celadon Department Store rooftop. One drink per match, picked before it starts and used up.",
+		"fresh_water": { "name": "Fresh Water", "price": 200, "hp": 0.1, "desc": "+10% max HP for one match" },
+		"soda_pop": { "name": "Soda Pop", "price": 300, "speed": 0.08, "desc": "+8% speed for one match" },
+		"lemonade": { "name": "Lemonade", "price": 350, "super": 0.25, "desc": "Super charges 25% faster for one match" }
+	},
+	"tm_counter": {
+		"_comment": "Department Store TM counter: this many TMs you don't have, picked each day.",
+		"count": 3,
+		"price": 4000
+	},
+	"game_corner": {
+		"_comment": "Coins: bought with Pokédollars (up to buy_cap a day) or earned in matches. Slots pay bet x payout for three of a kind; cherries pay on their own.",
+		"coin_pack": 50,
+		"pack_price": 1000,
+		"buy_cap": 500,
+		"win_coins": 3,
+		"mvp_coins": 2,
+		"slots": {
+			"symbols": ["seven", "bar", "pikachu", "poke_ball", "magnemite", "cherry"],
+			"weights": [1, 2, 3, 5, 5, 4],
+			"payout": { "seven": 100, "bar": 30, "pikachu": 15, "poke_ball": 6, "magnemite": 6, "cherry": 6 },
+			"cherry_one": 1,
+			"cherry_two": 2
+		},
+		"voltorb_flip": {
+			"_comment": "Per level: how many 2s, 3s and Voltorbs on the 5x5 board. Clearing moves you up a level, hitting a Voltorb drops you to the number of tiles you flipped (at most your level).",
+			"levels": [
+				{ "twos": 3, "threes": 1, "voltorbs": 6 },
+				{ "twos": 1, "threes": 3, "voltorbs": 7 },
+				{ "twos": 2, "threes": 3, "voltorbs": 8 },
+				{ "twos": 1, "threes": 5, "voltorbs": 8 },
+				{ "twos": 3, "threes": 4, "voltorbs": 10 }
+			]
+		},
+		"prizes": [
+			{ "id": "abra", "kind": "pokemon", "coins": 300 },
+			{ "id": "clefairy", "kind": "pokemon", "coins": 600 },
+			{ "id": "nidoran_f", "kind": "pokemon", "coins": 1200 },
+			{ "id": "dratini", "kind": "pokemon", "coins": 2800 },
+			{ "id": "scyther", "kind": "pokemon", "coins": 5500 },
+			{ "id": "porygon", "kind": "pokemon", "coins": 9999 },
+			{ "id": "rare_candy", "kind": "item", "coins": 400 },
+			{ "id": "great_ball", "kind": "item", "coins": 250 },
+			{ "id": "ultra_ball", "kind": "item", "coins": 1200 },
+			{ "id": "tm", "kind": "tm", "coins": 2000 }
+		]
+	},
+	"outfitter": {
+		"_comment": "Your trainer's look in town. Styles and colours cost money once; free ones are owned from the start.",
+		"styles": {
+			"cap": 0, "short": 0, "spiky": 800, "long": 800, "pigtails": 1200, "bun": 1200, "beanie": 1500, "cap_back": 1500
+		},
+		"colors": ["#d83838", "#3868d8", "#38a858", "#f0b830", "#9050c8", "#f0f0ec", "#f08028", "#30b0b8", "#e868a0", "#585868", "#282830", "#a87848"],
+		"free_colors": 4,
+		"color_price": 500,
+		"skins": ["#fcd8b0", "#f0c496", "#d6a070", "#a87048", "#7c5234"],
+		"hair": ["#342824", "#704020", "#e8c458", "#c84830", "#484860", "#ececf0", "#603880", "#2858a0"],
+		"default": { "style": "cap", "skin": 0, "hair": 0, "hat": 0, "top": 1, "legs": 9, "shoes": 0 }
+	},
+	"trainers": {
+		"_comment": "Trainers wandering round town: per_slot of them, a new set every slot_hours. Stars set their level bonus over yours, HP and how much they bet. Stakes: what you may bet against each star level (0 = a friendly match). Win: your stake back twice plus bonus_per_star x stars. Lose: the stake is gone. Draw: refunded. Lose loss_streak wagers in a row and stakes are capped at the lowest for cooloff_minutes.",
+		"per_slot": 4,
+		"slot_hours": 3,
+		"star_weights": [50, 35, 15],
+		"level_bonus": [0, 2, 4],
+		"hp_scale": [1.0, 1.1, 1.25],
+		"difficulty": ["normal", "hard", "hard"],
+		"stakes": [[0, 100, 250], [0, 250, 500], [500, 1000, 2000]],
+		"bonus_per_star": 100,
+		"loss_streak": 3,
+		"cooloff_minutes": 120
+	},
+	"tower": {
+		"_comment": "Trainer Tower in the Battle Arena: floor after floor of trainers. Losing sends you back to the last checkpoint (every checkpoint floors). First clear of a floor pays money_base + money_step x floor; ball_floors give a ball the first time.",
+		"checkpoint": 5,
+		"money_base": 40,
+		"money_step": 10,
+		"ace_every": 5,
+		"ball_floors": { "10": "great_ball", "20": "ultra_ball", "30": "ultra_ball", "50": "master_ball" }
+	},
+	"classes": {
+		"bug_catcher": { "name": "Bug Catcher", "types": ["bug"], "mode": "duel", "arenas": ["viridian_forest", "route_1"], "names": ["Rick", "Doug", "Sammy", "Colton", "Greg", "Robby"], "look": { "style": "cap", "top": 3, "hat": 2, "legs": 5 }, "line": "My bugs are tougher than they look!" },
+		"hiker": { "name": "Hiker", "types": ["rock", "ground"], "mode": "duel", "arenas": ["pewter_gym", "boulder_gym", "viridian_gym"], "names": ["Marcos", "Franklin", "Nob", "Wayne", "Alan", "Lenny"], "look": { "style": "beanie", "top": 11, "hat": 6, "legs": 9 }, "line": "Hah! These mountains made my Pokémon hard as rock!" },
+		"swimmer": { "name": "Swimmer", "types": ["water"], "mode": "duel", "arenas": ["cerulean_gym", "ss_anne", "dragons_den"], "names": ["Luis", "Diana", "Tony", "Alice", "Reece", "Shirley"], "look": { "style": "short", "top": 7, "hat": 7, "legs": 1 }, "line": "Want to race me across the water?" },
+		"psychic": { "name": "Psychic", "types": ["psychic"], "mode": "king_of_the_hill", "arenas": ["saffron_gym"], "names": ["Johan", "Tyron", "Cameron", "Preston", "Lena"], "look": { "style": "long", "top": 4, "hat": 4, "legs": 10 }, "line": "I foresaw this battle... and your defeat." },
+		"blackbelt": { "name": "Black Belt", "types": ["fighting"], "mode": "duel", "arenas": ["bruno_dojo"], "names": ["Kiyo", "Hitoshi", "Koichi", "Mike", "Hideki"], "look": { "style": "spiky", "top": 5, "hat": 5, "legs": 5 }, "line": "Hi-yah! Show me your fighting spirit!" },
+		"channeler": { "name": "Channeler", "types": ["ghost", "poison"], "mode": "duel", "arenas": ["lavender_graveyard", "agatha_crypt"], "names": ["Hope", "Patricia", "Carly", "Ruth", "Amanda"], "look": { "style": "bun", "top": 10, "hat": 9, "legs": 10 }, "line": "Be gone... evil spirit..." },
+		"picnicker": { "name": "Picnicker", "types": ["grass", "normal"], "mode": "brawl_ball", "arenas": ["pallet_pitch", "celadon_gym"], "names": ["Nancy", "Isabelle", "Kelsey", "Gina", "Ellen"], "look": { "style": "pigtails", "top": 8, "hat": 2, "legs": 1 }, "line": "What a nice day for a battle!" },
+		"burglar": { "name": "Burglar", "types": ["fire"], "mode": "duel", "arenas": ["cinnabar_gym"], "names": ["Quinn", "Ramon", "Dusty", "Arnie", "Simon"], "look": { "style": "beanie", "top": 9, "hat": 10, "legs": 10 }, "line": "Your Pokédollars... I mean, your Pokémon! Hand 'em over!" },
+		"rocker": { "name": "Rocker", "types": ["electric"], "mode": "candy_rush", "arenas": ["vermilion_gym"], "names": ["Luca", "Randall", "Kirk", "Jack"], "look": { "style": "spiky", "top": 10, "hat": 3, "legs": 9 }, "line": "Let's rock and roll!" },
+		"bird_keeper": { "name": "Bird Keeper", "types": ["flying"], "mode": "duel", "arenas": ["route_1", "safari_zone"], "names": ["Sebastian", "Perry", "Robert", "Donald", "Benny"], "look": { "style": "cap_back", "top": 2, "hat": 0, "legs": 11 }, "line": "My birds will run rings round you!" },
+		"cooltrainer": { "name": "Ace Trainer", "types": [], "counter": true, "mode": "duel", "arenas": ["lance_hall", "lorelei_chamber", "pallet_pitch"], "names": ["Samuel", "Mary", "George", "Paul", "Naomi", "Colby"], "look": { "style": "short", "top": 0, "hat": 0, "legs": 1 }, "line": "I've studied your team. I know exactly how to beat it." }
+	}
+}

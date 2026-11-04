@@ -84,6 +84,8 @@ var health := 0.0
 var ammo := 0.0
 ## 0..1; the SUPER is ready at 1. Filled by damage dealt with regular moves.
 var super_charge := 0.0
+## Super charge gained is multiplied by this (Lemonade from the Department Store).
+var super_gain_mult := 1.0
 ## Desired movement in screen space (x = right, y = down), length 0..1.
 var move_input := Vector2.ZERO
 var facing := Vector3.FORWARD
@@ -1001,6 +1003,7 @@ func add_super_charge(damage_dealt: float) -> void:
 	var gain := 1.0 / sup.charge_hits if sup.charge_hits > 0 else damage_dealt / sup.charge_damage()  # Assassins count hits.
 	if _pressure_time > 0.0:
 		gain *= _pressure_mult
+	gain *= super_gain_mult
 	super_charge = minf(1.0, super_charge + gain)
 	if z_available() and _z_time <= 0.0:
 		z_charge = minf(1.0, z_charge + gain / float(GameData.rule("zmove/charge", 3.0)))

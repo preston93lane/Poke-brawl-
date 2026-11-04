@@ -752,10 +752,15 @@ func record_match(info: Dictionary) -> Dictionary:
 	xp += kos * int(econ("xp/per_ko", 10)) + (int(econ("xp/mvp", 25)) if mvp else 0)
 	if first_win:
 		xp *= int(econ("xp/first_win_multiplier", 2))
+	# Pokémon Center energy: rested lines earn more, tired ones less.
+	var energy_mult := Town.use_energy(family)
+	xp = roundi(xp * energy_mult)
 	var levels_before := level_of(family)
 	var xp_before := xp_of(family)
 	var gained := _add_xp(family, xp)
-	var cash := int(econ("money/" + ({ "victory": "win", "defeat": "loss" }.get(result, "draw") as String), 15)) + kos * int(econ("money/per_ko", 5))
+	var daycare := Town.share_xp(family, xp)
+	var cash := roundi((int(econ("money/" + ({ "victory": "win", "defeat": "loss" }.get(result, "draw") as String), 15)) + kos * int(econ("money/per_ko", 5))) * energy_mult)
+	var coins := Town.match_coins(won, mvp)
 	var boss_tier := 0  # The tier just beaten (this win is already counted).
 	# Boss Raid at Master: only the first Master win of the day pays the boss bonus and a ball.
 	var master_repeat := false
@@ -819,6 +824,7 @@ func record_match(info: Dictionary) -> Dictionary:
 		"family": family, "xp_before": xp_before, "xp_after": xp_of(family),
 		"money": cash, "balls": balls, "pokemon": unlocked["pokemon"], "milestones": milestones, "shiny": shiny_won,
 		"dailies": daily_done["texts"],
+		"energy_mult": energy_mult, "energy": Town.energy(family), "daycare": daycare, "coins": coins,
 	}
 
 

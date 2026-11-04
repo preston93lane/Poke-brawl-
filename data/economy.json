@@ -239,6 +239,21 @@
 			"name": "HM Rock Smash",
 			"category": "hm",
 			"price": 800
+		},
+		"fresh_water": {
+			"name": "Fresh Water",
+			"category": "drink",
+			"price": 200
+		},
+		"soda_pop": {
+			"name": "Soda Pop",
+			"category": "drink",
+			"price": 300
+		},
+		"lemonade": {
+			"name": "Lemonade",
+			"category": "drink",
+			"price": 350
 		}
 	},
 	"tm_prices": {

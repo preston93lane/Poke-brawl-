@@ -58,6 +58,7 @@ func _ready() -> void:
 	await _check_gyms()
 	_check_starter_order()
 	_check_no_mew_bots()
+	await _check_town()
 	await _check_mvp()
 	await _check_boss_no_heal()
 	await _check_slam_windup()
@@ -2209,3 +2210,100 @@ func _check_kits_in_match() -> void:
 	main.queue_free()
 	await get_tree().physics_frame
 
+
+
+## Town buildings (data/town.json): energy, Pokémon Center, Day Care, drinks,
+## Game Corner, Outfitter, wandering trainers with wagers, Trainer Tower.
+func _check_town() -> void:
+	print("Town")
+	var saved: Dictionary = Profile.data.duplicate(true)
+	Town.now_override = 1_000_000.0
+	Profile.data["money"] = 100000
+	# Energy: a rested line pays more, a tired one less; it comes back with time.
+	var fam := "charmander"
+	expect(Town.use_energy(fam) > 1.0, "rested matches pay extra")
+	for k in Town.max_energy() - 1:
+		Town.use_energy(fam)
+	expect(Town.is_tired(fam) and Town.use_energy(fam) < 1.0, "a line out of energy is tired and earns less")
+	Town.now_override += float(Town.cfg("energy/regen_minutes", 60)) * 60.0 + 1.0
+	expect(Town.energy(fam) >= 1.0, "energy comes back over time")
+	expect(Town.check_in(fam) and Town.in_center(fam), "a tired line can rest at the Pokémon Center")
+	var before := Town.energy(fam)
+	Town.now_override += float(Town.cfg("energy/center_minutes", 15)) * 60.0
+	expect(Town.energy(fam) >= before + 0.99, "resting at the Center heals faster")
+	Town.use_energy("squirtle")
+	expect(Town.energy(fam) >= before + 1.99, "playing someone else heals the Pokémon resting at the Center")
+	var money := Profile.money()
+	var price := Town.heal_price(fam)
+	expect(price > 0 and Town.heal_now(fam) and Profile.money() == money - price and Town.energy(fam) >= Town.max_energy(),
+			"Nurse Joy heals straight away for money")
+	# Day Care: a share of the XP earned with others.
+	expect(Town.deposit("bulbasaur") and not Town.deposit("squirtle"), "one Day Care spot to start with")
+	var lv_xp := Profile.xp_of("bulbasaur") + Profile.level_of("bulbasaur") * 100000
+	var shared := Town.share_xp("charmander", 100)
+	expect(int(shared.get("bulbasaur", 0)) == 40 and Profile.xp_of("bulbasaur") + Profile.level_of("bulbasaur") * 100000 != lv_xp,
+			"the Day Care Pokémon gets 40%% of the XP (%s)" % str(shared))
+	expect(Town.withdraw("bulbasaur") == 40 and Town.daycare().is_empty(), "taking it back says how much it learned")
+	# Drinks.
+	expect(Town.buy_drink("soda_pop") and Profile.count("soda_pop") == 1 and Town.use_drink("soda_pop") and Profile.count("soda_pop") == 0,
+			"Department Store drinks are bought and used up")
+	expect(Town.tm_counter() == Town.tm_counter() and Town.tm_counter().size() <= 3, "the TM counter is the same all day")
+	# Game Corner.
+	Profile.data["coins"] = 0
+	expect(Town.buy_coins() and Town.coins() == 50, "coins are bought in packs")
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7
+	var spins := 0
+	var paid := 0
+	Profile.data["coins"] = 100000
+	for i in 3000:
+		var r := Town.spin(1, rng)
+		spins += 1
+		paid += int(r["win"])
+	var ret := float(paid) / spins
+	expect(ret > 0.6 and ret < 1.05, "slots pay back a bit less than you put in (%.2f per coin)" % ret)
+	var board := Town.voltorb_board(1, rng)
+	var hints := Town.voltorb_hints(board)
+	expect(board.size() == 25 and board.count(0) == 6 and hints.size() == 10, "Voltorb Flip boards and hints")
+	var row_sum := 0
+	for k in 5:
+		row_sum += board[k]
+	expect(int(hints[0]["sum"]) == row_sum, "row hints add up")
+	Profile.data["unlocked"].erase("abra")
+	var abra_prize := -1
+	for i in Town.prizes().size():
+		if Town.prizes()[i]["id"] == "abra":
+			abra_prize = i
+	expect(Town.claim_prize(abra_prize) == "abra" and Profile.is_unlocked("abra"), "Pokémon from the prize counter")
+	# Outfitter.
+	expect(not Town.wear("style", "beanie") and Town.buy_look("style:beanie") and Town.wear("style", "beanie")
+			and Town.outfit()["style"] == "beanie", "styles are bought, then worn")
+	# Wandering trainers and wagers.
+	var list := Town.wandering()
+	expect(list.size() == 4 and list == Town.wandering(), "the same trainers stay in town for the slot")
+	for t: Dictionary in list:
+		expect((t["team"] as Array).size() == 3 and GameData.arenas.has(t["arena"]), "%s %s has a team and an arena" % [t["class_name"], t["name"]])
+	var t0: Dictionary = list[0]
+	var stake: int = Town.stakes(int(t0["stars"])).back()
+	money = Profile.money()
+	var settings := Town.start_trainer(t0, { "species": "charmander" }, stake)
+	expect(Profile.money() == money - stake and settings["trainer"]["stake"] == stake, "the stake is taken when the match starts")
+	var end := Town.finish_trainer(settings["trainer"], "victory")
+	expect(Profile.money() == money + stake + 100 * int(t0["stars"]) and Town.wandering()[0]["beaten"], "winning pays double plus a bonus")
+	for i in 3:
+		var st := Town.start_trainer(list[1], { "species": "charmander" }, int(Town.stakes(int(list[1]["stars"])).back()))
+		Town.finish_trainer(st["trainer"], "defeat")
+	expect(Town.cooling_off() and Town.stakes(3).size() == 1, "three lost bets in a row: only small bets for a while")
+	# Trainer Tower.
+	var main := await _start_match("test_route_1", "duel", "charmander", [])
+	main.queue_free()
+	var tower := Town.start_trainer(Town.tower_trainer(1), { "species": "charmander" }, 0, 1)
+	var won := Town.finish_trainer(tower["trainer"], "victory")
+	expect(Town.tower_floor() == 2 and Town.tower_best() == 1 and int(won["money"]) > 0, "clearing a floor moves you up and pays once")
+	Profile.data["tower"] = { "floor": 8, "best": 8 }
+	var lost := Town.finish_trainer(Town.start_trainer(Town.tower_trainer(8), { "species": "charmander" }, 0, 8)["trainer"], "defeat")
+	expect(Town.tower_floor() == 6 and int(lost["floor"]) == 6, "losing goes back to the checkpoint")
+	expect(Town.tower_trainer(5)["class"] == "cooltrainer", "every fifth floor is an Ace Trainer")
+	Town.now_override = 0.0
+	Profile.data = saved
+	await get_tree().process_frame
