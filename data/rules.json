@@ -29,6 +29,18 @@
 		"reveal_distance": 3.0,
 		"reveal_time_after_attack": 1.0
 	},
+	"grass_burn": {
+		"_comment": "Supers that clear tall grass along their path for the rest of the match: every fire, ice and poison super (types) except those in except, plus the moves listed (ice-cold Water moves, and supers that cut, trample or blast through: value = the effect shown).",
+		"types": ["fire", "ice", "poison"],
+		"except": ["ekans_super", "jynx_super"],
+		"moves": {
+			"dewgong_super": "ice", "lapras_super": "ice", "seel_super": "ice", "cloyster_super": "ice",
+			"diglett_super": "cut", "dugtrio_super": "cut", "tauros_super": "cut", "rhyhorn_super": "cut",
+			"rhydon_super": "cut", "scyther_super": "cut", "kabutops_super": "cut", "pinsir_super": "cut",
+			"farfetchd_super": "cut", "leaf_storm": "cut", "outrage": "cut", "rampage": "cut",
+			"explosion": "blast", "voltorb_super": "blast", "electrode_super": "blast"
+		}
+	},
 	"modes": {
 		"duel": {
 			"kills_to_win": 25,
@@ -42,7 +54,8 @@
 		},
 		"brawl_ball": {
 			"goals_to_win": 2,
-			"respawn_time": 3.0,
+			"respawn_time": 5.0,
+			"goal_pause": 2.0,
 			"time_limit": 150.0
 		},
 		"candy_rush": {

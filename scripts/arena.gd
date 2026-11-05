@@ -504,8 +504,37 @@ func add_crate(cell: Vector2i) -> Breakable:
 	return _add_breakable(cell, "crate", _crate_material)
 
 
+## Which supers clear tall grass as they pass (rules.json grass_burn), and how it
+## looks: "fire" (burnt), "ice" (frozen and shattered), "poison" (withered), "cut"
+## (cut or trampled down), "blast" (blown away); "" = it doesn't.
+static func grass_burn_style(move: MoveData) -> String:
+	if move == null or move.slot != "super":
+		return ""
+	var r: Dictionary = GameData.rule("grass_burn", {})
+	var id := move.id.trim_suffix("_z")  # Z-Moves burn like the super they come from.
+	if id in (r.get("except", []) as Array):
+		return ""
+	var listed: Dictionary = r.get("moves", {})
+	if listed.has(id):
+		return str(listed[id])
+	return move.type if move.type in (r.get("types", []) as Array) else ""
+
+
+## Burns, freezes, withers or cuts the tall grass within `radius` of `center`
+## (style from grass_burn_style). Returns how many tiles went.
+func burn_grass(center: Vector3, radius: float, style: String) -> int:
+	if style == "":
+		return 0
+	var fx := { "cut": "grass", "blast": "normal" }.get(style, style) as String
+	var n := clear_grass(center, radius, fx)
+	if n > 0 and style == "fire":
+		Vfx.burst(self, Vector3(center.x, 0.5, center.z), "fire", 6 + n * 3, radius * 0.6, 2.0)
+	return n
+
+
 ## HM Cut: tall grass within `radius` of `center` is cut down for the rest of the match.
-func clear_grass(center: Vector3, radius: float) -> int:
+## `fx`: the type of the puff each tile leaves ("grass" = clippings).
+func clear_grass(center: Vector3, radius: float, fx := "grass") -> int:
 	var cut := 0
 	for i in _grass_order.size():
 		var cell := _grass_order[i]
@@ -514,7 +543,9 @@ func clear_grass(center: Vector3, radius: float) -> int:
 		rows[cell.y] = rows[cell.y].substr(0, cell.x) + "." + rows[cell.y].substr(cell.x + 1)
 		if _grass_mm:
 			_grass_mm.multimesh.set_instance_transform(i, Transform3D(Basis().scaled(Vector3.ONE * 0.001), cell_center(cell)))
-		Vfx.burst(self, cell_center(cell) + Vector3(0, 0.4, 0), "grass", 8, 0.4, 2.5)
+		Vfx.burst(self, cell_center(cell) + Vector3(0, 0.4, 0), fx, 8, 0.4, 2.5)
+		if fx != "grass":
+			Vfx.burst(self, cell_center(cell) + Vector3(0, 0.3, 0), "grass", 4, 0.4, 1.8)
 		cut += 1
 	return cut
 

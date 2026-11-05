@@ -1085,6 +1085,12 @@ func _melee_swing(move: MoveData, direction: Vector3) -> void:
 			_windup_time = 0.0
 			return  # Interrupted: the slam fizzles.
 	_show_melee_fx(direction, move)
+	var burn := Arena.grass_burn_style(move)
+	if arena and burn != "":
+		var d := 0.8
+		while d <= move.reach + 0.3:
+			arena.burn_grass(global_position + direction * d, 1.0 + d * 0.25, burn)
+			d += 1.0
 	var targets := _enemies_in_cone(direction, move.reach, move.arc)
 	var grabbed: Brawler = null
 	if str(move.control.get("type", "")) == "grab":
@@ -1279,9 +1285,14 @@ func _enemies_in_cone(direction: Vector3, reach: float, arc: float) -> Array[Bra
 	return result
 
 
+## Supers that burn or cut tall grass as they go (Arena.grass_burn_style).
+var _dash_burn := ""
+
+
 func _start_dash(move: MoveData, direction: Vector3) -> void:
 	_dash_move = move
 	_dash_dir = direction
+	_dash_burn = Arena.grass_burn_style(move)
 	var hop: Dictionary = GameData.rule("dash_hop", {})
 	_dash_hop = 0.0
 	_dash_speed = move.dash_speed
@@ -1369,6 +1380,8 @@ func _land_area(move: MoveData, center: Vector3) -> void:
 			other.take_hit(self, move, move.upfront_share())
 			other.knock_from(center, move.knockback)
 	Breakable.hit_area(get_tree(), center, move.area_radius, self, move)
+	if arena:
+		arena.burn_grass(center, move.area_radius, Arena.grass_burn_style(move))
 	spawn_vortex(move, center, move.area_radius)
 	var look := MoveLook.of(move)
 	Vfx.ring(parent, center, move.area_radius, move.type, 22, look)
@@ -1503,6 +1516,8 @@ func _process_dash(delta: float) -> void:
 				_dash_time = 0.0
 	velocity = _dash_dir * _dash_speed
 	move_and_slide()
+	if arena and _dash_burn != "":
+		arena.burn_grass(global_position, 1.2, _dash_burn)
 	for other in enemies():
 		if other in _dash_hit:
 			continue

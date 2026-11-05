@@ -45,6 +45,11 @@ var _halo: Sprite3D
 @onready var shape: CollisionShape3D = $CollisionShape3D
 
 
+## Supers that burn or cut tall grass along their path (Arena.grass_burn_style).
+var _burn := ""
+var _burnt_at := -1.0
+
+
 func setup(p_shooter: Brawler, p_move: MoveData, dir: Vector3, distance := -1.0) -> void:
 	shooter = p_shooter
 	move = p_move
@@ -54,6 +59,8 @@ func setup(p_shooter: Brawler, p_move: MoveData, dir: Vector3, distance := -1.0)
 	if distance >= 0.0 and move.explode_radius > 0.0 and not move.lob:
 		aimed_distance = clampf(distance, 1.0, move.reach)
 	_bounces_left = move.bounces
+	if p_shooter.arena:
+		_burn = Arena.grass_burn_style(move)
 
 
 func _ready() -> void:
@@ -145,6 +152,9 @@ func _physics_process(delta: float) -> void:
 		global_position = to
 		_travelled += step
 		remaining -= step
+		if _burn != "" and _travelled - _burnt_at >= 0.5:
+			_burnt_at = _travelled
+			shooter.arena.burn_grass(global_position, maxf(0.9, move.radius * 1.8), _burn)
 		_check_brawlers()
 		if move.returns and not _returning and _travelled >= move.reach:
 			_turn_back()
@@ -174,6 +184,8 @@ func _land() -> void:
 		_explode(radius)
 	else:
 		Vfx.burst(get_parent(), global_position, move.type, 16, 0.4, 3.0)
+		if _burn != "" and is_instance_valid(shooter) and shooter.arena:
+			shooter.arena.burn_grass(global_position, maxf(1.5, move.linger_radius), _burn)
 	_finish(false)
 
 
@@ -320,6 +332,8 @@ func _retire() -> void:
 
 
 func _explode(radius: float) -> void:
+	if _burn != "" and is_instance_valid(shooter) and shooter.arena:
+		shooter.arena.burn_grass(global_position, radius, _burn)
 	if is_instance_valid(shooter) and move.power > 0.0:
 		for node in get_tree().get_nodes_in_group("brawlers"):
 			var target := node as Brawler

@@ -900,7 +900,24 @@ func _check_brawl_ball() -> void:
 	expect(player.use_main(goal - player.global_position), "attacking while carrying kicks the ball")
 	await get_tree().create_timer(1.0, false, true).timeout
 	expect(main.scores[0] == 1.0 and player.goals == 1, "kicking it into their goal scores (score %s)" % [main.scores])
+	expect(main.mode_logic.frozen() and player.process_mode == Node.PROCESS_MODE_DISABLED, "play stops after a goal")
+	var banner_found := false
+	for node in main.hud.get_children():
+		if node is VBoxContainer and node.get_child_count() == 2 and (node.get_child(1) as Label).text == "You scored!":
+			banner_found = true
+	expect(banner_found, "the goal banner says who scored")
+	await get_tree().create_timer(main.mode_logic.goal_pause() + 0.2, false, true).timeout
+	expect(not main.mode_logic.frozen() and player.process_mode == Node.PROCESS_MODE_INHERIT, "play resumes after the pause")
 	expect(ball.global_position.distance_to(arena.center_point()) < 1.0, "the ball goes back to the middle")
+	var spawn_cell := arena.world_to_cell(player.global_position)
+	expect(arena.goal_cells[0].has(spawn_cell) and spawn_cell.y == arena.height - 2, "kick-off puts you at the back of your own goal (%s)" % spawn_cell)
+	var xs := {}
+	for b: Brawler in main.teams[1]:
+		var c := arena.world_to_cell(main.spawn_position(b))
+		expect(arena.goal_cells[1].has(c) and c.y == 1, "their spawns are at the back of their goal (%s)" % c)
+		xs[c.x] = true
+	expect(xs.size() == main.teams[1].size(), "spawns are spread across the goal")
+	expect(float(GameData.rule("modes/brawl_ball/respawn_time", 0.0)) >= 5.0, "Brawl Ball respawns take longer")
 	main.mode_logic._reset_pause = 0.0
 	ball.reset(goal)
 	await get_tree().physics_frame
@@ -1641,6 +1658,53 @@ func _check_ball_goals_and_walls() -> void:
 			if arena.rows[y][x] == "B" and "G" in [arena.rows[y - 1][x], arena.rows[y + 1][x], arena.rows[y][x - 1], arena.rows[y][x + 1]]:
 				blockers += 1
 	expect(blockers == 8, "rocks narrow both goals (2 each side, %d found)" % blockers)
+	main.queue_free()
+	await get_tree().process_frame
+	_check_grass_burning_choices()
+	await _check_grass_burning()
+
+
+func _check_grass_burning_choices() -> void:
+	var style := func(id: String) -> String:
+		return Arena.grass_burn_style(GameData.get_move(id))
+	expect(style.call("fire_spin") == "fire" and style.call("blast_burn") == "fire", "fire supers burn grass")
+	expect(style.call("blizzard") == "ice" and style.call("dewgong_super") == "ice", "ice supers freeze it (Sheer Cold too)")
+	expect(style.call("poison_powder") == "poison" and style.call("ekans_super") == "", "poison supers wither it (not Glare)")
+	expect(style.call("diglett_super") == "cut" and style.call("tauros_super") == "cut" and style.call("rhydon_super") == "cut", "dashes that tear through cut it")
+	expect(style.call("withdraw") == "" and style.call("flash") == "", "other supers leave it")
+	expect(style.call("charmander_main1") == "", "main attacks leave it")
+	var z := GameData.z_move(GameData.get_move("fire_spin"))
+	expect(Arena.grass_burn_style(z) == "fire", "Z-Moves burn like their super")
+
+
+func _check_grass_burning() -> void:
+	print("Supers burn tall grass")
+	var main := await _start_match("test_pallet_pitch", "duel", "diglett", [])
+	await _freeze_all(main)
+	var arena: Arena = main.arena
+	var player: Brawler = main.player
+	# A row of tall grass: (8..11, 29) on Pallet Pitch.
+	var start := Vector2i(6, 29)
+	var grass_before := 0
+	for x in range(8, 12):
+		if arena.is_tall_grass(arena.cell_center(Vector2i(x, 29))):
+			grass_before += 1
+	expect(grass_before == 4, "test row has tall grass (%d)" % grass_before)
+	player.position = arena.cell_center(start)
+	await get_tree().physics_frame
+	player.super_charge = 1.0
+	player._attack_lock = 0.0
+	expect(player.use_super(Vector3.RIGHT), "Diglett uses Fissure Dash")
+	await get_tree().create_timer(1.2, false, true).timeout
+	var left := 0
+	for x in range(8, 12):
+		if arena.is_tall_grass(arena.cell_center(Vector2i(x, 29))):
+			left += 1
+	expect(left < grass_before, "the dash cuts a path through the grass (%d of %d left)" % [left, grass_before])
+	var ember := GameData.get_move("fire_spin")  # Fire Spin's area, as it lands.
+	var spot := arena.cell_center(Vector2i(25, 29))
+	var burnt := arena.burn_grass(spot, 1.5, Arena.grass_burn_style(ember))
+	expect(burnt > 0 and not arena.is_tall_grass(spot), "Fire Spin burns the grass it lands on")
 	main.queue_free()
 	await get_tree().process_frame
 

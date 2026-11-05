@@ -1,11 +1,16 @@
 extends MatchMode
 ## Brawl Ball: carry or kick the Poké Ball into the other team's goal. First to
-## rules.goals_to_win goals wins; after each goal everyone resets to their spawns.
+## rules.goals_to_win goals wins. After a goal, play stops for rules.goal_pause
+## seconds while the scorer is shown, then everyone resets to their spawns at the
+## back of their own goal and the ball goes back to the middle.
 
 ## Kick at the goal from this close if the shot is clear.
 const SHOOT_RANGE := 8.5
 
 var ball: Ball
+## Time left in the stop after a goal (everyone frozen).
+var _goal_pause := 0.0
+## Time left after kick-off before a goal can count again.
 var _reset_pause := 0.0
 
 
@@ -17,6 +22,11 @@ func start() -> void:
 
 
 func tick(delta: float) -> void:
+	if _goal_pause > 0.0:
+		_goal_pause -= delta
+		if _goal_pause <= 0.0:
+			_kick_off()
+		return
 	if _reset_pause > 0.0:
 		_reset_pause -= delta
 		return
@@ -28,17 +38,50 @@ func tick(delta: float) -> void:
 	var by: Brawler = ball.last_touch if is_instance_valid(ball.last_touch) and ball.last_touch.team == scorer else null
 	if by:
 		by.goals += 1
-	var who := (by.species.display_name + " scores!") if by else "Goal!"
-	main.hud.announce("GOAL!  %s" % who if scorer == player_team() else "THEY SCORED…  %s" % who)
+	var ours := scorer == player_team()
+	var who := ""
+	if by:
+		who = "You scored!" if by == main.player else "%s scored!" % by.species.display_name.to_upper()
+	elif is_instance_valid(ball.last_touch):
+		who = "Own goal by %s" % ball.last_touch.species.display_name.to_upper()
+	main.hud.goal_banner("GOAL!", who, Color(0.45, 0.8, 1.0) if ours else Color(1.0, 0.45, 0.4), goal_pause())
 	Vfx.ring(main.arena, ball.global_position, 3.0, "electric", 80)
+	if by:
+		Vfx.ring(main.arena, by.global_position, 1.6, "electric", 40)
 	if main.scores[scorer] >= float(rules.get("goals_to_win", 2)):
-		main.end_round("victory" if scorer == player_team() else "defeat")
+		main.end_round("victory" if ours else "defeat")
 		return
-	_kick_off()
+	# Play stops while the goal is shown, then kicks off again.
+	_goal_pause = goal_pause()
+	if ball.carrier:
+		ball.drop()
+	_freeze(true)
+
+
+func goal_pause() -> float:
+	return float(rules.get("goal_pause", 2.0))
+
+
+## Stops (or restarts) every Pokémon: no moving, attacking or getting hurt.
+func _freeze(on: bool) -> void:
+	for team: int in main.teams:
+		for b: Brawler in main.teams[team]:
+			if not is_instance_valid(b):
+				continue
+			b.process_mode = Node.PROCESS_MODE_DISABLED if on else Node.PROCESS_MODE_INHERIT
+			if on:
+				b.velocity = Vector3.ZERO
+				b.protect(goal_pause() + 0.5)
+
+
+func frozen() -> bool:
+	return _goal_pause > 0.0
 
 
 ## Everyone back to their spawn, healed; ball back in the middle.
 func _kick_off() -> void:
+	_goal_pause = 0.0
+	_freeze(false)
 	_reset_pause = 1.0
 	ball.reset(main.arena.center_point())
 	for team: int in main.teams:
@@ -48,6 +91,31 @@ func _kick_off() -> void:
 				b.velocity = Vector3.ZERO
 				b.health = b.max_health
 				b.protect(1.5)
+
+
+## Spawns are at the back of your own goal, spread across it: you come back
+## in defence, not in front of the goal mouth where you'd block it.
+func spawn_position(b: Brawler) -> Vector3:
+	var arena: Arena = main.arena
+	var cells: Dictionary = arena.goal_cells.get(b.team, {})
+	if cells.is_empty():
+		return super.spawn_position(b)
+	var mid := arena.height >> 1
+	var back := -1
+	for cell: Vector2i in cells:
+		if back < 0 or absi(cell.y - mid) > absi(back - mid):
+			back = cell.y
+	var xs: Array[int] = []
+	for cell: Vector2i in cells:
+		if cell.y == back:
+			xs.append(cell.x)
+	xs.sort()
+	var count := maxi(3, (main.teams.get(b.team, []) as Array).size())  # Teams are still filling up at the first spawn.
+	var index := int(main._spawn_index.get(b, 0)) % count
+	# Even spacing across the goal's back row: left, middle, right for three.
+	var t := (index + 0.5) / count
+	var x: int = xs[clampi(int(t * xs.size()), 0, xs.size() - 1)]
+	return arena.cell_center(Vector2i(x, back))
 
 
 func on_died(victim: Brawler, _killer: Brawler) -> bool:

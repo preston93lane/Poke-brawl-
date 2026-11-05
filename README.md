@@ -77,7 +77,7 @@ The web build uses Godot's Compatibility renderer, so lighting is slightly simpl
   warp pads in Saffron Gym. The map maker can place vents (F) and pads (O) and turn on lightning.
 - **Dev mode:** open the game with `?dev=<code>` or type the code in Settings to get DEV TOOLS (set levels, reset
   progress) and in-match RAID NOW / WIN buttons.
-- **Brawl Ball:** touch the Poké Ball to pick it up; your attack kicks it. First to 2 goals.
+- **Brawl Ball:** touch the Poké Ball to pick it up; your attack kicks it. First to 2 goals. After a goal, play stops for 2 seconds while the scorer is shown, then everyone kicks off again from the back of their own goal. Respawns take 5 seconds.
   **Rare Candy Rush:** candies pop out of the mine; hold 10 as a team with the lead for 10 s. Fainting drops yours.
   **Showdown:** 6 Pokémon, everyone for themselves, no respawns. Smash crates for power cubes (+HP, +damage);
   the poison cloud closes in. After every match a summary shows KOs, damage, healing and the MVP.
@@ -90,7 +90,7 @@ The web build uses Godot's Compatibility renderer, so lighting is slightly simpl
 - **Map maker** (home screen): paint tiles, pick floor / wall / liquid, mirror top↔bottom or in quadrants, name and
   save, edit or revert the built-in maps, and test straight away. Maps are saved on your device.
 - **Settings:** drag the sticks and buttons where you like them, resize them, swap sides, toggle aim assist.
-- **Tall grass** hides you until you attack, get hit, or an enemy walks close.
+- **Tall grass** hides you until you attack, get hit, or an enemy walks close. Fire, ice and poison supers burn, freeze or wither the grass they pass over, and supers that tear through (Diglett's Fissure Dash, Tauros's Stampede Charge, Rhydon's Drill Charge, Scyther's Swords Dance Rush, explosions...) cut it down, for the rest of the match (`rules.json` `grass_burn`).
 - Health regenerates after 3 s out of combat. You respawn inside a protective bubble for 2 s (attacking pops it).
 - **Items** appear around the map: Potion (heal), Protein / Iron / Carbos (attack / defense / speed until you faint),
   PP Up (an extra ammo bar) and HP Up (more max HP).

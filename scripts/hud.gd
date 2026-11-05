@@ -240,6 +240,35 @@ func flash(color: Color) -> void:
 	create_tween().tween_property(_flash, "color:a", 0.0, 0.6)
 
 
+## Brawl Ball: "GOAL!" across the middle of the screen with who scored under it,
+## in the scoring team's colour, for `seconds`.
+func goal_banner(title: String, by: String, color: Color, seconds := 2.0) -> void:
+	var box := VBoxContainer.new()
+	box.set_anchors_preset(Control.PRESET_FULL_RECT)
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_theme_constant_override("separation", -10)
+	for line: Array in [[title, 120, color], [by, 46, Color.WHITE]]:
+		if str(line[0]) == "":
+			continue
+		var l := Label.new()
+		l.text = line[0]
+		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		l.add_theme_font_size_override("font_size", line[1])
+		l.add_theme_constant_override("outline_size", 22 if int(line[1]) > 60 else 14)
+		l.add_theme_color_override("font_color", line[2])
+		l.add_theme_color_override("font_outline_color", Color(0.05, 0.05, 0.12))
+		box.add_child(l)
+	add_child(box)
+	box.pivot_offset = get_viewport().get_visible_rect().size * 0.5
+	box.scale = Vector2.ONE * 1.5
+	var tween := box.create_tween()
+	tween.tween_property(box, "scale", Vector2.ONE, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_interval(maxf(0.1, seconds - 0.6))
+	tween.tween_property(box, "modulate:a", 0.0, 0.3)
+	tween.tween_callback(box.queue_free)
+
+
 ## 3, 2, 1, GO! in the middle of the screen (the match is paused meanwhile).
 func countdown() -> void:
 	var l := Label.new()
