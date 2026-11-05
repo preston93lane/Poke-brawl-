@@ -19,11 +19,15 @@
 		"#c84860"
 	],
 	"skins": [
+		"#ffe4c8",
 		"#fcd8b0",
 		"#f0c496",
+		"#e0b080",
 		"#d6a070",
+		"#b88050",
 		"#a87048",
-		"#7c5234"
+		"#7c5234",
+		"#5c3a24"
 	],
 	"hair_colors": [
 		"#342824",
@@ -45,8 +49,13 @@
 		"bun",
 		"buzz"
 	],
+	"genders": [
+		"boy",
+		"girl"
+	],
 	"default": {
-		"skin": 0,
+		"gender": "boy",
+		"skin": 1,
 		"hair": "short",
 		"hair_color": 1,
 		"hat": [

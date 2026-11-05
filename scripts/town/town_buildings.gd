@@ -205,6 +205,72 @@ static func _house(root: Node3D, fw: float, fd: float, s: Dictionary) -> void:
 			aw.rotation.x = deg_to_rad(18)
 
 
+## A street lantern: a dark post with a lamp on top. Returns { node, bulb, pool, halo }
+## so the town can light it up at dusk and night.
+static var _pool_tex: Texture2D
+
+
+static func lantern() -> Dictionary:
+	var root := Node3D.new()
+	var post := CylinderMesh.new()
+	post.radial_segments = 8
+	post.rings = 1
+	post.top_radius = 0.06
+	post.bottom_radius = 0.09
+	post.height = 2.3
+	_part(root, post, Color(0.18, 0.2, 0.24), Vector3(0, 1.15, 0), 0.0, false)
+	_part(root, soft_box(Vector3(0.42, 0.12, 0.42), 0.05), Color(0.18, 0.2, 0.24), Vector3(0, 2.62, 0), 0.0, false)
+	_part(root, soft_box(Vector3(0.34, 0.08, 0.34), 0.03), Color(0.18, 0.2, 0.24), Vector3(0, 2.22, 0), 0.0, false)
+	var bulb_mat := StandardMaterial3D.new()
+	bulb_mat.albedo_color = Color(1.0, 0.86, 0.55)
+	bulb_mat.emission_enabled = true
+	bulb_mat.emission = Color(1.0, 0.75, 0.4)
+	bulb_mat.emission_energy_multiplier = 0.0
+	var bulb := MeshInstance3D.new()
+	bulb.mesh = soft_box(Vector3(0.28, 0.32, 0.28), 0.08)
+	bulb.material_override = bulb_mat
+	bulb.position = Vector3(0, 2.42, 0)
+	bulb.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	root.add_child(bulb)
+	# A soft pool of warm light on the ground, and a glow round the lamp.
+	if _pool_tex == null:
+		var g := Gradient.new()
+		g.set_color(0, Color(1, 1, 1, 1))
+		g.set_color(1, Color(1, 1, 1, 0))
+		var gt := GradientTexture2D.new()
+		gt.gradient = g
+		gt.fill = GradientTexture2D.FILL_RADIAL
+		gt.fill_from = Vector2(0.5, 0.5)
+		gt.fill_to = Vector2(1.0, 0.5)
+		gt.width = 64
+		gt.height = 64
+		_pool_tex = gt
+	var glow_mat := StandardMaterial3D.new()
+	glow_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	glow_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	glow_mat.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	glow_mat.albedo_texture = _pool_tex
+	glow_mat.albedo_color = Color(1.0, 0.7, 0.35, 0.0)
+	var plane := PlaneMesh.new()
+	plane.size = Vector2(6.0, 6.0)
+	var pool := MeshInstance3D.new()
+	pool.mesh = plane
+	pool.material_override = glow_mat
+	pool.position.y = 0.05
+	pool.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	root.add_child(pool)
+	var halo := Sprite3D.new()
+	halo.texture = _pool_tex
+	halo.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	halo.pixel_size = 1.6 / 64.0
+	halo.shaded = false
+	halo.modulate = Color(1.0, 0.8, 0.45, 0.0)
+	halo.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	halo.position = Vector3(0, 2.42, 0)
+	root.add_child(halo)
+	return { "node": root, "bulb": bulb_mat, "pool": glow_mat, "halo": halo }
+
+
 ## The plaza's fountain centrepiece: a stone pedestal holding up a big Poké Ball.
 static func fountain() -> Node3D:
 	var root := Node3D.new()

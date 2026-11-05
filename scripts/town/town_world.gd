@@ -29,6 +29,13 @@ var _prompt := ""
 var _target: Variant = null  # building id (String) or trainer Dictionary
 var _push_time := 0.0
 var _busy := false
+var _env: Environment
+var _sky_mat: ProceduralSkyMaterial
+var _sun: DirectionalLight3D
+var lamps: Array = []  # [{ node, bulb, pool, halo, light }]
+var _time_check := 0.0
+## How lit the lanterns are now (0 by day, 1 at night).
+var night := 0.0
 var _keys_were_down := false
 
 
@@ -43,7 +50,9 @@ func _ready() -> void:
 	GameData.arenas.erase("_town")
 	_buildings()
 	_fountain()
+	_lanterns()
 	_people()
+	apply_time()
 	camera = FollowCamera.new()
 	camera.pitch_degrees = PITCH
 	camera.distance = 21.0
@@ -61,6 +70,7 @@ func _ready() -> void:
 func _environment() -> void:
 	var env := Environment.new()
 	var sky_mat := ProceduralSkyMaterial.new()
+	_sky_mat = sky_mat
 	sky_mat.sky_top_color = Color(0.32, 0.55, 0.9)
 	sky_mat.sky_horizon_color = Color(0.74, 0.85, 0.96)
 	var sky := Sky.new()
@@ -74,6 +84,7 @@ func _environment() -> void:
 	env.adjustment_enabled = true
 	env.adjustment_saturation = 1.12
 	env.adjustment_contrast = 1.05
+	_env = env
 	var world_env := WorldEnvironment.new()
 	world_env.name = "WorldEnvironment"
 	world_env.environment = env
@@ -85,6 +96,7 @@ func _environment() -> void:
 	sun.light_energy = 1.2
 	Quality.apply_sun(sun)
 	add_child(sun)
+	_sun = sun
 
 
 func _cell_pos(x: float, y: float) -> Vector3:
@@ -138,6 +150,85 @@ func _has_news(id: String) -> bool:
 		"arena":
 			return Profile.has_news("challenges")
 	return false
+
+
+func _lanterns() -> void:
+	var plaza_lamps := 0
+	for spot: Array in map_def.get("lamps", []):
+		var l := TownBuildings.lantern()
+		var node: Node3D = l["node"]
+		node.position = _cell_pos(float(spot[0]) + 0.5, float(spot[1]) + 0.5)
+		add_child(node)
+		var body := StaticBody3D.new()
+		body.collision_layer = Arena.WORLD_LAYER
+		body.collision_mask = 0
+		var shape := CollisionShape3D.new()
+		var cyl := CylinderShape3D.new()
+		cyl.radius = 0.15
+		cyl.height = 2.0
+		shape.shape = cyl
+		shape.position.y = 1.0
+		body.add_child(shape)
+		node.add_child(body)
+		# Real light (it reaches the walls and Pokémon) only round the plaza, on High:
+		# phones pay for every light on every object it touches.
+		if Quality.level() == "high" and absf(float(spot[0]) - 18.0) < 6.0 and absf(float(spot[1]) - 14.0) < 5.0 and plaza_lamps < 4:
+			var omni := OmniLight3D.new()
+			omni.light_color = Color(1.0, 0.75, 0.45)
+			omni.omni_range = 6.0
+			omni.light_energy = 0.0
+			omni.position = Vector3(0, 2.3, 0)
+			node.add_child(omni)
+			l["light"] = omni
+			plaza_lamps += 1
+		lamps.append(l)
+
+
+## Sun or moon, sky, ambient light, lanterns, glowing windows and how sprites are
+## tinted, for the time on your clock (TownTime).
+func apply_time() -> void:
+	var t := TownTime.light()
+	night = float(t["night"])
+	if _sun:
+		_sun.light_color = t["sun_color"]
+		_sun.light_energy = t["sun_energy"]
+		var from: Vector3 = t["sun_from"]
+		_sun.look_at_from_position(from * 20.0, Vector3.ZERO, Vector3.UP if absf(from.y) < 0.99 else Vector3.FORWARD)
+	# The arena builder swaps in its own copy of the environment: use whichever is live.
+	var we := get_node_or_null("WorldEnvironment") as WorldEnvironment
+	if we and we.environment:
+		_env = we.environment
+		_env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+		_env.ambient_light_color = t["ambient"]
+		_env.ambient_light_energy = t["ambient_energy"]
+		_env.ambient_light_sky_contribution = 0.0
+		if _env.sky and _env.sky.sky_material is ProceduralSkyMaterial:
+			_sky_mat = _env.sky.sky_material
+	if _sky_mat:
+		_sky_mat.sky_top_color = t["sky_top"]
+		_sky_mat.sky_horizon_color = t["sky_horizon"]
+		_sky_mat.ground_horizon_color = (t["sky_horizon"] as Color).darkened(0.2)
+		_sky_mat.ground_bottom_color = (t["sky_top"] as Color).darkened(0.4)
+	# Lanterns light up from dusk.
+	var lit := clampf((night - 0.25) / 0.6, 0.0, 1.0)
+	for l: Dictionary in lamps:
+		(l["bulb"] as StandardMaterial3D).emission_energy_multiplier = 0.2 + 3.0 * lit
+		(l["pool"] as StandardMaterial3D).albedo_color.a = 0.8 * lit
+		(l["halo"] as Sprite3D).modulate.a = 0.75 * lit
+		if l.has("light"):
+			(l["light"] as OmniLight3D).light_energy = 1.4 * lit
+	# Windows glow warm at night.
+	for key: String in TownBuildings._mats:
+		var m := TownBuildings._mats[key] as StandardMaterial3D
+		if m and m.emission_enabled and key.begins_with(Color(0.75, 0.9, 1.0).to_html()):
+			m.emission = Color(0.75, 0.9, 1.0).lerp(Color(1.0, 0.8, 0.45), lit)
+			m.emission_energy_multiplier = 0.25 + 1.6 * lit
+	var tint: Color = t["tint"]
+	for node in [player, partner]:
+		if node:
+			(node as TownWalker).sprite.modulate = tint
+	for entry: Dictionary in trainers:
+		(entry["walker"] as TownWalker).sprite.modulate = tint
 
 
 func _fountain() -> void:
@@ -225,6 +316,11 @@ func _process(delta: float) -> void:
 	RenderingServer.global_shader_parameter_set("player_xray", player.global_position + Vector3(0, 0.05, 0))
 	RenderingServer.global_shader_parameter_set("player_xray_size", Vector2(0.4, 1.5))
 	_update_prompt(delta)
+	# Keep up with the clock (the light changes slowly).
+	_time_check -= delta
+	if _time_check <= 0.0:
+		_time_check = 20.0
+		apply_time()
 
 
 func _update_prompt(delta: float) -> void:

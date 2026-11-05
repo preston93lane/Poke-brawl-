@@ -420,7 +420,7 @@ static func museum(menu: Node) -> Control:
 # bottoms, shoes, and hair & skin (free). Tapping a colour tries it on in the
 # preview; buy it, or wear it if it's yours.
 
-const OUTFIT_TABS := [["sets", "OUTFITS"], ["hat", "HATS"], ["top", "TOPS"], ["bottom", "BOTTOMS"], ["shoes", "SHOES"], ["hair", "HAIR & SKIN"]]
+const OUTFIT_TABS := [["sets", "OUTFITS"], ["hat", "HATS"], ["top", "TOPS"], ["bottom", "BOTTOMS"], ["shoes", "SHOES"], ["hair", "BODY & HAIR"]]
 
 
 static func outfitter(menu: Node, message := "") -> Control:
@@ -464,9 +464,10 @@ static func outfitter(menu: Node, message := "") -> Control:
 			for s: Dictionary in Town.sets():
 				list.add_child(_set_card(menu, s))
 		"hair":
-			list.add_child(_free_row(menu, "STYLE", "hair", Town.outfits().get("hairs", []), true))
-			list.add_child(_free_row(menu, "HAIR COLOUR", "hair_color", Town.outfits().get("hair_colors", []), false))
+			list.add_child(_free_row(menu, "BOY OR GIRL", "gender", Town.outfits().get("genders", ["boy", "girl"]), true))
 			list.add_child(_free_row(menu, "SKIN", "skin", Town.outfits().get("skins", []), false))
+			list.add_child(_free_row(menu, "HAIR STYLE", "hair", Town.outfits().get("hairs", []), true))
+			list.add_child(_free_row(menu, "HAIR COLOUR", "hair_color", Town.outfits().get("hair_colors", []), false))
 		_:
 			if tab == "hat":
 				var none := UiKit.button("NO HAT" + ("  ✓" if (trying.get("hat", []) as Array).is_empty() else ""), func() -> void:

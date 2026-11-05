@@ -53,13 +53,14 @@ static func _ready_made(id: String) -> Texture2D:
 ## Stacks and paints a look: { skin, hair, hair_color, hat: [item, Color] or null,
 ## top / bottom / shoes: [item, Color] }. Cached.
 static func compose(look: Dictionary) -> Texture2D:
-	var key := JSON.stringify(look)
+	var key := JSON.stringify(look, "", true)
 	if _painted.has(key):
 		return _painted[key]
 	var hat: Variant = look.get("hat")
 	var hair := str(look.get("hair", "short"))
 	var layers: Array = [["hairback_" + hair, null], ["bottom_" + str(look["bottom"][0]), look["bottom"][1]],
-		["shoes_" + str(look["shoes"][0]), look["shoes"][1]], ["top_" + str(look["top"][0]), look["top"][1]], ["head", null],
+		["shoes_" + str(look["shoes"][0]), look["shoes"][1]], ["top_" + str(look["top"][0]), look["top"][1]],
+		["head_girl" if str(look.get("gender", "boy")) == "girl" else "head", null],
 		["hair_%s%s" % [hair, "_under" if hat is Array and str(hat[0]) in COVERING else ""], null]]
 	if hat is Array:
 		layers.append(["hat_" + str(hat[0]), hat[1]])

@@ -2295,6 +2295,15 @@ func _check_town() -> void:
 	expect(Town.buy_set("hiker", 0) and Town.owns_set("hiker", 0) and not Town.owns_set("hiker", 1), "a Hiker outfit in one colourway")
 	expect(Town.wear_set("hiker", 0) and str(Town.outfit()["top"][0]) == "vest", "wearing the whole outfit")
 	expect(not Town.buy_set("rocket_grunt", 0) and Town.cant_buy_item("top", "rocket", 10) != "", "Team Rocket's uniform isn't for sale")
+	Town.set_free("gender", "girl")
+	Town.set_free("skin", 7)
+	expect(Town.look_of(Town.outfit())["gender"] == "girl", "boy or girl and skin tone are free to change")
+	# The town's light follows the clock: the sun moves east to west, lanterns at night.
+	var morning := TownTime.light(7.5)
+	var evening := TownTime.light(18.0)
+	expect((morning["sun_from"] as Vector3).x > 0.2 and (evening["sun_from"] as Vector3).x < -0.2, "the sun crosses from east to west, so shadows swing round")
+	expect(float(TownTime.light(23.0)["night"]) > 0.9 and float(TownTime.light(12.0)["night"]) == 0.0, "night and day")
+	expect(TownTime.phase(6.5) == "dawn" and TownTime.phase(18.0) == "dusk", "sunrise and sunset")
 	var sheet := TrainerLook.player_sheet()
 	expect(sheet != null and sheet.get_width() == TrainerLook.CELL.x * TrainerLook.FRAMES, "the outfit stacks into a walking sheet")
 	# Wandering trainers and wagers.

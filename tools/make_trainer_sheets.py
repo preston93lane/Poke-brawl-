@@ -104,19 +104,30 @@ def swing(f):
 
 # --- Head ------------------------------------------------------------------------
 
-def head(cv, facing, f):
+def head(cv, facing, f, girl=False):
+    """The face. A girl's has lashes on the outer corners, rosier cheeks and a smaller mouth."""
     hx, hy = head_pos(facing, f)
     cv.ellipse(hx, hy, 8.5, 7.8, "skin")
     if facing == "down":
-        for ex in (hx - 4, hx + 3):
+        for ex, out in ((hx - 4, -1), (hx + 3, 2)):
             cv.rect(ex, hy + 1, ex + 1, hy + 3, "eye", False)
             cv.set(ex, hy + 1, "white")
+            if girl:
+                cv.set(ex + out, hy, "eye")  # Lash.
         cv.set(hx - 6, hy + 4, "blush")
         cv.set(hx + 5, hy + 4, "blush")
-        cv.rect(hx - 1, hy + 5, hx, hy + 5, "mouth", False)
+        if girl:
+            cv.set(hx - 5, hy + 4, "blush")
+            cv.set(hx + 4, hy + 4, "blush")
+            cv.set(hx, hy + 5, "mouth")
+        else:
+            cv.rect(hx - 1, hy + 5, hx, hy + 5, "mouth", False)
     elif facing == "right":
         cv.rect(hx + 4, hy + 1, hx + 5, hy + 3, "eye", False)
         cv.set(hx + 5, hy + 1, "white")
+        if girl:
+            cv.set(hx + 6, hy, "eye")
+            cv.set(hx + 5, hy + 4, "blush")
         cv.set(hx + 6, hy + 4, "blush")
         cv.set(hx + 7, hy + 5, "mouth")
 
@@ -463,7 +474,7 @@ def main():
     for old in os.listdir(OUT):
         if old.endswith(".png") or old.endswith(".png.import"):
             os.remove(os.path.join(OUT, old))
-    layers = {"head": lambda cv, fa, f: head(cv, fa, f)}
+    layers = {"head": lambda cv, fa, f: head(cv, fa, f), "head_girl": lambda cv, fa, f: head(cv, fa, f, True)}
     for s in HAIRS:
         layers["hair_" + s] = lambda cv, fa, f, s=s: hair(cv, s, fa, f, False)
         layers["hair_%s_under" % s] = lambda cv, fa, f, s=s: hair(cv, s, fa, f, True)

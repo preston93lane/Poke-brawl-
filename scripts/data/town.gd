@@ -625,7 +625,7 @@ static func look_of(o: Dictionary) -> Dictionary:
 			return null
 		return [str(v[0]), str(colors[clampi(int(v[1]), 0, colors.size() - 1)])]
 	var look := {
-		"skin": pick.call("skins", o.get("skin", 0)), "hair": str(o.get("hair", "short")), "hair_color": pick.call("hair_colors", o.get("hair_color", 1)),
+		"gender": str(o.get("gender", "boy")), "skin": pick.call("skins", o.get("skin", 0)), "hair": str(o.get("hair", "short")), "hair_color": pick.call("hair_colors", o.get("hair_color", 1)),
 		"hat": piece.call("hat"), "top": piece.call("top"), "bottom": piece.call("bottom"), "shoes": piece.call("shoes"),
 	}
 	var d := default_outfit()

@@ -76,6 +76,9 @@ def main():
         "buildings": [{"id": b[0], "x": b[1], "y": b[2], "w": b[3], "h": b[4]} for b in BUILDINGS],
         "plaza": list(PLAZA),
         "trainer_spots": [[11, 10], [26, 10], [7, 18], [28, 18], [20, 26], [14, 26]],
+        # Street lanterns: along the three streets, between buildings, and round the plaza.
+        "lamps": [[10, 8], [25, 8], [3, 11], [32, 11], [10, 16], [25, 16], [3, 19], [32, 19],
+                  [7, 28], [16, 28], [20, 28], [28, 28], [14, 11], [22, 11], [14, 17], [22, 17]],
     }
     out = os.path.join(ROOT, "data", "town_map.json")
     json.dump(data, open(out, "w"), indent="\t")

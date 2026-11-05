@@ -71,6 +71,9 @@ func _setup_body() -> void:
 	sprite.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
 	sprite.shaded = false
 	sprite.alpha_cut = SpriteBase3D.ALPHA_CUT_DISCARD
+	# The sprite is a flat card leaning toward the camera: its sun shadow smeared
+	# across the ground and up the buildings. The disc under the feet is the shadow.
+	sprite.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	sprite.rotation.x = _tilt
 	add_child(sprite)
 

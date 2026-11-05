@@ -20,7 +20,7 @@ LOOKS = os.path.join(LAYERS, "looks")
 
 COLORS = ["#d83838", "#3868d8", "#38a858", "#f0b830", "#9050c8", "#f0f0ec", "#f08028", "#30b0b8",
           "#e868a0", "#585868", "#282830", "#a87848", "#704020", "#88c8f0", "#c8a0e8", "#c84860"]
-SKINS = ["#fcd8b0", "#f0c496", "#d6a070", "#a87048", "#7c5234"]
+SKINS = ["#ffe4c8", "#fcd8b0", "#f0c496", "#e0b080", "#d6a070", "#b88050", "#a87048", "#7c5234", "#5c3a24"]
 HAIR_COLORS = ["#342824", "#704020", "#e8c458", "#c84830", "#484860", "#ececf0", "#603880", "#2858a0", "#f58cb4", "#38a858"]
 HAIRS = ["short", "spiky", "long", "pigtails", "bun", "buzz"]
 NAMES = {
@@ -60,13 +60,15 @@ SETS = [
     ("bird_keeper", "Bird Keeper", ["cap_back", "vest", "cargo", "boots"], {"Pidgey": [3, 11, 9, 12], "Fearow": [0, 2, 11, 12], "Sky": [1, 9, 11, 10]}),
     ("cooltrainer", "Ace Trainer", ["", "coat", "trousers", "boots"], {"Ace": [0, 5, 1, 1], "Elite": [0, 10, 10, 0], "Royal": [0, 1, 10, 10]}),
 ]
+# Town trainer classes drawn as girls (the rest as boys), like the handheld games.
+GIRLS = {"swimmer", "psychic", "channeler", "picnicker"}
 ROCKET = [("rocket_grunt", "Team Rocket Grunt", 10), ("rocket_executive", "Rocket Executive", 5)]
 # Each town trainer class wears its set's first colourway with this hairstyle.
 CLASS_HAIR = {"bug_catcher": "short", "hiker": "buzz", "swimmer": "long", "psychic": "long", "blackbelt": "spiky",
               "channeler": "long", "picnicker": "pigtails", "burglar": "short", "rocker": "spiky", "bird_keeper": "short",
               "cooltrainer": "short"}
 STAFF = {
-    "nurse": {"skin": "#fcd8b0", "hair": "pigtails", "hair_color": "#f58cb4", "hat": ["nurse_cap", "#ffffff"], "top": ["nurse", "#fab8cc"],
+    "nurse": {"gender": "girl", "skin": "#fcd8b0", "hair": "pigtails", "hair_color": "#f58cb4", "hat": ["nurse_cap", "#ffffff"], "top": ["nurse", "#fab8cc"],
               "bottom": ["long_skirt", "#fab8cc"], "shoes": ["sneakers", "#f8f8f8"]},
     "elder": {"skin": "#f0c496", "hair": "elder", "hair_color": "#d8d8e0", "hat": None, "top": ["vest", "#8a6a4a"],
               "bottom": ["trousers", "#4a4640"], "shoes": ["sandals", "#704020"]},
@@ -74,9 +76,9 @@ STAFF = {
               "bottom": ["trousers", "#282830"], "shoes": ["sneakers", "#282830"]},
     "dealer": {"skin": "#f0c496", "hair": "short", "hair_color": "#484860", "hat": None, "top": ["vest", "#202028"],
                "bottom": ["trousers", "#202028"], "shoes": ["boots", "#202028"]},
-    "guide": {"skin": "#a87048", "hair": "bun", "hair_color": "#603880", "hat": None, "top": ["blouse", "#8c4ca0"],
+    "guide": {"gender": "girl", "skin": "#a87048", "hair": "bun", "hair_color": "#603880", "hat": None, "top": ["blouse", "#8c4ca0"],
               "bottom": ["long_skirt", "#585868"], "shoes": ["boots", "#282830"]},
-    "stylist": {"skin": "#fcd8b0", "hair": "long", "hair_color": "#c84830", "hat": ["sun_hat", "#f0f0ec"], "top": ["blouse", "#f278a8"],
+    "stylist": {"gender": "girl", "skin": "#fcd8b0", "hair": "long", "hair_color": "#c84830", "hat": ["sun_hat", "#f0f0ec"], "top": ["blouse", "#f278a8"],
                 "bottom": ["skirt", "#30b0b8"], "shoes": ["sneakers", "#f0f0ec"]},
 }
 PARTS = ["skin", "hair", "main", "trim", "dark", "white", "red", "eye", "mouth", "blush", "gold"]
@@ -104,6 +106,8 @@ def compose(look):
     order = [("hairback_" + hair, None), ("bottom_" + look["bottom"][0], look["bottom"][1]),
              ("shoes_" + look["shoes"][0], look["shoes"][1]), ("top_" + look["top"][0], look["top"][1]), ("head", None),
              ("hair_%s%s" % (hair, "_under" if hat and hat[0] in COVERING else ""), None)]
+    if look.get("gender") == "girl":
+        order[4] = ("head_girl", None)
     if hat:
         order.append(("hat_" + hat[0], hat[1]))
     size = Image.open(os.path.join(LAYERS, "head.png")).size
@@ -181,7 +185,8 @@ def main():
     data = {
         "_comment": "Built by tools/build_outfits.py. Prices in Pokédollars; colours are indices into colors. Every item colour is a separate purchase. Sets give their four pieces in one colourway. Items or sets with unlock: rocket come from the Rocket Hideout, not the shop.",
         "colors": COLORS, "skins": SKINS, "hair_colors": HAIR_COLORS, "hairs": HAIRS,
-        "default": {"skin": 0, "hair": "short", "hair_color": 1, "hat": ["cap", 0], "top": ["jacket", 1], "bottom": ["trousers", 9], "shoes": ["sneakers", 0]},
+        "genders": ["boy", "girl"],
+        "default": {"gender": "boy", "skin": 1, "hair": "short", "hair_color": 1, "hat": ["cap", 0], "top": ["jacket", 1], "bottom": ["trousers", 9], "shoes": ["sneakers", 0]},
         "items": items, "sets": sets + rocket_sets,
         "class_looks": {cid: {"set": cid, "hair": hair} for cid, hair in CLASS_HAIR.items()},
     }
@@ -194,7 +199,7 @@ def main():
         s = by_id[cid]
         cols = s["variants"][0]["colors"]
         pieces = s["pieces"]
-        looks["class_" + cid] = {"skin": SKINS[sum(map(ord, cid)) % 3], "hair": hair, "hair_color": HAIR_COLORS[len(cid) % 6],
+        looks["class_" + cid] = {"gender": "girl" if cid in GIRLS else "boy", "skin": SKINS[[1, 2, 4, 6][sum(map(ord, cid)) % 4]], "hair": hair, "hair_color": HAIR_COLORS[len(cid) % 6],
                                  "hat": [pieces[0], COLORS[cols[0]]] if pieces[0] else None, "top": [pieces[1], COLORS[cols[1]]],
                                  "bottom": [pieces[2], COLORS[cols[2]]], "shoes": [pieces[3], COLORS[cols[3]]]}
     for sid, _, c in ROCKET:

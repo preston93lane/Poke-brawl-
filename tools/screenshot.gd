@@ -9,6 +9,10 @@ const MAIN_SCENE := preload("res://scenes/main.tscn")
 
 func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
+	# Optional "h=21.5" first: the town's hour of day.
+	if args.size() > 0 and args[0].begins_with("h="):
+		TownTime.hour_override = float(args[0].trim_prefix("h="))
+		args = args.slice(1)
 	# Optional "q=low|medium|high" first: graphics level for the shots.
 	if args.size() > 0 and args[0].begins_with("q="):
 		GameData.settings["graphics"] = args[0].trim_prefix("q=")
