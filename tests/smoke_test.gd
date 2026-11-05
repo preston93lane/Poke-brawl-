@@ -2284,8 +2284,18 @@ func _check_town() -> void:
 			abra_prize = i
 	expect(Town.claim_prize(abra_prize) == "abra" and Profile.is_unlocked("abra"), "Pokémon from the prize counter")
 	# Outfitter.
-	expect(not Town.wear("style", "beanie") and Town.buy_look("style:beanie") and Town.wear("style", "beanie")
-			and Town.outfit()["style"] == "beanie", "styles are bought, then worn")
+	# Outfitter: every colour of an item is its own purchase; sets give all their pieces.
+	var red := 0
+	var blue := 1
+	expect(not Town.wear("hat", "beanie", red) and Town.buy_item("hat", "beanie", red) and Town.wear("hat", "beanie", red)
+			and Town.outfit()["hat"] == ["beanie", red], "a beanie is bought, then worn")
+	expect(not Town.owns_item("hat", "beanie", blue) if blue in (Town.item("hat", "beanie")["colors"] as Array) else true,
+			"buying one colour doesn't give you the others")
+	expect(Town.buy_set("hiker", 0) and Town.owns_set("hiker", 0) and not Town.owns_set("hiker", 1), "a Hiker outfit in one colourway")
+	expect(Town.wear_set("hiker", 0) and str(Town.outfit()["top"][0]) == "vest", "wearing the whole outfit")
+	expect(not Town.buy_set("rocket_grunt", 0) and Town.cant_buy_item("top", "rocket", 10) != "", "Team Rocket's uniform isn't for sale")
+	var sheet := TrainerLook.player_sheet()
+	expect(sheet != null and sheet.get_width() == TrainerLook.CELL.x * TrainerLook.FRAMES, "the outfit stacks into a walking sheet")
 	# Wandering trainers and wagers.
 	var list := Town.wandering()
 	expect(list.size() == 4 and list == Town.wandering(), "the same trainers stay in town for the slot")

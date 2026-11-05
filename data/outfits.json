@@ -1,0 +1,951 @@
+{
+	"_comment": "Built by tools/build_outfits.py. Prices in Pokédollars; colours are indices into colors. Every item colour is a separate purchase. Sets give their four pieces in one colourway. Items or sets with unlock: rocket come from the Rocket Hideout, not the shop.",
+	"colors": [
+		"#d83838",
+		"#3868d8",
+		"#38a858",
+		"#f0b830",
+		"#9050c8",
+		"#f0f0ec",
+		"#f08028",
+		"#30b0b8",
+		"#e868a0",
+		"#585868",
+		"#282830",
+		"#a87848",
+		"#704020",
+		"#88c8f0",
+		"#c8a0e8",
+		"#c84860"
+	],
+	"skins": [
+		"#fcd8b0",
+		"#f0c496",
+		"#d6a070",
+		"#a87048",
+		"#7c5234"
+	],
+	"hair_colors": [
+		"#342824",
+		"#704020",
+		"#e8c458",
+		"#c84830",
+		"#484860",
+		"#ececf0",
+		"#603880",
+		"#2858a0",
+		"#f58cb4",
+		"#38a858"
+	],
+	"hairs": [
+		"short",
+		"spiky",
+		"long",
+		"pigtails",
+		"bun",
+		"buzz"
+	],
+	"default": {
+		"skin": 0,
+		"hair": "short",
+		"hair_color": 1,
+		"hat": [
+			"cap",
+			0
+		],
+		"top": [
+			"jacket",
+			1
+		],
+		"bottom": [
+			"trousers",
+			9
+		],
+		"shoes": [
+			"sneakers",
+			0
+		]
+	},
+	"items": {
+		"hat": {
+			"cap": {
+				"name": "Trainer Cap",
+				"price": 800,
+				"colors": [
+					0,
+					1,
+					2,
+					4,
+					10
+				]
+			},
+			"cap_back": {
+				"name": "Backwards Cap",
+				"price": 800,
+				"colors": [
+					0,
+					1,
+					3,
+					6
+				]
+			},
+			"beanie": {
+				"name": "Beanie",
+				"price": 800,
+				"colors": [
+					11,
+					0,
+					2,
+					9
+				]
+			},
+			"sun_hat": {
+				"name": "Sun Hat",
+				"price": 800,
+				"colors": [
+					5,
+					8,
+					13
+				]
+			},
+			"straw_hat": {
+				"name": "Straw Hat",
+				"price": 800,
+				"colors": [
+					2,
+					0,
+					1
+				]
+			},
+			"headband": {
+				"name": "Headband",
+				"price": 800,
+				"colors": [
+					0,
+					1,
+					10
+				]
+			},
+			"hood": {
+				"name": "Hood",
+				"price": 800,
+				"colors": [
+					9,
+					4,
+					10
+				]
+			},
+			"bandana": {
+				"name": "Bandana",
+				"price": 800,
+				"colors": [
+					10,
+					0,
+					1
+				]
+			},
+			"swim_cap": {
+				"name": "Swim Cap",
+				"price": 800,
+				"colors": [
+					7,
+					1,
+					8
+				]
+			},
+			"rocket_cap": {
+				"name": "Rocket Cap",
+				"price": 800,
+				"colors": [
+					10,
+					5
+				],
+				"unlock": "rocket"
+			}
+		},
+		"top": {
+			"jacket": {
+				"name": "Trainer Jacket",
+				"price": 1200,
+				"colors": [
+					1,
+					0,
+					2,
+					4,
+					9,
+					10
+				]
+			},
+			"tshirt": {
+				"name": "T-Shirt",
+				"price": 1200,
+				"colors": [
+					3,
+					0,
+					1,
+					2,
+					8,
+					13,
+					6
+				]
+			},
+			"tank": {
+				"name": "Tank Top",
+				"price": 1200,
+				"colors": [
+					7,
+					1,
+					0
+				]
+			},
+			"vest": {
+				"name": "Explorer Vest",
+				"price": 1200,
+				"colors": [
+					11,
+					2,
+					9,
+					0
+				]
+			},
+			"gi": {
+				"name": "Karate Gi",
+				"price": 1400,
+				"colors": [
+					10,
+					0,
+					11
+				]
+			},
+			"robe": {
+				"name": "Robe",
+				"price": 1400,
+				"colors": [
+					4,
+					9,
+					10,
+					14
+				]
+			},
+			"blouse": {
+				"name": "Blouse",
+				"price": 1200,
+				"colors": [
+					8,
+					5,
+					13
+				]
+			},
+			"striped": {
+				"name": "Striped Shirt",
+				"price": 1200,
+				"colors": [
+					10,
+					1,
+					0
+				]
+			},
+			"leather": {
+				"name": "Leather Jacket",
+				"price": 1600,
+				"colors": [
+					10,
+					12,
+					0
+				]
+			},
+			"cape": {
+				"name": "Psychic Cape",
+				"price": 1600,
+				"colors": [
+					4,
+					10,
+					15
+				]
+			},
+			"coat": {
+				"name": "Ace Coat",
+				"price": 1600,
+				"colors": [
+					5,
+					1,
+					10
+				]
+			},
+			"rocket": {
+				"name": "Rocket Uniform",
+				"price": 1200,
+				"colors": [
+					10,
+					5
+				],
+				"unlock": "rocket"
+			}
+		},
+		"bottom": {
+			"trousers": {
+				"name": "Trousers",
+				"price": 900,
+				"colors": [
+					9,
+					10,
+					1,
+					12,
+					5
+				]
+			},
+			"shorts": {
+				"name": "Shorts",
+				"price": 900,
+				"colors": [
+					2,
+					1,
+					11,
+					10,
+					8
+				]
+			},
+			"skirt": {
+				"name": "Skirt",
+				"price": 900,
+				"colors": [
+					1,
+					0,
+					8,
+					10
+				]
+			},
+			"long_skirt": {
+				"name": "Long Skirt",
+				"price": 900,
+				"colors": [
+					4,
+					9,
+					8
+				]
+			},
+			"gi_pants": {
+				"name": "Gi Pants",
+				"price": 900,
+				"colors": [
+					5
+				]
+			},
+			"cargo": {
+				"name": "Cargo Pants",
+				"price": 900,
+				"colors": [
+					9,
+					11,
+					2,
+					10
+				]
+			}
+		},
+		"shoes": {
+			"sneakers": {
+				"name": "Sneakers",
+				"price": 600,
+				"colors": [
+					0,
+					1,
+					5,
+					10,
+					2
+				]
+			},
+			"boots": {
+				"name": "Boots",
+				"price": 600,
+				"colors": [
+					12,
+					10,
+					0,
+					1,
+					5
+				]
+			},
+			"sandals": {
+				"name": "Sandals",
+				"price": 600,
+				"colors": [
+					11,
+					6,
+					3
+				]
+			}
+		}
+	},
+	"sets": [
+		{
+			"id": "trainer",
+			"name": "Pokémon Trainer",
+			"pieces": [
+				"cap",
+				"jacket",
+				"trousers",
+				"sneakers"
+			],
+			"variants": [
+				{
+					"name": "Red",
+					"colors": [
+						0,
+						1,
+						9,
+						0
+					]
+				},
+				{
+					"name": "Blue",
+					"colors": [
+						1,
+						10,
+						9,
+						1
+					]
+				},
+				{
+					"name": "Green",
+					"colors": [
+						2,
+						9,
+						10,
+						2
+					]
+				}
+			],
+			"price": 2800
+		},
+		{
+			"id": "bug_catcher",
+			"name": "Bug Catcher",
+			"pieces": [
+				"straw_hat",
+				"tshirt",
+				"shorts",
+				"sneakers"
+			],
+			"variants": [
+				{
+					"name": "Meadow",
+					"colors": [
+						2,
+						3,
+						2,
+						1
+					]
+				},
+				{
+					"name": "Sky",
+					"colors": [
+						1,
+						13,
+						1,
+						5
+					]
+				},
+				{
+					"name": "Sunset",
+					"colors": [
+						0,
+						6,
+						11,
+						0
+					]
+				}
+			],
+			"price": 2800
+		},
+		{
+			"id": "hiker",
+			"name": "Hiker",
+			"pieces": [
+				"beanie",
+				"vest",
+				"cargo",
+				"boots"
+			],
+			"variants": [
+				{
+					"name": "Trail",
+					"colors": [
+						11,
+						11,
+						9,
+						12
+					]
+				},
+				{
+					"name": "Forest",
+					"colors": [
+						2,
+						2,
+						11,
+						12
+					]
+				},
+				{
+					"name": "Summit",
+					"colors": [
+						0,
+						0,
+						10,
+						10
+					]
+				}
+			],
+			"price": 2800
+		},
+		{
+			"id": "swimmer",
+			"name": "Swimmer",
+			"pieces": [
+				"swim_cap",
+				"tank",
+				"shorts",
+				"sandals"
+			],
+			"variants": [
+				{
+					"name": "Lagoon",
+					"colors": [
+						7,
+						7,
+						1,
+						6
+					]
+				},
+				{
+					"name": "Coral",
+					"colors": [
+						8,
+						0,
+						8,
+						3
+					]
+				},
+				{
+					"name": "Deep",
+					"colors": [
+						1,
+						1,
+						10,
+						11
+					]
+				}
+			],
+			"price": 2800
+		},
+		{
+			"id": "psychic",
+			"name": "Psychic",
+			"pieces": [
+				"",
+				"cape",
+				"trousers",
+				"boots"
+			],
+			"variants": [
+				{
+					"name": "Mystic",
+					"colors": [
+						0,
+						4,
+						10,
+						10
+					]
+				},
+				{
+					"name": "Crimson",
+					"colors": [
+						0,
+						15,
+						10,
+						10
+					]
+				},
+				{
+					"name": "Midnight",
+					"colors": [
+						0,
+						10,
+						1,
+						1
+					]
+				}
+			],
+			"price": 2480
+		},
+		{
+			"id": "blackbelt",
+			"name": "Black Belt",
+			"pieces": [
+				"headband",
+				"gi",
+				"gi_pants",
+				"sandals"
+			],
+			"variants": [
+				{
+					"name": "Dojo",
+					"colors": [
+						0,
+						10,
+						5,
+						11
+					]
+				},
+				{
+					"name": "Champion",
+					"colors": [
+						10,
+						0,
+						5,
+						11
+					]
+				},
+				{
+					"name": "Master",
+					"colors": [
+						1,
+						11,
+						5,
+						6
+					]
+				}
+			],
+			"price": 2960
+		},
+		{
+			"id": "channeler",
+			"name": "Channeler",
+			"pieces": [
+				"hood",
+				"robe",
+				"long_skirt",
+				"sandals"
+			],
+			"variants": [
+				{
+					"name": "Lavender",
+					"colors": [
+						9,
+						4,
+						4,
+						11
+					]
+				},
+				{
+					"name": "Ghost",
+					"colors": [
+						10,
+						9,
+						9,
+						11
+					]
+				},
+				{
+					"name": "Spirit",
+					"colors": [
+						4,
+						14,
+						4,
+						3
+					]
+				}
+			],
+			"price": 2960
+		},
+		{
+			"id": "picnicker",
+			"name": "Picnicker",
+			"pieces": [
+				"sun_hat",
+				"blouse",
+				"skirt",
+				"sneakers"
+			],
+			"variants": [
+				{
+					"name": "Daisy",
+					"colors": [
+						5,
+						8,
+						1,
+						5
+					]
+				},
+				{
+					"name": "Berry",
+					"colors": [
+						8,
+						13,
+						8,
+						0
+					]
+				},
+				{
+					"name": "Blossom",
+					"colors": [
+						13,
+						5,
+						0,
+						1
+					]
+				}
+			],
+			"price": 2800
+		},
+		{
+			"id": "burglar",
+			"name": "Burglar",
+			"pieces": [
+				"bandana",
+				"striped",
+				"trousers",
+				"boots"
+			],
+			"variants": [
+				{
+					"name": "Classic",
+					"colors": [
+						10,
+						10,
+						9,
+						10
+					]
+				},
+				{
+					"name": "Navy",
+					"colors": [
+						1,
+						1,
+						10,
+						10
+					]
+				},
+				{
+					"name": "Scarlet",
+					"colors": [
+						0,
+						0,
+						12,
+						12
+					]
+				}
+			],
+			"price": 2800
+		},
+		{
+			"id": "rocker",
+			"name": "Rocker",
+			"pieces": [
+				"",
+				"leather",
+				"trousers",
+				"boots"
+			],
+			"variants": [
+				{
+					"name": "Black",
+					"colors": [
+						0,
+						10,
+						10,
+						0
+					]
+				},
+				{
+					"name": "Brown",
+					"colors": [
+						0,
+						12,
+						1,
+						12
+					]
+				},
+				{
+					"name": "Red",
+					"colors": [
+						0,
+						0,
+						10,
+						10
+					]
+				}
+			],
+			"price": 2480
+		},
+		{
+			"id": "bird_keeper",
+			"name": "Bird Keeper",
+			"pieces": [
+				"cap_back",
+				"vest",
+				"cargo",
+				"boots"
+			],
+			"variants": [
+				{
+					"name": "Pidgey",
+					"colors": [
+						3,
+						11,
+						9,
+						12
+					]
+				},
+				{
+					"name": "Fearow",
+					"colors": [
+						0,
+						2,
+						11,
+						12
+					]
+				},
+				{
+					"name": "Sky",
+					"colors": [
+						1,
+						9,
+						11,
+						10
+					]
+				}
+			],
+			"price": 2800
+		},
+		{
+			"id": "cooltrainer",
+			"name": "Ace Trainer",
+			"pieces": [
+				"",
+				"coat",
+				"trousers",
+				"boots"
+			],
+			"variants": [
+				{
+					"name": "Ace",
+					"colors": [
+						0,
+						5,
+						1,
+						1
+					]
+				},
+				{
+					"name": "Elite",
+					"colors": [
+						0,
+						10,
+						10,
+						0
+					]
+				},
+				{
+					"name": "Royal",
+					"colors": [
+						0,
+						1,
+						10,
+						10
+					]
+				}
+			],
+			"price": 2480
+		},
+		{
+			"id": "rocket_grunt",
+			"name": "Team Rocket Grunt",
+			"pieces": [
+				"rocket_cap",
+				"rocket",
+				"trousers",
+				"boots"
+			],
+			"variants": [
+				{
+					"name": "Team Rocket Grunt",
+					"colors": [
+						10,
+						10,
+						10,
+						10
+					]
+				}
+			],
+			"unlock": "rocket"
+		},
+		{
+			"id": "rocket_executive",
+			"name": "Rocket Executive",
+			"pieces": [
+				"rocket_cap",
+				"rocket",
+				"trousers",
+				"boots"
+			],
+			"variants": [
+				{
+					"name": "Rocket Executive",
+					"colors": [
+						5,
+						5,
+						5,
+						5
+					]
+				}
+			],
+			"unlock": "rocket"
+		}
+	],
+	"class_looks": {
+		"bug_catcher": {
+			"set": "bug_catcher",
+			"hair": "short"
+		},
+		"hiker": {
+			"set": "hiker",
+			"hair": "buzz"
+		},
+		"swimmer": {
+			"set": "swimmer",
+			"hair": "long"
+		},
+		"psychic": {
+			"set": "psychic",
+			"hair": "long"
+		},
+		"blackbelt": {
+			"set": "blackbelt",
+			"hair": "spiky"
+		},
+		"channeler": {
+			"set": "channeler",
+			"hair": "long"
+		},
+		"picnicker": {
+			"set": "picnicker",
+			"hair": "pigtails"
+		},
+		"burglar": {
+			"set": "burglar",
+			"hair": "short"
+		},
+		"rocker": {
+			"set": "rocker",
+			"hair": "spiky"
+		},
+		"bird_keeper": {
+			"set": "bird_keeper",
+			"hair": "short"
+		},
+		"cooltrainer": {
+			"set": "cooltrainer",
+			"hair": "short"
+		}
+	}
+}

@@ -439,51 +439,200 @@ static func claim_prize(index: int) -> String:
 
 
 # --- Trainer Outfitter -----------------------------------------------------------
+# Clothing (data/outfits.json, built by tools/build_outfits.py): hats, tops,
+# bottoms and shoes, each sold in a few colours, every colour bought on its own;
+# sets are a trainer class's whole outfit in one colourway. Hair, hair colour and
+# skin are free. Team Rocket's pieces come from the Rocket Hideout.
+# The outfit is { skin, hair, hair_color, hat: [item, colour] or [], top, bottom, shoes }.
+
+const OUTFITS_PATH := "res://data/outfits.json"
+const SLOTS := ["hat", "top", "bottom", "shoes"]
+static var _outfits: Dictionary = {}
+
+
+static func outfits() -> Dictionary:
+	if _outfits.is_empty():
+		_outfits = JSON.parse_string(FileAccess.get_file_as_string(OUTFITS_PATH))
+	return _outfits
+
+
+static func default_outfit() -> Dictionary:
+	return (outfits().get("default", {}) as Dictionary).duplicate(true)
+
 
 static func outfit() -> Dictionary:
-	var o: Dictionary = (cfg("outfitter/default", {}) as Dictionary).duplicate()
-	o.merge(_save_dict("outfit"), true)
+	var o := default_outfit()
+	var saved := _save_dict("outfit")
+	if saved.has("style"):
+		saved.clear()  # The old colour-only outfit: start from the default clothes.
+	for key: String in saved:
+		o[key] = saved[key]
 	return o
 
 
-## "style:<name>" or "color:<index>".
-static func owns(thing: String) -> bool:
-	if thing.begins_with("style:"):
-		return int(cfg("outfitter/styles/" + thing.get_slice(":", 1), 1)) == 0 or thing in (Profile.data.get("outfit_owned", []) as Array)
-	if thing.begins_with("color:"):
-		return int(thing.get_slice(":", 1)) < int(cfg("outfitter/free_colors", 4)) or thing in (Profile.data.get("outfit_owned", []) as Array)
-	return true
+static func item(slot: String, id: String) -> Dictionary:
+	return (outfits().get("items", {}) as Dictionary).get(slot, {}).get(id, {})
 
 
-static func price_of(thing: String) -> int:
-	if owns(thing):
-		return 0
-	if thing.begins_with("style:"):
-		return int(cfg("outfitter/styles/" + thing.get_slice(":", 1), 0))
-	return int(cfg("outfitter/color_price", 500))
+static func item_key(slot: String, id: String, color: int) -> String:
+	return "%s/%s/%d" % [slot, id, color]
 
 
-static func buy_look(thing: String) -> bool:
-	var price := price_of(thing)
-	if price <= 0 or Profile.money() < price:
+## Owned: bought, unlocked, or part of the clothes you start with.
+static func owns_item(slot: String, id: String, color: int) -> bool:
+	if id == "":
+		return true
+	var d: Array = default_outfit().get(slot, [])
+	if d.size() == 2 and str(d[0]) == id and int(d[1]) == color:
+		return true
+	return item_key(slot, id, color) in (Profile.data.get("outfit_owned", []) as Array)
+
+
+static func item_price(slot: String, id: String) -> int:
+	return int(item(slot, id).get("price", 0))
+
+
+## Why an item can't be bought ("" = it can).
+static func cant_buy_item(slot: String, id: String, color: int) -> String:
+	var it := item(slot, id)
+	if it.is_empty() or not (it.get("colors", []) as Array).any(func(c: Variant) -> bool: return int(c) == color):
+		return "Not sold"
+	if owns_item(slot, id, color):
+		return "Owned"
+	if it.has("unlock"):
+		return "Rocket Hideout reward"
+	if Profile.money() < int(it["price"]):
+		return "Not enough ₽"
+	return ""
+
+
+static func _give_item(slot: String, id: String, color: int) -> bool:
+	if owns_item(slot, id, color):
 		return false
-	Profile.data["money"] = Profile.money() - price
 	var owned: Array = Profile.data.get("outfit_owned", [])
-	owned.append(thing)
+	owned.append(item_key(slot, id, color))
 	Profile.data["outfit_owned"] = owned
+	return true
+
+
+static func buy_item(slot: String, id: String, color: int) -> bool:
+	if cant_buy_item(slot, id, color) != "":
+		return false
+	Profile.data["money"] = Profile.money() - item_price(slot, id)
+	_give_item(slot, id, color)
 	Profile.save()
 	return true
 
 
-## Wear `value` in `slot` (style / skin / hair / hat / top / legs / shoes), if owned.
-static func wear(slot: String, value: Variant) -> bool:
-	if slot == "style" and not owns("style:" + str(value)):
+static func sets() -> Array:
+	return outfits().get("sets", [])
+
+
+static func find_set(set_id: String) -> Dictionary:
+	for s: Dictionary in sets():
+		if s["id"] == set_id:
+			return s
+	return {}
+
+
+## A set's pieces in one colourway: [[slot, item, colour], ...] (no hat = skipped).
+static func set_pieces(set_id: String, variant: int) -> Array:
+	var s := find_set(set_id)
+	var out := []
+	if s.is_empty():
+		return out
+	var cols: Array = (s["variants"][clampi(variant, 0, s["variants"].size() - 1)] as Dictionary)["colors"]
+	for i in SLOTS.size():
+		if str(s["pieces"][i]) != "":
+			out.append([SLOTS[i], str(s["pieces"][i]), int(cols[i])])
+	return out
+
+
+static func owns_set(set_id: String, variant: int) -> bool:
+	for p: Array in set_pieces(set_id, variant):
+		if not owns_item(p[0], p[1], p[2]):
+			return false
+	return true
+
+
+## The set's price minus the pieces you already have (never below nothing).
+static func set_price(set_id: String, variant: int) -> int:
+	var s := find_set(set_id)
+	var full := int(s.get("price", 0))
+	var owned := 0
+	for p: Array in set_pieces(set_id, variant):
+		if owns_item(p[0], p[1], p[2]):
+			owned += item_price(p[0], p[1])
+	return maxi(0, full - int(owned * 0.8))
+
+
+static func buy_set(set_id: String, variant: int) -> bool:
+	var s := find_set(set_id)
+	if s.is_empty() or s.has("unlock") or owns_set(set_id, variant) or Profile.money() < set_price(set_id, variant):
 		return false
-	if slot in ["hat", "top", "legs", "shoes"] and not owns("color:%d" % int(value)):
-		return false
-	_save_dict("outfit")[slot] = value
+	Profile.data["money"] = Profile.money() - set_price(set_id, variant)
+	for p: Array in set_pieces(set_id, variant):
+		_give_item(p[0], p[1], p[2])
 	Profile.save()
 	return true
+
+
+## Put on a piece you own (id "" takes the hat off).
+static func wear(slot: String, id: String, color := 0) -> bool:
+	if not owns_item(slot, id, color):
+		return false
+	_save_dict("outfit")[slot] = [id, color] if id != "" else []
+	Profile.save()
+	return true
+
+
+static func wear_set(set_id: String, variant: int) -> bool:
+	if not owns_set(set_id, variant):
+		return false
+	var s := find_set(set_id)
+	for i in SLOTS.size():
+		if str(s["pieces"][i]) == "":
+			_save_dict("outfit")[SLOTS[i]] = []
+	for p: Array in set_pieces(set_id, variant):
+		_save_dict("outfit")[p[0]] = [p[1], p[2]]
+	Profile.save()
+	return true
+
+
+## Hair style, hair colour and skin are free to change.
+static func set_free(key: String, value: Variant) -> void:
+	_save_dict("outfit")[key] = value
+	Profile.save()
+
+
+## Unlocks a reward piece (Rocket Hideout). Returns true if it's new.
+static func unlock_item(slot: String, id: String, color: int) -> bool:
+	var got := _give_item(slot, id, color)
+	Profile.save()
+	return got
+
+
+## An outfit with colour indices turned into the colours TrainerLook paints.
+static func look_of(o: Dictionary) -> Dictionary:
+	var cfg_o := outfits()
+	var colors: Array = cfg_o.get("colors", ["#ffffff"])
+	var pick := func(list_name: String, i: Variant) -> String:
+		var list: Array = cfg_o.get(list_name, ["#ffffff"])
+		return str(list[clampi(int(i), 0, list.size() - 1)])
+	var piece := func(slot: String) -> Variant:
+		var v: Array = o.get(slot, [])
+		if v.size() != 2 or str(v[0]) == "":
+			return null
+		return [str(v[0]), str(colors[clampi(int(v[1]), 0, colors.size() - 1)])]
+	var look := {
+		"skin": pick.call("skins", o.get("skin", 0)), "hair": str(o.get("hair", "short")), "hair_color": pick.call("hair_colors", o.get("hair_color", 1)),
+		"hat": piece.call("hat"), "top": piece.call("top"), "bottom": piece.call("bottom"), "shoes": piece.call("shoes"),
+	}
+	var d := default_outfit()
+	for slot in ["top", "bottom", "shoes"]:
+		if look[slot] == null:
+			look[slot] = [str(d[slot][0]), str(colors[int(d[slot][1])])]
+	return look
 
 
 # --- Trainers: wandering challengers and the Trainer Tower -------------------------
@@ -554,7 +703,7 @@ static func make_trainer(class_id: String, stars: int, rng: RandomNumberGenerato
 		"level_bonus": int((cfg("trainers/level_bonus", [0, 2, 4]) as Array)[s]),
 		"hp_scale": float((cfg("trainers/hp_scale", [1.0, 1.1, 1.25]) as Array)[s]),
 		"difficulty": str((cfg("trainers/difficulty", ["normal", "hard", "hard"]) as Array)[s]),
-		"line": str(c.get("line", "")), "look": c.get("look", {}), "counter": bool(c.get("counter", false)),
+		"line": str(c.get("line", "")), "counter": bool(c.get("counter", false)),
 	}
 
 

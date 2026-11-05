@@ -17,7 +17,7 @@ const BUILDINGS := {
 	"museum": { "title": "PEWTER MUSEUM", "color": Color(0.5, 0.45, 0.4), "staff": "guide",
 		"hello": "Welcome to the museum! Every exhibit here is from your own journey." },
 	"outfitter": { "title": "TRAINER OUTFITTER", "color": Color(0.9, 0.45, 0.6), "staff": "stylist",
-		"hello": "Darling! Let's find you a look. Pick a style and colours. Your trainer will wear them around town." },
+		"hello": "Darling! Whole outfits from every kind of trainer, or mix and match pieces. Tap a colour to try it on!" },
 	"arena": { "title": "BATTLE ARENA", "color": Color(0.95, 0.6, 0.15), "staff": "clerk",
 		"hello": "This is the Battle Arena! Quick battles, Gyms, Raids... and the Trainer Tower. How high can you climb?" },
 }
@@ -398,7 +398,7 @@ static func museum(menu: Node) -> Control:
 		var c: Dictionary = classes[id]
 		var col := VBoxContainer.new()
 		col.custom_minimum_size = Vector2(130, 0)
-		var pic := trainer_picture(TrainerLook.npc_sheet(c.get("look", {}), id), 90)
+		var pic := trainer_picture(TrainerLook.npc_sheet(id), 90)
 		if not beaten.has(id):
 			pic.modulate = Color(0, 0, 0, 0.6)
 		col.add_child(pic)
@@ -413,67 +413,210 @@ static func museum(menu: Node) -> Control:
 
 
 # --- Trainer Outfitter ---------------------------------------------------------------
+# Tabs: whole outfits (each trainer class in several colourways), then hats, tops,
+# bottoms, shoes, and hair & skin (free). Tapping a colour tries it on in the
+# preview; buy it, or wear it if it's yours.
+
+const OUTFIT_TABS := [["sets", "OUTFITS"], ["hat", "HATS"], ["top", "TOPS"], ["bottom", "BOTTOMS"], ["shoes", "SHOES"], ["hair", "HAIR & SKIN"]]
+
 
 static func outfitter(menu: Node, message := "") -> Control:
-	var o := Town.outfit()
-	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 10)
-	var preview := HBoxContainer.new()
-	preview.alignment = BoxContainer.ALIGNMENT_CENTER
-	preview.add_theme_constant_override("separation", 10)
-	for row in [0, 2, 1]:
-		preview.add_child(trainer_picture(TrainerLook.player_sheet(), 170, row))
-	v.add_child(preview)
+	var tab: String = menu.outfit_tab
+	var trying: Dictionary = Town.outfit()
+	trying.merge(menu.outfit_try, true)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	# Left: what you'd look like, from the front, side and back.
+	var left := VBoxContainer.new()
+	left.custom_minimum_size.x = 150
+	var sheet := TrainerLook.player_sheet(trying)
+	for r in [0, 2]:
+		left.add_child(trainer_picture(sheet, 130, r))
+	var trying_on: bool = not (menu.outfit_try as Dictionary).is_empty()
+	left.add_child(UiKit.label("TRYING ON" if trying_on else "WEARING", 16, Color(1, 0.85, 0.4) if trying_on else Color(0.7, 1, 0.75)))
+	if trying_on:
+		left.add_child(UiKit.button("TAKE OFF", func() -> void:
+			menu.outfit_try = {}
+			menu.show_outfitter(), 16))
+	row.add_child(left)
+	var right := VBoxContainer.new()
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right.add_theme_constant_override("separation", 8)
+	var tabs := HFlowContainer.new()
+	tabs.add_theme_constant_override("h_separation", 6)
+	for t: Array in OUTFIT_TABS:
+		var b := UiKit.button(t[1], func() -> void:
+			menu.outfit_tab = t[0]
+			menu.show_outfitter(), 16)
+		b.custom_minimum_size = Vector2(0, 46)
+		b.add_theme_stylebox_override("normal", UiKit.box(Color(0.9, 0.45, 0.6) if t[0] == tab else Color(0.32, 0.3, 0.42), 12, 8))
+		tabs.add_child(b)
+	right.add_child(tabs)
 	if message != "":
-		v.add_child(UiKit.label(message, 18, Color(0.6, 1, 0.6)))
-	v.add_child(UiKit.section_title("STYLE"))
-	var styles := HFlowContainer.new()
-	styles.add_theme_constant_override("h_separation", 6)
-	styles.add_theme_constant_override("v_separation", 6)
-	for style: String in Town.cfg("outfitter/styles", {}):
-		var key := "style:" + style
-		var price := Town.price_of(key)
-		var b := UiKit.button(style.replace("_", " ").to_upper() + ("" if price == 0 else "\n%d ₽" % price), func() -> void:
-			if Town.owns(key) or Town.buy_look(key):
-				Town.wear("style", style)
+		right.add_child(UiKit.label(message, 17, Color(0.6, 1, 0.6)))
+	var list := VBoxContainer.new()
+	list.add_theme_constant_override("separation", 8)
+	match tab:
+		"sets":
+			for s: Dictionary in Town.sets():
+				list.add_child(_set_card(menu, s))
+		"hair":
+			list.add_child(_free_row(menu, "STYLE", "hair", Town.outfits().get("hairs", []), true))
+			list.add_child(_free_row(menu, "HAIR COLOUR", "hair_color", Town.outfits().get("hair_colors", []), false))
+			list.add_child(_free_row(menu, "SKIN", "skin", Town.outfits().get("skins", []), false))
+		_:
+			if tab == "hat":
+				var none := UiKit.button("NO HAT" + ("  ✓" if (trying.get("hat", []) as Array).is_empty() else ""), func() -> void:
+					Town.wear("hat", "")
+					menu.outfit_try.erase("hat")
+					menu.show_outfitter(), 16)
+				none.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+				list.add_child(none)
+			var items: Dictionary = (Town.outfits().get("items", {}) as Dictionary).get(tab, {})
+			for id: String in items:
+				list.add_child(_item_card(menu, tab, id, items[id], trying))
+	var scroll := UiKit.scroll(list)
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	right.add_child(scroll)
+	row.add_child(right)
+	return frame(menu, "outfitter", row)
+
+
+static func _swatch(color_hex: String, chosen: bool, owned: bool, on_press: Callable) -> Button:
+	var sw := Button.new()
+	sw.custom_minimum_size = Vector2(42, 42)
+	var c := Color.html(color_hex)
+	sw.add_theme_stylebox_override("normal", UiKit.box(c, 8 if chosen else 21, 4))
+	sw.add_theme_stylebox_override("hover", UiKit.box(c.lightened(0.15), 8 if chosen else 21, 4))
+	if owned:
+		sw.text = "✓"
+		sw.add_theme_color_override("font_color", Color.BLACK if c.get_luminance() > 0.6 else Color.WHITE)
+	sw.pressed.connect(on_press)
+	return sw
+
+
+## One clothing item: its colours (✓ = yours); the chosen one can be bought or worn.
+static func _item_card(menu: Node, slot: String, id: String, it: Dictionary, trying: Dictionary) -> Control:
+	var colors: Array = Town.outfits().get("colors", [])
+	var current: Array = trying.get(slot, [])
+	var picked := int(current[1]) if current.size() == 2 and str(current[0]) == id else -1
+	var col := VBoxContainer.new()
+	var top := HBoxContainer.new()
+	var title := UiKit.label(str(it["name"]), 20)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top.add_child(title)
+	if it.has("unlock"):
+		top.add_child(UiKit.label("ROCKET HIDEOUT REWARD", 14, Color(1, 0.5, 0.5)))
+	else:
+		top.add_child(UiKit.label("%d ₽ each colour" % int(it["price"]), 15, Color(1, 0.95, 0.6)))
+	col.add_child(top)
+	var swatches := HFlowContainer.new()
+	swatches.add_theme_constant_override("h_separation", 6)
+	for c: int in it.get("colors", []):
+		swatches.add_child(_swatch(str(colors[c]), c == picked, Town.owns_item(slot, id, c), func() -> void:
+			menu.outfit_try[slot] = [id, c]
+			menu.show_outfitter()))
+	col.add_child(swatches)
+	if picked >= 0:
+		var worn: Array = Town.outfit().get(slot, [])
+		var is_worn := worn.size() == 2 and str(worn[0]) == id and int(worn[1]) == picked
+		var why := Town.cant_buy_item(slot, id, picked)
+		var b: Button
+		if Town.owns_item(slot, id, picked):
+			b = UiKit.button("WEARING" if is_worn else "WEAR", func() -> void:
+				Town.wear(slot, id, picked)
+				menu.outfit_try.erase(slot)
+				menu.show_outfitter(), 18)
+			b.disabled = is_worn
+		else:
+			b = UiKit.button("BUY  %d ₽" % int(it["price"]) if why == "" else why.to_upper(), func() -> void:
+				if Town.buy_item(slot, id, picked):
+					Town.wear(slot, id, picked)
+					menu.outfit_try.erase(slot)
+					menu.show_outfitter("Bought the %s!" % it["name"]), 18)
+			b.disabled = why != ""
+		b.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		col.add_child(b)
+	return _card(Color(0.3, 0.28, 0.4), col)
+
+
+## A whole outfit: its colourways, try one on, buy it (cheaper than the pieces) or wear it.
+static func _set_card(menu: Node, s: Dictionary) -> Control:
+	var col := VBoxContainer.new()
+	var top := HBoxContainer.new()
+	var title := UiKit.label(str(s["name"]), 21, Color(1, 0.9, 0.6))
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top.add_child(title)
+	var pieces := PackedStringArray()
+	for i in Town.SLOTS.size():
+		if str(s["pieces"][i]) != "":
+			pieces.append(str(Town.item(Town.SLOTS[i], str(s["pieces"][i])).get("name", "")))
+	top.add_child(UiKit.label(" + ".join(pieces), 13, Color(0.85, 0.9, 1)))
+	col.add_child(top)
+	var ways := HFlowContainer.new()
+	ways.add_theme_constant_override("h_separation", 8)
+	var colors: Array = Town.outfits().get("colors", [])
+	for vi in (s["variants"] as Array).size():
+		var v: Dictionary = s["variants"][vi]
+		var owned := Town.owns_set(s["id"], vi)
+		var b := Button.new()
+		b.text = ("✓ " if owned else "") + str(v["name"])
+		b.add_theme_font_size_override("font_size", 16)
+		b.add_theme_stylebox_override("normal", UiKit.box(Color.html(str(colors[int(v["colors"][1])])).darkened(0.25), 12, 8))
+		b.pressed.connect(func() -> void:
+			var t := {}
+			for p: Array in Town.set_pieces(s["id"], vi):
+				t[p[0]] = [p[1], p[2]]
+			if str(s["pieces"][0]) == "":
+				t["hat"] = []
+			menu.outfit_try = t
+			menu.outfit_set = [s["id"], vi]
+			menu.show_outfitter())
+		ways.add_child(b)
+		if menu.outfit_set == [s["id"], vi]:
+			var act: Button
+			if s.has("unlock") and not owned:
+				act = UiKit.button("EARNED IN THE ROCKET HIDEOUT", func() -> void: pass, 15)
+				act.disabled = true
+			elif owned:
+				act = UiKit.button("WEAR", func() -> void:
+					Town.wear_set(s["id"], vi)
+					menu.outfit_try = {}
+					menu.show_outfitter("Looking sharp!"), 16)
+			else:
+				var price := Town.set_price(s["id"], vi)
+				act = UiKit.button("BUY OUTFIT  %d ₽" % price, func() -> void:
+					if Town.buy_set(s["id"], vi):
+						Town.wear_set(s["id"], vi)
+						menu.outfit_try = {}
+						menu.show_outfitter("The %s outfit is yours!" % s["name"]), 16)
+				act.disabled = Profile.money() < price
+			act.add_theme_stylebox_override("normal", UiKit.box(Color(0.25, 0.6, 0.35), 12, 8))
+			ways.add_child(act)
+	col.add_child(ways)
+	return _card(Color(0.35, 0.22, 0.32) if s.has("unlock") else Color(0.28, 0.3, 0.42), col)
+
+
+static func _free_row(menu: Node, title: String, key: String, values: Array, names: bool) -> Control:
+	var col := VBoxContainer.new()
+	col.add_child(UiKit.label(title + "  (free)", 18))
+	var flow := HFlowContainer.new()
+	flow.add_theme_constant_override("h_separation", 6)
+	var current: Variant = Town.outfit().get(key)
+	for i in values.size():
+		var value: Variant = values[i] if names else i
+		var chosen := str(current) == str(value)
+		if names:
+			var b := UiKit.button(str(values[i]).to_upper() + ("  ✓" if chosen else ""), func() -> void:
+				Town.set_free(key, value)
 				menu.show_outfitter(), 16)
-		b.custom_minimum_size = Vector2(120, 58)
-		if str(o["style"]) == style:
-			b.add_theme_stylebox_override("normal", UiKit.box(Color(0.9, 0.45, 0.6)))
-		b.disabled = price > Profile.money()
-		styles.add_child(b)
-	v.add_child(styles)
-	for slot in [["skin", "SKIN", "skins"], ["hair", "HAIR", "hair"], ["hat", "HAT", "colors"], ["top", "JACKET", "colors"], ["legs", "TROUSERS", "colors"], ["shoes", "SHOES", "colors"]]:
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 6)
-		var name_label := UiKit.label(slot[1], 18)
-		name_label.custom_minimum_size.x = 120
-		row.add_child(name_label)
-		var list: Array = Town.cfg("outfitter/" + slot[2], [])
-		for i in list.size():
-			var paid: bool = slot[2] == "colors"
-			var key := "color:%d" % i
-			var price := Town.price_of(key) if paid else 0
-			var sw := Button.new()
-			sw.custom_minimum_size = Vector2(46, 46)
-			var chosen := int(o.get(slot[0], 0)) == i
-			sw.add_theme_stylebox_override("normal", UiKit.box(Color.html(str(list[i])), 23 if not chosen else 8, 4))
-			sw.add_theme_stylebox_override("hover", UiKit.box(Color.html(str(list[i])).lightened(0.15), 23, 4))
-			if price > 0:
-				sw.text = "₽"
-				sw.tooltip_text = "%d ₽" % price
-				sw.add_theme_color_override("font_color", Color(1, 1, 1, 0.9))
-			var slot_name: String = slot[0]
-			sw.pressed.connect(func() -> void:
-				if price > 0 and not Town.buy_look(key):
-					menu.show_outfitter("That colour costs %d ₽." % price)
-					return
-				Town.wear(slot_name, i)
-				menu.show_outfitter())
-			row.add_child(sw)
-		v.add_child(row)
-	v.add_child(UiKit.label("Colours marked ₽ cost %d ₽ once, then they're yours for every part of the outfit." % int(Town.cfg("outfitter/color_price", 500)), 15, Color(0.85, 0.9, 1)))
-	return frame(menu, "outfitter", UiKit.scroll(v))
+			flow.add_child(b)
+		else:
+			flow.add_child(_swatch(str(values[i]), chosen, chosen, func() -> void:
+				Town.set_free(key, value)
+				menu.show_outfitter()))
+	col.add_child(flow)
+	return _card(Color(0.3, 0.28, 0.4), col)
 
 
 # --- Battle Arena: battles, Trainer Tower and the trainers in town ---------------------
@@ -511,7 +654,7 @@ static func trainer_list(menu: Node) -> HFlowContainer:
 	for t: Dictionary in Town.wandering():
 		var col := VBoxContainer.new()
 		col.custom_minimum_size = Vector2(200, 0)
-		col.add_child(trainer_picture(TrainerLook.npc_sheet(t["look"], str(t["name"])), 100))
+		col.add_child(trainer_picture(TrainerLook.npc_sheet(str(t["class"])), 100))
 		col.add_child(UiKit.label("%s %s" % [t["class_name"], t["name"]], 17))
 		col.add_child(UiKit.label("★".repeat(int(t["stars"])) + "☆".repeat(3 - int(t["stars"])), 20, Color(1, 0.85, 0.3)))
 		var b := UiKit.button("BEATEN ✓" if t["beaten"] else "CHALLENGE", menu.show_trainer.bind(t), 18)
@@ -535,7 +678,7 @@ static func trainer(menu: Node, t: Dictionary) -> Control:
 	v.add_child(top)
 	var body := HBoxContainer.new()
 	body.add_theme_constant_override("separation", 20)
-	body.add_child(trainer_picture(TrainerLook.npc_sheet(t["look"], str(t["name"])), 260))
+	body.add_child(trainer_picture(TrainerLook.npc_sheet(str(t["class"])), 260))
 	var right := VBoxContainer.new()
 	right.add_theme_constant_override("separation", 12)
 	var line := UiKit.label("\"%s\"" % t["line"], 24)

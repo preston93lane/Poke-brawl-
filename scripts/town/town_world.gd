@@ -174,7 +174,7 @@ func _people() -> void:
 		if bool(t["beaten"]) or i >= spots.size():
 			i += 1
 			continue
-		var w := TownWalker.trainer(TrainerLook.npc_sheet(t["look"], str(t["name"])), PITCH)
+		var w := TownWalker.trainer(TrainerLook.npc_sheet(str(t["class"])), PITCH)
 		w.position = _cell_pos(float(spots[i][0]) + 0.5, float(spots[i][1]) + 0.5)
 		w.facing = Vector3(0, 0, 1)
 		w.collision_layer = Arena.WORLD_LAYER

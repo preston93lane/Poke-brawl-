@@ -54,6 +54,10 @@ var _hm := ""
 var _drink := ""
 ## A trainer battle waiting for you to pick your Pokémon: { trainer, stake, floor }.
 var _pending_trainer := {}
+## Outfitter: open tab, what you're trying on (slot -> [item, colour]), the outfit picked.
+var outfit_tab := "sets"
+var outfit_try := {}
+var outfit_set := []
 
 
 func _ready() -> void:

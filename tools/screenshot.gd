@@ -359,6 +359,18 @@ func _menu_shot(screen: String, out_dir: String) -> void:
 				town.camera.snap_to_target()
 				for i in 30:
 					await get_tree().process_frame
+		"outfit_try", "outfit_hats":
+			Profile.data["money"] = 25000
+			if screen == "outfit_try":
+				menu.outfit_tab = "sets"
+				menu.outfit_try = { "hat": ["straw_hat", 2], "top": ["tshirt", 3], "bottom": ["shorts", 2], "shoes": ["sneakers", 1] }
+				menu.outfit_set = ["bug_catcher", 0]
+			else:
+				menu.outfit_tab = "hat"
+				menu.outfit_try = { "hat": ["sun_hat", 8] }
+			menu.show_outfitter()
+			for i in 30:
+				await get_tree().process_frame
 		"trainer":
 			Profile.data["money"] = 3000
 			menu.show_trainer(Town.wandering()[1])
