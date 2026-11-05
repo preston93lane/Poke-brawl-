@@ -3,10 +3,12 @@ extends RefCounted
 ## Paints the town trainer sheets (tools/make_trainer_sheets.py) in an outfit's
 ## colours. A sheet's red channel says which part a pixel is (PARTS order) and
 ## green how lit it is (100 = the plain colour). Painted sheets are cached.
-## Sheets: 3 rows (facing down, up, right) x 3 frames (stand, left foot, right foot).
+## Sheets: 3 rows (facing down, up, right) x 6 frames: 2 idle (breathing), then
+## 4 walking (left foot, passing, right foot, passing).
 
 const DIR := "res://assets/trainers/"
-const CELL := Vector2i(24, 32)
+const CELL := Vector2i(32, 40)
+const FRAMES := 6
 const PARTS := ["skin", "hair", "hat", "top", "trim", "legs", "shoes", "eye", "mouth", "white", "blush"]
 const FIXED := { "eye": Color(0.16, 0.13, 0.19), "mouth": Color(0.69, 0.19, 0.22), "white": Color(0.97, 0.97, 0.97), "blush": Color(0.94, 0.47, 0.47) }
 

@@ -5,7 +5,7 @@ extends CharacterBody3D
 ## (follows you). Trainers use the town sheets (TrainerLook: rows down / up /
 ## right, 3 frames); the partner uses its PMD walk animation.
 
-const TRAINER_PIXEL := 0.05
+const TRAINER_PIXEL := 0.046
 const SPEED := 5.5
 
 ## -1..1 on each axis; y is "up the screen" (away from the camera) when negative.
@@ -28,7 +28,7 @@ static func trainer(sheet: Texture2D, pitch_degrees: float) -> TownWalker:
 	w._tilt = -deg_to_rad(pitch_degrees)
 	w._setup_body()
 	w.sprite.texture = sheet
-	w.sprite.hframes = 3
+	w.sprite.hframes = TrainerLook.FRAMES
 	w.sprite.vframes = 3
 	w.sprite.pixel_size = TRAINER_PIXEL
 	w.sprite.offset = Vector2(0, TrainerLook.CELL.y * 0.5 - 1)
@@ -142,7 +142,8 @@ func _animate(delta: float, moving: bool) -> void:
 		var row := posmod(roundi(rad_to_deg(atan2(facing.x, facing.z)) / 45.0), 8)
 		sprite.frame = mini(row, _pmd_rows - 1) * _pmd_cols + mini(col, _pmd_cols - 1)
 		return
-	# Trainer sheet: rows down / up / right (flipped for left), frames stand / left / right.
+	# Trainer sheet: rows down / up / right (flipped for left); frames 0-1 breathing,
+	# 2-5 the walk (quicker the faster you go). A little hop on the passing steps.
 	var row := 0
 	if absf(facing.x) > absf(facing.z):
 		row = 2
@@ -151,9 +152,14 @@ func _animate(delta: float, moving: bool) -> void:
 		row = 0 if facing.z >= 0.0 else 1
 		sprite.flip_h = false
 	var frame := 0
+	_anim_time += delta
+	var hop := 0.0
 	if moving:
-		_anim_time += delta
-		frame = [1, 0, 2, 0][int(_anim_time / 0.13) % 4]
+		var step := 0.1 * SPEED / maxf(0.5, velocity.length())
+		var phase := int(_anim_time / clampf(step, 0.08, 0.2)) % 4
+		frame = 2 + phase
+		hop = 0.05 if phase % 2 == 1 else 0.0
 	else:
-		_anim_time = 0.0
-	sprite.frame = row * 3 + frame
+		frame = int(_anim_time / 0.55) % 2
+	sprite.frame = row * TrainerLook.FRAMES + frame
+	sprite.position.y = hop
