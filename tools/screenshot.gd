@@ -14,6 +14,13 @@ func _ready() -> void:
 		GameData.settings["graphics"] = args[0].trim_prefix("q=")
 		args = args.slice(1)
 	var arena_id := args[0] if args.size() > 0 else "route_1"
+	# "rocket_match": an Executive round of the Rocket Hideout (on a Saturday).
+	if arena_id == "rocket_match":
+		Town.now_override = 1793577600.0 + 5 * 86400 + 43200
+		Rocket.start_run("normal", { "species": "pikachu" })
+		Rocket.run["round"] = 4
+		GameData.match_settings = Rocket.settings_for_round()
+		arena_id = str(GameData.match_settings["arena"])
 	var out_dir := args[1] if args.size() > 1 else "user://shots"
 	if arena_id.begins_with("menu:"):
 		await _menu_shot(arena_id.trim_prefix("menu:"), out_dir)
@@ -369,6 +376,11 @@ func _menu_shot(screen: String, out_dir: String) -> void:
 				menu.outfit_tab = "hat"
 				menu.outfit_try = { "hat": ["sun_hat", 8] }
 			menu.show_outfitter()
+			for i in 30:
+				await get_tree().process_frame
+		"rocket":
+			Town.now_override = 1793577600.0 + 5 * 86400 + 43200
+			menu.show_rocket()
 			for i in 30:
 				await get_tree().process_frame
 		"trainer":

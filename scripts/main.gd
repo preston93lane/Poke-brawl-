@@ -13,6 +13,7 @@ const MODE_SCRIPTS := {
 	"showdown": preload("res://scripts/modes/showdown.gd"),
 	"boss_raid": preload("res://scripts/modes/boss_raid.gd"),
 	"gym": preload("res://scripts/modes/gym.gd"),
+	"rocket": preload("res://scripts/modes/rocket.gd"),
 }
 const MENU_SCENE := "res://scenes/menu.tscn"
 
@@ -23,8 +24,9 @@ const MATCH_INTRO := preload("res://scripts/ui/match_intro.gd")
 const MODE_TITLES := {
 	"duel": "BATTLE", "king_of_the_hill": "KING OF THE HILL", "brawl_ball": "BRAWL BALL",
 	"candy_rush": "RARE CANDY RUSH", "showdown": "SHOWDOWN", "boss_raid": "BOSS RAID", "gym": "GYM BATTLE",
+	"rocket": "TEAM ROCKET",
 }
-@export_enum("duel", "king_of_the_hill", "brawl_ball", "candy_rush", "showdown", "boss_raid", "gym") var mode := "duel"
+@export_enum("duel", "king_of_the_hill", "brawl_ball", "candy_rush", "showdown", "boss_raid", "gym", "rocket") var mode := "duel"
 
 @export_group("Player")
 @export var player_species := "charmander"
@@ -169,7 +171,9 @@ func _ready() -> void:
 	_refresh_hud_moves()
 	hud.set_teams(teams)
 	hud.restart_requested.connect(func() -> void:
-		if not trainer.is_empty():
+		if mode == "rocket" and not Rocket.run.is_empty():
+			GameData.match_settings = Rocket.settings_for_round()  # Next round (or round 1 again).
+		elif not trainer.is_empty():
 			if int(trainer.get("floor", 0)) <= 0:
 				get_tree().change_scene_to_file(MENU_SCENE)  # A wandering trainer: back to town.
 				return
@@ -316,6 +320,8 @@ func _play_intro() -> void:
 	var title: String = MODE_TITLES.get(mode, mode.to_upper())
 	if mode == "gym" and not GameData.gym_run.is_empty():
 		title = GymMode.round_title(GameData.gym_run)
+	elif mode == "rocket":
+		title = Rocket.round_title()
 	elif not trainer.is_empty():
 		title = ("TRAINER TOWER  ·  FLOOR %d" % int(trainer["floor"])) if int(trainer.get("floor", 0)) > 0 \
 				else "%s  %s" % [str(trainer.get("name", "")).to_upper(), "★".repeat(int(trainer.get("stars", 1)))]
@@ -727,7 +733,15 @@ func end_round(result_name: String, subtitle := "") -> void:
 			"goals": player.goals, "supers": player.supers_used, "final_stage": player.species.stage > 1 and player.species.evolves_to == "",
 			"types": player.species.types,
 		})
-	if not trainer.is_empty() and record_progress:
+	if mode == "rocket" and record_progress:
+		var r_end: Dictionary = mode_logic.call("finish", result_name)
+		subtitle = str(r_end.get("subtitle", subtitle))
+		hud.set_rematch_text(str(r_end.get("next", "AGAIN")))
+		if not rewards.is_empty():
+			rewards["money"] = int(rewards["money"]) + int(r_end.get("money", 0))
+			(rewards["balls"] as Array).append_array(r_end.get("balls", []))
+			rewards["extras"] = r_end.get("texts", [])
+	elif not trainer.is_empty() and record_progress:
 		var t_end := Town.finish_trainer(trainer, result_name)
 		subtitle = str(t_end.get("text", subtitle))
 		if not rewards.is_empty():

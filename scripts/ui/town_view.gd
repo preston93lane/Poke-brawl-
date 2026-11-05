@@ -31,7 +31,11 @@ func _ready() -> void:
 	viewport.add_child(world)
 	world.prompt_changed.connect(_on_prompt)
 	world.enter_requested.connect(func(id: String) -> void: menu.enter_building(id))
-	world.talk_requested.connect(func(t: Dictionary) -> void: menu.show_trainer(t))
+	world.talk_requested.connect(func(t: Dictionary) -> void:
+		if t.get("rocket", false):
+			menu.show_rocket()
+		else:
+			menu.show_trainer(t))
 	NatureKit.warm.call_deferred(get_tree())
 
 	stick = VirtualJoystick.new()

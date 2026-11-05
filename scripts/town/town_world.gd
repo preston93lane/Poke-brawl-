@@ -167,6 +167,23 @@ func _people() -> void:
 		partner.follow = player
 		partner.position = start + Vector3(-0.9, 0, 0.6)
 		add_child(partner)
+	# While the Rocket Hideout is open, a Grunt stands guard by the Game Corner
+	# (the hideout is under it, like in the old games).
+	if Rocket.is_open() and doors.has("corner"):
+		var grunt := TownWalker.trainer(TrainerLook.rocket_sheet(), PITCH)
+		grunt.position = doors["corner"] + Vector3(-1.6, 0, 0.3)
+		grunt.collision_layer = Arena.WORLD_LAYER
+		add_child(grunt)
+		var tag := Label3D.new()
+		tag.text = "TEAM ROCKET\n!"
+		tag.font_size = 44
+		tag.pixel_size = 0.01
+		tag.outline_size = 12
+		tag.modulate = Color(1, 0.4, 0.4)
+		tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		tag.position = Vector3(0, 2.2, 0)
+		grunt.add_child(tag)
+		trainers.append({ "walker": grunt, "data": { "rocket": true, "class_name": "Rocket Grunt" } })
 	# Wandering trainers stand around town (the ones you've beaten have gone home).
 	var spots: Array = map_def.get("trainer_spots", [])
 	var i := 0

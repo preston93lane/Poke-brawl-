@@ -1,0 +1,37 @@
+{
+	"_comment": "Team Rocket Hideout (scripts/modes/rocket.gd, scripts/data/rocket.gd). Open every Saturday and Sunday, plus weekday_days random weekdays each week. Pick one Pokémon and beat three Grunts (three of the grunt teams, picked for the day) and then two Executives (two of the executives) in a row, first to kills_to_win KOs each round. Your Pokémon has lives faints for the whole run; run out and it's over. Every enemy is a Shadow Pokémon: tougher, hits harder, and the Executive's ace is bigger and gets enraged when hurt.",
+	"weekday_days": 2,
+	"kills_to_win": 8,
+	"time_limit": 150,
+	"difficulties": {
+		"normal": { "name": "Normal", "lives": 4, "level_bonus": 2, "boss_level_bonus": 4, "bot": "normal" },
+		"hard": { "name": "Hard", "lives": 3, "level_bonus": 5, "boss_level_bonus": 8, "bot": "hard" }
+	},
+	"shadow": { "hp": 1.15, "damage": 1.15, "ace_hp": 1.8, "ace_size": 1.3, "rage_below": 0.5, "rage_attack": 0.25, "rage_speed": 0.15 },
+	"grunts": [
+		{ "name": "Grunt", "title": "Poison Squad", "team": ["ekans", "koffing", "grimer"], "arena": "lavender_graveyard" },
+		{ "name": "Grunt", "title": "Cave Gang", "team": ["zubat", "rattata", "geodude"], "arena": "pewter_gym" },
+		{ "name": "Grunt", "title": "Mind Games", "team": ["drowzee", "exeggcute", "slowpoke"], "arena": "saffron_gym" },
+		{ "name": "Grunt", "title": "Muscle", "team": ["machop", "sandshrew", "ekans"], "arena": "bruno_dojo" },
+		{ "name": "Grunt", "title": "Night Shift", "team": ["gastly", "zubat", "meowth"], "arena": "agatha_crypt" },
+		{ "name": "Grunt", "title": "Arsonists", "team": ["growlithe", "ponyta", "koffing"], "arena": "cinnabar_gym" }
+	],
+	"executives": [
+		{ "name": "Executive Petrel", "team": ["weezing", "raticate", "golbat"], "arena": "ss_anne" },
+		{ "name": "Executive Proton", "team": ["golbat", "weezing", "muk"], "arena": "dragons_den" },
+		{ "name": "Executive Ariana", "team": ["arbok", "vileplume", "muk"], "arena": "lance_hall" },
+		{ "name": "Executive Archer", "team": ["hypno", "golbat", "persian"], "arena": "viridian_gym" }
+	],
+	"rewards": {
+		"_comment": "Each round won pays round_money x the round number. A full clear pays clear (per difficulty). The first clear of each difficulty per open day also gives the next piece of that difficulty's Team Rocket outfit (normal: the black Grunt uniform, hard: the white Executive one), in piece_order; once you have it all, an extra ball instead. Your first ever Hard clear gives a Master Ball.",
+		"round_money": 150,
+		"clear": {
+			"normal": { "money": 1500, "coins": 300, "candies": 2, "balls": ["ultra_ball"] },
+			"hard": { "money": 3000, "coins": 600, "candies": 4, "balls": ["ultra_ball", "ultra_ball"] }
+		},
+		"outfit": { "normal": "rocket_grunt", "hard": "rocket_executive" },
+		"piece_order": ["hat", "top", "bottom", "shoes"],
+		"complete_ball": "ultra_ball",
+		"first_hard_clear": "master_ball"
+	}
+}

@@ -61,6 +61,7 @@ func _ready() -> void:
 	await _check_town()
 	await _check_town_hub()
 	await _check_graphics_levels()
+	await _check_rocket()
 	await _check_mvp()
 	await _check_boss_no_heal()
 	await _check_slam_windup()
@@ -2340,7 +2341,7 @@ func _check_town_hub() -> void:
 		await get_tree().process_frame
 	var view: TownView = menu._screen.get_child(0)
 	var town := view.world
-	expect(town.doors.size() == TownScreens.BUILDINGS.size(), "every building has a door (%d)" % town.doors.size())
+	expect(town.doors.size() == (town.map_def["buildings"] as Array).size(), "every building has a door (%d)" % town.doors.size())
 	expect(town.player != null and town.partner != null, "your trainer and partner Pokémon are in town")
 	# Walk up into the Pokémon Center's door: in you go.
 	town.player.global_position = town.doors["center"] + Vector3(0, 0, 1.0)
@@ -2391,3 +2392,80 @@ func _check_graphics_levels() -> void:
 		await get_tree().process_frame
 	GameData.settings["graphics"] = before
 	Quality.apply_viewport(get_viewport())
+
+
+## Team Rocket Hideout: open on weekends and two weekdays a week; three Grunts then
+## two Executives of Shadow Pokémon; a few lives; a uniform piece for a clear.
+func _check_rocket() -> void:
+	print("Team Rocket")
+	var saved: Dictionary = Profile.data.duplicate(true)
+	var saved_settings: Dictionary = GameData.match_settings.duplicate(true)
+	# A week from Monday 2 November 2026 (unix 1793577600).
+	var open_days := 0
+	var weekend_open := true
+	for i in 7:
+		var d := Time.get_datetime_dict_from_unix_time(1793577600 + i * 86400 + 43200)
+		var open := Rocket.open_on(d)
+		if int(d["weekday"]) in [0, 6]:
+			weekend_open = weekend_open and open
+		elif open:
+			open_days += 1
+	expect(weekend_open and open_days == 2, "the hideout is open every weekend and on 2 weekdays (%d)" % open_days)
+	Town.now_override = 1793577600.0 + 5 * 86400 + 43200  # A Saturday.
+	var line := Rocket.line_up()
+	expect(line.size() == 5 and not bool(line[0]["boss"]) and bool(line[4]["boss"]), "three Grunts, then two Executives")
+	expect(line == Rocket.line_up(), "the line-up is the same all day")
+	GameData.match_settings = Rocket.start_run("normal", { "species": "charmander" })
+	var main := MAIN_SCENE.instantiate()
+	main.show_intro = false
+	add_child(main)
+	await get_tree().physics_frame
+	var all_shadow := true
+	for b: Brawler in main.teams[1]:
+		all_shadow = all_shadow and b.is_shadow
+	expect(main.mode == "rocket" and all_shadow, "every Rocket Pokémon is a Shadow Pokémon")
+	# Faint as many times as there are lives: the run is over.
+	for i in Rocket.lives("normal"):
+		if main.round_over:
+			break
+		main.player._protect_time = 0.0
+		main.player.take_damage(999999.0, main.teams[1][0])
+		await get_tree().physics_frame
+		for k in 600:
+			if main.round_over or not main.player.is_dead:
+				break
+			await get_tree().physics_frame
+	expect(main.round_over and int(Rocket.run["round"]) == 0, "out of lives: Team Rocket wins and the run starts over")
+	main.queue_free()
+	await get_tree().process_frame
+	# Boss round: the Executive's ace is a big shadow Pokémon.
+	Rocket.run["round"] = 3
+	Rocket.run["faints"] = 0
+	GameData.match_settings = Rocket.settings_for_round()
+	main = MAIN_SCENE.instantiate()
+	main.show_intro = false
+	add_child(main)
+	await get_tree().physics_frame
+	var ace: Brawler = main.mode_logic.ace
+	expect(ace != null and ace.size_scale > 1.0 and ace.max_health > main.teams[1][1].max_health, "an Executive's ace is bigger and tougher")
+	main.queue_free()
+	await get_tree().process_frame
+	# Clearing it: a Grunt uniform piece, once a day.
+	Rocket.run["round"] = 4
+	var before := 0
+	for p: Array in Town.set_pieces("rocket_grunt", 0):
+		before += int(Town.owns_item(p[0], p[1], p[2]))
+	var got := Rocket.clear_rewards()
+	var after := 0
+	for p: Array in Town.set_pieces("rocket_grunt", 0):
+		after += int(Town.owns_item(p[0], p[1], p[2]))
+	expect(after == before + 1 and Profile.count("rare_candy") >= 2, "a clear gives a Rocket uniform piece and Rare Candy (%s)" % str(got["texts"]))
+	Rocket.clear_rewards()
+	var again := 0
+	for p: Array in Town.set_pieces("rocket_grunt", 0):
+		again += int(Town.owns_item(p[0], p[1], p[2]))
+	expect(again == after, "only one uniform piece a day")
+	Town.now_override = 0.0
+	Rocket.run = {}
+	GameData.match_settings = saved_settings
+	Profile.data = saved

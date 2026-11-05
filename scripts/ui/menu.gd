@@ -10,6 +10,7 @@ const MODES := {
 	"candy_rush": { "button": "RARE CANDY RUSH", "title": "RARE CANDY RUSH 3v3", "blurb": "Grab 10 Rare Candies from the mine and hold them for 10 s." },
 	"showdown": { "button": "SHOWDOWN", "title": "SHOWDOWN", "blurb": "Free-for-all: smash crates for power cubes. Last one standing wins." },
 	"gym": { "button": "GYMS", "title": "GYM", "blurb": "Beat two trainers, then the Gym Leader, three matches in a row." },
+	"rocket": { "button": "ROCKET HIDEOUT", "title": "ROCKET HIDEOUT", "blurb": "One Pokémon, a few lives: three Grunts, then two Executives." },
 	"boss_raid": { "button": "BOSS RAID", "title": "BOSS RAID", "blurb": "Team up against a giant legendary. Dodge the red circles!" },
 }
 
@@ -58,6 +59,8 @@ var _pending_trainer := {}
 var outfit_tab := "sets"
 var outfit_try := {}
 var outfit_set := []
+## Rocket Hideout difficulty picked on its screen.
+var rocket_difficulty := "normal"
 
 
 func _ready() -> void:
@@ -534,6 +537,10 @@ func show_arena() -> void:
 	_set_screen(TownScreens.arena(self), "arena")
 
 
+func show_rocket() -> void:
+	_set_screen(TownScreens.rocket(self), "rocket")
+
+
 func show_trainer(t: Dictionary) -> void:
 	_set_screen(TownScreens.trainer(self, t), "trainer")
 
@@ -549,6 +556,7 @@ func enter_building(id: String) -> void:
 		"museum": show_museum()
 		"outfitter": show_outfitter()
 		"arena": show_arena()
+		"rocket": show_rocket()
 
 
 ## A trainer battle (wandering trainer, or Trainer Tower `floor`): pick your Pokémon next.
@@ -591,6 +599,8 @@ func show_select(mode: String) -> void:
 		back = func() -> void:
 			_pending_trainer = {}
 			show_home()
+	elif mode == "rocket":
+		back = show_rocket
 	elif mode == "boss_raid":
 		back = show_bosses
 	elif mode == "gym":
@@ -602,6 +612,8 @@ func show_select(mode: String) -> void:
 	elif mode == "gym":
 		title.text = "%s  —  %s%s" % [str(GameData.arenas.get(_gym, {}).get("name", _gym)).to_upper(), _gym_difficulty.to_upper(),
 				"  ·  pick a %s type" % _gym_type.capitalize() if _gym_type != "" else ""]
+	if mode == "rocket":
+		title.text = "TEAM ROCKET HIDEOUT  —  %s  ·  pick one Pokémon, %d lives" % [rocket_difficulty.to_upper(), Rocket.lives(rocket_difficulty)]
 	if not _pending_trainer.is_empty():
 		var tr: Dictionary = _pending_trainer["trainer"]
 		var tower_floor := int(_pending_trainer["floor"])
@@ -1105,7 +1117,7 @@ func _refresh_select_details() -> void:
 
 	_details.add_child(_energy_and_drink(s))
 
-	if _mode != "gym" and _pending_trainer.is_empty():  # Gyms and trainers set their own difficulty.
+	if _mode not in ["gym", "rocket"] and _pending_trainer.is_empty():  # Gyms, trainers and Rocket set their own difficulty.
 		_details.add_child(_section("BOT DIFFICULTY"))
 		var difficulty_row := HBoxContainer.new()
 		var difficulty_group := ButtonGroup.new()
@@ -1115,7 +1127,7 @@ func _refresh_select_details() -> void:
 			difficulty_row.add_child(b)
 		_details.add_child(difficulty_row)
 
-	if _mode not in ["boss_raid", "gym"] and _pending_trainer.is_empty():  # The boss / gym / trainer picks the arena.
+	if _mode not in ["boss_raid", "gym", "rocket"] and _pending_trainer.is_empty():  # The boss / gym / trainer picks the arena.
 		_details.add_child(_section("ARENA  (random by default; pick one to play a challenge's map)"))
 		var arenas := HFlowContainer.new()
 		var arena_group := ButtonGroup.new()
@@ -1523,6 +1535,8 @@ func _start_match() -> void:
 		var p := _pending_trainer
 		_pending_trainer = {}
 		GameData.match_settings = Town.start_trainer((p["trainer"] as Dictionary).duplicate(true), GameData.match_settings, int(p["stake"]), int(p["floor"]))
+	elif _mode == "rocket":
+		GameData.match_settings = Rocket.start_run(rocket_difficulty, GameData.match_settings)
 	elif _mode == "gym":
 		GameData.match_settings = GymMode.start_run(_gym, _gym_difficulty, _gym_type, GameData.match_settings)
 	if _mode == "boss_raid":

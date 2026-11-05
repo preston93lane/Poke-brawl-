@@ -111,6 +111,8 @@ var regenerates := true
 var invulnerable := false
 ## Hovers above the ground and flies over walls.
 var flying := false
+## A Team Rocket Shadow Pokémon: drawn dark and purple (RocketMode makes it tougher).
+var is_shadow := false
 ## Water and Flying types, and Pokémon carrying HM Surf, walk over water tiles.
 var can_swim := false
 ## Uses the shiny colours (set before it enters the tree).
@@ -2384,6 +2386,8 @@ func _update_sprite(delta: float) -> void:
 	tint.a = 0.55 if faded else 1.0
 	if is_stunned():
 		tint = tint.darkened(0.25)
+	if is_shadow:
+		tint = Color(tint.r * 0.62, tint.g * 0.5, tint.b * 0.82, tint.a)
 	if _z_time > 0.0:  # Z boost: a golden glow that pulses.
 		tint = tint.lerp(Color(1, 0.92, 0.55, tint.a), 0.25 + 0.15 * sin(Time.get_ticks_msec() * 0.012))
 	sprite.modulate = tint

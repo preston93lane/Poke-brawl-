@@ -52,7 +52,7 @@ func _draw_bars() -> void:
 		# Brawl Stars style: a slim bar just above the head, HP on it, name above.
 		_text(font, Vector2(bar.position.x, bar.end.y - 1), bar.size.x, str(ceili(brawler.health)), 13, Color.WHITE)
 		var name_color := Color(0.6, 0.85, 1.0) if friendly else Color(1.0, 0.7, 0.7)
-		var title := "%s%s Lv%d" % ["✦ " if brawler.shiny else "", brawler.species.display_name, brawler.level]
+		var title := "%s%s%s Lv%d" % ["✦ " if brawler.shiny else "", "Shadow " if brawler.is_shadow else "", brawler.species.display_name, brawler.level]
 		_text(font, Vector2(bar.position.x - 60, bar.position.y - 6), bar.size.x + 120, title, 14, name_color)
 
 		# Type pips to the left of the bar.

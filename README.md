@@ -38,7 +38,14 @@ The web build uses Godot's Compatibility renderer, so lighting is slightly simpl
   - **Poké Mart** (the daily store), **Department Store** (one-match drinks and a daily TM counter), **Game Corner** (slots,
     Voltorb Flip and a prize counter, using coins won in matches or bought with ₽; never real money), **Day Care**
     (a parked line gets 40% of the XP you earn with others), **Pewter Museum** (your records and trainer cards) and the
-    **Trainer Outfitter** (your trainer's style and colours).
+    **Trainer Outfitter**: hats, tops, bottoms and shoes, each colour bought separately, and whole outfits for every
+    trainer class in three colourways (`data/outfits.json` from `tools/build_outfits.py`; layers drawn by
+    `tools/make_trainer_sheets.py`).
+  - **Team Rocket Hideout** (`data/rocket.json`): open every weekend and on two random weekdays a week; a Rocket
+    Grunt guards the Game Corner. Pick one Pokémon and beat three Grunt teams then two Executives, all Shadow
+    Pokémon (tougher, harder-hitting; the Executive's ace is bigger and enrages when hurt), with only a few lives for
+    the whole run. Clears pay money, coins, Rare Candy and balls, plus one piece a day of the Team Rocket uniform
+    (black Grunt on Normal, white Executive on Hard), which can't be bought.
 - The game opens on a menu: **Battle**, **King of the Hill**, **Brawl Ball**, **Rare Candy Rush**, **Showdown** or **Pokédex**. Then pick your Pokémon, level,
   moves, opponent and arena. Running `scenes/main.tscn` directly in the editor uses the **Main** node's Inspector values instead.
 - After every attack there's a short delay before you can attack again. Heavy moves have longer delays.

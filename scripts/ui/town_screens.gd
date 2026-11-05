@@ -18,6 +18,8 @@ const BUILDINGS := {
 		"hello": "Welcome to the museum! Every exhibit here is from your own journey." },
 	"outfitter": { "title": "TRAINER OUTFITTER", "color": Color(0.9, 0.45, 0.6), "staff": "stylist",
 		"hello": "Darling! Whole outfits from every kind of trainer, or mix and match pieces. Tap a colour to try it on!" },
+	"rocket": { "title": "TEAM ROCKET HIDEOUT", "color": Color(0.55, 0.12, 0.18), "staff": "",
+		"hello": "Hah! You found our hideout. Our Shadow Pokémon will crush you... Three of us, then the Executives. Prepare for trouble!" },
 	"arena": { "title": "BATTLE ARENA", "color": Color(0.95, 0.6, 0.15), "staff": "clerk",
 		"hello": "This is the Battle Arena! Quick battles, Gyms, Raids... and the Trainer Tower. How high can you climb?" },
 }
@@ -46,7 +48,7 @@ static func frame(menu: Node, building: String, content: Control, extra_top: Con
 	staff.add_theme_constant_override("separation", 8)
 	var portrait := HBoxContainer.new()
 	portrait.alignment = BoxContainer.ALIGNMENT_CENTER
-	portrait.add_child(trainer_picture(TrainerLook.staff_sheet(str(b["staff"])), 120))
+	portrait.add_child(trainer_picture(TrainerLook.rocket_sheet() if building == "rocket" else TrainerLook.staff_sheet(str(b["staff"])), 120))
 	if building == "center" and GameData.species.has("chansey"):
 		portrait.add_child(PmdIcon.make(GameData.species["chansey"], 70))
 	staff.add_child(portrait)
@@ -380,6 +382,7 @@ static func museum(menu: Node) -> Control:
 		["TRAINER BATTLES", "%d won  ·  %d lost" % [int(rec["won"]), int(rec["lost"])], Color(0.3, 0.45, 0.7)],
 		["GAME CORNER", "Biggest win: %d coins\nCoins won: %d" % [int(corner.get("best", 0)), int(corner.get("won", 0))], Color(0.7, 0.25, 0.35)],
 		["BADGES", "%d / 8" % Profile.badges().size(), Color(0.65, 0.55, 0.2)],
+		["TEAM ROCKET", "Hideouts cleared: %d" % Rocket.clears(), Color(0.55, 0.15, 0.2)],
 	]:
 		var col := VBoxContainer.new()
 		col.custom_minimum_size = Vector2(250, 0)
@@ -619,6 +622,74 @@ static func _free_row(menu: Node, title: String, key: String, values: Array, nam
 	return _card(Color(0.3, 0.28, 0.4), col)
 
 
+# --- Team Rocket Hideout ---------------------------------------------------------------
+
+static func rocket(menu: Node) -> Control:
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 10)
+	if not Rocket.is_open():
+		var days := Rocket.days_until_open()
+		v.add_child(UiKit.label("The hideout is quiet... Team Rocket is out on a job.", 24))
+		v.add_child(UiKit.label("They're back in %d day%s. They turn up every weekend and on a couple of random weekdays." % [days, "" if days == 1 else "s"], 18, Color(0.85, 0.9, 1)))
+		v.add_child(_rocket_rewards())
+		return frame(menu, "rocket", UiKit.scroll(v), null, "Hmph. Nobody's here. Come back when the boss's orders come in.")
+	v.add_child(UiKit.section_title("TODAY'S HIDEOUT  ·  pick one Pokémon, first to %d KOs each round, every enemy a Shadow Pokémon" % int(Rocket.cfg("kills_to_win", 8))))
+	var line := HFlowContainer.new()
+	line.add_theme_constant_override("h_separation", 8)
+	line.add_theme_constant_override("v_separation", 8)
+	var rounds := Rocket.line_up()
+	for i in rounds.size():
+		var r: Dictionary = rounds[i]
+		var col := VBoxContainer.new()
+		col.custom_minimum_size.x = 160
+		col.add_child(UiKit.label("%d · %s" % [i + 1, str(r["name"]).to_upper()], 15, Color(1, 0.6, 0.6) if bool(r["boss"]) else Color(1, 0.9, 0.7)))
+		if r.has("title"):
+			col.add_child(UiKit.label(str(r["title"]), 13, Color(0.85, 0.85, 0.9)))
+		var team := HBoxContainer.new()
+		for id: String in r["team"]:
+			if GameData.species.has(id):
+				var icon := PmdIcon.make(GameData.species[id], 44)
+				icon.modulate = Color(0.75, 0.6, 0.95)
+				team.add_child(icon)
+		col.add_child(team)
+		line.add_child(_card(Color(0.45, 0.1, 0.16) if bool(r["boss"]) else Color(0.25, 0.14, 0.2), col))
+	v.add_child(line)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	for d: String in ["normal", "hard"]:
+		var info: Dictionary = Rocket.cfg("difficulties/" + d, {})
+		var b := UiKit.button("%s\n%d lives · Rocket level +%d" % [str(info.get("name", d)).to_upper(), int(info.get("lives", 3)), int(info.get("level_bonus", 2))], func() -> void:
+			menu.rocket_difficulty = d
+			menu.show_select("rocket"), 20)
+		b.custom_minimum_size = Vector2(260, 80)
+		b.add_theme_stylebox_override("normal", UiKit.box(Color(0.75, 0.2, 0.25) if d == "hard" else Color(0.55, 0.25, 0.3)))
+		row.add_child(b)
+	v.add_child(row)
+	v.add_child(_rocket_rewards())
+	return frame(menu, "rocket", UiKit.scroll(v))
+
+
+## What a clear gives, and how much of each Rocket uniform you've earned.
+static func _rocket_rewards() -> Control:
+	var col := VBoxContainer.new()
+	col.add_child(UiKit.label("REWARDS", 18, Color(1, 0.85, 0.4)))
+	for d: String in ["normal", "hard"]:
+		var c: Dictionary = Rocket.cfg("rewards/clear/" + d, {})
+		var set_id := str(Rocket.cfg("rewards/outfit/" + d, ""))
+		var owned := 0
+		var pieces := Town.set_pieces(set_id, 0)
+		for p: Array in pieces:
+			if Town.owns_item(p[0], p[1], p[2]):
+				owned += 1
+		var line := UiKit.label("%s clear: %d ₽, %d coins, %d Rare Candy, %d Ultra Ball%s  ·  %s: %d/%d pieces (one per day)" % [
+				d.capitalize(), int(c.get("money", 0)), int(c.get("coins", 0)), int(c.get("candies", 0)), (c.get("balls", []) as Array).size(),
+				"" if (c.get("balls", []) as Array).size() == 1 else "s", str(Town.find_set(set_id).get("name", "")), owned, pieces.size()], 15)
+		line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		col.add_child(line)
+	col.add_child(UiKit.label("First Hard clear ever: a Master Ball.  ·  Hideouts cleared: %d" % Rocket.clears(), 15, Color(0.85, 0.9, 1)))
+	return _card(Color(0.22, 0.16, 0.22), col)
+
+
 # --- Battle Arena: battles, Trainer Tower and the trainers in town ---------------------
 
 static func arena(menu: Node) -> Control:
@@ -642,6 +713,9 @@ static func arena(menu: Node) -> Control:
 	tower.add_child(climb)
 	row.add_child(_card(Color(0.35, 0.22, 0.15), tower))
 	v.add_child(row)
+	var rocket := UiKit.button("TEAM ROCKET HIDEOUT  ·  OPEN NOW! ›" if Rocket.is_open() else "TEAM ROCKET HIDEOUT  ·  back in %d day%s" % [Rocket.days_until_open(), "" if Rocket.days_until_open() == 1 else "s"], menu.show_rocket, 22)
+	rocket.add_theme_stylebox_override("normal", UiKit.box(Color(0.6, 0.12, 0.2) if Rocket.is_open() else Color(0.3, 0.2, 0.24)))
+	v.add_child(rocket)
 	v.add_child(UiKit.section_title("TRAINERS IN TOWN  ·  new ones in %s" % _time(Town.slot_seconds_left())))
 	v.add_child(trainer_list(menu))
 	return frame(menu, "arena", UiKit.scroll(v))
