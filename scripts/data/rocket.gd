@@ -120,14 +120,41 @@ static func round_title() -> String:
 
 
 ## After a full clear: pays out and returns [lines of text, balls given].
+## Whether you've already cleared difficulty `d` today (later runs pay less).
+static func cleared_today(d: String) -> bool:
+	return str(Town._save_dict("rocket_stats").get("last_" + d, "")) == Profile.today()
+
+
+## Money and coins multiplier for the run's difficulty: 1 until today's first
+## clear, then repeat_share (so the Hideout can't be farmed for cash).
+static func pay_share(d := "") -> float:
+	if d == "":
+		d = str(run.get("difficulty", "normal"))
+	return float(cfg("rewards/repeat_share", 0.15)) if cleared_today(d) else 1.0
+
+
+## Money for winning round `i` (0-based) of the run, after the repeat cut.
+static func round_money(i: int) -> int:
+	return roundi(float(cfg("rewards/round_money", 150)) * (i + 1) * pay_share())
+
+
 static func clear_rewards() -> Dictionary:
 	var d := str(run.get("difficulty", "normal"))
 	var c: Dictionary = cfg("rewards/clear/" + d, {})
 	var texts: Array[String] = []
 	var balls: Array = []
-	Profile.data["money"] = Profile.money() + int(c.get("money", 0))
-	Profile.data["coins"] = Town.coins() + int(c.get("coins", 0))
-	texts.append("+%d ₽  ·  +%d coins" % [int(c.get("money", 0)), int(c.get("coins", 0))])
+	var share := pay_share(d)
+	var money := roundi(int(c.get("money", 0)) * share)
+	var coins := roundi(int(c.get("coins", 0)) * share)
+	Profile.data["money"] = Profile.money() + money
+	Profile.data["coins"] = Town.coins() + coins
+	texts.append("+%d ₽  ·  +%d coins" % [money, coins])
+	if share < 1.0:
+		texts.append("Repeat clear today: reduced pay, full rewards again tomorrow")
+		var stats_r := Town._save_dict("rocket_stats")
+		stats_r["clears_" + d] = int(stats_r.get("clears_" + d, 0)) + 1
+		Profile.save()
+		return { "texts": texts, "balls": balls }
 	if int(c.get("candies", 0)) > 0:
 		Profile._give("rare_candy", int(c["candies"]))
 		texts.append("+%d Rare Candy (purified shadow energy)" % int(c["candies"]))

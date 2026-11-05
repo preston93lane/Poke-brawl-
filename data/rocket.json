@@ -23,8 +23,9 @@
 		{ "name": "Executive Archer", "team": ["hypno", "golbat", "persian"], "arena": "viridian_gym" }
 	],
 	"rewards": {
-		"_comment": "Each round won pays round_money x the round number. A full clear pays clear (per difficulty). The first clear of each difficulty per open day also gives the next piece of that difficulty's Team Rocket outfit (normal: the black Grunt uniform, hard: the white Executive one), in piece_order; once you have it all, an extra ball instead. Your first ever Hard clear gives a Master Ball.",
+		"_comment": "Each round won pays round_money x the round number. A full clear pays clear (per difficulty). Only your first clear of each difficulty per open day pays in full: after that, rounds and clears that day pay repeat_share of the money and coins, and no Rare Candy or balls, so the Hideout can't be farmed for cash. The first clear of each difficulty per open day also gives the next piece of that difficulty's Team Rocket outfit (normal: the black Grunt uniform, hard: the white Executive one), in piece_order; once you have it all, an extra ball instead. Your first ever Hard clear gives a Master Ball.",
 		"round_money": 150,
+		"repeat_share": 0.15,
 		"clear": {
 			"normal": { "money": 1500, "coins": 300, "candies": 2, "balls": ["ultra_ball"] },
 			"hard": { "money": 3000, "coins": 600, "candies": 4, "balls": ["ultra_ball", "ultra_ball"] }

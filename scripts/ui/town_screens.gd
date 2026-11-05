@@ -687,7 +687,9 @@ static func _rocket_rewards() -> Control:
 				"" if (c.get("balls", []) as Array).size() == 1 else "s", str(Town.find_set(set_id).get("name", "")), owned, pieces.size()], 15)
 		line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		col.add_child(line)
-	col.add_child(UiKit.label("First Hard clear ever: a Master Ball.  ·  Hideouts cleared: %d" % Rocket.clears(), 15, Color(0.85, 0.9, 1)))
+	var repeat := UiKit.label("Full pay for your first clear of each difficulty each day; repeat clears pay %d%%.  ·  First Hard clear ever: a Master Ball.  ·  Hideouts cleared: %d" % [roundi(float(Rocket.cfg("rewards/repeat_share", 0.15)) * 100.0), Rocket.clears()], 15, Color(0.85, 0.9, 1))
+	repeat.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	col.add_child(repeat)
 	return _card(Color(0.22, 0.16, 0.22), col)
 
 

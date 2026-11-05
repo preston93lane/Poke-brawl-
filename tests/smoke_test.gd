@@ -2533,7 +2533,14 @@ func _check_rocket() -> void:
 	for p: Array in Town.set_pieces("rocket_grunt", 0):
 		after += int(Town.owns_item(p[0], p[1], p[2]))
 	expect(after == before + 1 and Profile.count("rare_candy") >= 2, "a clear gives a Rocket uniform piece and Rare Candy (%s)" % str(got["texts"]))
+	var money_before := Profile.money()
+	var candies_before := Profile.count("rare_candy")
+	var full_round := int(Rocket.cfg("rewards/round_money", 150)) * 5
 	Rocket.clear_rewards()
+	var repeat_pay := Profile.money() - money_before
+	expect(repeat_pay < int(Rocket.cfg("rewards/clear/normal/money", 1500)) * 0.5 and repeat_pay > 0, "a repeat clear the same day pays much less (%d ₽)" % repeat_pay)
+	expect(Profile.count("rare_candy") == candies_before, "and gives no Rare Candy")
+	expect(Rocket.round_money(4) < full_round, "repeat runs' rounds pay less too")
 	var again := 0
 	for p: Array in Town.set_pieces("rocket_grunt", 0):
 		again += int(Town.owns_item(p[0], p[1], p[2]))

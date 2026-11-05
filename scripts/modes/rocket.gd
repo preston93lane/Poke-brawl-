@@ -89,7 +89,7 @@ func finish(result: String) -> Dictionary:
 		Rocket.run["round"] = 0
 		Rocket.run["faints"] = 0
 		return { "subtitle": "Team Rocket wins this time... (round %d)" % (i + 1), "next": "TRY AGAIN" }
-	var pay := int(Rocket.cfg("rewards/round_money", 150)) * (i + 1)
+	var pay := Rocket.round_money(i)
 	Profile.data["money"] = Profile.money() + pay
 	if i < rounds.size() - 1:
 		Rocket.run["round"] = i + 1
