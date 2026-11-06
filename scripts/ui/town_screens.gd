@@ -438,9 +438,12 @@ static func outfitter(menu: Node, message := "") -> Control:
 	var trying_on: bool = not (menu.outfit_try as Dictionary).is_empty()
 	left.add_child(UiKit.label("TRYING ON" if trying_on else "WEARING", 16, Color(1, 0.85, 0.4) if trying_on else Color(0.7, 1, 0.75)))
 	if trying_on:
+		left.add_child(UiKit.label("Buy it to keep it", 13, Color(1, 0.9, 0.7)))
 		left.add_child(UiKit.button("TAKE OFF", func() -> void:
 			menu.outfit_try = {}
 			menu.show_outfitter(), 16))
+	else:
+		left.add_child(UiKit.label("Saved: you'll wear this round town", 13, Color(0.75, 0.95, 0.8)))
 	row.add_child(left)
 	var right := VBoxContainer.new()
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -531,7 +534,11 @@ static func _item_card(menu: Node, slot: String, id: String, it: Dictionary, try
 	swatches.add_theme_constant_override("h_separation", 6)
 	for c: int in it.get("colors", []):
 		swatches.add_child(_swatch(str(colors[c]), c == picked, Town.owns_item(slot, id, c), func() -> void:
-			menu.outfit_try[slot] = [id, c]
+			if Town.owns_item(slot, id, c):
+				Town.wear(slot, id, c)  # Yours: it goes straight on (and stays on).
+				menu.outfit_try.erase(slot)
+			else:
+				menu.outfit_try[slot] = [id, c]  # Not yet: try it on.
 			menu.show_outfitter()))
 	col.add_child(swatches)
 	if picked >= 0:
@@ -596,13 +603,18 @@ static func _set_card(menu: Node, s: Dictionary) -> Control:
 		b.add_theme_font_size_override("font_size", 16)
 		b.add_theme_stylebox_override("normal", UiKit.box(Color.html(str(colors[int(v["colors"][1])])).darkened(0.25), 12, 8))
 		b.pressed.connect(func() -> void:
+			menu.outfit_set = [s["id"], vi]
+			if Town.owns_set(s["id"], vi):
+				Town.wear_set(s["id"], vi)  # Yours: put the whole outfit on.
+				menu.outfit_try = {}
+				menu.show_outfitter("Looking sharp!")
+				return
 			var t := {}
 			for p: Array in Town.set_pieces(s["id"], vi):
 				t[p[0]] = [p[1], p[2]]
 			if str(s["pieces"][0]) == "":
 				t["hat"] = []
 			menu.outfit_try = t
-			menu.outfit_set = [s["id"], vi]
 			menu.show_outfitter())
 		ways.add_child(b)
 		if menu.outfit_set == [s["id"], vi]:

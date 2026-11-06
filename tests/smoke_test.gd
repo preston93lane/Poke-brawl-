@@ -2451,6 +2451,17 @@ func _check_town_hub() -> void:
 	menu.show_home()
 	for i in 5:
 		await get_tree().process_frame
+	# Outfitter: what you own goes straight on and is still on when you walk out.
+	Profile.data["money"] = maxi(Profile.money(), 5000)
+	Town.buy_item("top", "sweater", 2)
+	Town.wear("top", "jacket", 1)
+	menu.show_outfitter()
+	menu.outfit_try = { "top": ["sweater", 2], "hat": ["cowboy", 11] }  # One owned, one not bought.
+	menu.show_home()
+	for i in 5:
+		await get_tree().process_frame
+	expect(Town.outfit()["top"] == ["sweater", 2] and str((Town.outfit().get("hat", []) as Array).front() if not (Town.outfit().get("hat", []) as Array).is_empty() else "") != "cowboy" and menu.outfit_try.is_empty(),
+			"leaving the Outfitter keeps the clothes you own on (%s)" % str(Town.outfit()))
 	var view: TownView = menu._screen.get_child(0)
 	var town := view.world
 	expect(town.doors.size() == (town.map_def["buildings"] as Array).size(), "every building has a door (%d)" % town.doors.size())

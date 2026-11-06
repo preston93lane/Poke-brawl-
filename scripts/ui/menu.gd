@@ -92,6 +92,7 @@ func _ready() -> void:
 
 ## Home is the town: walk your trainer round to the buildings.
 func show_home() -> void:
+	keep_outfit_try()  # Before the town draws your trainer.
 	_set_screen(TownView.make(self), "town")
 	if not bool(Profile.data.get("tutorial_seen", false)) and not Profile.is_dev():
 		show_tutorial.call_deferred()
@@ -536,6 +537,19 @@ func show_daycare(message := "") -> void:
 
 func show_museum() -> void:
 	_set_screen(TownScreens.museum(self), "museum")
+
+
+## Leaving the Outfitter: whatever you were trying on that you own stays on (pieces
+## you'd still have to buy come off), so you never lose an outfit you put together.
+func keep_outfit_try() -> void:
+	for slot: String in outfit_try:
+		var v: Array = outfit_try[slot]
+		if v.is_empty():
+			Town.wear(slot, "")
+		elif Town.owns_item(slot, str(v[0]), int(v[1])):
+			Town.wear(slot, str(v[0]), int(v[1]))
+	outfit_try = {}
+	outfit_set = []
 
 
 func show_outfitter(message := "") -> void:
@@ -1863,6 +1877,8 @@ func _collect_buttons(node: Node, into: Array[Control]) -> void:
 
 
 func _set_screen(content: Control, kind := "") -> void:
+	if kind != "outfitter" and not outfit_try.is_empty():
+		keep_outfit_try()
 	if not get_tree().node_added.is_connected(_on_node_added):
 		get_tree().node_added.connect(_on_node_added)
 	if _screen:
