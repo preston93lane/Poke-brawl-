@@ -1854,8 +1854,32 @@ func _check_gyms() -> void:
 	expect(Profile.gym_unlocked("elite_four"), "all 8 gyms + 50 Pokémon opens the Elite Four")
 	Profile.data["starter"] = "charmander"
 	var e4 := GymMode.settings_for({ "gym": "elite_four", "round": 4, "team_type": "", "difficulty": "normal", "picks": {} })
-	expect(e4["arena"] == "dragons_den" and e4["enemies"][0] == "blastoise", "Blue's ace counters your starter")
+	expect(e4["arena"] == "dragons_den" and e4["enemies"].size() == 6 and e4["enemies"][5] == "blastoise", "Blue brings six; his ace counters your starter")
 	expect(GymMode.has_ace(Profile.gym("elite_four")["rounds"], 0), "every Elite Four round has an ace")
+	expect(GymMode.elite_team_size("easy") == 6 and GymMode.elite_team_size("normal") == 5 and GymMode.elite_team_size("hard") == 4, "Easy 6, Normal 5, Hard 4 of yours vs their 6")
+	# The Elite Four on Hard: four of yours, one-on-one against Lorelei's six.
+	var e4_team := [{ "species": "pikachu" }, { "species": "geodude" }, { "species": "machop" }, { "species": "bulbasaur" }]
+	GameData.match_settings = GymMode.start_run("elite_four", "hard", "", {}, e4_team)
+	main = MAIN_SCENE.instantiate()
+	main.show_intro = false
+	main.record_progress = false
+	add_child(main)
+	await get_tree().physics_frame
+	var e4_logic: EliteFourMode = main.mode_logic
+	expect(main.mode == "elite_four" and main.teams[0].size() == 4 and main.teams[1].size() == 6, "four of yours vs six of Lorelei's")
+	expect(get_tree().get_nodes_in_group("brawlers").size() == 2 and main.player.species.id == "pikachu", "one-on-one, your first pick leads")
+	expect(e4_logic.ace == main.teams[1][5] and e4_logic.ace.species.id == "lapras" and main.is_benched(e4_logic.ace) and e4_logic.ace.size_scale > 1.0, "Lorelei's Lapras is her ace, out last")
+	var lead: Brawler = e4_logic.active[1]
+	lead._protect_time = 0.0
+	lead.take_damage(9999999.0, main.player)
+	await get_tree().create_timer(e4_logic.switch_delay() + 0.3).timeout
+	expect(e4_logic.active[1] != lead and e4_logic.active[1] != e4_logic.ace and e4_logic.left(1) == 5, "she sends out the next (not her ace yet)")
+	main.end_round("victory")
+	expect(GameData.gym_run["round"] == 1, "beating Lorelei moves on to Bruno")
+	main.queue_free()
+	await get_tree().process_frame
+	GameData.gym_run = {}
+	GameData.match_settings = {}
 	Profile.data["dev"] = saved_dev
 	Profile.data["unlocked"] = saved_unlocked
 	Profile.data["gyms"] = saved_gyms
@@ -2502,7 +2526,7 @@ func _check_rocket() -> void:
 	expect(main.teams[0].size() == 3 and main.teams[1].size() == 3, "three Pokémon a side")
 	expect(get_tree().get_nodes_in_group("brawlers").size() == 2 and main.player.species.id == "charmander", "one-on-one: one each on the field")
 	expect(not main.player.can_see(main.teams[1][1]) and main.teams[1][0].can_see(main.player), "the ones waiting are off the field")
-	expect(RocketMode.matchup(GameData.species["squirtle"].types, GameData.species["charmander"].types) > 0.0, "Water has the edge on Fire")
+	expect(TeamDuel.matchup(GameData.species["squirtle"].types, GameData.species["charmander"].types) > 0.0, "Water has the edge on Fire")
 	# Their lead faints: Rocket sends out its best match-up, and yours heals a little.
 	main.player.health = main.player.max_health * 0.5
 	var hp_before: float = main.player.health
@@ -2512,7 +2536,7 @@ func _check_rocket() -> void:
 	await get_tree().create_timer(float(Rocket.cfg("switch_delay", 1.2)) + 0.3).timeout
 	var their_next: Brawler = logic.active[1]
 	var waiting: Array[Brawler] = [main.teams[1][1], main.teams[1][2]]
-	var expected := RocketMode.best_counter(waiting, main.player)
+	var expected := TeamDuel.best_counter(waiting, main.player)
 	expect(their_next != their_lead and their_next == expected and not main.is_benched(their_next), "Rocket sends out its best match-up (%s)" % their_next.species.display_name)
 	expect(main.player.health > hp_before and main.player.health < main.player.max_health, "the one still standing heals a little (%.0f -> %.0f)" % [hp_before, main.player.health])
 	expect(main.scores[0] == 1.0, "a KO scores")
@@ -2550,7 +2574,8 @@ func _check_rocket() -> void:
 	add_child(main)
 	await get_tree().physics_frame
 	var ace: Brawler = main.mode_logic.ace
-	expect(ace != null and ace == main.teams[1][2] and main.is_benched(ace), "an Executive's ace waits until last")
+	expect(main.teams[1].size() == 4, "an Executive brings four")
+	expect(ace != null and ace == main.teams[1][3] and main.is_benched(ace), "an Executive's ace waits until last")
 	expect(ace.size_scale > 1.0 and ace.max_health > main.teams[1][1].max_health, "an Executive's ace is bigger and tougher")
 	main.queue_free()
 	await get_tree().process_frame

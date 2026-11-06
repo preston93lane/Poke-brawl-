@@ -14,7 +14,10 @@ const MODE_SCRIPTS := {
 	"boss_raid": preload("res://scripts/modes/boss_raid.gd"),
 	"gym": preload("res://scripts/modes/gym.gd"),
 	"rocket": preload("res://scripts/modes/rocket.gd"),
+	"elite_four": preload("res://scripts/modes/elite_four.gd"),
 }
+## One-on-one trainer battles (TeamDuel): one Pokémon a side on the field.
+const DUEL_MODES := ["rocket", "elite_four"]
 const MENU_SCENE := "res://scenes/menu.tscn"
 
 @export var arena_id := "route_1"
@@ -24,9 +27,9 @@ const MATCH_INTRO := preload("res://scripts/ui/match_intro.gd")
 const MODE_TITLES := {
 	"duel": "BATTLE", "king_of_the_hill": "KING OF THE HILL", "brawl_ball": "BRAWL BALL",
 	"candy_rush": "RARE CANDY RUSH", "showdown": "SHOWDOWN", "boss_raid": "BOSS RAID", "gym": "GYM BATTLE",
-	"rocket": "TEAM ROCKET",
+	"rocket": "TEAM ROCKET", "elite_four": "ELITE FOUR",
 }
-@export_enum("duel", "king_of_the_hill", "brawl_ball", "candy_rush", "showdown", "boss_raid", "gym", "rocket") var mode := "duel"
+@export_enum("duel", "king_of_the_hill", "brawl_ball", "candy_rush", "showdown", "boss_raid", "gym", "rocket", "elite_four") var mode := "duel"
 
 @export_group("Player")
 @export var player_species := "charmander"
@@ -133,11 +136,12 @@ func _ready() -> void:
 			if enemy == null:
 				enemy = bot
 	else:
-		# Rocket duels: no teammates (your other two wait their turn, see RocketMode).
-		for species_id in _fill_team(ally_team, 0 if mode == "rocket" else team_size - 1, [player_species]):
+		# Trainer duels: no teammates (the rest of your team waits its turn, see TeamDuel).
+		for species_id in _fill_team(ally_team, 0 if mode in DUEL_MODES else team_size - 1, [player_species]):
 			_spawn_bot(species_id, 0)
 		# Boss Raid: the mode brings in the boss itself.
-		for species_id in _fill_team(enemy_team, 0 if mode == "boss_raid" else team_size, []):
+		var enemy_count := 0 if mode == "boss_raid" else (enemy_team.size() if mode in DUEL_MODES else team_size)
+		for species_id in _fill_team(enemy_team, enemy_count, []):
 			var bot := _spawn_bot(species_id, 1)
 			if enemy == null:
 				enemy = bot
@@ -165,7 +169,7 @@ func _ready() -> void:
 	hud.restart_requested.connect(func() -> void:
 		if mode == "rocket" and not Rocket.run.is_empty():
 			GameData.match_settings = Rocket.settings_for_round()  # Next round (or round 1 again).
-		elif not trainer.is_empty():
+		elif not trainer.is_empty() and mode not in DUEL_MODES:
 			if int(trainer.get("floor", 0)) <= 0:
 				get_tree().change_scene_to_file(MENU_SCENE)  # A wandering trainer: back to town.
 				return
@@ -173,7 +177,7 @@ func _ready() -> void:
 			picks.erase("trainer")
 			picks["drink"] = ""
 			GameData.match_settings = Town.start_trainer(Town.tower_trainer(Town.tower_floor()), picks, 0, Town.tower_floor())
-		elif mode == "gym" and not GameData.gym_run.is_empty():
+		elif mode in ["gym", "elite_four"] and not GameData.gym_run.is_empty():
 			GameData.match_settings = GymMode.settings_for(GameData.gym_run)  # Next round (or round 1 again).
 		get_tree().reload_current_scene())
 	hud.menu_requested.connect(func() -> void: get_tree().change_scene_to_file(MENU_SCENE))
@@ -312,7 +316,7 @@ func _play_intro() -> void:
 	hud.add_child(intro)
 	get_tree().paused = true
 	var title: String = MODE_TITLES.get(mode, mode.to_upper())
-	if mode == "gym" and not GameData.gym_run.is_empty():
+	if mode in ["gym", "elite_four"] and not GameData.gym_run.is_empty():
 		title = GymMode.round_title(GameData.gym_run)
 	elif mode == "rocket":
 		title = Rocket.round_title()
@@ -810,7 +814,7 @@ func end_round(result_name: String, subtitle := "") -> void:
 			rewards["money"] = int(rewards["money"]) + int(r_end.get("money", 0))
 			(rewards["balls"] as Array).append_array(r_end.get("balls", []))
 			rewards["extras"] = r_end.get("texts", [])
-	elif not trainer.is_empty() and record_progress:
+	elif not trainer.is_empty() and mode not in DUEL_MODES and record_progress:
 		var t_end := Town.finish_trainer(trainer, result_name)
 		subtitle = str(t_end.get("text", subtitle))
 		if not rewards.is_empty():
@@ -819,7 +823,7 @@ func end_round(result_name: String, subtitle := "") -> void:
 			hud.set_rematch_text("NEXT FLOOR ›" if result_name == "victory" else "TRY FLOOR %d" % int(t_end["floor"]))
 		else:
 			hud.set_rematch_text("BACK TO TOWN")
-	if mode == "gym":
+	if mode in ["gym", "elite_four"]:
 		var gym_end: Dictionary = mode_logic.call("finish", result_name)
 		subtitle = str(gym_end.get("subtitle", subtitle))
 		hud.set_rematch_text(str(gym_end.get("next", "REMATCH")))

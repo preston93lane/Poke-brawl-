@@ -1,5 +1,5 @@
 {
-	"_comment": "Gym gauntlets: full 3v3 matches in a row on the gym's map (two trainers, then the Gym Leader, whose first Pokémon is the ace: bigger and tougher, and a KO on it scores leader_kos). Lose one and it's back to round 1. Gadget uses carry over between rounds. Gym i opens once the gym before it is beaten and you have first_unlocks + i * unlocks_step Pokémon lines unlocked. The Elite Four (every round has an ace; a round may name its own arena; \"rival\" = the starter that beats yours) opens after the last gym with elite_four_unlocks lines. Rewards: economy.json gyms.",
+	"_comment": "Gym gauntlets: full 3v3 matches in a row on the gym's map (two trainers, then the Gym Leader, whose first Pokémon is the ace: bigger and tougher, and a KO on it scores leader_kos). Lose one and it's back to round 1. Gadget uses carry over between rounds. Gym i opens once the gym before it is beaten and you have first_unlocks + i * unlocks_step Pokémon lines unlocked. The Elite Four (every round has an ace; a round may name its own arena; \"rival\" = the starter that beats yours) opens after the last gym with elite_four_unlocks lines. Rewards: economy.json gyms. The Elite Four is different: one-on-one trainer battles (scripts/modes/elite_four.gd, like the Rocket Hideout). Each of the five brings six Pokémon, its ace (last in its team) coming out last; you bring team_sizes[difficulty] of yours (Easy 6, Normal 5, Hard 4) and their Pokémon are your team's average level + level_bonus[difficulty]. Your team is healed between battles; lose all yours and it's back to Lorelei.",
 	"first_unlocks": 10,
 	"unlocks_step": 5,
 	"elite_four_unlocks": 50,
@@ -271,9 +271,12 @@
 				"arena": "lorelei_chamber",
 				"ace": true,
 				"team": [
-					"lapras",
 					"dewgong",
-					"cloyster"
+					"cloyster",
+					"slowbro",
+					"jynx",
+					"golduck",
+					"lapras"
 				]
 			},
 			{
@@ -281,9 +284,12 @@
 				"arena": "bruno_dojo",
 				"ace": true,
 				"team": [
-					"machamp",
 					"onix",
-					"hitmonlee"
+					"hitmonchan",
+					"hitmonlee",
+					"golem",
+					"primeape",
+					"machamp"
 				]
 			},
 			{
@@ -291,9 +297,12 @@
 				"arena": "agatha_crypt",
 				"ace": true,
 				"team": [
-					"gengar",
+					"golbat",
 					"haunter",
-					"arbok"
+					"arbok",
+					"muk",
+					"weezing",
+					"gengar"
 				]
 			},
 			{
@@ -301,9 +310,12 @@
 				"arena": "lance_hall",
 				"ace": true,
 				"team": [
-					"dragonite",
+					"gyarados",
 					"dragonair",
-					"gyarados"
+					"aerodactyl",
+					"charizard",
+					"seadra",
+					"dragonite"
 				]
 			},
 			{
@@ -311,12 +323,25 @@
 				"arena": "dragons_den",
 				"ace": true,
 				"team": [
-					"rival",
 					"pidgeot",
-					"alakazam"
+					"alakazam",
+					"rhydon",
+					"arcanine",
+					"exeggutor",
+					"rival"
 				]
 			}
-		]
+		],
+		"team_sizes": {
+			"easy": 6,
+			"normal": 5,
+			"hard": 4
+		},
+		"level_bonus": {
+			"easy": 0,
+			"normal": 2,
+			"hard": 4
+		}
 	},
 	"rival": {
 		"bulbasaur": "charizard",

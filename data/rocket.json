@@ -1,5 +1,5 @@
 {
-	"_comment": "Team Rocket Hideout (scripts/modes/rocket.gd, scripts/data/rocket.gd). Open every Saturday and Sunday, plus weekday_days random weekdays each week. Pick a team of three Pokémon and beat three Grunts (three of the grunt teams, picked for the day) and then two Executives (two of the executives) in a row. Each battle is one-on-one, like a trainer battle: you see their team and choose your lead; when a Pokémon faints, its trainer chooses who goes next (you pick between the two you have left; Rocket picks the best type match-up). The Pokémon still standing keeps its HP and heals between_heal of it. Lose all three and the run is over (back to the first Grunt); beat a trainer and your whole team is healed for the next. time_limit per battle: at the end more Pokémon left wins, then more HP; a full tie goes to Team Rocket. Every enemy is a Shadow Pokémon: tougher, hits harder; an Executive's ace (first in its team) comes out last, bigger, and gets enraged when hurt.",
+	"_comment": "Team Rocket Hideout (scripts/modes/rocket.gd, scripts/data/rocket.gd). Open every Saturday and Sunday, plus weekday_days random weekdays each week. Pick a team of three Pokémon and beat three Grunts (three of the grunt teams, picked for the day) and then two Executives (two of the executives) in a row. Each battle is one-on-one, like a trainer battle: you see their team and choose your lead; when a Pokémon faints, its trainer chooses who goes next (you pick between the two you have left; Rocket picks the best type match-up). The Pokémon still standing keeps its HP and heals between_heal of it. Lose all three and the run is over (back to the first Grunt); beat a trainer and your whole team is healed for the next. time_limit per battle: at the end more Pokémon left wins, then more HP; a full tie goes to Team Rocket. Every enemy is a Shadow Pokémon: tougher, hits harder; an Executive brings four Pokémon, and its ace (first in its team list) comes out last, bigger, and gets enraged when hurt.",
 	"weekday_days": 2,
 	"time_limit": 240,
 	"difficulties": {
@@ -93,7 +93,8 @@
 			"team": [
 				"weezing",
 				"raticate",
-				"golbat"
+				"golbat",
+				"arbok"
 			],
 			"arena": "ss_anne"
 		},
@@ -102,7 +103,8 @@
 			"team": [
 				"golbat",
 				"weezing",
-				"muk"
+				"muk",
+				"electrode"
 			],
 			"arena": "dragons_den"
 		},
@@ -111,7 +113,8 @@
 			"team": [
 				"arbok",
 				"vileplume",
-				"muk"
+				"muk",
+				"golbat"
 			],
 			"arena": "lance_hall"
 		},
@@ -120,7 +123,8 @@
 			"team": [
 				"hypno",
 				"golbat",
-				"persian"
+				"persian",
+				"rhydon"
 			],
 			"arena": "viridian_gym"
 		}

@@ -1246,6 +1246,8 @@ func record_gym_clear(id: String, difficulty: String, team_type := "") -> Dictio
 				_add_tm(tm)
 				texts.append(item_name(tm))
 	cash = roundi(cash * mult)
+	if difficulty == "easy":
+		cash = roundi(cash * float(econ(cfg + "easy_multiplier", 0.5)))  # Elite Four on Easy: six of yours.
 	if mult > 1.0:
 		texts.append("%s team ×%s" % [team_type.capitalize(), str(mult).trim_suffix(".0")])
 	var type_key := id + ":" + team_type

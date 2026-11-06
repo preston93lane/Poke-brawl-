@@ -12,10 +12,11 @@ var ace: Brawler
 
 
 ## Starts a fresh run from the menu's choices; returns the first round's match settings.
-static func start_run(gym_id: String, difficulty: String, team_type: String, picks: Dictionary) -> Dictionary:
+## `team`: the Elite Four only: your picks for its one-on-one battles (EliteFourMode).
+static func start_run(gym_id: String, difficulty: String, team_type: String, picks: Dictionary, team: Array = []) -> Dictionary:
 	GameData.gym_run = {
 		"gym": gym_id, "round": 0, "difficulty": difficulty, "team_type": team_type,
-		"picks": picks, "gadget_uses": int(GameData.rule("gadget/uses", 3)),
+		"picks": picks, "gadget_uses": int(GameData.rule("gadget/uses", 3)), "team": team.duplicate(true),
 	}
 	return settings_for(GameData.gym_run)
 
@@ -36,7 +37,22 @@ static func settings_for(r: Dictionary) -> Dictionary:
 	s["enemies"] = team
 	s["allies"] = team_of_type(str(r["team_type"]), str(picks.get("species", "")))
 	s["difficulty"] = "hard" if str(r["difficulty"]) == "hard" else "normal"
+	if str(r["gym"]) == "elite_four":
+		# One-on-one with your own team (EliteFourMode): your first pick leads.
+		var mine: Array = r.get("team", [])
+		if not mine.is_empty():
+			s.merge(mine[0], true)
+		s["mode"] = "elite_four"
+		s["allies"] = []
+		var bonus := int(g.get("level_bonus", {}).get(str(r["difficulty"]), 0))
+		s["trainer"] = { "name": str(round_data["trainer"]), "stars": 3, "stake": 0, "floor": 0, "class": "ace_trainer",
+			"level_bonus": bonus, "level": mini(Rocket.team_level(mine) + bonus, Profile.max_level()), "hp_scale": 1.0 }
 	return s
+
+
+## How many Pokémon you take into the Elite Four on `difficulty` (they bring six).
+static func elite_team_size(difficulty: String) -> int:
+	return int(Profile.gym("elite_four").get("team_sizes", {}).get(difficulty, 5))
 
 
 ## Two random teammates of `type_name` (none = random as usual), not your own line
