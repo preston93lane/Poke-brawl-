@@ -42,9 +42,13 @@ The web build uses Godot's Compatibility renderer, so lighting is slightly simpl
     trainer class in three colourways (`data/outfits.json` from `tools/build_outfits.py`; layers drawn by
     `tools/make_trainer_sheets.py`).
   - **Team Rocket Hideout** (`data/rocket.json`): open every weekend and on two random weekdays a week; a Rocket
-    Grunt guards the Game Corner. Pick one Pokémon and beat three Grunt teams then two Executives, all Shadow
-    Pokémon (tougher, harder-hitting; the Executive's ace is bigger and enrages when hurt), with only a few lives for
-    the whole run. Clears pay money, coins, Rare Candy and balls, plus one piece a day of the Team Rocket uniform
+    Grunt guards the Game Corner. Bring a team of three and beat three Grunt teams then two Executives, all Shadow
+    Pokémon (tougher, harder-hitting; the Executive's ace comes out last, bigger, and enrages when hurt). Every battle
+    is one-on-one like a trainer battle: see their team and choose your lead; when one faints its trainer picks who
+    goes next (you choose from the ones you have left, Rocket sends its best type match-up), and the one still
+    standing keeps its HP plus a small heal. Lose all three and the run starts over; beat a trainer and your team is
+    healed. Your first clear of each difficulty each day pays in full (repeat clears pay 15%): money, coins, Rare
+    Candy and balls, plus one piece a day of the Team Rocket uniform
     (black Grunt on Normal, white Executive on Hard), which can't be bought.
 - The game opens on a menu: **Battle**, **King of the Hill**, **Brawl Ball**, **Rare Candy Rush**, **Showdown** or **Pokédex**. Then pick your Pokémon, level,
   moves, opponent and arena. Running `scenes/main.tscn` directly in the editor uses the **Main** node's Inspector values instead.

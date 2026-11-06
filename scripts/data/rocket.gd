@@ -1,13 +1,14 @@
 class_name Rocket
 extends RefCounted
 ## Team Rocket Hideout (data/rocket.json): when it's open, today's line-up, the
-## run in progress (one Pokémon through three Grunts and two Executives, with a
-## few lives for the whole run) and the rewards. The fighting is RocketMode.
+## run in progress (your team of three through three Grunts and two Executives,
+## one-on-one like a real trainer battle) and the rewards. The fighting is RocketMode.
 
 const PATH := "res://data/rocket.json"
 
 static var _cfg: Dictionary = {}
-## The run in progress: { difficulty, round, faints, picks, rounds: [...] }.
+## The run in progress: { difficulty, round, team: [3 picks], rounds: [...] }.
+## A pick is the select screen's settings for one Pokémon: { species, main, hm, evolution, shiny }.
 static var run: Dictionary = {}
 
 
@@ -83,30 +84,51 @@ static func line_up() -> Array:
 	return out
 
 
-static func lives(difficulty: String) -> int:
-	return int(cfg("difficulties/%s/lives" % difficulty, 4))
+## How many Pokémon you take in.
+const TEAM_SIZE := 3
 
 
-## Starts a run with your picks (species etc. from the select screen).
-static func start_run(difficulty: String, picks: Dictionary) -> Dictionary:
-	run = { "difficulty": difficulty, "round": 0, "faints": 0, "picks": picks, "rounds": line_up() }
+## Starts a run with your team of three (each a pick from the select screen;
+## `extra` = settings shared by the run, like a drink).
+static func start_run(difficulty: String, team: Array, extra: Dictionary = {}) -> Dictionary:
+	run = { "difficulty": difficulty, "round": 0, "team": team.duplicate(true), "extra": extra.duplicate(), "rounds": line_up() }
 	return settings_for_round()
 
 
-## Match settings for the run's current round.
+## The trainer's Pokémon for this run's round, in the order they'd lead with:
+## an Executive's ace (first in its team list) always comes out last.
+static func enemy_order(r: Dictionary) -> Array:
+	var team: Array = (r["team"] as Array).duplicate()
+	if bool(r.get("boss", false)) and team.size() > 1:
+		team.push_back(team.pop_front())
+	return team
+
+
+## Average profile level of your team (the Rocket Pokémon are a few levels above it).
+static func team_level(team: Array) -> int:
+	var total := 0
+	for pick: Dictionary in team:
+		total += Profile.level_of(str(pick.get("species", "")))
+	return maxi(1, roundi(float(total) / maxf(1.0, team.size())))
+
+
+## Match settings for the run's current round: your first pick leads (you choose
+## your lead again on the field, once you've seen their team).
 static func settings_for_round() -> Dictionary:
 	var rounds: Array = run.get("rounds", [])
 	var r: Dictionary = rounds[clampi(int(run["round"]), 0, rounds.size() - 1)]
-	var s: Dictionary = (run["picks"] as Dictionary).duplicate()
+	var team: Array = run.get("team", [])
+	var s: Dictionary = (run.get("extra", {}) as Dictionary).duplicate()
+	s.merge(team[0] if not team.is_empty() else {}, true)
 	s["mode"] = "rocket"
 	s["arena"] = str(r["arena"])
-	s["enemies"] = r["team"]
+	s["enemies"] = enemy_order(r)
 	s["allies"] = []
 	s["difficulty"] = str(cfg("difficulties/%s/bot" % str(run["difficulty"]), "normal"))
 	var d := str(run["difficulty"])
+	var bonus := int(cfg("difficulties/%s/%s" % [d, "boss_level_bonus" if bool(r["boss"]) else "level_bonus"], 2))
 	s["trainer"] = { "name": str(r["name"]), "stars": 3 if bool(r["boss"]) else 2, "stake": 0, "floor": 0, "class": "rocket",
-		"level_bonus": int(cfg("difficulties/%s/%s" % [d, "boss_level_bonus" if bool(r["boss"]) else "level_bonus"], 2)),
-		"hp_scale": 1.0, "rocket": true }
+		"level_bonus": bonus, "level": mini(team_level(team) + bonus, Profile.max_level()), "hp_scale": 1.0, "rocket": true }
 	return s
 
 
@@ -119,7 +141,6 @@ static func round_title() -> String:
 	return "ROCKET HIDEOUT %d/%d  ·  %s" % [i + 1, rounds.size(), str(r["name"]).to_upper()]
 
 
-## After a full clear: pays out and returns [lines of text, balls given].
 ## Whether you've already cleared difficulty `d` today (later runs pay less).
 static func cleared_today(d: String) -> bool:
 	return str(Town._save_dict("rocket_stats").get("last_" + d, "")) == Profile.today()
@@ -138,6 +159,7 @@ static func round_money(i: int) -> int:
 	return roundi(float(cfg("rewards/round_money", 150)) * (i + 1) * pay_share())
 
 
+## After a full clear: pays out and returns { texts, balls }.
 static func clear_rewards() -> Dictionary:
 	var d := str(run.get("difficulty", "normal"))
 	var c: Dictionary = cfg("rewards/clear/" + d, {})

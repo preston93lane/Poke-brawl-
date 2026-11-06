@@ -197,7 +197,9 @@ func _portrait(rect: Rect2, b: Brawler, team_color: Color, font: Font) -> void:
 	var tint := Color(0.35, 0.35, 0.35) if b.is_dead else Color.WHITE
 	draw_texture_rect(b.portrait(), rect.grow(-3), false, tint)
 	if b.is_dead:
-		_text(font, Vector2(rect.position.x, rect.position.y + rect.size.y * 0.68), rect.size.x, str(ceili(b.respawn_left)), 24, Color.WHITE)
+		# Out for good (Rocket duels, Showdown): KO instead of a countdown.
+		_text(font, Vector2(rect.position.x, rect.position.y + rect.size.y * 0.68), rect.size.x,
+				str(ceili(b.respawn_left)) if b.respawn_left > 0.0 else "KO", 24, Color.WHITE)
 	else:
 		var hp := Rect2(rect.position.x + 3, rect.end.y - 7, (rect.size.x - 6) * b.health / b.max_health, 4)
 		draw_rect(hp, Color(0.4, 1, 0.45) if b.team == GameData.local_team else Color(1, 0.4, 0.4))

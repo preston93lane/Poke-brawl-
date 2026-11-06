@@ -21,11 +21,14 @@ func _ready() -> void:
 	# "rocket_match": an Executive round of the Rocket Hideout (on a Saturday).
 	if arena_id == "rocket_match":
 		Town.now_override = 1793577600.0 + 5 * 86400 + 43200
-		Rocket.start_run("normal", { "species": "pikachu" })
+		Rocket.start_run("normal", [{ "species": "pikachu" }, { "species": "squirtle" }, { "species": "bulbasaur" }])
 		Rocket.run["round"] = 4
 		GameData.match_settings = Rocket.settings_for_round()
 		arena_id = str(GameData.match_settings["arena"])
 	var out_dir := args[1] if args.size() > 1 else "user://shots"
+	if arena_id == "rocket_pick":
+		await _rocket_pick_shot(out_dir)
+		return
 	if arena_id.begins_with("menu:"):
 		await _menu_shot(arena_id.trim_prefix("menu:"), out_dir)
 		return
@@ -307,6 +310,13 @@ func _menu_shot(screen: String, out_dir: String) -> void:
 	add_child(menu)
 	await get_tree().process_frame
 	match screen:
+		"rocket_select":
+			Town.now_override = 1793577600.0 + 5 * 86400 + 43200
+			menu.rocket_team = [{ "species": "squirtle" }, { "species": "pikachu" }]
+			menu._species = GameData.species["geodude"]
+			menu.show_select("rocket")
+			for i in 5:
+				await get_tree().process_frame
 		"select":
 			menu.show_select("duel")
 			for i in 5:
@@ -528,4 +538,23 @@ func _top_shot(arena_id: String, out_dir: String) -> void:
 		await get_tree().physics_frame
 	get_viewport().get_texture().get_image().save_png("%s/top_%s.png" % [out_dir, arena_id])
 	print("saved top")
+	get_tree().quit()
+
+
+## Rocket duel: the "who's next?" picker after your lead faints.
+func _rocket_pick_shot(out_dir: String) -> void:
+	Town.now_override = 1793577600.0 + 5 * 86400 + 43200
+	Rocket.start_run("normal", [{ "species": "charmander" }, { "species": "squirtle" }, { "species": "bulbasaur" }])
+	GameData.match_settings = Rocket.settings_for_round()
+	var main := MAIN_SCENE.instantiate()
+	main.show_intro = false
+	add_child(main)
+	for i in 10:
+		await get_tree().process_frame
+	main.player._protect_time = 0.0
+	main.player.take_damage(9999999.0, main.mode_logic.active[1])
+	await get_tree().create_timer(2.0).timeout
+	for i in 5:
+		await get_tree().process_frame
+	get_viewport().get_texture().get_image().save_png("%s/rocket_pick.png" % out_dir)
 	get_tree().quit()

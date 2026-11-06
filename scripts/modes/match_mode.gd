@@ -14,6 +14,11 @@ func start() -> void:
 	pass
 
 
+## Runs after setup and before the team banners (Rocket: choose your lead).
+func before_intro() -> void:
+	pass
+
+
 func tick(_delta: float) -> void:
 	pass
 

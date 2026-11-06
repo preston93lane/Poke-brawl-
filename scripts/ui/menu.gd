@@ -10,7 +10,7 @@ const MODES := {
 	"candy_rush": { "button": "RARE CANDY RUSH", "title": "RARE CANDY RUSH 3v3", "blurb": "Grab 10 Rare Candies from the mine and hold them for 10 s." },
 	"showdown": { "button": "SHOWDOWN", "title": "SHOWDOWN", "blurb": "Free-for-all: smash crates for power cubes. Last one standing wins." },
 	"gym": { "button": "GYMS", "title": "GYM", "blurb": "Beat two trainers, then the Gym Leader, three matches in a row." },
-	"rocket": { "button": "ROCKET HIDEOUT", "title": "ROCKET HIDEOUT", "blurb": "One Pokémon, a few lives: three Grunts, then two Executives." },
+	"rocket": { "button": "ROCKET HIDEOUT", "title": "ROCKET HIDEOUT", "blurb": "A team of three, one-on-one: three Grunts, then two Executives." },
 	"boss_raid": { "button": "BOSS RAID", "title": "BOSS RAID", "blurb": "Team up against a giant legendary. Dodge the red circles!" },
 }
 
@@ -61,6 +61,8 @@ var outfit_try := {}
 var outfit_set := []
 ## Rocket Hideout difficulty picked on its screen.
 var rocket_difficulty := "normal"
+## Rocket Hideout: the three you're taking in (picks: { species, main, hm, evolution, shiny }).
+var rocket_team: Array = []
 
 
 func _ready() -> void:
@@ -613,7 +615,7 @@ func show_select(mode: String) -> void:
 		title.text = "%s  —  %s%s" % [str(GameData.arenas.get(_gym, {}).get("name", _gym)).to_upper(), _gym_difficulty.to_upper(),
 				"  ·  pick a %s type" % _gym_type.capitalize() if _gym_type != "" else ""]
 	if mode == "rocket":
-		title.text = "TEAM ROCKET HIDEOUT  —  %s  ·  pick one Pokémon, %d lives" % [rocket_difficulty.to_upper(), Rocket.lives(rocket_difficulty)]
+		title.text = "TEAM ROCKET HIDEOUT  —  %s  ·  pick a team of %d" % [rocket_difficulty.to_upper(), Rocket.TEAM_SIZE]
 	if not _pending_trainer.is_empty():
 		var tr: Dictionary = _pending_trainer["trainer"]
 		var tower_floor := int(_pending_trainer["floor"])
@@ -633,6 +635,8 @@ func show_select(mode: String) -> void:
 	start.add_theme_stylebox_override("hover", UiKit.box(Color(0.3, 0.78, 0.4)))
 	top.add_child(start)
 	root.add_child(top)
+	if mode == "rocket":
+		root.add_child(_rocket_team_bar())
 
 	var body := HBoxContainer.new()
 	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -1106,8 +1110,19 @@ func _refresh_select_details() -> void:
 		_details.add_child(_trainer_level_box(s))
 	if is_instance_valid(_start_button):
 		_start_button.disabled = not Profile.is_unlocked(s.id) or (_mode == "gym" and _gym_type != "" and not _line_has_type(s, _gym_type))
+	if _mode == "rocket" and is_instance_valid(_start_button):
+		_start_button.disabled = rocket_team.size() < Rocket.TEAM_SIZE
 	if not Profile.is_unlocked(s.id):
 		return  # Locked: no build to edit (and its stats stay hidden).
+	if _mode == "rocket":
+		var in_team := rocket_team.any(func(p: Dictionary) -> bool: return str(p["species"]) == s.id)
+		var add := UiKit.button("✓ ON YOUR TEAM" if in_team else "+ ADD %s TO YOUR TEAM" % s.display_name.to_upper(), func() -> void:
+			if not in_team and rocket_team.size() < Rocket.TEAM_SIZE:
+				rocket_team.append({ "species": s.id, "main": _main, "hm": _hm, "evolution": _evolution, "shiny": _shiny })
+			show_select("rocket"), 22)
+		add.disabled = in_team or rocket_team.size() >= Rocket.TEAM_SIZE
+		add.add_theme_stylebox_override("normal", UiKit.box(Color(0.65, 0.2, 0.28)))
+		_details.add_child(add)
 	_editor_refresh = _refresh_select_details
 	_build_editor(s)
 
@@ -1515,6 +1530,31 @@ func _vitamin_box(s: SpeciesData) -> Control:
 	return box
 
 
+## Rocket Hideout: your team of three along the top; tap one to take it off.
+func _rocket_team_bar() -> Control:
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 10)
+	row.add_child(UiKit.label("YOUR TEAM", 22, Color(1, 0.75, 0.75)))
+	for i in Rocket.TEAM_SIZE:
+		if i < rocket_team.size():
+			var pick: Dictionary = rocket_team[i]
+			var sp: SpeciesData = GameData.species.get(str(pick["species"]))
+			var b := UiKit.button("%s  ✕" % (sp.display_name.to_upper() if sp else "?"), func() -> void:
+				rocket_team.remove_at(i)
+				show_select("rocket"), 18)
+			if sp:
+				b.icon = sp.sprite
+				b.expand_icon = true
+				b.custom_minimum_size = Vector2(200, 56)
+			row.add_child(b)
+		else:
+			var empty := UiKit.label("  —  pick %s  —  " % ["first", "second", "third"][i], 18, Color(1, 1, 1, 0.5))
+			row.add_child(empty)
+	row.add_child(UiKit.label("   You choose who leads once you see their team.", 16, Color(0.85, 0.85, 0.95)))
+	return row
+
+
 func _start_match() -> void:
 	GameData.match_settings = {
 		"mode": _mode,
@@ -1536,7 +1576,7 @@ func _start_match() -> void:
 		_pending_trainer = {}
 		GameData.match_settings = Town.start_trainer((p["trainer"] as Dictionary).duplicate(true), GameData.match_settings, int(p["stake"]), int(p["floor"]))
 	elif _mode == "rocket":
-		GameData.match_settings = Rocket.start_run(rocket_difficulty, GameData.match_settings)
+		GameData.match_settings = Rocket.start_run(rocket_difficulty, rocket_team, { "drink": GameData.match_settings["drink"] })
 	elif _mode == "gym":
 		GameData.match_settings = GymMode.start_run(_gym, _gym_difficulty, _gym_type, GameData.match_settings)
 	if _mode == "boss_raid":

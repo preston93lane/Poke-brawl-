@@ -2488,39 +2488,70 @@ func _check_rocket() -> void:
 	var line := Rocket.line_up()
 	expect(line.size() == 5 and not bool(line[0]["boss"]) and bool(line[4]["boss"]), "three Grunts, then two Executives")
 	expect(line == Rocket.line_up(), "the line-up is the same all day")
-	GameData.match_settings = Rocket.start_run("normal", { "species": "charmander" })
+	var picks := [{ "species": "charmander" }, { "species": "squirtle" }, { "species": "bulbasaur" }]
+	GameData.match_settings = Rocket.start_run("normal", picks)
 	var main := MAIN_SCENE.instantiate()
 	main.show_intro = false
 	add_child(main)
 	await get_tree().physics_frame
+	var logic: RocketMode = main.mode_logic
 	var all_shadow := true
 	for b: Brawler in main.teams[1]:
 		all_shadow = all_shadow and b.is_shadow
 	expect(main.mode == "rocket" and all_shadow, "every Rocket Pokémon is a Shadow Pokémon")
-	# Faint as many times as there are lives: the run is over.
-	for i in Rocket.lives("normal"):
-		if main.round_over:
-			break
-		main.player._protect_time = 0.0
-		main.player.take_damage(999999.0, main.teams[1][0])
-		await get_tree().physics_frame
-		for k in 600:
-			if main.round_over or not main.player.is_dead:
-				break
-			await get_tree().physics_frame
-	expect(main.round_over and int(Rocket.run["round"]) == 0, "out of lives: Team Rocket wins and the run starts over")
+	expect(main.teams[0].size() == 3 and main.teams[1].size() == 3, "three Pokémon a side")
+	expect(get_tree().get_nodes_in_group("brawlers").size() == 2 and main.player.species.id == "charmander", "one-on-one: one each on the field")
+	expect(not main.player.can_see(main.teams[1][1]) and main.teams[1][0].can_see(main.player), "the ones waiting are off the field")
+	expect(RocketMode.matchup(GameData.species["squirtle"].types, GameData.species["charmander"].types) > 0.0, "Water has the edge on Fire")
+	# Their lead faints: Rocket sends out its best match-up, and yours heals a little.
+	main.player.health = main.player.max_health * 0.5
+	var hp_before: float = main.player.health
+	var their_lead: Brawler = logic.active[1]
+	their_lead._protect_time = 0.0
+	their_lead.take_damage(9999999.0, main.player)
+	await get_tree().create_timer(float(Rocket.cfg("switch_delay", 1.2)) + 0.3).timeout
+	var their_next: Brawler = logic.active[1]
+	var waiting: Array[Brawler] = [main.teams[1][1], main.teams[1][2]]
+	var expected := RocketMode.best_counter(waiting, main.player)
+	expect(their_next != their_lead and their_next == expected and not main.is_benched(their_next), "Rocket sends out its best match-up (%s)" % their_next.species.display_name)
+	expect(main.player.health > hp_before and main.player.health < main.player.max_health, "the one still standing heals a little (%.0f -> %.0f)" % [hp_before, main.player.health])
+	expect(main.scores[0] == 1.0, "a KO scores")
+	# Yours faints with two left: you choose who's next.
+	main.player._protect_time = 0.0
+	main.player.take_damage(9999999.0, their_next)
+	await get_tree().create_timer(float(Rocket.cfg("switch_delay", 1.2)) + 0.3).timeout
+	expect(logic.choosing and get_tree().paused, "you pick your next Pokémon (the match waits)")
+	var bulba: Brawler = main.teams[0][2]
+	logic.choose(bulba)
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	expect(not get_tree().paused and main.player == bulba and bulba.is_player and not main.is_benched(bulba), "Bulbasaur comes out and you control it")
+	var controls := 0
+	for b: Brawler in main.teams[0]:
+		for child in b.get_children():
+			controls += int(child is PlayerController and not child.is_queued_for_deletion())
+	expect(controls == 1 and main.camera.target == bulba and GameData.local_player == bulba, "the controls and camera move to it")
+	# One left: it comes straight out. Then the last one faints: the run is over.
+	bulba._protect_time = 0.0
+	bulba.take_damage(9999999.0, logic.active[1])
+	await get_tree().create_timer(float(Rocket.cfg("switch_delay", 1.2)) + 0.3).timeout
+	expect(not logic.choosing and main.player.species.id == "squirtle", "your last one comes straight out")
+	main.player._protect_time = 0.0
+	main.player.take_damage(9999999.0, logic.active[1])
+	await get_tree().physics_frame
+	expect(main.round_over and main.hud.result_title.text == "DEFEAT" and int(Rocket.run["round"]) == 0, "all three fainted: Team Rocket wins and the run starts over")
 	main.queue_free()
 	await get_tree().process_frame
-	# Boss round: the Executive's ace is a big shadow Pokémon.
+	# Boss round: the Executive's ace comes out last, big and tough.
 	Rocket.run["round"] = 3
-	Rocket.run["faints"] = 0
 	GameData.match_settings = Rocket.settings_for_round()
 	main = MAIN_SCENE.instantiate()
 	main.show_intro = false
 	add_child(main)
 	await get_tree().physics_frame
 	var ace: Brawler = main.mode_logic.ace
-	expect(ace != null and ace.size_scale > 1.0 and ace.max_health > main.teams[1][1].max_health, "an Executive's ace is bigger and tougher")
+	expect(ace != null and ace == main.teams[1][2] and main.is_benched(ace), "an Executive's ace waits until last")
+	expect(ace.size_scale > 1.0 and ace.max_health > main.teams[1][1].max_health, "an Executive's ace is bigger and tougher")
 	main.queue_free()
 	await get_tree().process_frame
 	# Clearing it: a Grunt uniform piece, once a day.

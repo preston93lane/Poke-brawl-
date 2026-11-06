@@ -1598,7 +1598,8 @@ func allies_within(radius: float) -> Array[Brawler]:
 
 ## Whether this brawler can currently see `other` (blindness, tall grass).
 func can_see(other: Brawler) -> bool:
-	return not is_blind() and not other.is_dead and not other.is_hidden_from(team)
+	# Off the field (a Rocket duel Pokémon waiting its turn) counts as unseen.
+	return not is_blind() and not other.is_dead and other.is_in_group("brawlers") and not other.is_hidden_from(team)
 
 
 ## Nearest enemy this brawler can see.
@@ -2296,12 +2297,7 @@ func _build_static_visuals() -> void:
 	team_ring.mesh = null  # No team ring either; health bar colours show teams.
 	team_ring.scale = Vector3(1, 0.1, 1)
 	team_ring.position.y = 0.04
-	var ring_color := Color(1.0, 0.25, 0.25, 0.9)
-	if is_player:
-		ring_color = Color(0.35, 1.0, 0.45, 0.95)
-	elif team == GameData.local_team:
-		ring_color = Color(0.25, 0.6, 1.0, 0.9)
-	team_ring.material_override = _flat_material(ring_color)
+	refresh_team_ring()
 
 	_melee_material = _flat_material(Color(1, 1, 1, 0.0))
 	melee_fx.material_override = _melee_material
@@ -2311,6 +2307,16 @@ func _build_static_visuals() -> void:
 	aim_indicator.visible = false
 	_dust = Vfx.dust()
 	add_child(_dust)
+
+
+## The ring colour: green for you, blue for teammates, red for enemies.
+func refresh_team_ring() -> void:
+	var ring_color := Color(1.0, 0.25, 0.25, 0.9)
+	if is_player:
+		ring_color = Color(0.35, 1.0, 0.45, 0.95)
+	elif team == GameData.local_team:
+		ring_color = Color(0.25, 0.6, 1.0, 0.9)
+	team_ring.material_override = _flat_material(ring_color)
 
 
 ## Rebuild the aim preview (and stream cone) to match the equipped main attack.

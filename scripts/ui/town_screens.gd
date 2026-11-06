@@ -634,7 +634,10 @@ static func rocket(menu: Node) -> Control:
 		v.add_child(UiKit.label("They're back in %d day%s. They turn up every weekend and on a couple of random weekdays." % [days, "" if days == 1 else "s"], 18, Color(0.85, 0.9, 1)))
 		v.add_child(_rocket_rewards())
 		return frame(menu, "rocket", UiKit.scroll(v), null, "Hmph. Nobody's here. Come back when the boss's orders come in.")
-	v.add_child(UiKit.section_title("TODAY'S HIDEOUT  ·  pick one Pokémon, first to %d KOs each round, every enemy a Shadow Pokémon" % int(Rocket.cfg("kills_to_win", 8))))
+	v.add_child(UiKit.section_title("TODAY'S HIDEOUT  ·  bring a team of three, one-on-one against Shadow Pokémon"))
+	var how := UiKit.label("Choose your lead when you see their team. When one of yours faints, pick who goes next; the Pokémon still standing keeps its HP (and heals a little). Lose all three and the run starts over. Beat a trainer and your team is healed.", 16, Color(0.9, 0.9, 1))
+	how.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	v.add_child(how)
 	var line := HFlowContainer.new()
 	line.add_theme_constant_override("h_separation", 8)
 	line.add_theme_constant_override("v_separation", 8)
@@ -647,7 +650,7 @@ static func rocket(menu: Node) -> Control:
 		if r.has("title"):
 			col.add_child(UiKit.label(str(r["title"]), 13, Color(0.85, 0.85, 0.9)))
 		var team := HBoxContainer.new()
-		for id: String in r["team"]:
+		for id: String in Rocket.enemy_order(r):
 			if GameData.species.has(id):
 				var icon := PmdIcon.make(GameData.species[id], 44)
 				icon.modulate = Color(0.75, 0.6, 0.95)
@@ -659,7 +662,7 @@ static func rocket(menu: Node) -> Control:
 	row.add_theme_constant_override("separation", 10)
 	for d: String in ["normal", "hard"]:
 		var info: Dictionary = Rocket.cfg("difficulties/" + d, {})
-		var b := UiKit.button("%s\n%d lives · Rocket level +%d" % [str(info.get("name", d)).to_upper(), int(info.get("lives", 3)), int(info.get("level_bonus", 2))], func() -> void:
+		var b := UiKit.button("%s\nRocket level +%d · Executives +%d" % [str(info.get("name", d)).to_upper(), int(info.get("level_bonus", 2)), int(info.get("boss_level_bonus", 4))], func() -> void:
 			menu.rocket_difficulty = d
 			menu.show_select("rocket"), 20)
 		b.custom_minimum_size = Vector2(260, 80)

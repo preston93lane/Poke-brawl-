@@ -122,16 +122,7 @@ func _ready() -> void:
 		player_level = Profile.level_of(player_species)
 	player = _spawn(player_species, player_level, 0, true, player_main)
 	player.preferred_evolution = player_evolution
-	GameData.local_player = player
-	var player_controller := PlayerController.new()
-	player_controller.move_stick = hud.move_stick
-	player_controller.aim_stick = hud.aim_stick
-	player_controller.gadget_button = hud.gadget_button
-	player_controller.super_button = hud.super_button
-	player_controller.hm_button = hud.hm_button
-	player_controller.z_button = hud.z_button
-	hud.set_hm(player.hm_move())
-	player.add_child(player_controller)
+	_attach_player_controller(player)
 	_apply_drink()
 
 	if mode == "showdown":
@@ -142,7 +133,8 @@ func _ready() -> void:
 			if enemy == null:
 				enemy = bot
 	else:
-		for species_id in _fill_team(ally_team, team_size - 1, [player_species]):
+		# Rocket duels: no teammates (your other two wait their turn, see RocketMode).
+		for species_id in _fill_team(ally_team, 0 if mode == "rocket" else team_size - 1, [player_species]):
 			_spawn_bot(species_id, 0)
 		# Boss Raid: the mode brings in the boss itself.
 		for species_id in _fill_team(enemy_team, 0 if mode == "boss_raid" else team_size, []):
@@ -193,6 +185,8 @@ func _ready() -> void:
 	if show_intro:
 		for i in 2:
 			await get_tree().process_frame  # Let the warm-up effects draw once.
+		if mode_logic:
+			await mode_logic.before_intro()  # Rocket: choose your lead.
 		await _play_intro()
 		_intro_finished = true
 		get_tree().paused = true
@@ -383,6 +377,8 @@ func _spawn_bot(species_id: String, team: int) -> Brawler:
 	var level := player_level
 	if team != 0 and not trainer.is_empty():
 		level = mini(player_level + int(trainer.get("level_bonus", 0)), Profile.max_level())
+		if trainer.has("level"):
+			level = int(trainer["level"])  # Rocket: set from your whole team.
 	var options := GameData.get_species(species_id).moves_for("main", level)
 	var main_id: String = options.pick_random().id if not options.is_empty() else ""
 	var brawler := _spawn(species_id, level, team, false, main_id)
@@ -404,6 +400,79 @@ func _spawn_bot(species_id: String, team: int) -> Brawler:
 	bot.start_delay = 1.0 + 0.15 * teams[team].size()
 	brawler.add_child(bot)
 	return brawler
+
+
+## You control `b`: on-screen sticks and buttons, the camera and the move buttons.
+func _attach_player_controller(b: Brawler) -> void:
+	GameData.local_player = b
+	var player_controller := PlayerController.new()
+	player_controller.move_stick = hud.move_stick
+	player_controller.aim_stick = hud.aim_stick
+	player_controller.gadget_button = hud.gadget_button
+	player_controller.super_button = hud.super_button
+	player_controller.hm_button = hud.hm_button
+	player_controller.z_button = hud.z_button
+	hud.set_hm(b.hm_move())
+	b.add_child(player_controller)
+
+
+## One of your Pokémon from a pick on the select screen ({ species, main, hm,
+## evolution, shiny }), built from your profile like your main one.
+func spawn_pick(pick: Dictionary) -> Brawler:
+	var keep := [player_hm, player_shiny]
+	player_hm = str(pick.get("hm", ""))
+	player_shiny = bool(pick.get("shiny", false))
+	var id := str(pick.get("species", player_species))
+	var b := _spawn(id, Profile.level_of(id), 0, true, str(pick.get("main", "")))
+	b.preferred_evolution = str(pick.get("evolution", ""))
+	player_hm = keep[0]
+	player_shiny = keep[1]
+	return b
+
+
+## Rocket duels: a Pokémon waiting its turn (or fainted) leaves the field: hidden,
+## still, and out of everyone's way. It stays on its team for the scoreboard.
+func bench(b: Brawler) -> void:
+	b.remove_from_group("brawlers")
+	b.visible = false
+	b.process_mode = Node.PROCESS_MODE_DISABLED
+	b.set_meta("layer", b.collision_layer)
+	b.collision_layer = 0
+	b.velocity = Vector3.ZERO
+	b.position = Vector3(0, -60, 0)
+	if b.is_player and b != player:
+		b.is_player = false
+
+
+func is_benched(b: Brawler) -> bool:
+	return not b.is_in_group("brawlers")
+
+
+## Sends a benched Pokémon out at its team's spawn. On your team it becomes the
+## one you control.
+func send_out(b: Brawler) -> void:
+	b.add_to_group("brawlers")
+	b.visible = true
+	b.process_mode = Node.PROCESS_MODE_INHERIT
+	b.collision_layer = int(b.get_meta("layer", b.collision_layer))
+	b.position = arena.spawn_point(b.team, 0)
+	b.velocity = Vector3.ZERO
+	if b.team == 0 and b != player:
+		var old := player
+		for child in old.get_children():
+			if child is PlayerController:
+				child.queue_free()
+		old.is_player = false
+		b.is_player = true
+		player = b
+		player_species = b.species.id
+		player_level = b.trainer_level
+		_attach_player_controller(b)
+		b.refresh_team_ring()
+		camera.target = b
+		camera.snap_to_target()
+		_refresh_hud_moves()
+	b.protect(float(GameData.rule("spawn_protection", 2.0)))
 
 
 func _spawn(species_id: String, level: int, team: int, is_player: bool, main_id := "") -> Brawler:
