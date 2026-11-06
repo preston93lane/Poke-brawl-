@@ -1,5 +1,5 @@
 {
-	"_comment": "Built by tools/build_outfits.py. Prices in Pokédollars; colours are indices into colors. Every item colour is a separate purchase. Sets give their four pieces in one colourway. Items or sets with unlock: rocket come from the Rocket Hideout, not the shop.",
+	"_comment": "Built by tools/build_outfits.py. Prices in Pokédollars; colours are indices into colors. Every item colour is a separate purchase. Sets give their four pieces in one colourway. Sets with earn: <class> are a trainer class's outfit, given (every colourway) for beating wins trainers of that class; items with earn: true only come that way. Items or sets with unlock: rocket come from the Rocket Hideout, not the shop.",
 	"colors": [
 		"#d83838",
 		"#3868d8",
@@ -115,52 +115,58 @@
 					5,
 					8,
 					13
-				]
+				],
+				"earn": true
 			},
 			"straw_hat": {
 				"name": "Straw Hat",
 				"price": 800,
 				"colors": [
 					2,
-					0,
-					1
-				]
+					1,
+					0
+				],
+				"earn": true
 			},
 			"headband": {
 				"name": "Headband",
 				"price": 800,
 				"colors": [
 					0,
-					1,
-					10
-				]
+					10,
+					1
+				],
+				"earn": true
 			},
 			"hood": {
 				"name": "Hood",
 				"price": 800,
 				"colors": [
 					9,
-					4,
-					10
-				]
+					10,
+					4
+				],
+				"earn": true
 			},
 			"bandana": {
 				"name": "Bandana",
 				"price": 800,
 				"colors": [
 					10,
-					0,
-					1
-				]
+					1,
+					0
+				],
+				"earn": true
 			},
 			"swim_cap": {
 				"name": "Swim Cap",
 				"price": 800,
 				"colors": [
 					7,
-					1,
-					8
-				]
+					8,
+					1
+				],
+				"earn": true
 			},
 			"rocket_cap": {
 				"name": "Rocket Cap",
@@ -170,6 +176,66 @@
 					5
 				],
 				"unlock": "rocket"
+			},
+			"beret": {
+				"name": "Beret",
+				"price": 800,
+				"colors": [
+					0,
+					10,
+					4,
+					15,
+					13
+				],
+				"new": true
+			},
+			"bucket_hat": {
+				"name": "Bucket Hat",
+				"price": 800,
+				"colors": [
+					11,
+					2,
+					3,
+					9,
+					1
+				],
+				"new": true
+			},
+			"visor": {
+				"name": "Sun Visor",
+				"price": 800,
+				"colors": [
+					5,
+					0,
+					1,
+					8,
+					3
+				],
+				"new": true
+			},
+			"bow": {
+				"name": "Hair Bow",
+				"price": 800,
+				"colors": [
+					0,
+					8,
+					1,
+					5,
+					4,
+					3
+				],
+				"new": true
+			},
+			"cowboy": {
+				"name": "Cowboy Hat",
+				"price": 1500,
+				"colors": [
+					11,
+					12,
+					10,
+					5
+				],
+				"new": true
 			}
 		},
 		"top": {
@@ -203,9 +269,10 @@
 				"price": 1200,
 				"colors": [
 					7,
-					1,
-					0
-				]
+					0,
+					1
+				],
+				"earn": true
 			},
 			"vest": {
 				"name": "Explorer Vest",
@@ -213,9 +280,10 @@
 				"colors": [
 					11,
 					2,
-					9,
-					0
-				]
+					0,
+					9
+				],
+				"earn": true
 			},
 			"gi": {
 				"name": "Karate Gi",
@@ -224,7 +292,8 @@
 					10,
 					0,
 					11
-				]
+				],
+				"earn": true
 			},
 			"robe": {
 				"name": "Robe",
@@ -232,18 +301,19 @@
 				"colors": [
 					4,
 					9,
-					10,
 					14
-				]
+				],
+				"earn": true
 			},
 			"blouse": {
 				"name": "Blouse",
 				"price": 1200,
 				"colors": [
 					8,
-					5,
-					13
-				]
+					13,
+					5
+				],
+				"earn": true
 			},
 			"striped": {
 				"name": "Striped Shirt",
@@ -252,7 +322,8 @@
 					10,
 					1,
 					0
-				]
+				],
+				"earn": true
 			},
 			"leather": {
 				"name": "Leather Jacket",
@@ -261,25 +332,28 @@
 					10,
 					12,
 					0
-				]
+				],
+				"earn": true
 			},
 			"cape": {
 				"name": "Psychic Cape",
 				"price": 1600,
 				"colors": [
 					4,
-					10,
-					15
-				]
+					15,
+					10
+				],
+				"earn": true
 			},
 			"coat": {
 				"name": "Ace Coat",
 				"price": 1600,
 				"colors": [
 					5,
-					1,
-					10
-				]
+					10,
+					1
+				],
+				"earn": true
 			},
 			"rocket": {
 				"name": "Rocket Uniform",
@@ -289,6 +363,83 @@
 					5
 				],
 				"unlock": "rocket"
+			},
+			"hoodie": {
+				"name": "Hoodie",
+				"price": 1300,
+				"colors": [
+					9,
+					0,
+					1,
+					2,
+					4,
+					10,
+					8
+				],
+				"new": true
+			},
+			"sweater": {
+				"name": "Sweater",
+				"price": 1200,
+				"colors": [
+					15,
+					2,
+					1,
+					11,
+					14,
+					5
+				],
+				"new": true
+			},
+			"polo": {
+				"name": "Polo Shirt",
+				"price": 1200,
+				"colors": [
+					5,
+					1,
+					0,
+					2,
+					3,
+					13
+				],
+				"new": true
+			},
+			"puffer": {
+				"name": "Puffer Jacket",
+				"price": 1800,
+				"colors": [
+					0,
+					1,
+					10,
+					3,
+					4,
+					7
+				],
+				"new": true
+			},
+			"hawaiian": {
+				"name": "Island Shirt",
+				"price": 1400,
+				"colors": [
+					6,
+					7,
+					8,
+					3,
+					1
+				],
+				"new": true
+			},
+			"track": {
+				"name": "Track Jacket",
+				"price": 1400,
+				"colors": [
+					1,
+					0,
+					2,
+					10,
+					4
+				],
+				"new": true
 			}
 		},
 		"bottom": {
@@ -329,16 +480,17 @@
 				"price": 900,
 				"colors": [
 					4,
-					9,
-					8
-				]
+					9
+				],
+				"earn": true
 			},
 			"gi_pants": {
 				"name": "Gi Pants",
 				"price": 900,
 				"colors": [
 					5
-				]
+				],
+				"earn": true
 			},
 			"cargo": {
 				"name": "Cargo Pants",
@@ -346,9 +498,55 @@
 				"colors": [
 					9,
 					11,
-					2,
 					10
-				]
+				],
+				"earn": true
+			},
+			"jeans": {
+				"name": "Jeans",
+				"price": 1100,
+				"colors": [
+					1,
+					10,
+					9,
+					13
+				],
+				"new": true
+			},
+			"joggers": {
+				"name": "Joggers",
+				"price": 900,
+				"colors": [
+					9,
+					10,
+					1,
+					0,
+					2
+				],
+				"new": true
+			},
+			"pleated": {
+				"name": "Pleated Skirt",
+				"price": 900,
+				"colors": [
+					15,
+					1,
+					9,
+					10,
+					14
+				],
+				"new": true
+			},
+			"capris": {
+				"name": "Capris",
+				"price": 900,
+				"colors": [
+					5,
+					13,
+					3,
+					8
+				],
+				"new": true
 			}
 		},
 		"shoes": {
@@ -382,6 +580,41 @@
 					6,
 					3
 				]
+			},
+			"high_tops": {
+				"name": "High-Tops",
+				"price": 900,
+				"colors": [
+					0,
+					1,
+					10,
+					5,
+					3
+				],
+				"new": true
+			},
+			"rain_boots": {
+				"name": "Rain Boots",
+				"price": 800,
+				"colors": [
+					3,
+					0,
+					1,
+					2,
+					8
+				],
+				"new": true
+			},
+			"loafers": {
+				"name": "Loafers",
+				"price": 600,
+				"colors": [
+					12,
+					10,
+					11,
+					15
+				],
+				"new": true
 			}
 		}
 	},
@@ -464,7 +697,8 @@
 					]
 				}
 			],
-			"price": 2800
+			"earn": "bug_catcher",
+			"wins": 15
 		},
 		{
 			"id": "hiker",
@@ -504,7 +738,8 @@
 					]
 				}
 			],
-			"price": 2800
+			"earn": "hiker",
+			"wins": 15
 		},
 		{
 			"id": "swimmer",
@@ -544,7 +779,8 @@
 					]
 				}
 			],
-			"price": 2800
+			"earn": "swimmer",
+			"wins": 15
 		},
 		{
 			"id": "psychic",
@@ -584,7 +820,8 @@
 					]
 				}
 			],
-			"price": 2480
+			"earn": "psychic",
+			"wins": 15
 		},
 		{
 			"id": "blackbelt",
@@ -624,7 +861,8 @@
 					]
 				}
 			],
-			"price": 2960
+			"earn": "blackbelt",
+			"wins": 15
 		},
 		{
 			"id": "channeler",
@@ -664,7 +902,8 @@
 					]
 				}
 			],
-			"price": 2960
+			"earn": "channeler",
+			"wins": 15
 		},
 		{
 			"id": "picnicker",
@@ -704,7 +943,8 @@
 					]
 				}
 			],
-			"price": 2800
+			"earn": "picnicker",
+			"wins": 15
 		},
 		{
 			"id": "burglar",
@@ -744,7 +984,8 @@
 					]
 				}
 			],
-			"price": 2800
+			"earn": "burglar",
+			"wins": 15
 		},
 		{
 			"id": "rocker",
@@ -784,7 +1025,8 @@
 					]
 				}
 			],
-			"price": 2480
+			"earn": "rocker",
+			"wins": 15
 		},
 		{
 			"id": "bird_keeper",
@@ -824,7 +1066,8 @@
 					]
 				}
 			],
-			"price": 2800
+			"earn": "bird_keeper",
+			"wins": 15
 		},
 		{
 			"id": "cooltrainer",
@@ -864,7 +1107,8 @@
 					]
 				}
 			],
-			"price": 2480
+			"earn": "cooltrainer",
+			"wins": 15
 		},
 		{
 			"id": "rocket_grunt",

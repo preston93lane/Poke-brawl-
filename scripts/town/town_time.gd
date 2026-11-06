@@ -9,16 +9,20 @@ extends RefCounted
 ## Tests and screenshots set this (0-24); below 0 = your clock.
 static var hour_override := -1.0
 
-## [hour, sun colour, sun energy, ambient colour, ambient energy, sky top, sky horizon, sprite tint, night 0-1]
+## [hour, sun colour, sun energy, ambient colour, ambient energy, sky top, sky horizon,
+##  sprite tint, night 0-1, colour saturation, brightness]
+## Night is lit by the moon: a cool, dim light from high up that still casts
+## shadows, colours washed out towards blue-grey, and the lanterns only light
+## small pools round themselves.
 const KEYS := [
-	[0.0, Color(0.6, 0.68, 1.0), 0.18, Color(0.3, 0.33, 0.5), 0.25, Color(0.02, 0.04, 0.13), Color(0.1, 0.13, 0.28), Color(0.58, 0.64, 0.9), 1.0],
-	[5.0, Color(0.6, 0.68, 1.0), 0.18, Color(0.3, 0.33, 0.5), 0.25, Color(0.02, 0.04, 0.13), Color(0.1, 0.13, 0.28), Color(0.58, 0.64, 0.9), 1.0],
-	[6.5, Color(1.0, 0.72, 0.52), 0.85, Color(1.0, 0.8, 0.74), 0.5, Color(0.42, 0.45, 0.78), Color(1.0, 0.68, 0.52), Color(1.0, 0.86, 0.8), 0.45],
-	[8.0, Color(1.0, 0.95, 0.86), 0.8, Color(1.0, 0.97, 0.92), 0.5, Color(0.32, 0.55, 0.9), Color(0.74, 0.85, 0.96), Color(1, 1, 1), 0.0],
-	[17.0, Color(1.0, 0.95, 0.86), 0.8, Color(1.0, 0.97, 0.92), 0.5, Color(0.32, 0.55, 0.9), Color(0.74, 0.85, 0.96), Color(1, 1, 1), 0.0],
-	[18.5, Color(1.0, 0.58, 0.36), 0.85, Color(0.96, 0.7, 0.64), 0.48, Color(0.32, 0.26, 0.56), Color(1.0, 0.5, 0.34), Color(1.0, 0.8, 0.72), 0.55],
-	[20.0, Color(0.6, 0.68, 1.0), 0.18, Color(0.3, 0.33, 0.5), 0.25, Color(0.02, 0.04, 0.13), Color(0.1, 0.13, 0.28), Color(0.58, 0.64, 0.9), 1.0],
-	[24.0, Color(0.6, 0.68, 1.0), 0.18, Color(0.3, 0.33, 0.5), 0.25, Color(0.02, 0.04, 0.13), Color(0.1, 0.13, 0.28), Color(0.58, 0.64, 0.9), 1.0],
+	[0.0, Color(0.62, 0.72, 1.0), 0.32, Color(0.16, 0.2, 0.36), 0.18, Color(0.01, 0.02, 0.07), Color(0.05, 0.07, 0.16), Color(0.46, 0.52, 0.72), 1.0, 0.55, 0.78],
+	[5.0, Color(0.62, 0.72, 1.0), 0.32, Color(0.16, 0.2, 0.36), 0.18, Color(0.01, 0.02, 0.07), Color(0.05, 0.07, 0.16), Color(0.46, 0.52, 0.72), 1.0, 0.55, 0.78],
+	[6.5, Color(1.0, 0.66, 0.46), 0.55, Color(0.62, 0.52, 0.62), 0.3, Color(0.3, 0.32, 0.62), Color(0.95, 0.58, 0.44), Color(0.82, 0.68, 0.68), 0.5, 0.92, 0.84],
+	[8.0, Color(1.0, 0.95, 0.86), 0.62, Color(1.0, 0.97, 0.92), 0.4, Color(0.32, 0.55, 0.9), Color(0.74, 0.85, 0.96), Color(1, 1, 1), 0.0, 1.12, 1.0],
+	[17.0, Color(1.0, 0.95, 0.86), 0.62, Color(1.0, 0.97, 0.92), 0.4, Color(0.32, 0.55, 0.9), Color(0.74, 0.85, 0.96), Color(1, 1, 1), 0.0, 1.12, 1.0],
+	[18.5, Color(1.0, 0.55, 0.32), 0.55, Color(0.6, 0.46, 0.55), 0.28, Color(0.26, 0.22, 0.5), Color(0.95, 0.46, 0.32), Color(0.82, 0.66, 0.6), 0.55, 0.95, 0.82],
+	[20.0, Color(0.62, 0.72, 1.0), 0.32, Color(0.16, 0.2, 0.36), 0.18, Color(0.01, 0.02, 0.07), Color(0.05, 0.07, 0.16), Color(0.46, 0.52, 0.72), 1.0, 0.55, 0.78],
+	[24.0, Color(0.62, 0.72, 1.0), 0.32, Color(0.16, 0.2, 0.36), 0.18, Color(0.01, 0.02, 0.07), Color(0.05, 0.07, 0.16), Color(0.46, 0.52, 0.72), 1.0, 0.55, 0.78],
 ]
 
 
@@ -43,8 +47,8 @@ static func phase(h := -1.0) -> String:
 
 
 ## The light at hour `h`: { sun_color, sun_energy, ambient, ambient_energy, sky_top,
-## sky_horizon, tint (for sprites), night (0 day .. 1 night), sun_from (unit vector
-## pointing at the sun or moon) }.
+## sky_horizon, tint (for sprites), night (0 day .. 1 night), saturation, brightness
+## (colour adjustments), sun_from (unit vector pointing at the sun or moon) }.
 static func light(h := -1.0) -> Dictionary:
 	if h < 0.0:
 		h = hour()
@@ -62,11 +66,12 @@ static func light(h := -1.0) -> Dictionary:
 		"ambient": (a[3] as Color).lerp(b[3], t), "ambient_energy": lerpf(a[4], b[4], t),
 		"sky_top": (a[5] as Color).lerp(b[5], t), "sky_horizon": (a[6] as Color).lerp(b[6], t),
 		"tint": (a[7] as Color).lerp(b[7], t), "night": lerpf(a[8], b[8], t),
+		"saturation": lerpf(a[9], b[9], t), "brightness": lerpf(a[10], b[10], t),
 	}
 	# The sun from the east (right) at 6:00, high to the south at noon, west (left) at 19:00.
 	var day := clampf((h - 6.0) / 13.0, 0.0, 1.0)
 	# Never straight overhead: a slanting sun keeps the town from washing out and shadows visible.
 	var sun := Vector3(cos(day * PI) * 0.9, 0.3 + sin(day * PI) * 0.28, 0.6).normalized()
-	var moon := Vector3(-0.45, 0.85, 0.45).normalized()
+	var moon := Vector3(-0.5, 0.7, 0.5).normalized()
 	out["sun_from"] = sun.lerp(moon, float(out["night"])).normalized()
 	return out

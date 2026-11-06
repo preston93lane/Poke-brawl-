@@ -2380,8 +2380,23 @@ func _check_town() -> void:
 			and Town.outfit()["hat"] == ["beanie", red], "a beanie is bought, then worn")
 	expect(not Town.owns_item("hat", "beanie", blue) if blue in (Town.item("hat", "beanie")["colors"] as Array) else true,
 			"buying one colour doesn't give you the others")
-	expect(Town.buy_set("hiker", 0) and Town.owns_set("hiker", 0) and not Town.owns_set("hiker", 1), "a Hiker outfit in one colourway")
+	expect(Town.buy_set("trainer", 1) and Town.owns_set("trainer", 1) and not Town.owns_set("trainer", 2), "a Pokémon Trainer outfit in one colourway")
+	expect(Town.buy_item("top", "hoodie", 0) and Town.owns_item("top", "hoodie", 0), "new shop clothes: a hoodie")
+	# Trainer class outfits are earned: beat 15 Hikers.
+	Town._save_dict("trainer_cards")["hiker"] = 13
+	expect(not Town.buy_set("hiker", 0) and not Town.owns_set("hiker", 0) and Town.cant_buy_item("top", "vest", 11) != "", "a Hiker outfit can't be bought")
+	var hiker_info := { "class": "hiker", "name": "Hiker Bob", "stars": 1, "stake": 0, "floor": 0, "index": -5 }
+	Town.finish_trainer(hiker_info, "victory")
+	var earned := Town.finish_trainer(hiker_info, "victory")
+	expect(str(earned.get("outfit", "")) == "hiker" and Town.owns_set("hiker", 0) and Town.owns_set("hiker", 2), "the 15th Hiker win earns the whole outfit, every colourway")
 	expect(Town.wear_set("hiker", 0) and str(Town.outfit()["top"][0]) == "vest", "wearing the whole outfit")
+	Town._save_dict("trainer_cards")["swimmer"] = 0
+	var tower_info := { "class": "swimmer", "name": "Swimmer Sue", "stars": 2, "stake": 0, "floor": 3 }
+	var tower_saved: Dictionary = Town._save_dict("tower").duplicate()
+	Town.finish_trainer(tower_info, "victory")
+	Town._save_dict("tower").clear()
+	Town._save_dict("tower").merge(tower_saved)
+	expect(Town.class_wins("swimmer") == 1, "Trainer Tower wins count too")
 	expect(not Town.buy_set("rocket_grunt", 0) and Town.cant_buy_item("top", "rocket", 10) != "", "Team Rocket's uniform isn't for sale")
 	Town.set_free("gender", "girl")
 	Town.set_free("skin", 7)

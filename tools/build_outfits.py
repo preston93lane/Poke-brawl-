@@ -5,10 +5,13 @@ for your own trainer. Run after tools/make_trainer_sheets.py.
 
     python3 tools/build_outfits.py
 
-Items: every hat, top, bottoms and pair of shoes, each sold in a few colours.
+Shop items: everyday hats, tops, bottoms and shoes, each sold in a few colours.
 Each colour is its own purchase (buying the red cap doesn't give you the blue
-one). Sets: a whole trainer class's outfit in one colourway, a bit cheaper than
-the pieces. Team Rocket's uniform can't be bought: the Rocket Hideout gives it.
+one). Trainer class outfits (Hiker, Swimmer, Black Belt...) can't be bought: beat
+CLASS_WINS trainers of that class (in town or the Trainer Tower) and the whole
+outfit is yours in every colourway; their signature pieces (EARNED) only come that
+way. The Pokémon Trainer outfit is sold as a set. Team Rocket's uniform comes
+from the Rocket Hideout.
 The stacking and outlines match scripts/data/trainer_look.gd.
 """
 import json, os
@@ -33,6 +36,20 @@ NAMES = {
                "cargo": "Cargo Pants"},
     "shoes": {"sneakers": "Sneakers", "boots": "Boots", "sandals": "Sandals"},
 }
+# Everyday clothes, only sold in the shop.
+SHOP = {
+    "hat": {"beret": "Beret", "bucket_hat": "Bucket Hat", "visor": "Sun Visor", "bow": "Hair Bow", "cowboy": "Cowboy Hat"},
+    "top": {"hoodie": "Hoodie", "sweater": "Sweater", "polo": "Polo Shirt", "puffer": "Puffer Jacket", "hawaiian": "Island Shirt",
+            "track": "Track Jacket"},
+    "bottom": {"jeans": "Jeans", "joggers": "Joggers", "pleated": "Pleated Skirt", "capris": "Capris"},
+    "shoes": {"high_tops": "High-Tops", "rain_boots": "Rain Boots", "loafers": "Loafers"},
+}
+for _slot, _names in SHOP.items():
+    NAMES[_slot].update(_names)
+# Trainer class pieces you can only get by earning the class's outfit.
+EARNED = {"straw_hat", "sun_hat", "headband", "hood", "bandana", "swim_cap", "tank", "vest", "gi", "robe", "blouse", "striped",
+          "leather", "cape", "coat", "long_skirt", "gi_pants", "cargo"}
+CLASS_WINS = 15
 PRICES = {"hat": 800, "top": 1200, "bottom": 900, "shoes": 600}
 SPECIAL = {"leather": 1600, "cape": 1600, "coat": 1600, "gi": 1400, "robe": 1400}
 # Colours each item comes in (indices into COLORS), on top of those its sets use.
@@ -44,7 +61,15 @@ EXTRA = {
     "coat": [5, 1, 10], "trousers": [9, 10, 1, 12], "shorts": [2, 1, 11, 10], "skirt": [1, 0, 8, 10],
     "long_skirt": [4, 9, 8], "gi_pants": [5], "cargo": [9, 11, 2], "sneakers": [0, 1, 5, 10], "boots": [12, 10, 0, 1],
     "sandals": [11, 6, 3],
+    "beret": [0, 10, 4, 15, 13], "bucket_hat": [11, 2, 3, 9, 1], "visor": [5, 0, 1, 8, 3], "bow": [0, 8, 1, 5, 4, 3],
+    "cowboy": [11, 12, 10, 5],
+    "hoodie": [9, 0, 1, 2, 4, 10, 8], "sweater": [15, 2, 1, 11, 14, 5], "polo": [5, 1, 0, 2, 3, 13], "puffer": [0, 1, 10, 3, 4, 7],
+    "hawaiian": [6, 7, 8, 3, 1], "track": [1, 0, 2, 10, 4],
+    "jeans": [1, 10, 9, 13], "joggers": [9, 10, 1, 0, 2], "pleated": [15, 1, 9, 10, 14], "capris": [5, 13, 3, 8],
+    "high_tops": [0, 1, 10, 5, 3], "rain_boots": [3, 0, 1, 2, 8], "loafers": [12, 10, 11, 15],
 }
+SHOP_PRICES = {"cowboy": 1500, "puffer": 1800, "hawaiian": 1400, "track": 1400, "hoodie": 1300, "jeans": 1100, "high_tops": 900,
+               "rain_boots": 800}
 # Trainer classes as outfits: pieces, then colourways {name: [hat, top, bottom, shoes]}.
 SETS = [
     ("trainer", "Pokémon Trainer", ["cap", "jacket", "trousers", "sneakers"], {"Red": [0, 1, 9, 0], "Blue": [1, 10, 9, 1], "Green": [2, 9, 10, 2]}),
@@ -83,7 +108,7 @@ STAFF = {
 }
 PARTS = ["skin", "hair", "main", "trim", "dark", "white", "red", "eye", "mouth", "blush", "gold"]
 FIXED = {"dark": "#28262f", "white": "#f5f5f5", "red": "#dc2830", "eye": "#282030", "mouth": "#b03038", "blush": "#f07878", "gold": "#e1be5a"}
-COVERING = {"cap", "cap_back", "beanie", "sun_hat", "straw_hat", "hood", "swim_cap", "rocket_cap", "bandana"}
+COVERING = {"cap", "cap_back", "beanie", "sun_hat", "straw_hat", "hood", "swim_cap", "rocket_cap", "bandana", "beret", "bucket_hat", "cowboy"}
 CELL = (32, 40)
 
 
@@ -160,7 +185,12 @@ def main():
     items = {slot: {} for slot in NAMES}
     for slot, names in NAMES.items():
         for item, name in names.items():
-            items[slot][item] = {"name": name, "price": SPECIAL.get(item, PRICES[slot]), "colors": list(EXTRA.get(item, []))}
+            items[slot][item] = {"name": name, "price": SHOP_PRICES.get(item, SPECIAL.get(item, PRICES[slot])),
+                                 "colors": [] if item in EARNED else list(EXTRA.get(item, []))}
+            if item in EARNED:
+                items[slot][item]["earn"] = True  # Only in a trainer class outfit.
+            if item in SHOP[slot]:
+                items[slot][item]["new"] = True
     slots = ["hat", "top", "bottom", "shoes"]
     sets = []
     for sid, name, pieces, ways in SETS:
@@ -171,7 +201,11 @@ def main():
                     items[slot][item]["colors"].append(c)
             variants.append({"name": wname, "colors": cols})
         price = int(sum(items[s][p]["price"] for s, p in zip(slots, pieces) if p) * 0.8)
-        sets.append({"id": sid, "name": name, "pieces": pieces, "variants": variants, "price": price})
+        entry = {"id": sid, "name": name, "pieces": pieces, "variants": variants, "price": price}
+        if sid in CLASS_HAIR:
+            # A trainer class's outfit: earned by beating CLASS_WINS of them, every colourway at once.
+            entry = {"id": sid, "name": name, "pieces": pieces, "variants": variants, "earn": sid, "wins": CLASS_WINS}
+        sets.append(entry)
     for slot, item in (("hat", "rocket_cap"), ("top", "rocket")):
         items[slot][item]["colors"] = [10, 5]
         items[slot][item]["unlock"] = "rocket"
@@ -183,7 +217,7 @@ def main():
             if c not in items[slot][item]["colors"]:
                 items[slot][item]["colors"].append(c)
     data = {
-        "_comment": "Built by tools/build_outfits.py. Prices in Pokédollars; colours are indices into colors. Every item colour is a separate purchase. Sets give their four pieces in one colourway. Items or sets with unlock: rocket come from the Rocket Hideout, not the shop.",
+        "_comment": "Built by tools/build_outfits.py. Prices in Pokédollars; colours are indices into colors. Every item colour is a separate purchase. Sets give their four pieces in one colourway. Sets with earn: <class> are a trainer class's outfit, given (every colourway) for beating wins trainers of that class; items with earn: true only come that way. Items or sets with unlock: rocket come from the Rocket Hideout, not the shop.",
         "colors": COLORS, "skins": SKINS, "hair_colors": HAIR_COLORS, "hairs": HAIRS,
         "genders": ["boy", "girl"],
         "default": {"gender": "boy", "skin": 1, "hair": "short", "hair_color": 1, "hat": ["cap", 0], "top": ["jacket", 1], "bottom": ["trousers", 9], "shoes": ["sneakers", 0]},

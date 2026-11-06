@@ -175,7 +175,7 @@ func _lanterns() -> void:
 		if Quality.level() == "high" and absf(float(spot[0]) - 18.0) < 6.0 and absf(float(spot[1]) - 14.0) < 5.0 and plaza_lamps < 4:
 			var omni := OmniLight3D.new()
 			omni.light_color = Color(1.0, 0.75, 0.45)
-			omni.omni_range = 6.0
+			omni.omni_range = 4.0
 			omni.light_energy = 0.0
 			omni.position = Vector3(0, 2.3, 0)
 			node.add_child(omni)
@@ -202,6 +202,9 @@ func apply_time() -> void:
 		_env.ambient_light_color = t["ambient"]
 		_env.ambient_light_energy = t["ambient_energy"]
 		_env.ambient_light_sky_contribution = 0.0
+		_env.adjustment_enabled = true
+		_env.adjustment_saturation = float(t["saturation"])
+		_env.adjustment_brightness = float(t["brightness"])
 		if _env.sky and _env.sky.sky_material is ProceduralSkyMaterial:
 			_sky_mat = _env.sky.sky_material
 	if _sky_mat:
@@ -212,17 +215,17 @@ func apply_time() -> void:
 	# Lanterns light up from dusk.
 	var lit := clampf((night - 0.25) / 0.6, 0.0, 1.0)
 	for l: Dictionary in lamps:
-		(l["bulb"] as StandardMaterial3D).emission_energy_multiplier = 0.2 + 3.0 * lit
-		(l["pool"] as StandardMaterial3D).albedo_color.a = 0.8 * lit
-		(l["halo"] as Sprite3D).modulate.a = 0.75 * lit
+		(l["bulb"] as StandardMaterial3D).emission_energy_multiplier = 0.2 + 2.4 * lit
+		(l["pool"] as StandardMaterial3D).albedo_color.a = 0.42 * lit
+		(l["halo"] as Sprite3D).modulate.a = 0.38 * lit
 		if l.has("light"):
-			(l["light"] as OmniLight3D).light_energy = 1.4 * lit
+			(l["light"] as OmniLight3D).light_energy = 0.6 * lit
 	# Windows glow warm at night.
 	for key: String in TownBuildings._mats:
 		var m := TownBuildings._mats[key] as StandardMaterial3D
 		if m and m.emission_enabled and key.begins_with(Color(0.75, 0.9, 1.0).to_html()):
 			m.emission = Color(0.75, 0.9, 1.0).lerp(Color(1.0, 0.8, 0.45), lit)
-			m.emission_energy_multiplier = 0.25 + 1.6 * lit
+			m.emission_energy_multiplier = 0.25 + 0.9 * lit
 	var tint: Color = t["tint"]
 	for node in [player, partner]:
 		if node:

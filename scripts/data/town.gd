@@ -439,10 +439,11 @@ static func claim_prize(index: int) -> String:
 
 
 # --- Trainer Outfitter -----------------------------------------------------------
-# Clothing (data/outfits.json, built by tools/build_outfits.py): hats, tops,
-# bottoms and shoes, each sold in a few colours, every colour bought on its own;
-# sets are a trainer class's whole outfit in one colourway. Hair, hair colour and
-# skin are free. Team Rocket's pieces come from the Rocket Hideout.
+# Clothing (data/outfits.json, built by tools/build_outfits.py): everyday hats,
+# tops, bottoms and shoes sold in a few colours, every colour bought on its own.
+# A trainer class's outfit (Hiker, Swimmer...) can't be bought: beat 15 trainers
+# of that class and it's yours in every colourway. Hair, hair colour, skin and
+# boy/girl are free. Team Rocket's pieces come from the Rocket Hideout.
 # The outfit is { skin, hair, hair_color, hat: [item, colour] or [], top, bottom, shoes }.
 
 const OUTFITS_PATH := "res://data/outfits.json"
@@ -478,14 +479,33 @@ static func item_key(slot: String, id: String, color: int) -> String:
 	return "%s/%s/%d" % [slot, id, color]
 
 
-## Owned: bought, unlocked, or part of the clothes you start with.
+## Owned: bought, unlocked, part of an earned trainer class outfit, or part of
+## the clothes you start with.
 static func owns_item(slot: String, id: String, color: int) -> bool:
 	if id == "":
 		return true
 	var d: Array = default_outfit().get(slot, [])
 	if d.size() == 2 and str(d[0]) == id and int(d[1]) == color:
 		return true
-	return item_key(slot, id, color) in (Profile.data.get("outfit_owned", []) as Array)
+	if item_key(slot, id, color) in (Profile.data.get("outfit_owned", []) as Array):
+		return true
+	for st: Dictionary in sets():
+		if st.has("earn") and set_earned(str(st["id"])):
+			var i := SLOTS.find(slot)
+			if str(st["pieces"][i]) == id and (st["variants"] as Array).any(func(v: Dictionary) -> bool: return int(v["colors"][i]) == color):
+				return true
+	return false
+
+
+## Trainers of class `cls` you've beaten (in town and in the Trainer Tower).
+static func class_wins(cls: String) -> int:
+	return int(_save_dict("trainer_cards").get(cls, 0))
+
+
+## A trainer class's outfit is yours once you've beaten enough of them.
+static func set_earned(set_id: String) -> bool:
+	var st := find_set(set_id)
+	return st.has("earn") and class_wins(str(st["earn"])) >= int(st.get("wins", 15))
 
 
 static func item_price(slot: String, id: String) -> int:
@@ -501,6 +521,8 @@ static func cant_buy_item(slot: String, id: String, color: int) -> String:
 		return "Owned"
 	if it.has("unlock"):
 		return "Rocket Hideout reward"
+	if it.has("earn"):
+		return "Earned with a trainer outfit"
 	if Profile.money() < int(it["price"]):
 		return "Not enough ₽"
 	return ""
@@ -568,7 +590,7 @@ static func set_price(set_id: String, variant: int) -> int:
 
 static func buy_set(set_id: String, variant: int) -> bool:
 	var s := find_set(set_id)
-	if s.is_empty() or s.has("unlock") or owns_set(set_id, variant) or Profile.money() < set_price(set_id, variant):
+	if s.is_empty() or s.has("unlock") or s.has("earn") or owns_set(set_id, variant) or Profile.money() < set_price(set_id, variant):
 		return false
 	Profile.data["money"] = Profile.money() - set_price(set_id, variant)
 	for p: Array in set_pieces(set_id, variant):
@@ -796,15 +818,21 @@ static func finish_trainer(info: Dictionary, result: String) -> Dictionary:
 			if int(info.get("index", -1)) not in beaten:
 				beaten.append(int(info.get("index", -1)))
 			seen["beaten"] = beaten
-			var cards := _save_dict("trainer_cards")
-			var cls := str(info.get("class", ""))
-			cards[cls] = int(cards.get(cls, 0)) + 1
 			out["text"] = "Beat %s!%s" % [info.get("name", ""), "  +%d ₽" % paid if paid > 0 else ""]
 		else:
 			var tower := tower_reward(floor)
 			out["money"] = paid + int(tower["money"])
 			out["text"] = str(tower["text"])
 			out["floor"] = floor + 1
+		# Every win against a class counts toward its outfit.
+		var cls := str(info.get("class", ""))
+		if cls != "":
+			var cards := _save_dict("trainer_cards")
+			cards[cls] = int(cards.get(cls, 0)) + 1
+			var st := find_set(cls)
+			if st.has("earn") and int(cards[cls]) == int(st.get("wins", 15)):
+				out["text"] = str(out["text"]) + "  ·  NEW OUTFIT: %s!" % str(st["name"])
+				out["outfit"] = cls
 	elif result == "defeat":
 		if stake > 0:
 			w["streak"] = int(w.get("streak", 0)) + 1

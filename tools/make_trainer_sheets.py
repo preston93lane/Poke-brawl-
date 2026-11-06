@@ -36,12 +36,14 @@ FACINGS = ["down", "up", "right"]
 CX = 16
 
 HAIRS = ["short", "spiky", "long", "pigtails", "bun", "buzz", "elder"]
-HATS = ["cap", "cap_back", "beanie", "sun_hat", "straw_hat", "headband", "hood", "bandana", "swim_cap", "rocket_cap", "nurse_cap"]
-TOPS = ["jacket", "tshirt", "tank", "vest", "gi", "robe", "blouse", "striped", "leather", "cape", "coat", "rocket", "nurse"]
-BOTTOMS = ["trousers", "shorts", "skirt", "long_skirt", "gi_pants", "cargo"]
-SHOES = ["sneakers", "boots", "sandals"]
+HATS = ["cap", "cap_back", "beanie", "sun_hat", "straw_hat", "headband", "hood", "bandana", "swim_cap", "rocket_cap", "nurse_cap",
+        "beret", "bucket_hat", "visor", "bow", "cowboy"]
+TOPS = ["jacket", "tshirt", "tank", "vest", "gi", "robe", "blouse", "striped", "leather", "cape", "coat", "rocket", "nurse",
+        "hoodie", "sweater", "polo", "puffer", "hawaiian", "track"]
+BOTTOMS = ["trousers", "shorts", "skirt", "long_skirt", "gi_pants", "cargo", "jeans", "joggers", "pleated", "capris"]
+SHOES = ["sneakers", "boots", "sandals", "high_tops", "rain_boots", "loafers"]
 # Hats that cover the top of the head: hair under them is drawn without its top.
-COVERING = {"cap", "cap_back", "beanie", "sun_hat", "straw_hat", "hood", "swim_cap", "rocket_cap", "bandana"}
+COVERING = {"cap", "cap_back", "beanie", "sun_hat", "straw_hat", "hood", "swim_cap", "rocket_cap", "bandana", "beret", "bucket_hat", "cowboy"}
 
 
 class Canvas:
@@ -264,6 +266,34 @@ def hat(cv, kind, facing, f):
     elif kind == "nurse_cap":
         cv.rect(hx - 4, hy - 10, hx + 3, hy - 7, "white")
         cv.rect(hx - 1, hy - 9, hx, hy - 8, "red", False)
+    elif kind == "beret":
+        # Soft and slouched over to one side, with a little stalk on top.
+        cv.ellipse(hx + (1 if facing != "up" else -1), hy - 5, 9.4, 3.6, "main")
+        cv.rect(hx - 7, hy - 3, hx + 7, hy - 2, "trim", False)
+        cv.rect(hx, hy - 10, hx, hy - 9, "main", False)
+    elif kind == "bucket_hat":
+        cv.ellipse(hx, hy - 4.5, 7.6, 4.4, "main")
+        cv.rect(hx - 10, hy - 2, hx + 9, hy - 1, "main")  # Floppy brim all round.
+        cv.rect(hx - 7, hy - 3, hx + 6, hy - 3, "trim", False)
+    elif kind == "visor":
+        cv.rect(hx - 8, hy - 4, hx + 8, hy - 3, "main")  # Just a band...
+        if facing == "down":
+            cv.rect(hx - 7, hy - 2, hx + 6, hy - 1, "trim", False)  # ...and a peak.
+        elif facing == "right":
+            cv.rect(hx + 4, hy - 3, hx + 10, hy - 2, "trim", False)
+    elif kind == "bow":
+        bx = hx + (5 if facing == "down" else (-4 if facing == "right" else 0))
+        by = hy - 7
+        cv.ellipse(bx - 2.5, by, 2.4, 2.0, "main")
+        cv.ellipse(bx + 2.5, by, 2.4, 2.0, "main")
+        cv.rect(bx - 1, by - 1, bx, by, "trim", False)
+    elif kind == "cowboy":
+        cv.ellipse(hx, hy - 2.5, 12.5, 2.4, "main")  # Wide brim, curled up at the sides.
+        cv.rect(hx - 12, hy - 4, hx - 11, hy - 3, "main")
+        cv.rect(hx + 11, hy - 4, hx + 12, hy - 3, "main")
+        cv.ellipse(hx, hy - 6.5, 6.4, 4.4, "main")
+        cv.rect(hx - 1, hy - 10, hx, hy - 9, "trim", False)  # Pinched crown.
+        cv.rect(hx - 6, hy - 4, hx + 6, hy - 4, "dark", False)  # Band.
 
 
 # --- Tops --------------------------------------------------------------------------
@@ -274,7 +304,8 @@ def top(cv, kind, facing, f):
     s = swing(f)
     bottom = 29 + b
     sleeves = {"tshirt": "short", "tank": "none", "vest": "short", "gi": "long", "robe": "long", "blouse": "puff",
-               "striped": "long", "leather": "long", "cape": "long", "coat": "long", "rocket": "long", "nurse": "short", "jacket": "long"}[kind]
+               "striped": "long", "leather": "long", "cape": "long", "coat": "long", "rocket": "long", "nurse": "short", "jacket": "long",
+               "hoodie": "long", "sweater": "long", "polo": "short", "puffer": "long", "hawaiian": "short", "track": "long"}[kind]
     if kind in ("robe", "coat", "cape"):
         bottom = 32 + b  # Long hem over the legs.
     if kind == "nurse":
@@ -291,6 +322,10 @@ def top(cv, kind, facing, f):
             cv.rect(x0, y0 + 3, x0 + 1, y0 + length, "skin")
         else:
             cv.rect(x0, y0, x0 + 1, y0 + length, arm_part)
+            if kind == "track":
+                cv.rect(x0 + (1 if x0 < CX else 0), y0, x0 + (1 if x0 < CX else 0), y0 + length, "white", False)  # Stripes.
+            if kind in ("sweater", "hoodie", "puffer"):
+                cv.rect(x0, y0 + length, x0 + 1, y0 + length, "trim", False)  # Cuffs.
         glove = "white" if kind == "rocket" else "skin"
         cv.rect(x0, hand_y, x0 + 1, hand_y + 1, glove, False)
 
@@ -315,8 +350,27 @@ def top(cv, kind, facing, f):
             cv.rect(CX + 1, t + 3, CX + 4, bottom, "white")
         if kind == "rocket":
             cv.rect(CX + 1, t + 2, CX + 3, t + 5, "red", False)
+        if kind == "hoodie":
+            cv.rect(CX - 6, t - 1, CX - 2, t + 2, "trim")  # Hood down on the back.
+            cv.rect(CX + 1, t + 6, CX + 4, t + 8, "trim", False)  # Pocket.
+        if kind == "sweater":
+            cv.rect(CX - 5, t + 4, CX + 4, t + 5, "trim", False)
+            cv.rect(CX - 5, bottom, CX + 4, bottom, "trim", False)
+        if kind == "puffer":
+            for y in range(t + 2, bottom, 3):
+                cv.rect(CX - 5, y, CX + 4, y, "trim", False)
+            cv.rect(CX - 5, t - 1, CX + 4, t, "main")  # Big collar.
+        if kind == "hawaiian":
+            for (x, y) in [(-3, 2), (1, 4), (-2, 6), (2, 7), (-4, 8)]:
+                cv.set(CX + x, t + y, "white")
+        if kind == "track":
+            cv.rect(CX + 3, t + 1, CX + 4, bottom, "white", False)
         sl = "skin" if sleeves == "none" else ("main" if sleeves != "long" else arm_part)
         cv.rect(CX - 1 + s, t + 1, CX + 1 + s, t + 6, sl)
+        if kind == "track":
+            cv.rect(CX + s, t + 1, CX + s, t + 6, "white", False)
+        if kind == "puffer":
+            cv.rect(CX - 1 + s, t + 3, CX + 1 + s, t + 3, "trim", False)
         cv.rect(CX - 1 + s, t + 7, CX + 1 + s, t + 8, "white" if kind == "rocket" else "skin")
         return
     cv.rect(CX - 6, t, CX + 5, bottom, body_part)
@@ -375,6 +429,45 @@ def top(cv, kind, facing, f):
         if front:
             cv.rect(CX - 5, t + 3, CX + 4, bottom, "white")
             cv.rect(CX - 3, t, CX + 2, t, "white", False)
+    elif kind == "hoodie":
+        if front:
+            cv.rect(CX - 5, t - 1, CX + 4, t, "trim")  # Hood round the neck.
+            cv.set(CX - 2, t + 1, "white")
+            cv.set(CX + 1, t + 1, "white")  # Drawstrings.
+            cv.set(CX - 2, t + 2, "white")
+            cv.set(CX + 1, t + 2, "white")
+            cv.rect(CX - 4, t + 6, CX + 3, t + 8, "trim", False)  # Front pocket.
+        else:
+            cv.ellipse(CX - 0.5, t + 1.5, 5.0, 3.0, "trim")  # Hood hanging on the back.
+    elif kind == "sweater":
+        cv.rect(CX - 6, t + 4, CX + 5, t + 5, "trim", False)  # A knitted band across the chest.
+        cv.rect(CX - 6, bottom, CX + 5, bottom, "trim", False)
+        if front:
+            cv.rect(CX - 2, t, CX + 1, t, "trim", False)
+    elif kind == "polo":
+        if front:
+            cv.rect(CX - 3, t, CX - 1, t + 1, "white", False)  # Collar.
+            cv.rect(CX, t, CX + 2, t + 1, "white", False)
+            cv.set(CX - 1, t + 2, "trim")
+            cv.set(CX - 1, t + 3, "trim")  # Buttons.
+    elif kind == "puffer":
+        cv.rect(CX - 7, t, CX + 6, bottom, "main")  # Puffy: a pixel wider each side.
+        for y in range(t + 2, bottom, 3):
+            cv.rect(CX - 7, y, CX + 6, y, "trim", False)
+        cv.rect(CX - 5, t - 1, CX + 4, t, "main")  # Big collar.
+        if front:
+            cv.rect(CX - 1, t + 1, CX - 1, bottom, "dark", False)  # Zip.
+    elif kind == "hawaiian":
+        for (x, y) in [(-4, 2), (2, 1), (-1, 4), (3, 5), (-5, 7), (1, 8), (-2, 9)]:
+            cv.set(CX + x, t + y, "white")  # Flowers.
+            cv.set(CX + x + 1, t + y, "trim")
+        if front:
+            cv.rect(CX - 2, t, CX + 1, t, "skin", False)  # Open collar.
+            cv.set(CX - 1, t + 1, "skin")
+    elif kind == "track":
+        if front:
+            cv.rect(CX - 1, t + 1, CX - 1, bottom, "white", False)  # Zip.
+            cv.rect(CX - 3, t, CX + 2, t, "white", False)
     # Arms swing: forward drops a little, back rises.
     for side, sw in ((-1, s), (1, -s)):
         x0 = CX - 8 if side < 0 else CX + 6
@@ -398,7 +491,8 @@ def side_legs(f):
 
 def bottom(cv, kind, facing, f):
     b = f["bob"]
-    skin_from = {"trousers": 99, "cargo": 99, "gi_pants": 99, "shorts": 31, "skirt": 31, "long_skirt": 34}[kind]
+    skin_from = {"trousers": 99, "cargo": 99, "gi_pants": 99, "shorts": 31, "skirt": 31, "long_skirt": 34,
+                 "jeans": 99, "joggers": 99, "pleated": 31, "capris": 33}[kind]
     leg_part = "white" if kind == "gi_pants" else "main"
     if facing == "right":
         for x0, far in side_legs(f):
@@ -412,6 +506,14 @@ def bottom(cv, kind, facing, f):
         if kind == "cargo":
             for x0, far in side_legs(f):
                 cv.set(x0 + 1, 32 + b, "dark")
+        if kind == "pleated":
+            cv.rect(CX - 5, 27 + b, CX + 4, 30 + b, "main")
+            for x in range(CX - 4, CX + 4, 2):
+                cv.rect(x, 28 + b, x, 30 + b, "trim", False)
+        if kind in ("jeans", "joggers", "capris"):
+            for x0, far in side_legs(f):
+                cuff = {"jeans": 35, "joggers": 35, "capris": 32}[kind] + b
+                cv.rect(x0, cuff, x0 + 3, cuff, "trim", False)
         return
     for side in (-1, 1):
         x0 = CX - 5 if side < 0 else CX + 1
@@ -425,6 +527,19 @@ def bottom(cv, kind, facing, f):
             cv.rect(x0 - (1 if side < 0 else 0), end - 1, x0 + 3 + (1 if side > 0 else 0), end, "white")
         if kind == "cargo":
             cv.set(x0 + 1, 31 + b, "dark")
+        if kind == "jeans":
+            cv.rect(x0 + 1, 29 + b, x0 + 1, end - 1, "trim", False)  # Seam.
+            cv.rect(x0, end, x0 + 3, end, "trim", False)  # Turned-up hem.
+        if kind == "joggers":
+            cv.rect(x0, end, x0 + 3, end, "trim", False)  # Elastic cuffs.
+        if kind == "capris":
+            cv.rect(x0, 32 + b, x0 + 3, 32 + b, "trim", False)
+    if kind == "jeans":
+        cv.rect(CX - 6, 29 + b, CX + 5, 29 + b, "dark", False)  # Belt.
+    if kind == "pleated":
+        cv.rect(CX - 7, 27 + b, CX + 6, 30 + b, "main")
+        for x in range(CX - 6, CX + 6, 2):
+            cv.rect(x, 28 + b, x, 30 + b, "trim", False)  # Pleats.
     if kind == "skirt":
         cv.rect(CX - 7, 27 + b, CX + 6, 30 + b, "main")
     elif kind == "long_skirt":
@@ -436,27 +551,37 @@ def shoes(cv, kind, facing, f):
     b = f["bob"]
     if facing == "right":
         for x0, far in side_legs(f):
-            if kind == "boots":
+            if kind in ("boots", "rain_boots"):
                 cv.rect(x0, 33 + b, x0 + 4, 37 + b, "main")
+                if kind == "rain_boots":
+                    cv.rect(x0, 33 + b, x0 + 4, 33 + b, "trim", False)
+            elif kind == "high_tops":
+                cv.rect(x0, 34 + b, x0 + 4, 37 + b, "main")
+                cv.rect(x0 + 3, 36 + b, x0 + 4, 37 + b, "white", False)  # Toe cap.
             elif kind == "sandals":
                 cv.rect(x0, 36 + b, x0 + 4, 37 + b, "skin")
                 cv.rect(x0, 36 + b, x0 + 4, 36 + b, "main", False)
             else:
                 cv.rect(x0, 36 + b, x0 + 4, 37 + b, "main")
-            cv.rect(x0, 38 + b, x0 + 4, 38 + b, "white" if kind == "sneakers" else "dark", False)
+            cv.rect(x0, 38 + b, x0 + 4, 38 + b, "white" if kind in ("sneakers", "high_tops") else "dark", False)
         return
     for side in (-1, 1):
         x0 = CX - 5 if side < 0 else CX + 1
         end = leg_ends(f, side)
         xa, xb = x0 - (1 if side < 0 else 0), x0 + 3 + (1 if side > 0 else 0)
-        if kind == "boots":
+        if kind in ("boots", "rain_boots"):
             cv.rect(xa, end - 2, xb, end + 2, "main")
+            if kind == "rain_boots":
+                cv.rect(xa, end - 2, xb, end - 2, "trim", False)  # Rolled top.
+        elif kind == "high_tops":
+            cv.rect(xa, end - 1, xb, end + 2, "main")
+            cv.rect(xa, end + 2, xb, end + 2, "white", False)
         elif kind == "sandals":
             cv.rect(xa, end + 1, xb, end + 2, "skin")
             cv.rect(xa, end + 1, xb, end + 1, "main", False)
         else:
             cv.rect(xa, end + 1, xb, end + 2, "main")
-        cv.rect(xa, end + 3, xb, end + 3, "white" if kind == "sneakers" else "dark", False)
+        cv.rect(xa, end + 3, xb, end + 3, "white" if kind in ("sneakers", "high_tops") else "dark", False)
 
 
 def sheet(draw):

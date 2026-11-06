@@ -38,11 +38,12 @@ The web build uses Godot's Compatibility renderer, so lighting is slightly simpl
   - **Poké Mart** (the daily store), **Department Store** (one-match drinks and a daily TM counter), **Game Corner** (slots,
     Voltorb Flip and a prize counter, using coins won in matches or bought with ₽; never real money), **Day Care**
     (a parked line gets 40% of the XP you earn with others), **Pewter Museum** (your records and trainer cards) and the
-    **Trainer Outfitter**: hats, tops, bottoms and shoes, each colour bought separately, and whole outfits for every
-    trainer class in three colourways (`data/outfits.json` from `tools/build_outfits.py`; layers drawn by
+    **Trainer Outfitter**: everyday hats, tops, bottoms and shoes for Pokédollars, each colour bought separately; each
+    trainer class's outfit (in three colourways) is earned by beating 15 trainers of that class in town or the Trainer
+    Tower (`data/outfits.json` from `tools/build_outfits.py`; layers drawn by
     `tools/make_trainer_sheets.py`).
   - **Team Rocket Hideout** (`data/rocket.json`): open every weekend and on two random weekdays a week; a Rocket
-    Grunt guards the Game Corner. Bring a team of three and beat three Grunt teams then two Executives, all Shadow
+    Grunt guards the Game Corner. Bring a team of three and beat three Grunt teams (three Pokémon each) then two Executives (four each), all Shadow
     Pokémon (tougher, harder-hitting; the Executive's ace comes out last, bigger, and enrages when hurt). Every battle
     is one-on-one like a trainer battle: see their team and choose your lead; when one faints its trainer picks who
     goes next (you choose from the ones you have left, Rocket sends its best type match-up), and the one still

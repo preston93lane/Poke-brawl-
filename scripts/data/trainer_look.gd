@@ -17,7 +17,7 @@ const FIXED := {
 	"mouth": Color("#b03038"), "blush": Color("#f07878"), "gold": Color("#e1be5a"),
 }
 ## Hats over the top of the head: the hair under them leaves its top off.
-const COVERING := ["cap", "cap_back", "beanie", "sun_hat", "straw_hat", "hood", "swim_cap", "rocket_cap", "bandana"]
+const COVERING := ["cap", "cap_back", "beanie", "sun_hat", "straw_hat", "hood", "swim_cap", "rocket_cap", "bandana", "beret", "bucket_hat", "cowboy"]
 const CONTOUR := 0.55
 const OUTLINE := 0.25
 

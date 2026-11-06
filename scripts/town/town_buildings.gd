@@ -252,7 +252,7 @@ static func lantern() -> Dictionary:
 	glow_mat.albedo_texture = _pool_tex
 	glow_mat.albedo_color = Color(1.0, 0.7, 0.35, 0.0)
 	var plane := PlaneMesh.new()
-	plane.size = Vector2(6.0, 6.0)
+	plane.size = Vector2(3.6, 3.6)  # A small pool: the moon lights the rest.
 	var pool := MeshInstance3D.new()
 	pool.mesh = plane
 	pool.material_override = glow_mat
@@ -262,7 +262,7 @@ static func lantern() -> Dictionary:
 	var halo := Sprite3D.new()
 	halo.texture = _pool_tex
 	halo.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	halo.pixel_size = 1.6 / 64.0
+	halo.pixel_size = 1.0 / 64.0
 	halo.shaded = false
 	halo.modulate = Color(1.0, 0.8, 0.45, 0.0)
 	halo.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF

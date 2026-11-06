@@ -477,8 +477,17 @@ static func outfitter(menu: Node, message := "") -> Control:
 				none.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 				list.add_child(none)
 			var items: Dictionary = (Town.outfits().get("items", {}) as Dictionary).get(tab, {})
-			for id: String in items:
-				list.add_child(_item_card(menu, tab, id, items[id], trying))
+			# Shop clothes first (newest on top), then trainer outfit pieces and rewards.
+			var ids: Array = items.keys()
+			var rank := func(id: String) -> int:
+				var it: Dictionary = items[id]
+				return 0 if it.has("new") else (1 if not it.has("earn") and not it.has("unlock") else 2)
+			ids.sort_custom(func(a: String, b: String) -> bool: return rank.call(a) < rank.call(b))
+			for id: String in ids:
+				var it: Dictionary = items[id]
+				if it.has("earn") and not (it.get("colors", []) as Array).any(func(c: Variant) -> bool: return Town.owns_item(tab, id, int(c))):
+					continue  # Trainer outfit pieces show up once you've earned one.
+				list.add_child(_item_card(menu, tab, id, it, trying))
 	var scroll := UiKit.scroll(list)
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	right.add_child(scroll)
@@ -511,7 +520,11 @@ static func _item_card(menu: Node, slot: String, id: String, it: Dictionary, try
 	top.add_child(title)
 	if it.has("unlock"):
 		top.add_child(UiKit.label("ROCKET HIDEOUT REWARD", 14, Color(1, 0.5, 0.5)))
+	elif it.has("earn"):
+		top.add_child(UiKit.label("TRAINER OUTFIT PIECE", 14, Color(0.6, 1, 0.7)))
 	else:
+		if it.has("new"):
+			top.add_child(UiKit.label("NEW  ", 14, Color(1, 0.6, 0.85)))
 		top.add_child(UiKit.label("%d ₽ each colour" % int(it["price"]), 15, Color(1, 0.95, 0.6)))
 	col.add_child(top)
 	var swatches := HFlowContainer.new()
@@ -557,6 +570,21 @@ static func _set_card(menu: Node, s: Dictionary) -> Control:
 			pieces.append(str(Town.item(Town.SLOTS[i], str(s["pieces"][i])).get("name", "")))
 	top.add_child(UiKit.label(" + ".join(pieces), 13, Color(0.85, 0.9, 1)))
 	col.add_child(top)
+	if s.has("earn"):
+		# A trainer class's outfit: beat enough of them and every colourway is yours.
+		var need := int(s.get("wins", 15))
+		var have := mini(Town.class_wins(str(s["earn"])), need)
+		var line := UiKit.label(("EARNED  ·  beat %d %s trainers" % [need, s["name"]]) if have >= need else
+				"Beat %d %s trainers in town or the Trainer Tower to earn it:  %d / %d" % [need, s["name"], have, need], 15,
+				Color(0.6, 1, 0.65) if have >= need else Color(1, 0.9, 0.6))
+		line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		col.add_child(line)
+		var bar := ProgressBar.new()
+		bar.max_value = need
+		bar.value = have
+		bar.show_percentage = false
+		bar.custom_minimum_size = Vector2(0, 10)
+		col.add_child(bar)
 	var ways := HFlowContainer.new()
 	ways.add_theme_constant_override("h_separation", 8)
 	var colors: Array = Town.outfits().get("colors", [])
@@ -582,6 +610,10 @@ static func _set_card(menu: Node, s: Dictionary) -> Control:
 			if s.has("unlock") and not owned:
 				act = UiKit.button("EARNED IN THE ROCKET HIDEOUT", func() -> void: pass, 15)
 				act.disabled = true
+			elif s.has("earn") and not owned:
+				var more := int(s.get("wins", 15)) - Town.class_wins(str(s["earn"]))
+				act = UiKit.button("BEAT %d MORE TO EARN IT" % more, func() -> void: pass, 15)
+				act.disabled = true
 			elif owned:
 				act = UiKit.button("WEAR", func() -> void:
 					Town.wear_set(s["id"], vi)
@@ -598,7 +630,7 @@ static func _set_card(menu: Node, s: Dictionary) -> Control:
 			act.add_theme_stylebox_override("normal", UiKit.box(Color(0.25, 0.6, 0.35), 12, 8))
 			ways.add_child(act)
 	col.add_child(ways)
-	return _card(Color(0.35, 0.22, 0.32) if s.has("unlock") else Color(0.28, 0.3, 0.42), col)
+	return _card(Color(0.35, 0.22, 0.32) if s.has("unlock") else (Color(0.22, 0.32, 0.3) if s.has("earn") else Color(0.28, 0.3, 0.42)), col)
 
 
 static func _free_row(menu: Node, title: String, key: String, values: Array, names: bool) -> Control:
